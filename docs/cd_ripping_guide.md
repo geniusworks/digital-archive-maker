@@ -27,7 +27,7 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
    cp ./.abcde.conf.sample ~/.abcde.conf
    ```
 3. Open `~/.abcde.conf` and verify the key settings:
-   - `OUTPUTDIR="/Volumes/Data/Media/Rips/CDs"`
+   - `OUTPUTDIR="${RIPS_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Rips/CDs` if `RIPS_ROOT` is unset)
    - `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
    - `CDDBMETHOD=musicbrainz`
    - `GETALBUMART=y` and `COVERARTFILE="cover.jpg"`
@@ -39,13 +39,19 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
 
 ## Rip a CD to FLAC
 1. Insert a CD.
-2. Run:
+2. Run (standard):
    ```bash
+   make rip-cd
+   ```
+   Alternative (direct):
+   ```bash
+   # ensure your shell has loaded ./.env so RIPS_ROOT is available
+   set -a; . ./.env; set +a
    abcde
    ```
 3. Resulting structure (example):
    ```
-   /Volumes/Data/Media/Rips/CDs/
+   ${RIPS_ROOT}/CDs/
      Artist/
        Album/
          01 - First Track.flac
@@ -70,14 +76,14 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
   ```
 - Organize a single loose track:
   ```bash
-  ./fix_track.py /path/to/file.ext --target "/Volumes/Data/Media/Rips/Digital"
+  ./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Digital"
   ```
 
 ---
 
 ## Notes
 - Ensure your drive supports accurate audio extraction.
-- If your mount point differs, update `OUTPUTDIR` in `~/.abcde.conf`.
+- Prefer changing `RIPS_ROOT` in `.env` to relocate outputs for all workflows; or override `OUTPUTDIR` in `~/.abcde.conf` if needed.
 - API usage policies (MusicBrainz, Cover Art Archive) apply; consider rate limits.
 
 ---

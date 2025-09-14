@@ -49,4 +49,37 @@ for f in "$OUTDIR"/*.mkv; do
   HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize
 done
 
+# Optional: auto-organize to Movies/Title (Year)/Title (Year).mp4
+# Provide TITLE and YEAR in the environment, e.g.:
+#   TITLE="Movie Name" YEAR=1999 make rip-movie TYPE=dvd
+if [ "${TITLE:-}" ] && [ "${YEAR:-}" ]; then
+  DEST_CATEGORY=${DEST_CATEGORY:-Movies}
+  TARGET_DIR="$RIPS_ROOT/$DEST_CATEGORY/$TITLE ($YEAR)"
+  mkdir -p "$TARGET_DIR"
+
+  # Pick the largest MP4 as the main feature
+  largest_mp4=""
+  largest_size=0
+  for mp4 in "$OUTDIR"/*.mp4; do
+    [ -e "$mp4" ] || continue
+    # portable file size
+    size=$(wc -c < "$mp4" | tr -d ' ')
+    case "$size" in
+      ''|*[!0-9]*) size=0 ;;
+    esac
+    if [ "$size" -gt "$largest_size" ]; then
+      largest_size=$size
+      largest_mp4="$mp4"
+    fi
+  done
+
+  if [ "$largest_mp4" ]; then
+    dest="$TARGET_DIR/$TITLE ($YEAR).mp4"
+    mv -n "$largest_mp4" "$dest"
+    echo "Placed main feature: $dest"
+  else
+    echo "No MP4 found to organize under $TARGET_DIR" >&2
+  fi
+fi
+
 echo "Done: $OUTDIR"

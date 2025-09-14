@@ -8,13 +8,14 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps rip-cd rip-video fix-album fetch-covers fix-track compare
+.PHONY: help install-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare
 
 help:
 	@echo "Available targets:"
 	@echo "  install-deps        Install Homebrew deps and Python packages"
 	@echo "  rip-cd              Rip an audio CD using abcde"
 	@echo "  rip-video TYPE=...  Rip a video disc (TYPE=dvd|bluray) using bin/rip_video.sh"
+	@echo "  rip-movie TYPE=... TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4"
 	@echo "  fix-album DIR=...   Normalize and complete an album folder"
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
 	@echo "  fix-track FILE=... TARGET=...  Organize a single loose track"
@@ -34,6 +35,13 @@ rip-video:
 	@if [ -z "$(TYPE)" ]; then echo "Usage: make rip-video TYPE=dvd|bluray" >&2; exit 1; fi
 	@chmod +x bin/rip_video.sh || true
 	@bin/rip_video.sh $(TYPE)
+
+rip-movie:
+	@if [ -z "$(TYPE)" ] || [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
+	  echo "Usage: make rip-movie TYPE=dvd|bluray TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
+	fi
+	@chmod +x bin/rip_video.sh || true
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(TYPE)
 
 fix-album:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make fix-album DIR=\"/path/to/Artist/Album\"" >&2; exit 1; fi
