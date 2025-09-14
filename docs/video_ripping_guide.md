@@ -41,9 +41,11 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
      *) echo "Unknown DISCTYPE: $DISCTYPE" >&2; exit 1 ;;
    esac
 
-   TITLE=$(date "+%Y-%m-%d")
-   OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$TITLE"
-   mkdir -p "$OUTDIR"
+   # If using the repo script/Makefile, the staging folder will prefer
+  # Title (Year) when provided/prompted; otherwise it falls back to a date.
+  STAMP=$(date "+%Y-%m-%d")
+  OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$STAMP"
+  mkdir -p "$OUTDIR"
    ```
 
 3. Rip titles to MKV using MakeMKV CLI:
@@ -108,6 +110,45 @@ This repository provides a ready-to-use helper and a Makefile target:
   ```bash
   make rip-video TYPE=dvd   # or TYPE=bluray
   ```
+  - If you don't provide `TITLE`/`YEAR` and you're in an interactive terminal, the script will offer to organize after transcoding and prompt you for Title and Year.
+  - In non-interactive contexts (e.g., CI), no prompt appears and only the staging folder is produced.
+
+## Auto-organize to Movies/Title (Year)
+To rip and automatically place the main feature into a Plex/Jellyfin-friendly folder:
+
+```bash
+make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+```
+
+- The script picks the largest MP4 as the main feature and moves it to:
+  - `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`
+- Extras/previews remain in the title-named (if Title/Year known) or date-stamped staging folder under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
+
+You can adjust the minimum title length MakeMKV considers with `MINLENGTH` (in seconds):
+
+```bash
+MINLENGTH=1800 make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+```
+
+To organize into a different category folder (default is `Movies`), set `DEST_CATEGORY`:
+
+```bash
+DEST_CATEGORY=Films make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+```
+
+## Preflight and troubleshooting
+The script now performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:
+
+```bash
+sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv /usr/local/bin/mmgplsrv
+sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmccextr /usr/local/bin/mmccextr
+```
+
+On first run, launch the GUI once to accept the EULA and set the drive region, and consider removing quarantine:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MakeMKV.app
+```
 
 ---
 
