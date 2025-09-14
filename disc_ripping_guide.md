@@ -1,5 +1,9 @@
 # Home Ripping Guide for CDs, DVDs, and Blu-rays (Non-DMCA Protected)
 
+> Note: This combined guide is kept for reference. For up-to-date, focused workflows see:
+> - `docs/cd_ripping_guide.md` (CDs with abcde)
+> - `docs/video_ripping_guide.md` (DVD/Blu-ray with MakeMKV + HandBrakeCLI)
+
 This guide outlines how to set up and automate the ripping of non-DMCA-protected CDs, DVDs, and Blu-ray discs on macOS using a USB Blu-ray drive.
 
 ---
@@ -55,8 +59,14 @@ This will:
 ### 1. Insert Disc and Create Output Folder:
 ```bash
 DISCTYPE=dvd   # or 'bluray'
+# Map DISCTYPE to a stable directory name without relying on Bash 4+ features
+case "$DISCTYPE" in
+  dvd) DISCDIR="DVDs" ;;
+  bluray) DISCDIR="Blurays" ;;
+  *) echo "Unknown DISCTYPE: $DISCTYPE" >&2; exit 1 ;;
+esac
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="$HOME/Rips/${DISCTYPE^}/$TITLE"
+OUTDIR="$HOME/Rips/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 ```
 

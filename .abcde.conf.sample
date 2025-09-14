@@ -1,0 +1,48 @@
+# abcde sample configuration for CD ripping to FLAC
+# Copy to ~/.abcde.conf and adjust as needed
+
+# Output format and location
+OUTPUTDIR="/Volumes/Data/Media/Rips/CDs"
+OUTPUTTYPE=flac
+OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
+VAOUTPUTFORMAT='Various/${ALBUMFILE}/${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'
+
+# Behavior
+PADTRACKS=y
+MAXPROCS=2
+LOWDISK=n
+EXTRAVERBOSE=2
+EJECTCD=n  # eject handled in abcde_post_encode()
+
+# Metadata lookup via MusicBrainz
+CDDBMETHOD=musicbrainz
+CDDBUSELOCAL=n
+
+# Playlists
+PLAYLISTFORMAT='${ALBUMFILE}.m3u'
+DOSPLAYLISTS=n
+M3UOUTPUT=y
+
+# Cover art (using abcde's getalbumart action when available)
+COVERARTFILE="cover.jpg"
+# Some distributions of abcde include the getalbumart action; enable it in ACTIONS below.
+
+# Actions pipeline
+# Typical: cddb, read, encode, tag, move, playlist, getalbumart, clean
+ACTIONS=cddb,read,encode,tag,move,playlist,getalbumart,clean
+
+# Filename sanitizer: remove forbidden characters and squash spaces
+mungefilename () {
+  # Convert to safe filesystem names
+  echo "$1" \
+  | tr ':/\\t' '--- ' \
+  | sed -e 's/[\x00-\x1F]//g' \
+        -e 's/\s\+/ /g' \
+        -e 's/\s$//'
+}
+
+# Eject the disc after encoding finishes
+abcde_post_encode () {
+  # macOS: drutil to eject tray (ignore failures)
+  command -v drutil >/dev/null 2>&1 && drutil tray eject >/dev/null 2>&1 || true
+}
