@@ -1,0 +1,5 @@
+mutagen>=1.47.0
+rapidfuzz>=3.8.1
+musicbrainzngs>=0.7.1
+pyacoustid>=1.2.2
+requests>=2.31.0
