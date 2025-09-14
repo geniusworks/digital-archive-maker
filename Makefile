@@ -34,7 +34,7 @@ rip-cd:
 rip-video:
 	@if [ -z "$(TYPE)" ]; then echo "Usage: make rip-video TYPE=dvd|bluray" >&2; exit 1; fi
 	@chmod +x bin/rip_video.sh || true
-	@bin/rip_video.sh $(TYPE)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(TYPE)
 
 rip-movie:
 	@if [ -z "$(TYPE)" ] || [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \

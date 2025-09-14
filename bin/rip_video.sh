@@ -35,8 +35,8 @@ case "$TYPE" in
   *) echo "Unknown type: $TYPE (expected dvd|bluray)" >&2; exit 1 ;;
  esac
 
-TITLE=$(date "+%Y-%m-%d")
-OUTDIR="$RIPS_ROOT/$DISCDIR/$TITLE"
+STAMP=$(date "+%Y-%m-%d")
+OUTDIR="$RIPS_ROOT/$DISCDIR/$STAMP"
 mkdir -p "$OUTDIR"
 
 # Rip
