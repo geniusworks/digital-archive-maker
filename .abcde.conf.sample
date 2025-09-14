@@ -2,7 +2,8 @@
 # Copy to ~/.abcde.conf and adjust as needed
 
 # Output format and location
-OUTPUTDIR="/Volumes/Data/Media/Rips/CDs"
+# OUTPUTDIR can be centralized via RIPS_ROOT (see .env.sample). Falls back to /Volumes/Data/Media/Rips
+OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs"
 OUTPUTTYPE=flac
 OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
 VAOUTPUTFORMAT='Various/${ALBUMFILE}/${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'

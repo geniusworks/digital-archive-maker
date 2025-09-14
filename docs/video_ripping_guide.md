@@ -2,6 +2,8 @@
 
 This guide documents a straightforward, automation-friendly workflow for backing up non-DMCA-protected DVDs and Blu-rays for personal use. It complements the CD workflow described in `docs/cd_ripping_guide.md`.
 
+Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see `.env.sample`). By default, `RIPS_ROOT` is `/Volumes/Data/Media/Rips`.
+
 ---
 
 ## Prerequisites
@@ -40,7 +42,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
    esac
 
    TITLE=$(date "+%Y-%m-%d")
-   OUTDIR="$HOME/Rips/$DISCDIR/$TITLE"
+   OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$TITLE"
    mkdir -p "$OUTDIR"
    ```
 
@@ -81,7 +83,7 @@ case "$choice" in
  esac
 
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="$HOME/Rips/$DISCDIR/$TITLE"
+OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 
 makemkvcon mkv disc:0 all "$OUTDIR"

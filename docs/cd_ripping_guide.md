@@ -14,16 +14,26 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
 ---
 
 ## Setup
-1. Copy the sample configuration into place and adjust as needed:
+1. Create and load environment config (centralized):
+   ```bash
+   cp .env.sample .env   # at repo root
+   # Option A: let the Makefile load .env automatically (recommended)
+   # Option B: source it in your shell profile so abcde sees RIPS_ROOT
+   #   echo 'set -a; . /path/to/repo/.env; set +a' >> ~/.zshrc
+   ```
+
+2. Copy the sample abcde configuration into place and adjust as needed:
    ```bash
    cp ./.abcde.conf.sample ~/.abcde.conf
    ```
-2. Open `~/.abcde.conf` and verify the key settings:
+3. Open `~/.abcde.conf` and verify the key settings:
    - `OUTPUTDIR="/Volumes/Data/Media/Rips/CDs"`
    - `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
    - `CDDBMETHOD=musicbrainz`
    - `GETALBUMART=y` and `COVERARTFILE="cover.jpg"`
    - Playlists enabled and disc eject after encode via `abcde_post_encode()`
+
+Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) to set `OUTPUTDIR`. When you run `make rip-cd`, the Makefile auto-loads `.env` so `abcde` sees `RIPS_ROOT`.
 
 ---
 

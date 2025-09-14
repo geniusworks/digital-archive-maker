@@ -2,6 +2,12 @@
 
 SHELL := /bin/sh
 
+# Load .env if present and export variables (centralized config)
+ifneq (,$(wildcard .env))
+include .env
+export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
+endif
+
 .PHONY: help install-deps rip-cd rip-video fix-album fetch-covers fix-track compare
 
 help:
