@@ -50,7 +50,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - Media server setup: see `docs/media_server_setup.md`.
 
 ## Configuration: `.abcde.conf`
-- Output: `FLAC` to `/Volumes/Data/Media/Rips/CDs` using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
+- Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
 - Uses MusicBrainz for album/track lookup and `getalbumart` in the `ACTIONS` chain.
 - Playlists enabled (`.m3u`).
 - Ejects the disc after encoding via `abcde_post_encode` using `drutil` (currently `EJECTCD=n` but eject occurs in the hook).
@@ -66,15 +66,24 @@ Run `make help` for a summary. Common tasks:
 - `make install-deps` — install Homebrew dependencies and Python packages
 - `make rip-cd` — run `abcde` using your `~/.abcde.conf`
 - `make rip-video TYPE=dvd|bluray` — call `bin/rip_video.sh` for video discs
+- `make rip-movie TYPE=dvd|bluray TITLE="Movie Name" YEAR=1999` — rip and organize the main feature to `Movies/Title (Year)/Title (Year).mp4`
+- Notes: you can set `MINLENGTH=1800` to skip short titles and `DEST_CATEGORY=Films` to change the destination category from `Movies`.
 - `make fix-album DIR="/path/to/Artist/Album"` — normalize, tag, covers, playlist
 - `make fetch-covers ROOT="/path/or/library"` — fetch missing `cover.jpg`
-- `make fix-track FILE="/path/file.ext" TARGET="/path/Digital"` — organize a single track
+- `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Digital"` — organize a single track
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 
 ## Typical workflows
 - Rip a CD to FLAC
   1. Insert disc; run `abcde` (uses `.abcde.conf`).
-  2. Result at `/Volumes/Data/Media/Rips/CDs/Artist/Album/NN - Title.flac` with `cover.jpg` and playlist.
+  2. Result at `${RIPS_ROOT}/CDs/Artist/Album/NN - Title.flac` with `cover.jpg` and playlist.
+
+- Rip and organize a DVD/Blu-ray
+  - Staging only:
+    - `make rip-video TYPE=dvd` (or `TYPE=bluray`). In an interactive terminal, the script can prompt to name the staging folder and optionally organize afterward.
+  - Rip + organize in one step:
+    - `make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999`
+    - Moves the largest MP4 to `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
 
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
@@ -89,7 +98,7 @@ Run `make help` for a summary. Common tasks:
   - Outputs: either grouped summary to stdout or writes `only_in_old.txt` and `only_in_new.txt`.
 
 - Organize a single loose track
-  - `./fix_track.py /path/to/file.ext --target "/Volumes/Data/Media/Rips/Digital"`
+  - `./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Digital"`
   - Attempts AcoustID+MusicBrainz; falls back to tags/filename; writes to `Artist/Album/NN - Title.ext`.
 
 - Special-case split for a one-file album

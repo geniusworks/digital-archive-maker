@@ -9,11 +9,11 @@ This guide outlines recommended folder structures and filenames so your media se
 - Video library root (examples):
   - Movies: `/Volumes/Data/Media/Rips/Movies`
   - TV: `/Volumes/Data/Media/Rips/TV`
-  - Disc backups (raw MKV/MP4 by date): `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/DVDs` and `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/Blurays`
+  - Disc backups (raw MKV/MP4 by title or date): `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/DVDs` and `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/Blurays`
 
 Note: `RIPS_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
 
-Use the date-based folders under `${RIPS_ROOT}` (as in ripping guides) for staging. After verification/renaming, move items into the long-term library roots for your media server.
+Use the title-named (preferred when Title/Year are known) or date-based folders under `${RIPS_ROOT}` for staging. After verification/renaming, move items into the long-term library roots for your media server.
 
 ---
 
@@ -66,7 +66,7 @@ Follow Plex/Jellyfin recommendations:
 ---
 
 ## Moving from staging to library
-- Ripping guides output to date-based folders (e.g., `${RIPS_ROOT}/DVDs/2025-09-13`). Verify, then rename/move into library roots.
+- Ripping guides output to title-named folders when Title/Year are provided or prompted (e.g., `${RIPS_ROOT}/DVDs/Movie Name (1999)`), otherwise to date-based folders (e.g., `${RIPS_ROOT}/DVDs/2025-09-13`). Verify, then rename/move into library roots as needed.
 - Tools such as FileBot or tinyMediaManager can speed up renaming based on online databases.
 
 ---
