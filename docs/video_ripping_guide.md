@@ -137,7 +137,9 @@ DEST_CATEGORY=Films make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
 ```
 
 ## Audio/subtitle language handling (English preference)
-When the default audio track is not English, the helper script will, by default, pause and prompt you to choose how to proceed. No environment variable is required for this default behavior. This feature requires `ffprobe` (from `ffmpeg`) and `jq`.
+When the default audio track is not English, the helper script will, by default, pause and prompt you to choose how to proceed. No environment variable is required for this default behavior.
+
+To guarantee inclusion when available, the script post-muxes any English text-based subtitles (SubRip/ASS/SSA/Text/WebVTT) from the source MKV into the final MP4 after encoding. This requires `ffmpeg` (for both `ffmpeg` and `ffprobe`) and `jq`.
 
 - Interactive (default when attached to a terminal):
   - After probing the MKV, if default audio is not English and an English audio or subtitle stream is present, you’ll be prompted to choose:
@@ -163,8 +165,8 @@ Notes:
 
 Implementation details:
 - English audio selection uses HandBrakeCLI options: `--audio-lang-list eng --first-audio`.
-- English subtitles selection uses: `--subtitle-lang-list eng --subtitle-default=1` (soft subtitles).
-- If neither English audio nor English subtitles exist, the stream layout is kept as-is.
+- English subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
+- If only image-based subtitles (VobSub/PGS) exist, they cannot be added as soft subs to MP4; consider burn-in or OCR + backfill.
 
 ## Backfill English subtitles into existing MP4s
 Use the provided helper to mux English soft subtitles from your archival MKVs into an existing MP4 without re-encoding video/audio.

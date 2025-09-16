@@ -69,6 +69,19 @@ Follow Plex/Jellyfin recommendations:
 - Ripping guides output to title-named folders when Title/Year are provided or prompted (e.g., `${RIPS_ROOT}/DVDs/Movie Name (1999)`), otherwise to date-based folders (e.g., `${RIPS_ROOT}/DVDs/2025-09-13`). Verify, then rename/move into library roots as needed.
 - Tools such as FileBot or tinyMediaManager can speed up renaming based on online databases.
 
+### Backfilling English subtitles into existing MP4s
+If your MP4 is missing English soft subtitles but the archival MKV has them (as text subs), you can mux them in without re-encoding:
+
+```
+make backfill-subs \
+  SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
+  DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+  [INPLACE=yes] [DEFAULT=yes]
+```
+
+- Requires `ffmpeg`/`ffprobe` and `jq`.
+- For image-based subs (VobSub/PGS), OCR to SRT first or burn-in during a re-encode.
+
 ---
 
 ## Tips for scrapers

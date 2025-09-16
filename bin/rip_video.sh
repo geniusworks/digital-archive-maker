@@ -44,6 +44,10 @@ warn_missing_helper() {
 # Critical deps
 require_cmd makemkvcon || { echo "Install MakeMKV and its CLI symlink." >&2; exit 1; }
 require_cmd HandBrakeCLI || { echo "Install HandBrakeCLI (e.g., 'brew install handbrake')." >&2; exit 1; }
+# Required for subtitle detection and post-mux to guarantee soft subs when available
+require_cmd ffprobe || { echo "Install ffmpeg for ffprobe (e.g., 'brew install ffmpeg')." >&2; exit 1; }
+require_cmd ffmpeg  || { echo "Install ffmpeg (e.g., 'brew install ffmpeg')." >&2; exit 1; }
+require_cmd jq      || { echo "Install jq (e.g., 'brew install jq')." >&2; exit 1; }
 
 # Helpful MakeMKV helpers (warn if missing)
 warn_missing_helper mmgplsrv "/Applications/MakeMKV.app/Contents/MacOS/mmgplsrv"
@@ -165,8 +169,9 @@ for f in "$OUTDIR"/*.mkv; do
   name=$(basename "$f" .mkv)
 
   HB_AUDIO_OPTS=""
-  HB_SUB_OPTS=""
-  HB_SUB_BASE=""
+  HB_SUB_OPTS="" # unused for HandBrake now; kept for context
+  HB_SUB_BASE=""  # unused for HandBrake now; kept for context
+  SUBS_MARK_DEFAULT=0
 
   # Probe audio/subtitle streams
   DEFAULT_AUDIO_LANG=""
@@ -179,6 +184,9 @@ for f in "$OUTDIR"/*.mkv; do
     HAS_EN_AUDIO=$(printf '%s' "$AUDIO_JSON" | jq -r '((.streams // []) | any((.tags.language // "") | ascii_downcase | startswith("en"))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
     HAS_EN_SUBS=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // []) | any((.tags.language // "") | ascii_downcase | startswith("en"))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
     HAS_EN_TEXT_SUBS=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // []) | any(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$")))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
+    ENG_TEXT_IDX=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
+      | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$"))))
+      | (.[0].index // -1))' 2>/dev/null || printf '--')
   fi
 
   # Always include English soft subs if text-based subs are present (non-default).
@@ -209,7 +217,7 @@ for f in "$OUTDIR"/*.mkv; do
         ;;
       prefer-subs)
         if [ "$HAS_EN_SUBS" -eq 1 ]; then
-          HB_SUB_OPTS="--subtitle-default=1"
+          SUBS_MARK_DEFAULT=1
         elif [ "$HAS_EN_AUDIO" -eq 1 ]; then
           HB_AUDIO_OPTS="--audio-lang-list eng --first-audio"
         fi
@@ -227,7 +235,7 @@ for f in "$OUTDIR"/*.mkv; do
               a|A)
                 [ "$HAS_EN_AUDIO" -eq 1 ] && HB_AUDIO_OPTS="--audio-lang-list eng --first-audio" || : ;;
               s|S)
-                [ "$HAS_EN_SUBS" -eq 1 ] && HB_SUB_OPTS="--subtitle-default=1" || : ;;
+                [ "$HAS_EN_SUBS" -eq 1 ] && SUBS_MARK_DEFAULT=1 || : ;;
               *) : ;;
             esac
           fi
@@ -237,7 +245,29 @@ for f in "$OUTDIR"/*.mkv; do
     esac
   fi
 
-  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize $HB_AUDIO_OPTS $HB_SUB_BASE $HB_SUB_OPTS
+  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize $HB_AUDIO_OPTS
+
+  # Post-process: if a text-based English subtitle exists in the MKV, mux it into the MP4
+  if command -v ffprobe >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 && command -v ffmpeg >/dev/null 2>&1; then
+    if [ "${ENG_TEXT_IDX:- -1}" != "-1" ] && [ "${ENG_TEXT_IDX:- -1}" != "--" ]; then
+      DISP_ARGS=""
+      if [ "$SUBS_MARK_DEFAULT" -eq 1 ]; then
+        DISP_ARGS="-disposition:s:0 default"
+      fi
+      tmp_out="$OUTDIR/${name}.tmp.mp4"
+      ffmpeg -y \
+        -i "$OUTDIR/${name}.mp4" \
+        -i "$f" \
+        -map 0 -map 1:${ENG_TEXT_IDX} \
+        -c copy -c:s mov_text \
+        -metadata:s:s:0 language=eng \
+        $DISP_ARGS \
+        -movflags +faststart \
+        "$tmp_out" && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
+    elif [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
+      echo "Note: English subtitles present but appear non-text (e.g., VobSub/PGS). MP4 cannot carry them as soft subs. Consider burn-in or backfill after OCR." >&2
+    fi
+  fi
 done
 
 # If TITLE/YEAR not provided, optionally prompt in interactive shells

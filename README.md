@@ -1,3 +1,19 @@
+### Video prerequisites (DVD/Blu-ray)
+- MakeMKV (GUI; provides CLI `makemkvcon`)
+  - Download: https://www.makemkv.com/download/
+  - Install: drag `MakeMKV.app` to `/Applications`
+  - CLI link:
+    ```bash
+    sudo ln -s /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon
+    ```
+- HandBrakeCLI and ffmpeg/ffprobe, plus jq:
+  ```bash
+  brew install handbrake ffmpeg jq
+  ```
+- First run tip: launch MakeMKV GUI once to accept EULA and set drive region. If you see macOS quarantine errors, run:
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/MakeMKV.app
+  ```
 # Disc-to-Digital Scripts
 
 Scripts and configuration for ripping optical media and organizing to a clean, metadata-rich library. The current focus is audio CDs to FLAC, with utilities to normalize covers, fix tags, and compare libraries. The intent is strictly for local, personal backups and playback.
