@@ -163,7 +163,81 @@ makemkvcon mkv disc:0 all "$OUTDIR" --minlength="$MINLENGTH"
 for f in "$OUTDIR"/*.mkv; do
   [ -e "$f" ] || continue
   name=$(basename "$f" .mkv)
-  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize
+
+  HB_AUDIO_OPTS=""
+  HB_SUB_OPTS=""
+  HB_SUB_BASE=""
+
+  # Probe audio/subtitle streams
+  DEFAULT_AUDIO_LANG=""
+  HAS_EN_AUDIO=0
+  HAS_EN_SUBS=0
+  if command -v ffprobe >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    AUDIO_JSON=$(ffprobe -v error -select_streams a -show_entries stream=index,disposition:stream_tags=language -of json "$f" 2>/dev/null || printf '{}')
+    SUBS_JSON=$(ffprobe -v error -select_streams s -show_entries stream=index,codec_name:stream_tags=language -of json "$f" 2>/dev/null || printf '{}')
+    DEFAULT_AUDIO_LANG=$(printf '%s' "$AUDIO_JSON" | jq -r '(.streams // []) | (map(select((.disposition.default//0)==1)) + .) | .[0].tags.language // ""' 2>/dev/null || printf '')
+    HAS_EN_AUDIO=$(printf '%s' "$AUDIO_JSON" | jq -r '((.streams // []) | any((.tags.language // "") | ascii_downcase | startswith("en"))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
+    HAS_EN_SUBS=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // []) | any((.tags.language // "") | ascii_downcase | startswith("en"))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
+    HAS_EN_TEXT_SUBS=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // []) | any(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$")))) as $x | if $x then 1 else 0 end' 2>/dev/null || printf '0')
+  fi
+
+  # Always include English soft subs if text-based subs are present (non-default).
+  # HandBrake requires --subtitle-lang-list together with --all-subtitles to include by language.
+  if [ "${HAS_EN_TEXT_SUBS:-0}" -eq 1 ]; then
+    HB_SUB_BASE="--subtitle-lang-list eng --all-subtitles"
+  elif [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
+    echo "Note: English subtitles appear to be image-based (e.g., VobSub/PGS); MP4 cannot carry them as soft subs. Consider burn-in or backfill after OCR." >&2
+  fi
+
+  NEEDS_LANG_ACTION=0
+  DEFAULT_AUDIO_LANG_LC=$(printf '%s' "${DEFAULT_AUDIO_LANG:-}" | tr 'A-Z' 'a-z')
+  case "$DEFAULT_AUDIO_LANG_LC" in
+    en*) NEEDS_LANG_ACTION=0 ;;
+    *)   NEEDS_LANG_ACTION=1 ;;
+  esac
+
+  # Decide policy (default: keep -> interactive prompt if terminal is attached)
+  POLICY=${AUDIO_SUBS_POLICY:-keep}
+  if [ "$NEEDS_LANG_ACTION" -eq 1 ]; then
+    case "$POLICY" in
+      prefer-audio)
+        if [ "$HAS_EN_AUDIO" -eq 1 ]; then
+          HB_AUDIO_OPTS="--audio-lang-list eng --first-audio"
+        elif [ "$HAS_EN_SUBS" -eq 1 ]; then
+          HB_SUB_OPTS="--subtitle-lang-list eng --subtitle-default=1"
+        fi
+        ;;
+      prefer-subs)
+        if [ "$HAS_EN_SUBS" -eq 1 ]; then
+          HB_SUB_OPTS="--subtitle-default=1"
+        elif [ "$HAS_EN_AUDIO" -eq 1 ]; then
+          HB_AUDIO_OPTS="--audio-lang-list eng --first-audio"
+        fi
+        ;;
+      keep|"")
+        # Interactive prompt only if attached to a terminal and tools available
+        if [ -t 0 ] && command -v ffprobe >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+          if [ "$HAS_EN_AUDIO" -eq 1 ] || [ "$HAS_EN_SUBS" -eq 1 ]; then
+            printf "Default audio is '%s'. Choose: [a] Use English audio%s, [s] Add English subs%s, [k] Keep as-is: " \
+              "${DEFAULT_AUDIO_LANG:-unknown}" \
+              "$([ "$HAS_EN_AUDIO" -eq 1 ] && printf '' || printf ' (unavailable)')" \
+              "$([ "$HAS_EN_SUBS" -eq 1 ] && printf '' || printf ' (unavailable)')"
+            read -r _choice
+            case "$_choice" in
+              a|A)
+                [ "$HAS_EN_AUDIO" -eq 1 ] && HB_AUDIO_OPTS="--audio-lang-list eng --first-audio" || : ;;
+              s|S)
+                [ "$HAS_EN_SUBS" -eq 1 ] && HB_SUB_OPTS="--subtitle-default=1" || : ;;
+              *) : ;;
+            esac
+          fi
+        fi
+        ;;
+      *) : ;;
+    esac
+  fi
+
+  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize $HB_AUDIO_OPTS $HB_SUB_BASE $HB_SUB_OPTS
 done
 
 # If TITLE/YEAR not provided, optionally prompt in interactive shells

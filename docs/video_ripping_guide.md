@@ -10,7 +10,7 @@ Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see 
 - macOS
 - Install via Homebrew:
   ```bash
-  brew install handbrake ffmpeg
+  brew install handbrake ffmpeg jq
   ```
 - Install MakeMKV manually:
   - Download: https://www.makemkv.com/download/
@@ -135,6 +135,63 @@ To organize into a different category folder (default is `Movies`), set `DEST_CA
 ```bash
 DEST_CATEGORY=Films make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
 ```
+
+## Audio/subtitle language handling (English preference)
+When the default audio track is not English, the helper script will, by default, pause and prompt you to choose how to proceed. No environment variable is required for this default behavior. This feature requires `ffprobe` (from `ffmpeg`) and `jq`.
+
+- Interactive (default when attached to a terminal):
+  - After probing the MKV, if default audio is not English and an English audio or subtitle stream is present, you’ll be prompted to choose:
+    - `[a]` Use English audio (if available)
+    - `[s]` Add English subtitles (if available)
+    - `[k]` Keep as-is
+
+- Non-interactive or to override the default policy, use `AUDIO_SUBS_POLICY`:
+  ```bash
+  # Prefer English audio if present; else English subs if present; else keep
+  AUDIO_SUBS_POLICY=prefer-audio make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+
+  # Prefer adding English subtitles if present; else prefer English audio if present; else keep
+  AUDIO_SUBS_POLICY=prefer-subs make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+
+  # Keep streams as-is (no prompt)
+  AUDIO_SUBS_POLICY=keep make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+  ```
+
+Notes:
+- Default policy is `keep` (prompt when interactive; leave streams as-is when not interactive).
+- Set `AUDIO_SUBS_POLICY=prefer-audio` to automatically pick English audio (fallback to English subs), or `prefer-subs` to prioritize subs, or `keep` to keep streams as-is with no prompt.
+
+Implementation details:
+- English audio selection uses HandBrakeCLI options: `--audio-lang-list eng --first-audio`.
+- English subtitles selection uses: `--subtitle-lang-list eng --subtitle-default=1` (soft subtitles).
+- If neither English audio nor English subtitles exist, the stream layout is kept as-is.
+
+## Backfill English subtitles into existing MP4s
+Use the provided helper to mux English soft subtitles from your archival MKVs into an existing MP4 without re-encoding video/audio.
+
+- Makefile target (recommended):
+  ```bash
+  make backfill-subs \
+    SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
+    DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+    [INPLACE=yes] [DEFAULT=yes]
+  ```
+
+- What it does:
+  - Picks the largest MKV in `SRC_DIR`.
+  - Finds the MP4 in `DST_DIR` that matches the folder name (or the only MP4 present).
+  - Detects the first English text subtitle stream (SubRip/ASS/SSA/Text/WebVTT).
+  - Muxes it into the MP4 as a soft subtitle (`mov_text`).
+  - By default, writes a new file with suffix `.en-subs.mp4` next to the original.
+  - Options:
+    - `INPLACE=yes` replaces the original MP4 after backing it up to `.bak`.
+    - `DEFAULT=yes` marks the English subtitle track as default.
+
+Notes:
+- Requires `ffprobe`/`ffmpeg` and `jq`.
+- If your MKV only has image-based subs (VobSub/PGS), extract and OCR to SRT first (e.g., Subtitle Edit), then you can either:
+  - Place the `.srt` next to the MP4 (players will pick it up), or
+  - Mux it with `ffmpeg -c copy -c:s mov_text`.
 
 ## Preflight and troubleshooting
 The script now performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:

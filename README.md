@@ -72,6 +72,7 @@ Run `make help` for a summary. Common tasks:
 - `make fetch-covers ROOT="/path/or/library"` — fetch missing `cover.jpg`
 - `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Digital"` — organize a single track
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
+- `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
 
 ## Typical workflows
 - Rip a CD to FLAC
@@ -84,6 +85,21 @@ Run `make help` for a summary. Common tasks:
   - Rip + organize in one step:
     - `make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999`
     - Moves the largest MP4 to `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
+
+- Backfill English subtitles into an existing MP4
+  - Create a new MP4 with subs next to the original:
+    ```bash
+    make backfill-subs \
+      SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
+      DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)"
+    ```
+  - Replace the original in-place and mark subs default:
+    ```bash
+    make backfill-subs \
+      SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
+      DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+      INPLACE=yes DEFAULT=yes
+    ```
 
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`

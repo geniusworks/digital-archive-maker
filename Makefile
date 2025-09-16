@@ -8,7 +8,7 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare
+.PHONY: help install-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs
 
 help:
 	@echo "Available targets:"
@@ -20,6 +20,7 @@ help:
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
 	@echo "  fix-track FILE=... TARGET=...  Organize a single loose track"
 	@echo "  compare OLD=... NEW=... [MODE=albums|artists] [THRESHOLD=90] Compare two libraries"
+	@echo "  backfill-subs SRC_DIR=... DST_DIR=... [INPLACE=yes]  Mux English soft subs from MKV into existing MP4"
 
 install-deps:
 	@echo "Installing Homebrew deps via _install/install_setup_abcde_environment.sh..."
@@ -58,3 +59,10 @@ fix-track:
 compare:
 	@if [ -z "$(OLD)" ] || [ -z "$(NEW)" ]; then echo "Usage: make compare OLD=\"/old/library\" NEW=\"/new/library\" [MODE=albums|artists] [THRESHOLD=90]" >&2; exit 1; fi
 	@python3 ./compare_music.py $(OLD) $(NEW) $(if $(MODE),--$(MODE),) $(if $(THRESHOLD),--threshold $(THRESHOLD),)
+
+backfill-subs:
+	@if [ -z "$(SRC_DIR)" ] || [ -z "$(DST_DIR)" ]; then \
+	  echo "Usage: make backfill-subs SRC_DIR=\"/path/to/source_mkv_dir\" DST_DIR=\"/path/to/target_mp4_dir\" [INPLACE=yes]" >&2; exit 1; \
+	fi
+	@chmod +x bin/backfill_subs.sh || true
+	@INPLACE="$(INPLACE)" bin/backfill_subs.sh "$(SRC_DIR)" "$(DST_DIR)"
