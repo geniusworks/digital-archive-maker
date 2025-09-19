@@ -9,12 +9,16 @@
 # - Picks the largest MKV in the source folder as the source for subtitles.
 # - Picks the MP4 that matches the target folder name, or the only MP4 present.
 # - Detects the first English text subtitle stream (subrip/ass/ssa/text/webvtt).
-# - Muxes that subtitle into the MP4 as a soft subtitle (mov_text). By default, it is NOT marked default.
+# - If no English text subs exist, attempts automatic OCR:
+#   - DVD (dvd_subtitle): extract VobSub (idx/sub), OCR via sub2srt + tesseract => SRT
+#   - Blu-ray (hdmv_pgs_subtitle): extract PGS (.sup), convert to VobSub via bdsup2sub, OCR via sub2srt + tesseract => SRT
+# - Muxes the resulting subtitle (text stream) into the MP4 as a soft subtitle (mov_text). By default, it is NOT marked default.
 # - Set DEFAULT=yes to mark the English subtitle track as default (players may auto-enable it).
 # - Outputs a new file with suffix `.en-subs.mp4` next to the original by default.
 # - Set INPLACE=yes to replace the original MP4 in-place (original backed up as .bak).
 #
 # Requirements: ffprobe, ffmpeg, jq
+# Optional for OCR fallback: sub2srt, tesseract, bdsup2sub
 
 set -eu
 
@@ -79,22 +83,29 @@ fi
 
 echo "Target MP4: $target_mp4"
 
-# Probe English subtitle streams from MKV (text codecs only)
+# Probe English subtitle streams from MKV (text and image)
 SUBS_JSON=$(ffprobe -v error -select_streams s -show_entries stream=index,codec_name:stream_tags=language -of json "$largest_mkv")
-# Find first English text subtitle stream
-eng_idx=$(printf '%s' "$SUBS_JSON" | jq -r '
+
+eng_text_idx=$(printf '%s' "$SUBS_JSON" | jq -r '
   (.streams // [])
   | map(select(((.tags.language // "") | ascii_downcase | startswith("en"))
                and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$"))))
   | (.[0].index // -1)
 ')
 
-if [ "$eng_idx" = "-1" ]; then
-  echo "No English text subtitles found in MKV (need subrip/ass/ssa/text/webvtt). Consider OCR or external SRT." >&2
-  exit 2
-fi
+eng_image_idx=$(printf '%s' "$SUBS_JSON" | jq -r '
+  (.streams // [])
+  | map(select(((.tags.language // "") | ascii_downcase | startswith("en"))
+               and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
+  | (.[0].index // -1)
+')
 
-echo "Using English subtitle stream index: $eng_idx"
+eng_image_codec=$(printf '%s' "$SUBS_JSON" | jq -r '
+  (.streams // [])
+  | map(select(((.tags.language // "") | ascii_downcase | startswith("en"))
+               and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
+  | (.[0].codec_name // "")
+')
 
 # Build output path
 ext_suffix=".en-subs.mp4"
@@ -102,29 +113,107 @@ out_path="${target_mp4%*.mp4}$ext_suffix"
 
 echo "Writing: $out_path"
 
-# Mux subs into MP4 (copy v/a, convert subs to mov_text)
 DISP_ARGS=""
-if [ "${DEFAULT:-}" = "yes" ]; then
-  DISP_ARGS="-disposition:s:0 default"
+[ "${DEFAULT:-}" = "yes" ] && DISP_ARGS="-disposition:s:0 default"
+
+add_srt_to_mp4() {
+  srt_file="$1"
+  tmp_out="${out_path%.mp4}.tmp.mp4"
+  ffmpeg -y \
+    -i "$target_mp4" \
+    -i "$srt_file" \
+    -map 0 -map 1:0 \
+    -c copy -c:s mov_text \
+    -metadata:s:s:0 language=eng $DISP_ARGS \
+    -movflags +faststart \
+    "$tmp_out"
+  mv -f "$tmp_out" "$out_path"
+  echo "Created: $out_path"
+  if [ "${INPLACE:-}" = "yes" ]; then
+    backup_path="${target_mp4}.bak"
+    echo "In-place mode: backing up original to $backup_path and replacing it"
+    mv -f "$target_mp4" "$backup_path"
+    mv -f "$out_path" "$target_mp4"
+    echo "Replaced original MP4 with new file containing English subs. Backup at: $backup_path"
+  fi
+}
+
+if [ "$eng_text_idx" != "-1" ]; then
+  echo "Using English text subtitle stream index: $eng_text_idx"
+  ffmpeg -y \
+    -i "$target_mp4" \
+    -i "$largest_mkv" \
+    -map 0 -map 1:${eng_text_idx} \
+    -c copy -c:s mov_text \
+    -metadata:s:s:0 language=eng $DISP_ARGS \
+    -movflags +faststart \
+    "$out_path"
+  echo "Created: $out_path"
+  if [ "${INPLACE:-}" = "yes" ]; then
+    backup_path="${target_mp4}.bak"
+    echo "In-place mode: backing up original to $backup_path and replacing it"
+    mv -f "$target_mp4" "$backup_path"
+    mv -f "$out_path" "$target_mp4"
+    echo "Replaced original MP4 with new file containing English subs. Backup at: $backup_path"
+  fi
+  exit 0
 fi
 
-ffmpeg -y \
-  -i "$target_mp4" \
-  -i "$largest_mkv" \
-  -map 0:v -map 0:a -map 1:${eng_idx} \
-  -c copy -c:s mov_text \
-  -metadata:s:s:0 language=eng \
-  $DISP_ARGS \
-  -movflags +faststart \
-  "$out_path"
-
-echo "Created: $out_path"
-
-# In-place replacement if requested
-if [ "${INPLACE:-}" = "yes" ]; then
-  backup_path="${target_mp4}.bak"
-  echo "In-place mode: backing up original to $backup_path and replacing it"
-  mv -f "$target_mp4" "$backup_path"
-  mv -f "$out_path" "$target_mp4"
-  echo "Replaced original MP4 with new file containing English subs. Backup at: $backup_path"
+# Fallback: OCR image subtitles if present
+if [ "$eng_image_idx" = "-1" ]; then
+  echo "No English subtitles found in MKV. Nothing to add." >&2
+  exit 2
 fi
+
+tmp_base="$DST_DIR/.backfill_ocr_$$"
+mkdir -p "$DST_DIR" >/dev/null 2>&1 || true
+
+case "$eng_image_codec" in
+  dvd_subtitle)
+    if command -v sub2srt >/dev/null 2>&1 && command -v tesseract >/dev/null 2>&1; then
+      echo "Extracting VobSub (idx/sub) for OCR..."
+      ffmpeg -y -i "$largest_mkv" -map 0:${eng_image_idx} -c:s copy -f vobsub "$tmp_base.idx"
+      if [ -f "$tmp_base.idx" ] && [ -f "$tmp_base.sub" ]; then
+        echo "Running OCR (sub2srt + tesseract)..."
+        sub2srt "$tmp_base.idx"
+        if [ -f "$tmp_base.srt" ]; then
+          add_srt_to_mp4 "$tmp_base.srt"
+          rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
+          exit 0
+        fi
+      fi
+      echo "OCR failed to produce SRT. Please OCR manually or provide an SRT." >&2
+      rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
+      exit 3
+    else
+      echo "Missing tools for OCR: install with 'brew install sub2srt tesseract'" >&2
+      exit 4
+    fi
+    ;;
+  hdmv_pgs_subtitle)
+    if command -v bdsup2sub >/dev/null 2>&1 && command -v sub2srt >/dev/null 2>&1 && command -v tesseract >/dev/null 2>&1; then
+      echo "Extracting PGS (.sup) and converting to VobSub..."
+      ffmpeg -y -i "$largest_mkv" -map 0:${eng_image_idx} -c:s copy "$tmp_base.sup"
+      bdsup2sub "$tmp_base.sup" "$tmp_base.idx" || bdsup2sub -o "$tmp_base.idx" "$tmp_base.sup"
+      if [ -f "$tmp_base.idx" ] && [ -f "$tmp_base.sub" ]; then
+        echo "Running OCR (sub2srt + tesseract)..."
+        sub2srt "$tmp_base.idx"
+        if [ -f "$tmp_base.srt" ]; then
+          add_srt_to_mp4 "$tmp_base.srt"
+          rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
+          exit 0
+        fi
+      fi
+      echo "PGS OCR failed to produce SRT. Please OCR manually or provide an SRT." >&2
+      rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
+      exit 5
+    else
+      echo "Missing tools for PGS OCR: install with 'brew install bdsup2sub sub2srt tesseract'" >&2
+      exit 6
+    fi
+    ;;
+  *)
+    echo "English subtitle codec '$eng_image_codec' not recognized for OCR path." >&2
+    exit 7
+    ;;
+esac

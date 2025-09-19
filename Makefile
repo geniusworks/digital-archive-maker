@@ -8,14 +8,15 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs
+.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs
 
 help:
 	@echo "Available targets:"
 	@echo "  install-deps        Install Homebrew deps and Python packages"
+	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, sub2srt, tesseract, bdsup2sub; link makemkvcon"
 	@echo "  rip-cd              Rip an audio CD using abcde"
-	@echo "  rip-video TYPE=...  Rip a video disc (TYPE=dvd|bluray) using bin/rip_video.sh"
-	@echo "  rip-movie TYPE=... TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4"
+	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/rip_video.sh"
+	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
 	@echo "  fix-album DIR=...   Normalize and complete an album folder"
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
 	@echo "  fix-track FILE=... TARGET=...  Organize a single loose track"
@@ -28,21 +29,29 @@ install-deps:
 	@echo "Installing Python deps from requirements.txt..."
 	@python3 -m pip install -r requirements.txt
 
+install-video-deps:
+	@echo "Installing video tools via Homebrew..."
+	@brew install handbrake ffmpeg jq sub2srt tesseract bdsup2sub || true
+	@echo "Attempting to link makemkvcon if MakeMKV is installed..."
+	@([ -x /Applications/MakeMKV.app/Contents/MacOS/makemkvcon ] && \
+		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon && \
+		echo "Linked makemkvcon to /usr/local/bin/makemkvcon") || \
+		echo "Note: Install MakeMKV from https://www.makemkv.com/download/ then rerun this target to link makemkvcon."
+
 rip-cd:
 	@echo "Ripping CD with abcde... (ensure ~/.abcde.conf is configured)"
 	@abcde
 
 rip-video:
-	@if [ -z "$(TYPE)" ]; then echo "Usage: make rip-video TYPE=dvd|bluray" >&2; exit 1; fi
 	@chmod +x bin/rip_video.sh || true
-	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(TYPE)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(if $(TYPE),$(TYPE),auto)
 
 rip-movie:
-	@if [ -z "$(TYPE)" ] || [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
-	  echo "Usage: make rip-movie TYPE=dvd|bluray TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
+	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
+	  echo "Usage: make rip-movie [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
 	fi
 	@chmod +x bin/rip_video.sh || true
-	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(TYPE)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(if $(TYPE),$(TYPE),auto)
 
 fix-album:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make fix-album DIR=\"/path/to/Artist/Album\"" >&2; exit 1; fi

@@ -1,6 +1,6 @@
 #!/bin/sh
 # POSIX-friendly video ripper using MakeMKV and HandBrakeCLI
-# Usage: bin/rip_video.sh [dvd|bluray]
+# Usage: bin/rip_video.sh [dvd|bluray|auto]
 set -eu
 
 # Configuration loading
@@ -59,17 +59,41 @@ if ! mkdir -p "$RIPS_ROOT" 2>/dev/null; then
   exit 1
 fi
 
-TYPE="${1:-}"
-if [ -z "$TYPE" ]; then
-  echo "Usage: $0 [dvd|bluray]" >&2
-  exit 1
+TYPE="${1:-auto}"
+
+# Detect disc type if not specified or set to auto
+if [ "$TYPE" = "auto" ] || [ -z "$TYPE" ]; then
+  DETECTED=""
+  # Try MakeMKV info first (already required)
+  if info_out=$(makemkvcon -r --cache=1 info disc:0 2>/dev/null); then
+    if printf '%s' "$info_out" | grep -Eqi 'Blu-?ray|\bBD\b'; then
+      DETECTED="bluray"
+    elif printf '%s' "$info_out" | grep -Eqi '\bDVD\b'; then
+      DETECTED="dvd"
+    fi
+  fi
+  # Fallback to drutil status if still unknown
+  if [ -z "$DETECTED" ] && command -v drutil >/dev/null 2>&1; then
+    if drutil status 2>/dev/null | grep -Eqi 'Blu-?ray|\bBD\b'; then
+      DETECTED="bluray"
+    elif drutil status 2>/dev/null | grep -Eqi '\bDVD\b'; then
+      DETECTED="dvd"
+    fi
+  fi
+  # Default to dvd with a warning if still unknown
+  if [ -z "$DETECTED" ]; then
+    echo "Warning: Could not auto-detect disc type; defaulting to 'dvd'. You can pass 'bluray' explicitly." >&2
+    TYPE="dvd"
+  else
+    TYPE="$DETECTED"
+  fi
 fi
 
 case "$TYPE" in
   dvd) DISCDIR="DVDs" ;;
   bluray) DISCDIR="Blurays" ;;
-  *) echo "Unknown type: $TYPE (expected dvd|bluray)" >&2; exit 1 ;;
- esac
+  *) echo "Unknown type: $TYPE (expected dvd|bluray|auto)" >&2; exit 1 ;;
+esac
 
 # Optionally collect Title/Year up-front (for title-named staging folder)
 SAFE_TITLE=""
@@ -187,6 +211,12 @@ for f in "$OUTDIR"/*.mkv; do
     ENG_TEXT_IDX=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
       | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$"))))
       | (.[0].index // -1))' 2>/dev/null || printf '--')
+    ENG_IMAGE_IDX=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
+      | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
+      | (.[0].index // -1))' 2>/dev/null || printf '--')
+    ENG_IMAGE_CODEC=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
+      | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
+      | (.[0].codec_name // ""))' 2>/dev/null || printf '')
   fi
 
   # Always include English soft subs if text-based subs are present (non-default).
@@ -265,7 +295,66 @@ for f in "$OUTDIR"/*.mkv; do
         -movflags +faststart \
         "$tmp_out" && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
     elif [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
-      echo "Note: English subtitles present but appear non-text (e.g., VobSub/PGS). MP4 cannot carry them as soft subs. Consider burn-in or backfill after OCR." >&2
+      # Try automatic OCR for DVD VobSub (dvd_subtitle) if tools are available (sub2srt + tesseract)
+      if [ "${ENG_IMAGE_CODEC:-}" = "dvd_subtitle" ] && command -v sub2srt >/dev/null 2>&1; then
+        out_base="$OUTDIR/${name}.eng_ocr"
+        # Extract VobSub (idx/sub) from MKV
+        ffmpeg -y -i "$f" -map 0:${ENG_IMAGE_IDX} -c:s copy -f vobsub "$out_base.idx" >/dev/null 2>&1 || true
+        if [ -f "$out_base.idx" ] && [ -f "$out_base.sub" ]; then
+          # Run OCR to SRT (requires tesseract language data for eng)
+          if command -v tesseract >/dev/null 2>&1; then
+            # sub2srt takes the .idx file and writes an .srt next to it
+            sub2srt "$out_base.idx" >/dev/null 2>&1 || true
+            if [ -f "$out_base.srt" ]; then
+              DISP_ARGS=""
+              [ "$SUBS_MARK_DEFAULT" -eq 1 ] && DISP_ARGS="-disposition:s:0 default"
+              tmp_out="$OUTDIR/${name}.tmp.mp4"
+              ffmpeg -y -i "$OUTDIR/${name}.mp4" -i "$out_base.srt" \
+                -map 0 -map 1:0 -c copy -c:s mov_text \
+                -metadata:s:s:0 language=eng $DISP_ARGS -movflags +faststart \
+                "$tmp_out" >/dev/null 2>&1 && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
+              echo "Added OCR'd English subtitles (VobSub->SRT) to ${name}.mp4"
+            else
+              echo "Warning: OCR step did not produce SRT. Consider manual OCR or backfill." >&2
+            fi
+          else
+            echo "Note: tesseract is not installed; cannot OCR VobSub to SRT automatically. Install via 'brew install tesseract sub2srt'." >&2
+          fi
+        else
+          echo "Warning: Could not extract VobSub (idx/sub) for OCR." >&2
+        fi
+      elif [ "${ENG_IMAGE_CODEC:-}" = "hdmv_pgs_subtitle" ]; then
+        # Blu-ray PGS -> VobSub (via bdsup2sub), then OCR via sub2srt + tesseract
+        if (command -v bdsup2sub >/dev/null 2>&1) && (command -v sub2srt >/dev/null 2>&1) && (command -v tesseract >/dev/null 2>&1); then
+          sup_path="$OUTDIR/${name}.eng.sup"
+          out_base="$OUTDIR/${name}.eng_ocr"
+          # Extract PGS (.sup)
+          ffmpeg -y -i "$f" -map 0:${ENG_IMAGE_IDX} -c:s copy "$sup_path" >/dev/null 2>&1 || true
+          # Convert PGS to VobSub (try both common CLI syntaxes)
+          bdsup2sub "$sup_path" "$out_base.idx" >/dev/null 2>&1 || bdsup2sub -o "$out_base.idx" "$sup_path" >/dev/null 2>&1 || true
+          if [ -f "$out_base.idx" ] && [ -f "$out_base.sub" ]; then
+            sub2srt "$out_base.idx" >/dev/null 2>&1 || true
+            if [ -f "$out_base.srt" ]; then
+              DISP_ARGS=""
+              [ "$SUBS_MARK_DEFAULT" -eq 1 ] && DISP_ARGS="-disposition:s:0 default"
+              tmp_out="$OUTDIR/${name}.tmp.mp4"
+              ffmpeg -y -i "$OUTDIR/${name}.mp4" -i "$out_base.srt" \
+                -map 0 -map 1:0 -c copy -c:s mov_text \
+                -metadata:s:s:0 language=eng $DISP_ARGS -movflags +faststart \
+                "$tmp_out" >/dev/null 2>&1 && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
+              echo "Added OCR'd English subtitles (PGS->VobSub->SRT) to ${name}.mp4"
+            else
+              echo "Warning: PGS OCR step did not produce SRT. Consider manual OCR or backfill." >&2
+            fi
+          else
+            echo "Note: Could not convert PGS to VobSub. Install BDSup2Sub++ (command 'bdsup2sub')." >&2
+          fi
+        else
+          echo "Note: PGS OCR requires 'bdsup2sub', 'sub2srt', and 'tesseract'. Install via Homebrew where available." >&2
+        fi
+      else
+        echo "Note: English subtitles present but appear non-text (e.g., ${ENG_IMAGE_CODEC:-unknown}). MP4 cannot carry them as soft subs. Consider burn-in or OCR + backfill." >&2
+      fi
     fi
   fi
 done
