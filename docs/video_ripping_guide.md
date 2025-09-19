@@ -8,17 +8,16 @@ Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see 
 
 ## Prerequisites
 - macOS
-- Install via Homebrew:
+- Install all video tools with one command:
   ```bash
-  brew install handbrake ffmpeg jq
+  make install-video-deps
   ```
+  This installs: HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, and links makemkvcon.
+
 - Install MakeMKV manually:
   - Download: https://www.makemkv.com/download/
   - Drag `MakeMKV.app` to `/Applications`
-  - Enable CLI:
-    ```bash
-    sudo ln -s /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon
-    ```
+  - The `make install-video-deps` command will link the CLI automatically
 
 Note: This guide avoids Bash 4+ features to remain compatible with macOS's default shell environments.
 
@@ -104,12 +103,15 @@ This repository provides a ready-to-use helper and a Makefile target:
 
 - Direct script:
   ```bash
-  ./bin/rip_video.sh dvd    # or bluray
+  ./bin/rip_video.sh        # auto-detects disc type
+  ./bin/rip_video.sh dvd    # or bluray (explicit)
   ```
 - Makefile target:
   ```bash
-  make rip-video TYPE=dvd   # or TYPE=bluray
+  make rip-video            # auto-detects disc type
+  make rip-video TYPE=dvd   # or TYPE=bluray (explicit)
   ```
+  - **Auto-detection**: The script now automatically detects DVD vs Blu-ray discs using `drutil` and `makemkvcon`. You can still override with explicit `TYPE` if needed.
   - If you don't provide `TITLE`/`YEAR` and you're in an interactive terminal, the script will offer to organize after transcoding and prompt you for Title and Year.
   - In non-interactive contexts (e.g., CI), no prompt appears and only the staging folder is produced.
 
@@ -117,7 +119,8 @@ This repository provides a ready-to-use helper and a Makefile target:
 To rip and automatically place the main feature into a Plex/Jellyfin-friendly folder:
 
 ```bash
-make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+make rip-movie TITLE="Movie Name" YEAR=1999    # auto-detects disc type
+make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999    # explicit type
 ```
 
 - The script picks the largest MP4 as the main feature and moves it to:
@@ -127,13 +130,13 @@ make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
 You can adjust the minimum title length MakeMKV considers with `MINLENGTH` (in seconds):
 
 ```bash
-MINLENGTH=1800 make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+MINLENGTH=1800 make rip-movie TITLE="Movie Name" YEAR=1999
 ```
 
 To organize into a different category folder (default is `Movies`), set `DEST_CATEGORY`:
 
 ```bash
-DEST_CATEGORY=Films make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999
+DEST_CATEGORY=Films make rip-movie TITLE="Movie Name" YEAR=1999
 ```
 
 ## Audio/subtitle language handling (English preference)
@@ -150,13 +153,13 @@ To guarantee inclusion when available, the script post-muxes any English text-ba
 - Non-interactive or to override the default policy, use `AUDIO_SUBS_POLICY`:
   ```bash
   # Prefer English audio if present; else English subs if present; else keep
-  AUDIO_SUBS_POLICY=prefer-audio make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+  AUDIO_SUBS_POLICY=prefer-audio make rip-movie TITLE="Movie" YEAR=1999
 
   # Prefer adding English subtitles if present; else prefer English audio if present; else keep
-  AUDIO_SUBS_POLICY=prefer-subs make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+  AUDIO_SUBS_POLICY=prefer-subs make rip-movie TITLE="Movie" YEAR=1999
 
   # Keep streams as-is (no prompt)
-  AUDIO_SUBS_POLICY=keep make rip-movie TYPE=dvd TITLE="Movie" YEAR=1999
+  AUDIO_SUBS_POLICY=keep make rip-movie TITLE="Movie" YEAR=1999
   ```
 
 Notes:
@@ -166,7 +169,7 @@ Notes:
 Implementation details:
 - English audio selection uses HandBrakeCLI options: `--audio-lang-list eng --first-audio`.
 - English subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
-- If only image-based subtitles (VobSub/PGS) exist, they cannot be added as soft subs to MP4; consider burn-in or OCR + backfill.
+- **Image-based subtitle handling**: If only image-based subtitles (VobSub/PGS) exist, the script will extract them and provide guidance for manual OCR using tools like Subtitle Edit. Use the `vobsub-to-srt` helper for placeholder SRT creation.
 
 ## Backfill English subtitles into existing MP4s
 Use the provided helper to mux English soft subtitles from your archival MKVs into an existing MP4 without re-encoding video/audio.
@@ -191,9 +194,13 @@ Use the provided helper to mux English soft subtitles from your archival MKVs in
 
 Notes:
 - Requires `ffprobe`/`ffmpeg` and `jq`.
-- If your MKV only has image-based subs (VobSub/PGS), extract and OCR to SRT first (e.g., Subtitle Edit), then you can either:
-  - Place the `.srt` next to the MP4 (players will pick it up), or
-  - Mux it with `ffmpeg -c copy -c:s mov_text`.
+- **Image-based subtitle handling**: If your MKV only has image-based subs (VobSub/PGS), the script will:
+  - Extract the subtitle files to a temporary location
+  - Provide clear instructions for manual OCR using Subtitle Edit
+  - You can use the `vobsub-to-srt` helper to create placeholder SRT files for immediate muxing:
+    ```bash
+    make vobsub-to-srt FILE=".backfill_ocr_12345.idx"
+    ```
 
 ## Preflight and troubleshooting
 The script now performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:

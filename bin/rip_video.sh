@@ -229,6 +229,23 @@ for f in "$OUTDIR"/*.mkv; do
     ENG_IMAGE_CODEC=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
       | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
       | (.[0].codec_name // ""))' 2>/dev/null || printf '')
+    # Also get mkvmerge track id for image subs (for reliable extraction)
+    if command -v mkvmerge >/dev/null 2>&1; then
+      MERGE_JSON=$(mkvmerge -J "$f" 2>/dev/null || printf '{}')
+      ENG_IMG_TID=$(printf '%s' "$MERGE_JSON" | jq -r '[.tracks[]
+        | select(.type=="subtitles"
+                 and ((.properties.language // "") | ascii_downcase | startswith("en"))
+                 and ((.properties.codec_id // "") | test("S_VOBSUB|S_HDMV/PGS")))]
+        | (.[0].id // -1)')
+      ENG_IMG_CODEC_ID=$(printf '%s' "$MERGE_JSON" | jq -r '[.tracks[]
+        | select(.type=="subtitles"
+                 and ((.properties.language // "") | ascii_downcase | startswith("en"))
+                 and ((.properties.codec_id // "") | test("S_VOBSUB|S_HDMV/PGS")))]
+        | (.[0].properties.codec_id // "")')
+    else
+      ENG_IMG_TID=-1
+      ENG_IMG_CODEC_ID=""
+    fi
   fi
 
   # Always include English soft subs if text-based subs are present (non-default).
@@ -307,66 +324,45 @@ for f in "$OUTDIR"/*.mkv; do
         -movflags +faststart \
         "$tmp_out" && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
     elif [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
-      # Try automatic OCR for DVD VobSub (dvd_subtitle) if tools are available (sub2srt + tesseract)
-      if [ "${ENG_IMAGE_CODEC:-}" = "dvd_subtitle" ] && command -v sub2srt >/dev/null 2>&1; then
-        out_base="$OUTDIR/${name}.eng_ocr"
-        # Extract VobSub (idx/sub) from MKV
-        ffmpeg -y -i "$f" -map 0:${ENG_IMAGE_IDX} -c:s copy -f vobsub "$out_base.idx" >/dev/null 2>&1 || true
-        if [ -f "$out_base.idx" ] && [ -f "$out_base.sub" ]; then
-          # Run OCR to SRT (requires tesseract language data for eng)
-          if command -v tesseract >/dev/null 2>&1; then
-            # sub2srt takes the .idx file and writes an .srt next to it
-            sub2srt "$out_base.idx" >/dev/null 2>&1 || true
-            if [ -f "$out_base.srt" ]; then
-              DISP_ARGS=""
-              [ "$SUBS_MARK_DEFAULT" -eq 1 ] && DISP_ARGS="-disposition:s:0 default"
-              tmp_out="$OUTDIR/${name}.tmp.mp4"
-              ffmpeg -y -i "$OUTDIR/${name}.mp4" -i "$out_base.srt" \
-                -map 0 -map 1:0 -c copy -c:s mov_text \
-                -metadata:s:s:0 language=eng $DISP_ARGS -movflags +faststart \
-                "$tmp_out" >/dev/null 2>&1 && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
-              echo "Added OCR'd English subtitles (VobSub->SRT) to ${name}.mp4"
-            else
-              echo "Warning: OCR step did not produce SRT. Consider manual OCR or backfill." >&2
+      # Try automatic OCR for DVD VobSub or Blu-ray PGS if tools are available
+      case "${ENG_IMAGE_CODEC:-}" in
+        dvd_subtitle|hdmv_pgs_subtitle)
+          if command -v mono >/dev/null 2>&1 && command -v tesseract >/dev/null 2>&1 && command -v mkvextract >/dev/null 2>&1 && [ -f "$(dirname "$0")/../_install/SubtitleEdit.dll" ]; then
+            echo "Extracting image subtitles ($ENG_IMAGE_CODEC) for OCR..."
+            sub_ext="sub"
+            if [ "$ENG_IMAGE_CODEC" = "hdmv_pgs_subtitle" ]; then
+              sub_ext="sup"
             fi
-          else
-            echo "Note: tesseract is not installed; cannot OCR VobSub to SRT automatically. Install via 'brew install tesseract sub2srt'." >&2
-          fi
-        else
-          echo "Warning: Could not extract VobSub (idx/sub) for OCR." >&2
-        fi
-      elif [ "${ENG_IMAGE_CODEC:-}" = "hdmv_pgs_subtitle" ]; then
-        # Blu-ray PGS -> VobSub (via bdsup2sub), then OCR via sub2srt + tesseract
-        if (command -v bdsup2sub >/dev/null 2>&1) && (command -v sub2srt >/dev/null 2>&1) && (command -v tesseract >/dev/null 2>&1); then
-          sup_path="$OUTDIR/${name}.eng.sup"
-          out_base="$OUTDIR/${name}.eng_ocr"
-          # Extract PGS (.sup)
-          ffmpeg -y -i "$f" -map 0:${ENG_IMAGE_IDX} -c:s copy "$sup_path" >/dev/null 2>&1 || true
-          # Convert PGS to VobSub (try both common CLI syntaxes)
-          bdsup2sub "$sup_path" "$out_base.idx" >/dev/null 2>&1 || bdsup2sub -o "$out_base.idx" "$sup_path" >/dev/null 2>&1 || true
-          if [ -f "$out_base.idx" ] && [ -f "$out_base.sub" ]; then
-            sub2srt "$out_base.idx" >/dev/null 2>&1 || true
-            if [ -f "$out_base.srt" ]; then
-              DISP_ARGS=""
-              [ "$SUBS_MARK_DEFAULT" -eq 1 ] && DISP_ARGS="-disposition:s:0 default"
-              tmp_out="$OUTDIR/${name}.tmp.mp4"
-              ffmpeg -y -i "$OUTDIR/${name}.mp4" -i "$out_base.srt" \
-                -map 0 -map 1:0 -c copy -c:s mov_text \
-                -metadata:s:s:0 language=eng $DISP_ARGS -movflags +faststart \
-                "$tmp_out" >/dev/null 2>&1 && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
-              echo "Added OCR'd English subtitles (PGS->VobSub->SRT) to ${name}.mp4"
+            tmp_base="$OUTDIR/${name}.eng_ocr"
+            mkvextract tracks "$f" ${ENG_IMG_TID}:"$tmp_base.$sub_ext"
+
+            if [ -f "$tmp_base.$sub_ext" ]; then
+              echo "Running OCR with Subtitle Edit..."
+              mono "$(dirname "$0")/../_install/SubtitleEdit.dll" /convert "$tmp_base.$sub_ext" srt
+              if [ -f "$tmp_base.srt" ]; then
+                DISP_ARGS=""
+                [ "$SUBS_MARK_DEFAULT" -eq 1 ] && DISP_ARGS="-disposition:s:0 default"
+                tmp_out="$OUTDIR/${name}.tmp.mp4"
+                ffmpeg -y -i "$OUTDIR/${name}.mp4" -i "$tmp_base.srt" \
+                  -map 0 -map 1:0 -c copy -c:s mov_text \
+                  -metadata:s:s:0 language=eng $DISP_ARGS -movflags +faststart \
+                  "$tmp_out" >/dev/null 2>&1 && mv -f "$tmp_out" "$OUTDIR/${name}.mp4"
+                echo "Added OCR'd English subtitles to ${name}.mp4"
+              else
+                echo "OCR with Subtitle Edit failed to produce an SRT file." >&2
+              fi
             else
-              echo "Warning: PGS OCR step did not produce SRT. Consider manual OCR or backfill." >&2
+               echo "Extraction of image subtitles failed." >&2
             fi
+            rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
           else
-            echo "Note: Could not convert PGS to VobSub. Install BDSup2Sub++ (command 'bdsup2sub')." >&2
+            echo "Missing tools for OCR: install with 'make install-video-deps'" >&2
           fi
-        else
-          echo "Note: PGS OCR requires 'bdsup2sub', 'sub2srt', and 'tesseract'. Install via Homebrew where available." >&2
-        fi
-      else
-        echo "Note: English subtitles present but appear non-text (e.g., ${ENG_IMAGE_CODEC:-unknown}). MP4 cannot carry them as soft subs. Consider burn-in or OCR + backfill." >&2
-      fi
+          ;;
+        *)
+          echo "Note: English subtitles present but appear non-text (e.g., ${ENG_IMAGE_CODEC:-unknown}). MP4 cannot carry them as soft subs. Consider burn-in or manual OCR." >&2
+          ;;
+      esac
     fi
   fi
 done

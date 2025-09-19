@@ -107,6 +107,17 @@ eng_image_codec=$(printf '%s' "$SUBS_JSON" | jq -r '
   | (.[0].codec_name // "")
 ')
 
+# Also compute MKV track IDs using mkvmerge (more reliable for extraction)
+eng_img_tid=-1
+if command -v mkvmerge >/dev/null 2>&1; then
+  MERGE_JSON=$(mkvmerge -J "$largest_mkv" 2>/dev/null || printf '{}')
+  eng_img_tid=$(printf '%s' "$MERGE_JSON" | jq -r '[.tracks[]
+    | select(.type=="subtitles"
+             and ((.properties.language // "") | ascii_downcase | startswith("en"))
+             and ((.properties.codec_id // "") | test("S_VOBSUB|S_HDMV/PGS")))]
+    | (.[0].id // -1)')
+fi
+
 # Build output path
 ext_suffix=".en-subs.mp4"
 out_path="${target_mp4%*.mp4}$ext_suffix"
@@ -170,47 +181,34 @@ mkdir -p "$DST_DIR" >/dev/null 2>&1 || true
 
 case "$eng_image_codec" in
   dvd_subtitle)
-    if command -v sub2srt >/dev/null 2>&1 && command -v tesseract >/dev/null 2>&1; then
-      echo "Extracting VobSub (idx/sub) for OCR..."
-      ffmpeg -y -i "$largest_mkv" -map 0:${eng_image_idx} -c:s copy -f vobsub "$tmp_base.idx"
+    echo "VobSub (DVD) subtitles detected. For best results, use a dedicated OCR tool like:" >&2
+    echo "  - Subtitle Edit (GUI): https://www.nikse.dk/subtitleedit" >&2
+    echo "  - vobsub2srt: brew install vobsub2srt (if available)" >&2
+    echo "Extracting VobSub files for manual OCR..." >&2
+    if command -v mkvextract >/dev/null 2>&1; then
+      mkvextract tracks "$largest_mkv" ${eng_img_tid}:"$tmp_base.sub"
       if [ -f "$tmp_base.idx" ] && [ -f "$tmp_base.sub" ]; then
-        echo "Running OCR (sub2srt + tesseract)..."
-        sub2srt "$tmp_base.idx"
-        if [ -f "$tmp_base.srt" ]; then
-          add_srt_to_mp4 "$tmp_base.srt"
-          rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
-          exit 0
-        fi
+        echo "Extracted VobSub files:" >&2
+        echo "  Index: $tmp_base.idx" >&2
+        echo "  Subtitles: $tmp_base.sub" >&2
+        echo "Use these files with an OCR tool to create an SRT, then re-run this command." >&2
       fi
-      echo "OCR failed to produce SRT. Please OCR manually or provide an SRT." >&2
-      rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
-      exit 3
-    else
-      echo "Missing tools for OCR: install with 'brew install sub2srt tesseract'" >&2
-      exit 4
     fi
+    exit 5
     ;;
   hdmv_pgs_subtitle)
-    if command -v bdsup2sub >/dev/null 2>&1 && command -v sub2srt >/dev/null 2>&1 && command -v tesseract >/dev/null 2>&1; then
-      echo "Extracting PGS (.sup) and converting to VobSub..."
-      ffmpeg -y -i "$largest_mkv" -map 0:${eng_image_idx} -c:s copy "$tmp_base.sup"
-      bdsup2sub "$tmp_base.sup" "$tmp_base.idx" || bdsup2sub -o "$tmp_base.idx" "$tmp_base.sup"
-      if [ -f "$tmp_base.idx" ] && [ -f "$tmp_base.sub" ]; then
-        echo "Running OCR (sub2srt + tesseract)..."
-        sub2srt "$tmp_base.idx"
-        if [ -f "$tmp_base.srt" ]; then
-          add_srt_to_mp4 "$tmp_base.srt"
-          rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
-          exit 0
-        fi
+    echo "PGS (Blu-ray) subtitles detected. For best results, use a dedicated OCR tool like:" >&2
+    echo "  - Subtitle Edit (GUI): https://www.nikse.dk/subtitleedit" >&2
+    echo "  - BDSup2Sub++: Manual installation required" >&2
+    echo "Extracting PGS file for manual OCR..." >&2
+    if command -v mkvextract >/dev/null 2>&1; then
+      mkvextract tracks "$largest_mkv" ${eng_img_tid}:"$tmp_base.sup"
+      if [ -f "$tmp_base.sup" ]; then
+        echo "Extracted PGS file: $tmp_base.sup" >&2
+        echo "Use this file with an OCR tool to create an SRT, then re-run this command." >&2
       fi
-      echo "PGS OCR failed to produce SRT. Please OCR manually or provide an SRT." >&2
-      rm -f "$tmp_base.idx" "$tmp_base.sub" "$tmp_base.srt" "$tmp_base.sup" 2>/dev/null || true
-      exit 5
-    else
-      echo "Missing tools for PGS OCR: install with 'brew install bdsup2sub sub2srt tesseract'" >&2
-      exit 6
     fi
+    exit 6
     ;;
   *)
     echo "English subtitle codec '$eng_image_codec' not recognized for OCR path." >&2

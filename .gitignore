@@ -1,5 +1,6 @@
 # Ignore local directories
 _archive/
+_install/
 venv/
 
 # Ignore specific file
@@ -18,3 +19,8 @@ albums.txt
 artists.txt
 only_in_new.txt
 only_in_old.txt
+
+# Ignore video processing temporary files
+.backfill_ocr_*
+*.tmp.mp4
+*.bak

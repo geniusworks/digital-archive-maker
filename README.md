@@ -1,15 +1,15 @@
 ### Video prerequisites (DVD/Blu-ray)
+- Install all video tools with one command:
+  ```bash
+  make install-video-deps
+  ```
+  This installs: HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, and links makemkvcon.
+
 - MakeMKV (GUI; provides CLI `makemkvcon`)
   - Download: https://www.makemkv.com/download/
   - Install: drag `MakeMKV.app` to `/Applications`
-  - CLI link:
-    ```bash
-    sudo ln -s /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon
-    ```
-- HandBrakeCLI and ffmpeg/ffprobe, plus jq:
-  ```bash
-  brew install handbrake ffmpeg jq
-  ```
+  - The `make install-video-deps` command will link the CLI automatically
+
 - First run tip: launch MakeMKV GUI once to accept EULA and set drive region. If you see macOS quarantine errors, run:
   ```bash
   xattr -dr com.apple.quarantine /Applications/MakeMKV.app
@@ -80,15 +80,17 @@ cp ./.abcde.conf.sample ~/.abcde.conf
 ## Makefile tasks
 Run `make help` for a summary. Common tasks:
 - `make install-deps` — install Homebrew dependencies and Python packages
+- `make install-video-deps` — install video tools (HandBrakeCLI, ffmpeg, jq, tesseract, mkvtoolnix) and link makemkvcon
 - `make rip-cd` — run `abcde` using your `~/.abcde.conf`
-- `make rip-video TYPE=dvd|bluray` — call `bin/rip_video.sh` for video discs
-- `make rip-movie TYPE=dvd|bluray TITLE="Movie Name" YEAR=1999` — rip and organize the main feature to `Movies/Title (Year)/Title (Year).mp4`
+- `make rip-video [TYPE=dvd|bluray]` — call `bin/rip_video.sh` for video discs (auto-detects disc type if TYPE omitted)
+- `make rip-movie [TYPE=dvd|bluray] TITLE="Movie Name" YEAR=1999` — rip and organize the main feature to `Movies/Title (Year)/Title (Year).mp4` (auto-detects disc type if TYPE omitted)
 - Notes: you can set `MINLENGTH=1800` to skip short titles and `DEST_CATEGORY=Films` to change the destination category from `Movies`.
 - `make fix-album DIR="/path/to/Artist/Album"` — normalize, tag, covers, playlist
 - `make fetch-covers ROOT="/path/or/library"` — fetch missing `cover.jpg`
 - `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Digital"` — organize a single track
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 - `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
+- `make vobsub-to-srt FILE="/path/to/subtitle.idx"` — convert VobSub files to placeholder SRT for muxing
 
 ## Typical workflows
 - Rip a CD to FLAC
@@ -97,10 +99,11 @@ Run `make help` for a summary. Common tasks:
 
 - Rip and organize a DVD/Blu-ray
   - Staging only:
-    - `make rip-video TYPE=dvd` (or `TYPE=bluray`). In an interactive terminal, the script can prompt to name the staging folder and optionally organize afterward.
+    - `make rip-video` (auto-detects disc type). In an interactive terminal, the script can prompt to name the staging folder and optionally organize afterward.
   - Rip + organize in one step:
-    - `make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999`
+    - `make rip-movie TITLE="Movie Name" YEAR=1999` (auto-detects disc type)
     - Moves the largest MP4 to `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
+  - Auto-detection: The script now automatically detects DVD vs Blu-ray discs. You can still override with `TYPE=dvd` or `TYPE=bluray` if needed.
 
 - Backfill English subtitles into an existing MP4
   - Create a new MP4 with subs next to the original:
@@ -116,6 +119,13 @@ Run `make help` for a summary. Common tasks:
       DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
       INPLACE=yes DEFAULT=yes
     ```
+  - For image-based subtitles (VobSub/PGS): The script will extract subtitle files and provide guidance for manual OCR using tools like Subtitle Edit.
+
+- Convert VobSub to SRT (for manual OCR workflow)
+  ```bash
+  make vobsub-to-srt FILE=".backfill_ocr_12345.idx"
+  ```
+  Creates a placeholder SRT file for immediate muxing. For full OCR, use Subtitle Edit GUI with the corresponding .sub file.
 
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
