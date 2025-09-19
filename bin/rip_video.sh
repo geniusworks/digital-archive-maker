@@ -64,25 +64,35 @@ TYPE="${1:-auto}"
 # Detect disc type if not specified or set to auto
 if [ "$TYPE" = "auto" ] || [ -z "$TYPE" ]; then
   DETECTED=""
-  # Try MakeMKV info first (already required)
-  if info_out=$(makemkvcon -r --cache=1 info disc:0 2>/dev/null); then
-    if printf '%s' "$info_out" | grep -Eqi 'Blu-?ray|\bBD\b'; then
-      DETECTED="bluray"
-    elif printf '%s' "$info_out" | grep -Eqi '\bDVD\b'; then
-      DETECTED="dvd"
-    fi
+  # Prefer drutil media type (most reliable on macOS)
+  if command -v drutil >/dev/null 2>&1; then
+    media_type=$(drutil status 2>/dev/null | awk -F': ' '/^ *Type:/ {print $2; exit}')
+    case "${media_type:-}" in
+      *BD*|*Bd*|*bd*|*Blu*|*blu*|*Blu-ray*|*BluRay*) DETECTED="bluray" ;;
+      *DVD*|*Dvd*|*dvd*) DETECTED="dvd" ;;
+    esac
   fi
-  # Fallback to drutil status if still unknown
-  if [ -z "$DETECTED" ] && command -v drutil >/dev/null 2>&1; then
-    if drutil status 2>/dev/null | grep -Eqi 'Blu-?ray|\bBD\b'; then
-      DETECTED="bluray"
-    elif drutil status 2>/dev/null | grep -Eqi '\bDVD\b'; then
-      DETECTED="dvd"
+  # Fallback to MakeMKV info only if drutil did not tell us the loaded media
+  if [ -z "$DETECTED" ]; then
+    if info_out=$(makemkvcon -r --cache=1 info disc:0 2>/dev/null); then
+      # Try to find explicit disc type lines first
+      if printf '%s' "$info_out" | grep -Eqi 'Disc[[:space:]]+type:[[:space:]]+Blu-?ray'; then
+        DETECTED="bluray"
+      elif printf '%s' "$info_out" | grep -Eqi 'Disc[[:space:]]+type:[[:space:]]+DVD'; then
+        DETECTED="dvd"
+      else
+        # Avoid false positives from drive capability strings containing 'BD'; look for words like 'DVD' or 'Blu-ray'
+        if printf '%s' "$info_out" | grep -Eqi '\bBlu-?ray\b'; then
+          DETECTED="bluray"
+        elif printf '%s' "$info_out" | grep -Eqi '\bDVD\b'; then
+          DETECTED="dvd"
+        fi
+      fi
     fi
   fi
   # Default to dvd with a warning if still unknown
   if [ -z "$DETECTED" ]; then
-    echo "Warning: Could not auto-detect disc type; defaulting to 'dvd'. You can pass 'bluray' explicitly." >&2
+    echo "Warning: Could not auto-detect disc type; defaulting to 'dvd'. You can pass TYPE=bluray explicitly." >&2
     TYPE="dvd"
   else
     TYPE="$DETECTED"
@@ -94,6 +104,8 @@ case "$TYPE" in
   bluray) DISCDIR="Blurays" ;;
   *) echo "Unknown type: $TYPE (expected dvd|bluray|auto)" >&2; exit 1 ;;
 esac
+
+echo "Detected disc type: $TYPE (staging under $DISCDIR/)"
 
 # Optionally collect Title/Year up-front (for title-named staging folder)
 SAFE_TITLE=""
