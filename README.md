@@ -91,6 +91,7 @@ Run `make help` for a summary. Common tasks:
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 - `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
 - `make vobsub-to-srt FILE="/path/to/subtitle.idx"` — convert VobSub files to placeholder SRT for muxing
+- `python3 bin/check_album_integrity.py [--show-ok]` — validate album folders (cover, playlists, `_cover.jpg`), scanning `${RIPS_ROOT}/CDs`
 
 ## Typical workflows
 - Rip a CD to FLAC
@@ -130,6 +131,14 @@ Run `make help` for a summary. Common tasks:
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
   2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u`, fixes tags, and fetches `cover.jpg` if missing.
+
+- Audit album integrity (cover + playlists)
+  ```bash
+  python3 bin/check_album_integrity.py            # scans ${RIPS_ROOT}/CDs recursively
+  python3 bin/check_album_integrity.py --show-ok  # include OK albums
+  python3 bin/check_album_integrity.py --albums "Artist/Album"
+  ```
+  Verifies each album has a 1000×1000 `cover.jpg`, no `_cover.jpg`, and that `.m3u` playlists match `.flac` files.
 
 - Fetch missing cover art only
   - `./fix_album_covers.sh "/path/or/library/root"`
