@@ -139,6 +139,56 @@ To organize into a different category folder (default is `Movies`), set `DEST_CA
 DEST_CATEGORY=Films make rip-movie TITLE="Movie Name" YEAR=1999
 ```
 
+## Handling multi-feature discs (double features, TV movies, etc.)
+Some discs ship with two full movies or a mini-series. Use these tips when ripping:
+
+- **Rip both long titles in one pass**. Increase `MINLENGTH` so short extras are skipped while the main features are kept. Example:
+  ```bash
+  MINLENGTH=3000 make rip-video TYPE=dvd TITLE="Psycho Double Feature" YEAR=1985
+  ```
+  This writes every qualifying `.mkv` to `${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)/` for later processing.
+
+- **Identify which MKV is which**. Durations usually match published runtimes. From the staging folder:
+  ```bash
+  cd "${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)"
+  for f in *.mkv; do
+    echo "== $f =="
+    ffprobe -v error -show_entries format=duration:format_tags=title -of json "$f"
+  done
+  ```
+  Compare the seconds reported by `ffprobe` to runtime listings to label each feature accurately.
+
+- **Encode each feature with its own TITLE/YEAR**. Run `HandBrakeCLI` once per `.mkv`, writing to the standard movie folders:
+  ```bash
+  HB_OPTS=(
+    -e x264 -q 20 --encoder-preset medium --optimize
+    --audio-lang-list eng --first-audio
+    --audio-copy-mask ac3,eac3,dts --audio-fallback aac
+  )
+
+  mkdir -p "${RIPS_ROOT}/Movies/Psycho III (1986)"
+  HandBrakeCLI \
+    -i "A3_t00.mkv" \
+    -o "${RIPS_ROOT}/Movies/Psycho III (1986)/Psycho III (1986).mp4" \
+    "${HB_OPTS[@]}"
+  ```
+  Repeat for the second feature (e.g., `Psycho IV The Beginning (1990)`), adjusting input filenames and target folders.
+
+- **Backfill subtitles per film**. After encoding, call the helper twice, pointing `SRC_DIR` to the shared staging folder but `DST_DIR` to each movie folder:
+  ```bash
+  make backfill-subs \
+    SRC_DIR="${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)" \
+    DST_DIR="${RIPS_ROOT}/Movies/Psycho III (1986)" \
+    INPLACE=yes DEFAULT=yes
+
+  make backfill-subs \
+    SRC_DIR="${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)" \
+    DST_DIR="${RIPS_ROOT}/Movies/Psycho IV The Beginning (1990)" \
+    INPLACE=yes DEFAULT=yes
+  ```
+
+- **Cleanup**. Once both MP4s are confirmed, archive or remove any unused `.mkv` or `.backfill_ocr_*` files.
+
 ## Audio/subtitle language handling (English preference)
 When the default audio track is not English, the helper script will, by default, pause and prompt you to choose how to proceed. No environment variable is required for this default behavior.
 
