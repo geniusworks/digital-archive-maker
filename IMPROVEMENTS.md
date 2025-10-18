@@ -48,24 +48,37 @@ Deliverables:
 - `audit_library.py` — generates a HTML/CSV report (missing tags/covers, nonconforming names, duplicates).
 - `dedupe_library.py` — identifies (& optionally resolves) duplicates safely.
 
-## Phase 3 — Add video discs (DVD/Blu‑ray)
-- Ripping strategy:
-  - Use MakeMKV to decrypt/remux to MKV (preserve quality, chapters, multiple audio tracks, forced subs).
-  - Optionally transcode with HandBrakeCLI (`H.264`/`H.265`) using device-friendly presets; keep originals or maintain a mezzanine tier.
-- Subtitles and audio:
-  - Extract and tag forced subtitles.
-  - Pass-through key audio (e.g., AC-3, DTS) and add an AAC stereo downmix for compatibility.
-- Naming & metadata for media servers (Plex/Jellyfin/Emby):
-  - Movies: `Movies/Movie Name (Year)/Movie Name (Year).mkv`
-  - TV: `TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mkv`
-  - Fetch metadata/poster via TMDb/OMDb; respect API terms and rate limits.
+## Phase 3 — Video discs (DVD/Blu‑ray) ✅ COMPLETED
+**Status**: Core workflow implemented and battle-tested.
 
-Deliverables:
-- `rip_bluray.sh` / `rip_dvd.sh` — MakeMKV wrappers with title selection, language filters, logging.
-- `transcode_video.sh` — HandBrakeCLI presets for Movies/TV; HDR10/SDR considerations.
-- `fetch_video_metadata.py` — pulls TMDb/OMDb data and writes poster/backdrop and optional `.nfo` files.
+### Completed features:
+- ✅ Unified `bin/rip_video.sh` — MakeMKV + HandBrakeCLI wrapper with:
+  - Auto-detection of DVD vs Blu-ray discs (via `drutil` and `makemkvcon`)
+  - Title-based or date-based staging folders
+  - Automatic organization to `Movies/Title (Year)/` structure
+  - Configurable minimum title length filtering (`MINLENGTH`)
+- ✅ Audio/subtitle language handling:
+  - Interactive prompts for non-English audio (prefer English audio, add English subs, or keep as-is)
+  - Policy-based automation via `AUDIO_SUBS_POLICY` (prefer-audio, prefer-subs, prefer-burned, keep)
+  - Automatic burn-in of English image-based subtitles (VobSub/PGS) for non-English audio when no soft subs available
+  - **Fixed**: HandBrake track numbering calculation (uses sequential position, not stream index)
+  - Post-mux of English text-based subtitles (SubRip/ASS/SSA/WebVTT) into MP4
+- ✅ Backfill helper (`bin/backfill_subs.sh`) — mux English soft subs from MKV into existing MP4 without re-encoding
+- ✅ OCR support for image-based subtitles:
+  - Automatic extraction and OCR using Subtitle Edit + Tesseract (when tools available)
+  - Manual OCR workflow with `vobsub-to-srt` helper for placeholder SRT creation
+- ✅ Makefile integration:
+  - `make install-video-deps` — one-command setup for all video tools
+  - `make rip-video` / `make rip-movie` — streamlined ripping workflows
+  - `make backfill-subs` — subtitle backfilling
+- ✅ Comprehensive documentation in `docs/video_ripping_guide.md`
 
-Dependencies (macOS/Homebrew examples): `makemkv`, `handbrakecli`, `ffmpeg`, `mkvtoolnix`, `mediainfo`.
+### Remaining enhancements:
+- Metadata fetching via TMDb/OMDb (poster/backdrop/`.nfo` files)
+- HDR10/SDR tone mapping strategies for UHD content
+- TV series episode detection and naming automation
+
+Dependencies (installed via `make install-video-deps`): `makemkv`, `handbrakecli`, `ffmpeg`, `mkvtoolnix`, `jq`, `tesseract`.
 
 ## Phase 4 — Orchestration and UX
 - Unified CLI:

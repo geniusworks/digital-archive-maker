@@ -200,9 +200,13 @@ fi
 makemkvcon mkv disc:0 all "$OUTDIR" --minlength="$MINLENGTH"
 
 # Transcode
-for f in "$OUTDIR"/*.mkv; do
-  [ -e "$f" ] || continue
-  name=$(basename "$f" .mkv)
+# Check if any MKV files exist before attempting transcode
+if ! ls "$OUTDIR"/*.mkv >/dev/null 2>&1; then
+  echo "No MKV files found in $OUTDIR - skipping transcode." >&2
+else
+  for f in "$OUTDIR"/*.mkv; do
+    [ -e "$f" ] || continue
+    name=$(basename "$f" .mkv)
 
   HB_AUDIO_OPTS=""
   HB_SUB_OPTS="" # unused for HandBrake now; kept for context
@@ -226,6 +230,13 @@ for f in "$OUTDIR"/*.mkv; do
     ENG_IMAGE_IDX=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
       | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
       | (.[0].index // -1))' 2>/dev/null || printf '--')
+    # Calculate HandBrake track number (position among subtitle streams, 1-indexed)
+    ENG_IMAGE_HB_TRACK=$(printf '%s' "$SUBS_JSON" | jq -r '
+      (.streams // []) as $all |
+      ($all | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not))) | .[0].index) as $eng_idx |
+      if $eng_idx == null or $eng_idx == -1 then -1
+      else (($all | map(.index) | to_entries | map(select(.value == $eng_idx)) | .[0].key) + 1)
+      end' 2>/dev/null || printf '-1')
     ENG_IMAGE_CODEC=$(printf '%s' "$SUBS_JSON" | jq -r '((.streams // [])
       | map(select(((.tags.language // "") | ascii_downcase | startswith("en")) and ((.codec_name // "") | test("^(subrip|ass|ssa|text|webvtt)$") | not)))
       | (.[0].codec_name // ""))' 2>/dev/null || printf '')
@@ -263,6 +274,14 @@ for f in "$OUTDIR"/*.mkv; do
     *)   NEEDS_LANG_ACTION=1 ;;
   esac
 
+  # Auto-burn English image-based subs if non-English audio and no soft subs available
+  if [ "$NEEDS_LANG_ACTION" -eq 1 ] && [ "${HAS_EN_TEXT_SUBS:-0}" -eq 0 ] && [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
+    if [ "${ENG_IMAGE_HB_TRACK:--1}" != "-1" ] && [ "${ENG_IMAGE_HB_TRACK:-0}" -gt 0 ]; then
+      HB_SUB_OPTS="--subtitle $ENG_IMAGE_HB_TRACK --subtitle-burned"
+      echo "Automatically burning in English subtitles (track $ENG_IMAGE_HB_TRACK) due to non-English audio and no soft subs available." >&2
+    fi
+  fi
+
   # Decide policy (default: keep -> interactive prompt if terminal is attached)
   POLICY=${AUDIO_SUBS_POLICY:-keep}
   if [ "$NEEDS_LANG_ACTION" -eq 1 ]; then
@@ -283,20 +302,32 @@ for f in "$OUTDIR"/*.mkv; do
         ;;
       keep|"")
         # Interactive prompt only if attached to a terminal and tools available
+        # Skip prompt if auto-burn already handled subtitles
         if [ -t 0 ] && command -v ffprobe >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
           if [ "$HAS_EN_AUDIO" -eq 1 ] || [ "$HAS_EN_SUBS" -eq 1 ]; then
-            printf "Default audio is '%s'. Choose: [a] Use English audio%s, [s] Add English subs%s, [k] Keep as-is: " \
-              "${DEFAULT_AUDIO_LANG:-unknown}" \
-              "$([ "$HAS_EN_AUDIO" -eq 1 ] && printf '' || printf ' (unavailable)')" \
-              "$([ "$HAS_EN_SUBS" -eq 1 ] && printf '' || printf ' (unavailable)')"
-            read -r _choice
-            case "$_choice" in
-              a|A)
-                [ "$HAS_EN_AUDIO" -eq 1 ] && HB_AUDIO_OPTS="--audio-lang-list eng --first-audio" || : ;;
-              s|S)
-                [ "$HAS_EN_SUBS" -eq 1 ] && SUBS_MARK_DEFAULT=1 || : ;;
-              *) : ;;
-            esac
+            # Only prompt if auto-burn didn't already set subtitle options
+            if [ -z "$HB_SUB_OPTS" ]; then
+              printf "Default audio is '%s'. Choose: [a] Use English audio%s, [s] Add English subs%s, [k] Keep as-is: " \
+                "${DEFAULT_AUDIO_LANG:-unknown}" \
+                "$([ "$HAS_EN_AUDIO" -eq 1 ] && printf '' || printf ' (unavailable)')" \
+                "$([ "$HAS_EN_SUBS" -eq 1 ] && printf '' || printf ' (unavailable)')"
+              read -r _choice
+              case "$_choice" in
+                a|A)
+                  [ "$HAS_EN_AUDIO" -eq 1 ] && HB_AUDIO_OPTS="--audio-lang-list eng --first-audio" || : ;;
+                s|S)
+                  [ "$HAS_EN_SUBS" -eq 1 ] && SUBS_MARK_DEFAULT=1 || : ;;
+                *) : ;;
+              esac
+            fi
+          fi
+        fi
+        ;;
+      prefer-burned)
+        # Force burn-in of English image-based subs if available
+        if [ "${HAS_EN_TEXT_SUBS:-0}" -eq 0 ] && [ "${HAS_EN_SUBS:-0}" -eq 1 ]; then
+          if [ "${ENG_IMAGE_HB_TRACK:--1}" != "-1" ] && [ "${ENG_IMAGE_HB_TRACK:-0}" -gt 0 ]; then
+            HB_SUB_OPTS="--subtitle $ENG_IMAGE_HB_TRACK --subtitle-burned"
           fi
         fi
         ;;
@@ -304,7 +335,7 @@ for f in "$OUTDIR"/*.mkv; do
     esac
   fi
 
-  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize $HB_AUDIO_OPTS
+  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize $HB_AUDIO_OPTS $HB_SUB_OPTS
 
   # Post-process: if a text-based English subtitle exists in the MKV, mux it into the MP4
   if command -v ffprobe >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 && command -v ffmpeg >/dev/null 2>&1; then
@@ -365,7 +396,8 @@ for f in "$OUTDIR"/*.mkv; do
       esac
     fi
   fi
-done
+  done
+fi
 
 # If TITLE/YEAR not provided, optionally prompt in interactive shells
 if { [ -z "${TITLE:-}" ] || [ -z "${YEAR:-}" ]; } && [ -t 0 ]; then

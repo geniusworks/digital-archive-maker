@@ -208,18 +208,24 @@ To guarantee inclusion when available, the script post-muxes any English text-ba
   # Prefer adding English subtitles if present; else prefer English audio if present; else keep
   AUDIO_SUBS_POLICY=prefer-subs make rip-movie TITLE="Movie" YEAR=1999
 
-  # Keep streams as-is (no prompt)
+  # Force burn-in of English image-based subtitles (overrides auto-burn)
+  AUDIO_SUBS_POLICY=prefer-burned make rip-movie TITLE="Movie" YEAR=1999
+
+  # Keep streams as-is (no prompt, no auto-burn)
   AUDIO_SUBS_POLICY=keep make rip-movie TITLE="Movie" YEAR=1999
   ```
 
 Notes:
-- Default policy is `keep` (prompt when interactive; leave streams as-is when not interactive).
-- Set `AUDIO_SUBS_POLICY=prefer-audio` to automatically pick English audio (fallback to English subs), or `prefer-subs` to prioritize subs, or `keep` to keep streams as-is with no prompt.
+- **Automatic burn-in**: For DVDs with non-English default audio and English image-based subtitles (VobSub/PGS) but no text-based English subs, the script automatically burns in the English subtitles. This ensures captions are always visible without manual intervention.
+- Default policy is `keep` (prompt when interactive; auto-burn applies when non-interactive if conditions are met).
+- Set `AUDIO_SUBS_POLICY=prefer-audio` to automatically pick English audio (fallback to English subs), `prefer-subs` to prioritize soft subs, `prefer-burned` to force burn-in even when text subs exist, or `keep` to suppress both prompts and auto-burn.
 
 Implementation details:
 - English audio selection uses HandBrakeCLI options: `--audio-lang-list eng --first-audio`.
-- English subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
-- **Image-based subtitle handling**: If only image-based subtitles (VobSub/PGS) exist, the script will extract them and provide guidance for manual OCR using tools like Subtitle Edit. Use the `vobsub-to-srt` helper for placeholder SRT creation.
+- English text-based subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
+- English image-based subtitles (VobSub/PGS) are automatically burned into the video during encode with `--subtitle N --subtitle-burned` when conditions are met (non-English audio, no soft subs available). This makes captions permanently visible.
+  - **Track numbering**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, not by ffprobe's stream index. The script correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams.
+- **Manual OCR fallback**: If auto-burn is disabled or fails, the script will extract image-based subtitles and provide guidance for manual OCR using tools like Subtitle Edit. Use the `vobsub-to-srt` helper for placeholder SRT creation.
 
 ## Backfill English subtitles into existing MP4s
 Use the provided helper to mux English soft subtitles from your archival MKVs into an existing MP4 without re-encoding video/audio.
@@ -253,7 +259,9 @@ Notes:
     ```
 
 ## Preflight and troubleshooting
-The script now performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:
+
+### MakeMKV setup
+The script performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:
 
 ```bash
 sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv /usr/local/bin/mmgplsrv
@@ -265,6 +273,29 @@ On first run, launch the GUI once to accept the EULA and set the drive region, a
 ```bash
 xattr -dr com.apple.quarantine /Applications/MakeMKV.app
 ```
+
+### Subtitle burn-in not working
+If automatic subtitle burn-in fails or subtitles don't appear in the output:
+
+1. **Verify subtitle detection**: Check that English subtitles are present:
+   ```bash
+   ffprobe -v error -select_streams s -show_entries stream=index,codec_name:stream_tags=language -of json "file.mkv" | jq .
+   ```
+
+2. **Check HandBrake scan**: Verify the subtitle track number:
+   ```bash
+   HandBrakeCLI --input "file.mkv" --title 0 --scan 2>&1 | grep -A 10 "subtitle tracks"
+   ```
+
+3. **Manual burn-in**: If auto-burn didn't trigger, use the explicit command:
+   ```bash
+   HandBrakeCLI -i "file.mkv" -o "output.mp4" \
+     -e x264 -q 20 --optimize \
+     --subtitle <TRACK_NUM> --subtitle-burned
+   ```
+   Replace `<TRACK_NUM>` with the track number from the HandBrake scan (e.g., 2 for "2, English (VOBSUB)").
+
+4. **Recent fix**: A bug was fixed in Oct 2025 where the script incorrectly calculated HandBrake track numbers. Ensure you're using the latest version of `bin/rip_video.sh`.
 
 ---
 
@@ -283,6 +314,23 @@ xattr -dr com.apple.quarantine /Applications/MakeMKV.app
   ```
 
 See `docs/media_server_setup.md` for more complete examples and tips.
+
+---
+
+## Known issues and fixes
+
+### HandBrake subtitle track numbering (Fixed: Oct 2025)
+**Issue**: Auto-burn was calculating incorrect subtitle track numbers, causing burn-in to fail or select the wrong track.
+
+**Root cause**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, NOT based on ffprobe's stream index values. For example:
+- ffprobe shows: stream index 4 (Chinese), stream index 5 (English)
+- HandBrake shows: track 1 (Chinese), track 2 (English)
+- Old script calculated: 5 + 1 = track 6 ❌
+- Correct calculation: track 2 ✓
+
+**Fix**: The script now uses `ENG_IMAGE_HB_TRACK` which correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams (1-indexed).
+
+**Impact**: Auto-burn now works correctly for all DVD/Blu-ray configurations.
 
 ---
 

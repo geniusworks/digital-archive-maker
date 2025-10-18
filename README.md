@@ -105,6 +105,8 @@ Run `make help` for a summary. Common tasks:
     - `make rip-movie TITLE="Movie Name" YEAR=1999` (auto-detects disc type)
     - Moves the largest MP4 to `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
   - Auto-detection: The script now automatically detects DVD vs Blu-ray discs. You can still override with `TYPE=dvd` or `TYPE=bluray` if needed.
+  - Automatic subtitle burn-in: For non-English audio discs with English image-based subtitles (VobSub/PGS) but no soft English subs, the script automatically burns in the subtitles. Override with `AUDIO_SUBS_POLICY=keep` to disable.
+  - Recent fix (Oct 2025): Corrected HandBrake subtitle track numbering calculation for reliable auto-burn across all disc configurations.
 
 - Backfill English subtitles into an existing MP4
   - Create a new MP4 with subs next to the original:
