@@ -4,46 +4,62 @@
 # Output format and location
 # OUTPUTDIR can be centralized via RIPS_ROOT (see .env.sample). Falls back to /Volumes/Data/Media/Rips
 OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs"
-OUTPUTTYPE=flac
-OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
-VAOUTPUTFORMAT='Various/${ALBUMFILE}/${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'
-
-# Behavior
-PADTRACKS=y
-MAXPROCS=2
-LOWDISK=n
-EXTRAVERBOSE=2
-EJECTCD=n  # eject handled in abcde_post_encode()
-
-# Metadata lookup via MusicBrainz
-CDDBMETHOD=musicbrainz
-CDDBUSELOCAL=n
-
-# Playlists
-PLAYLISTFORMAT='${ALBUMFILE}.m3u'
-DOSPLAYLISTS=n
-M3UOUTPUT=y
-
-# Cover art (using abcde's getalbumart action when available)
-COVERARTFILE="cover.jpg"
-# Some distributions of abcde include the getalbumart action; enable it in ACTIONS below.
+OUTPUTTYPE="flac"
 
 # Actions pipeline
-# Typical: cddb, read, encode, tag, move, playlist, getalbumart, clean
-ACTIONS=cddb,read,encode,tag,move,playlist,getalbumart,clean
+ACTIONS=cddb,getalbumart,encode,tag,move,playlist,clean
 
-# Filename sanitizer: remove forbidden characters and squash spaces
-mungefilename () {
-  # Convert to safe filesystem names
-  echo "$1" \
-  | tr ':/\\t' '--- ' \
-  | sed -e 's/[\x00-\x1F]//g' \
-        -e 's/\s\+/ /g' \
-        -e 's/\s$//'
+# Metadata lookup via MusicBrainz
+MUSICBRAINZ_LOOKUP=y
+CDDBLOCALDIR="$HOME/.cddb"
+
+# Cover art
+COVERFILE="cover.jpg"
+
+# Output
+OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
+VAOUTPUTFORMAT='Various/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
+
+# Behavior
+KEEPWAVS=n
+KEEPDIR=n
+INTERACTIVE=n
+NICEVALUE=10
+FLACOPTS='--best --verify'
+
+# Eject CD when done (abcde built-in behavior)
+EJECTCD=y
+
+# Enable M3U playlists
+PLAYLISTS=y
+PLAYLISTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${ALBUMFILE}.m3u8'
+VAPLAYLISTFORMAT='Various/${ALBUMFILE}/${ALBUMFILE}.m3u8'
+
+# ReplayGain
+USERPLAYGAIN=y
+
+# Clean filename handling
+mungefilename ()
+{
+    echo "$@" | sed \
+        -e 's/[\/\\:*?"<>|]/_/g' \
+        -e 's/  */ /g' \
+        -e 's/^ *//' \
+        -e 's/ *$//'
 }
 
-# Eject the disc after encoding finishes
-abcde_post_encode () {
-  # macOS: drutil to eject tray (ignore failures)
-  command -v drutil >/dev/null 2>&1 && drutil tray eject >/dev/null 2>&1 || true
+post_encode ()
+{
+    for fmt in "$PLAYLISTFORMAT" "$VAPLAYLISTFORMAT"; do
+        [ -z "$fmt" ] && continue
+        pl_rel="$(eval echo "$fmt")"
+        pl_path="$OUTPUTDIR/$pl_rel"
+        [ -f "$pl_path" ] || continue
+        if ! head -n 1 "$pl_path" 2>/dev/null | grep -q '^#EXTM3U$'; then
+            tmp="$(mktemp)"
+            printf '%s\n' '#EXTM3U' > "$tmp"
+            cat "$pl_path" >> "$tmp"
+            mv "$tmp" "$pl_path"
+        fi
+    done
 }

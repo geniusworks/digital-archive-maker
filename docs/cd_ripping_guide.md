@@ -29,9 +29,10 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
 3. Open `~/.abcde.conf` and verify the key settings:
    - `OUTPUTDIR="${RIPS_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Rips/CDs` if `RIPS_ROOT` is unset)
    - `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
-   - `CDDBMETHOD=musicbrainz`
-   - `GETALBUMART=y` and `COVERARTFILE="cover.jpg"`
-   - Playlists enabled and disc eject after encode via `abcde_post_encode()`
+   - `ACTIONS=cddb,getalbumart,encode,tag,move,playlist,clean`
+   - `COVERFILE="cover.jpg"`
+   - `PLAYLISTS=y` and playlist format ending in `.m3u8`
+   - Disc eject after encode via `EJECTCD=y`
 
 Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) to set `OUTPUTDIR`. When you run `make rip-cd`, the Makefile auto-loads `.env` so `abcde` sees `RIPS_ROOT`.
 
@@ -58,7 +59,7 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
          02 - Second Track.flac
          ...
          cover.jpg
-         Album.m3u
+         Album.m3u8
    ```
 
 `abcde` will look up metadata from MusicBrainz, fetch cover art, write a playlist, sanitize filenames, and eject the disc when done (per the provided config).

@@ -27,7 +27,7 @@ Recommended structure (matches `abcde` config in this repo):
       02 - Track Title.flac
       ...
       cover.jpg
-      Album.m3u
+      Album.m3u8
 ```
 
 Notes:

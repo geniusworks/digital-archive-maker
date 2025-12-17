@@ -49,11 +49,11 @@ if [[ "$count_files" -ne "$count_titles" ]]; then
   exit 1
 fi
 
-# Prepare M3U file
-playlist_file="${album_name}.m3u"
-> "$playlist_file"  # truncate or create
+# Prepare M3U8 file
+playlist_file="${album_name}.m3u8"
+printf '%s\n' '#EXTM3U' > "$playlist_file"  # truncate or create
 
-# Rename files and write to M3U
+# Rename files and write to M3U8
 i=0
 for file in *.flac; do
   num=$(printf "%02d" $((i + 1)))
@@ -74,6 +74,10 @@ done
 if [[ -f "Unknown Album.m3u" ]]; then
   rm -f "Unknown Album.m3u"
   echo "Removed stale playlist: Unknown Album.m3u"
+fi
+if [[ -f "Unknown Album.m3u8" ]]; then
+  rm -f "Unknown Album.m3u8"
+  echo "Removed stale playlist: Unknown Album.m3u8"
 fi
 
 echo "Playlist created: $playlist_file"

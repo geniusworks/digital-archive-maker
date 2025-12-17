@@ -3,7 +3,7 @@
 
 Validates:
 1. `cover.jpg` exists and is exactly 1000x1000 pixels.
-2. Track listings in `*.m3u` playlists match `.flac` files present in the folder.
+2. Track listings in `*.m3u8` playlists match `.flac` files present in the folder.
 3. `_cover.jpg` does not exist alongside `cover.jpg`.
 
 By default the script scans the CDs directory under `RIPS_ROOT` (default `/Volumes/Data/Media/Rips/CDs`).
@@ -191,9 +191,11 @@ def read_m3u_playlist(m3u_path: Path) -> List[Path]:
 
 
 def check_playlist(album: Path) -> Optional[str]:
-    playlists = sorted(album.glob("*.m3u"))
+    playlists = sorted(album.glob("*.m3u8"))
     if not playlists:
-        return "No .m3u playlist found"
+        playlists = sorted(album.glob("*.m3u"))
+        if not playlists:
+            return "No .m3u8 (or legacy .m3u) playlist found"
 
     issues: List[str] = []
     flac_files = sorted(p.resolve() for p in album.glob("*.flac"))

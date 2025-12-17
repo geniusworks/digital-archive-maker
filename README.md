@@ -34,7 +34,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - `_archive/` (kept for reference)
   - `backup_cover_art.sh` — finds `cover.jpg`, logs dimensions, renames non-1000x1000 covers to `_cover.jpg`.
   - `check_flac_metadata.py` — compares FLAC tags to MusicBrainz; respects a skip list in `check_flac_metadata.skip`.
-- `fix_album.sh` — given an album folder, fetches track titles from MusicBrainz, renames `*.flac` to `NN - Title.flac`, makes an `.m3u`, runs `fix_metadata.py --fix`, then `fix_album_covers.sh`.
+- `fix_album.sh` — given an album folder, fetches track titles from MusicBrainz, renames `*.flac` to `NN - Title.flac`, makes an `.m3u8`, runs `fix_metadata.py --fix`, then `fix_album_covers.sh`.
 - `fix_album_covers.sh` — finds albums missing `cover.jpg` and downloads a 1000x1000 front cover from Cover Art Archive (via MusicBrainz).
 - `fix_metadata.py` — checks/updates FLAC tags (TITLE, ARTIST, ALBUM, TRACKNUMBER) based on the path/filename pattern `NN - Title.flac`.
 - `fix_track.py` — organizes a single loose track into `Artist/Album/NN - Title.ext`. Attempts metadata from tags, AcoustID, MusicBrainz; falls back to filename parsing.
@@ -68,8 +68,8 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 ## Configuration: `.abcde.conf`
 - Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
 - Uses MusicBrainz for album/track lookup and `getalbumart` in the `ACTIONS` chain.
-- Playlists enabled (`.m3u`).
-- Ejects the disc after encoding via `abcde_post_encode` using `drutil` (currently `EJECTCD=n` but eject occurs in the hook).
+- Playlists enabled (`.m3u8`).
+- Ejects the disc after encoding via abcde built-in eject (`EJECTCD=y`).
 - Filename sanitizer in `mungefilename()` removes forbidden characters and squashes spaces.
 
 Copy the sample file to your home directory:
@@ -132,7 +132,7 @@ Run `make help` for a summary. Common tasks:
 
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
-  2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u`, fixes tags, and fetches `cover.jpg` if missing.
+  2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u8`, fixes tags, and fetches `cover.jpg` if missing.
 
 - Audit album integrity (cover + playlists)
   ```bash
@@ -140,7 +140,7 @@ Run `make help` for a summary. Common tasks:
   python3 bin/check_album_integrity.py --show-ok  # include OK albums
   python3 bin/check_album_integrity.py --albums "Artist/Album"
   ```
-  Verifies each album has a 1000×1000 `cover.jpg`, no `_cover.jpg`, and that `.m3u` playlists match `.flac` files.
+  Verifies each album has a 1000×1000 `cover.jpg`, no `_cover.jpg`, and that `.m3u8` playlists match `.flac` files.
 
 - Fetch missing cover art only
   - `./fix_album_covers.sh "/path/or/library/root"`
