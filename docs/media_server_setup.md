@@ -105,12 +105,24 @@ If your source archive contains both explicit and non-explicit content, you can 
   - `--exclude-explicit` skips `EXPLICIT=Yes`
   - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
   - `--dry-run` previews the copy plan
+  - `--ssh "ssh -p 2222"` custom SSH command
+  - `--delete` removes files from destination that no longer exist in source
 
-Example:
+**Local sync example:**
 ```
 python3 bin/sync-to-jellyfin.py \
   --src "/Volumes/Data/Media/Rips/CDs" \
   --dest "/path/to/jellyfin/music" \
+  --exclude-explicit \
+  --dry-run
+```
+
+**Remote SSH sync example:**
+```
+python3 bin/sync-to-jellyfin.py \
+  --src "/Volumes/Data/Media/Rips/CDs" \
+  --dest "user@server:/path/to/music" \
+  --ssh "ssh -p 2222" \
   --exclude-explicit \
   --dry-run
 ```
