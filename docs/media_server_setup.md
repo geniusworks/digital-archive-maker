@@ -43,12 +43,59 @@ This repo supports explicit content tagging via per-track FLAC metadata, which c
 ### Tagging
 - Script: `bin/tag-explicit-mb.py`
 - Writes a per-track tag: `EXPLICIT=Yes|No|Unknown`
+- Automatically loads `.env` for API credentials (no manual sourcing needed)
+- Waterfall (highest priority first):
+  1. **Manual overrides** from `log/explicit_overrides.csv` (use `*` as wildcard for artist/album/title)
+  2. **iTunes** album/track lookup — `explicit` and `cleaned` count as explicit; `notExplicit` blocks album inference
+  3. **iTunes track search fallback** — only marks explicit if `trackExplicitness=explicit|cleaned`
+  4. **Spotify** track search (requires `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `.env`)
+  5. **MusicBrainz** — only `adult_content=True` treated as explicit
+
+**Limitation:** Both iTunes and Spotify have incomplete data for older albums (e.g., Prince's "Controversy" shows `notExplicit` for all tracks). Use `log/explicit_overrides.csv` for known false negatives.
+
 - Output files (repo-local):
   - `./log/explicit_tagging.log`
   - `./log/explicit_tagging_errors.log`
   - `./log/explicit_tagging_cache.json`
-- Also writes a playlist file at the music library root:
+- Playlist of explicit tracks at music library root:
   - `/Volumes/Data/Media/Rips/CDs/Explicit.m3u8`
+
+Environment variables:
+- `EXPLICIT_DRY_RUN=1` — preview without writing tags
+- `EXPLICIT_ONLY_UNKNOWN=1` — re-process only `Unknown`/missing tags
+- `EXPLICIT_ITUNES_TRACK_FALLBACK=1` — enable per-track iTunes search (auto-enabled with `ONLY_UNKNOWN`)
+- `EXPLICIT_SPOTIFY_FALLBACK=0` — disable Spotify fallback (enabled by default if credentials set)
+- `EXPLICIT_SKIP_CACHED=0` — force full re-run even if album is cached (by default, skips cached albums unless override needs applying)
+
+### Manual tag management
+To manually set or override EXPLICIT tags:
+
+**Using metaflac (command line):**
+```bash
+# Set single track
+metaflac --set-tag=EXPLICIT=Yes "Artist/Album/01 - Song.flac"
+
+# Set all tracks in album
+for f in "Artist/Album"/*.flac; do
+  metaflac --set-tag=EXPLICIT=No "$f"
+done
+
+# Check current tag
+metaflac --show-tag=EXPLICIT "Artist/Album/01 - Song.flac"
+```
+
+**Using the helper script:**
+```bash
+# Set single track
+./bin/set-explicit.sh "Artist/Album/01 - Song.flac" Yes
+
+# Set all tracks in album
+./bin/set-explicit.sh "Artist/Album" No --album
+```
+
+**To revert to API-determined tags:**
+1. Remove the EXPLICIT tag: `metaflac --remove-tag=EXPLICIT "file.flac"`
+2. Run the tagging script again to re-query APIs
 
 ### Syncing to a Jellyfin server (optional)
 If your source archive contains both explicit and non-explicit content, you can sync to a destination server while excluding content based on the `EXPLICIT` tag.

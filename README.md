@@ -73,21 +73,31 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 ## Explicit content tagging (music)
 - Script: `bin/tag-explicit-mb.py`
 - Writes per-track FLAC tag: `EXPLICIT=Yes|No|Unknown`
+- Automatically loads `.env` for API credentials (no manual sourcing needed)
 - Waterfall (highest priority first):
-  - Overrides from `explicit_overrides.csv` (optional)
-  - iTunes (album/track explicitness; biased toward avoiding false negatives)
-  - MusicBrainz (only positive `adult_content=True` treated as explicit)
+  1. **Manual overrides** from `log/explicit_overrides.csv` (use `*` as wildcard)
+  2. **iTunes** album/track lookup — treats `explicit` and `cleaned` as explicit; `notExplicit` blocks album-level inference
+  3. **iTunes track search fallback** (when album lookup fails) — only marks explicit if `trackExplicitness=explicit|cleaned`
+  4. **Spotify** track search (requires `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `.env`)
+  5. **MusicBrainz** — only positive `adult_content=True` treated as explicit
+
+**Limitation:** Both iTunes and Spotify have incomplete data for older albums (e.g., Prince). Use `log/explicit_overrides.csv` for known false negatives.
 
 Outputs:
 - Run log: `./log/explicit_tagging.log`
 - Error log (API failures only): `./log/explicit_tagging_errors.log`
 - Cache: `./log/explicit_tagging_cache.json`
 - Playlist of tagged-explicit tracks: `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs/Explicit.m3u8`
-  - Paths are written relative to the music library root.
 
-Useful environment variables:
+Environment variables:
 - `EXPLICIT_DRY_RUN=1` — do not write FLAC tags (still produces logs/playlist/summary)
 - `EXPLICIT_MAX_TRACKS=500` — only process the first N FLACs (debug)
+- `EXPLICIT_ONLY_UNKNOWN=1` — re-process only files currently tagged `Unknown` or missing
+- `EXPLICIT_ITUNES_TRACK_FALLBACK=1` — enable per-track iTunes search (auto-enabled with `ONLY_UNKNOWN`)
+- `EXPLICIT_SPOTIFY_FALLBACK=0` — disable Spotify fallback (enabled by default if credentials set)
+- `EXPLICIT_SKIP_CACHED=0` — force full re-run even if album is cached (by default, skips cached albums unless override needs applying)
+
+For manual tag management and media server sync details, see `docs/media_server_setup.md`.
 
 
 ## Configuration: `.abcde.conf`
