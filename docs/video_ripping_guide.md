@@ -2,6 +2,8 @@
 
 This guide documents a straightforward, automation-friendly workflow for backing up non-DMCA-protected DVDs and Blu-rays for personal use. It complements the CD workflow described in `docs/cd_ripping_guide.md`.
 
+See also: `docs/workflow_overview.md` for the end-to-end procedures (CDs → FLACs → tagging → sync, and DVD/Blu-ray → MP4s → organize → server).
+
 Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see `.env.sample`). By default, `RIPS_ROOT` is `/Volumes/Data/Media/Rips`.
 
 ---

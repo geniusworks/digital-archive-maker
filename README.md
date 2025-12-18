@@ -18,6 +18,11 @@
 
 Scripts and configuration for ripping optical media and organizing to a clean, metadata-rich library. The current focus is audio CDs to FLAC, with utilities to normalize covers, fix tags, and compare libraries. The intent is strictly for local, personal backups and playback.
 
+## Workflow entrypoint
+- End-to-end overview: `docs/workflow_overview.md`
+  - CDs → FLAC → explicit tagging → optional sync
+  - DVD/Blu-ray → MP4 → organize/subtitles → server-ready layout
+
 ## Overview
 - Primary audio workflow uses `abcde` to rip CDs to `.flac`, then normalizes filenames, playlists, and cover art. See `docs/cd_ripping_guide.md`.
 - Helper scripts fix metadata, fetch missing covers, and reconcile two libraries.
@@ -64,6 +69,26 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - CD ripping: see `docs/cd_ripping_guide.md`.
 - DVD/Blu-ray ripping: see `docs/video_ripping_guide.md`.
 - Media server setup: see `docs/media_server_setup.md`.
+
+## Explicit content tagging (music)
+- Script: `bin/tag-explicit-mb.py`
+- Writes per-track FLAC tag: `EXPLICIT=Yes|No|Unknown`
+- Waterfall (highest priority first):
+  - Overrides from `explicit_overrides.csv` (optional)
+  - iTunes (album/track explicitness; biased toward avoiding false negatives)
+  - MusicBrainz (only positive `adult_content=True` treated as explicit)
+
+Outputs:
+- Run log: `./log/explicit_tagging.log`
+- Error log (API failures only): `./log/explicit_tagging_errors.log`
+- Cache: `./log/explicit_tagging_cache.json`
+- Playlist of tagged-explicit tracks: `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs/Explicit.m3u8`
+  - Paths are written relative to the music library root.
+
+Useful environment variables:
+- `EXPLICIT_DRY_RUN=1` — do not write FLAC tags (still produces logs/playlist/summary)
+- `EXPLICIT_MAX_TRACKS=500` — only process the first N FLACs (debug)
+
 
 ## Configuration: `.abcde.conf`
 - Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
@@ -133,6 +158,27 @@ Run `make help` for a summary. Common tasks:
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
   2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u8`, fixes tags, and fetches `cover.jpg` if missing.
+
+- Tag explicit content across the library
+  ```bash
+  python3 bin/tag-explicit-mb.py
+  ```
+  Dry run (no writes):
+  ```bash
+  EXPLICIT_DRY_RUN=1 EXPLICIT_MAX_TRACKS=500 python3 bin/tag-explicit-mb.py
+  ```
+
+- Sync to a Jellyfin server while excluding explicit and/or unknown tracks
+  - Script: `bin/sync-to-jellyfin.py`
+  - Exclusion is based on the `EXPLICIT` FLAC tag.
+  - Missing `EXPLICIT` is treated as `Unknown`.
+  ```bash
+  python3 bin/sync-to-jellyfin.py \
+    --src "/Volumes/Data/Media/Rips/CDs" \
+    --dest "/path/to/jellyfin/music" \
+    --exclude-explicit \
+    --dry-run
+  ```
 
 - Audit album integrity (cover + playlists)
   ```bash

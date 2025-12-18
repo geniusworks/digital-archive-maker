@@ -2,6 +2,8 @@
 
 This guide describes a consistent, reliable workflow for ripping audio CDs to FLAC on macOS using `abcde`, matching the configuration documented in this repository.
 
+See also: `docs/workflow_overview.md` for the full end-to-end pipeline (CDs → FLACs → explicit tagging → sync).
+
 ---
 
 ## Prerequisites

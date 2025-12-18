@@ -2,6 +2,7 @@
 _archive/
 _install/
 venv/
+log/
 
 # Ignore specific file
 prince-lovesexy/Lovesexy.flac

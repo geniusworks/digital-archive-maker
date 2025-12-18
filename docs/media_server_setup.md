@@ -37,6 +37,39 @@ Notes:
 
 ---
 
+## Explicit tagging and “family safe” sync
+This repo supports explicit content tagging via per-track FLAC metadata, which can later drive sync policies (e.g., skip explicit content on a destination Jellyfin server).
+
+### Tagging
+- Script: `bin/tag-explicit-mb.py`
+- Writes a per-track tag: `EXPLICIT=Yes|No|Unknown`
+- Output files (repo-local):
+  - `./log/explicit_tagging.log`
+  - `./log/explicit_tagging_errors.log`
+  - `./log/explicit_tagging_cache.json`
+- Also writes a playlist file at the music library root:
+  - `/Volumes/Data/Media/Rips/CDs/Explicit.m3u8`
+
+### Syncing to a Jellyfin server (optional)
+If your source archive contains both explicit and non-explicit content, you can sync to a destination server while excluding content based on the `EXPLICIT` tag.
+
+- Script: `bin/sync-to-jellyfin.py`
+- Options:
+  - `--exclude-explicit` skips `EXPLICIT=Yes`
+  - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
+  - `--dry-run` previews the copy plan
+
+Example:
+```
+python3 bin/sync-to-jellyfin.py \
+  --src "/Volumes/Data/Media/Rips/CDs" \
+  --dest "/path/to/jellyfin/music" \
+  --exclude-explicit \
+  --dry-run
+```
+
+---
+
 ## Movie naming
 Follow Plex/Jellyfin recommendations:
 ```
