@@ -10,7 +10,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
 - `compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
 - `bin/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; includes incremental mode and track-search fallback. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
-- `bin/sync-to-jellyfin.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library.
+- `bin/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library.
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.
 - `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album.
 

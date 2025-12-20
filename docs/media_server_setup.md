@@ -100,7 +100,7 @@ metaflac --show-tag=EXPLICIT "Artist/Album/01 - Song.flac"
 ### Syncing to a Jellyfin server (optional)
 If your source archive contains both explicit and non-explicit content, you can sync to a destination server while excluding content based on the `EXPLICIT` tag.
 
-- Script: `bin/sync-to-jellyfin.py`
+- Script: `bin/sync-library.py`
 - Options:
   - `--exclude-explicit` skips `EXPLICIT=Yes`
   - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
@@ -110,7 +110,7 @@ If your source archive contains both explicit and non-explicit content, you can 
 
 **Local sync example:**
 ```
-python3 bin/sync-to-jellyfin.py \
+python3 bin/sync-library.py \
   --src "/Volumes/Data/Media/Rips/CDs" \
   --dest "/path/to/jellyfin/music" \
   --exclude-explicit \
@@ -119,7 +119,7 @@ python3 bin/sync-to-jellyfin.py \
 
 **Remote SSH sync example:**
 ```
-python3 bin/sync-to-jellyfin.py \
+python3 bin/sync-library.py \
   --src "/Volumes/Data/Media/Rips/CDs" \
   --dest "user@server:/path/to/music" \
   --ssh "ssh -p 2222" \

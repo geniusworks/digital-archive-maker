@@ -179,11 +179,11 @@ Run `make help` for a summary. Common tasks:
   ```
 
 - Sync to a Jellyfin server while excluding explicit and/or unknown tracks
-  - Script: `bin/sync-to-jellyfin.py`
+  - Script: `bin/sync-library.py`
   - Exclusion is based on the `EXPLICIT` FLAC tag.
   - Missing `EXPLICIT` is treated as `Unknown`.
   ```bash
-  python3 bin/sync-to-jellyfin.py \
+  python3 bin/sync-library.py \
     --src "/Volumes/Data/Media/Rips/CDs" \
     --dest "/path/to/jellyfin/music" \
     --exclude-explicit \
@@ -197,6 +197,32 @@ Run `make help` for a summary. Common tasks:
   python3 bin/check_album_integrity.py --albums "Artist/Album"
   ```
   Verifies each album has a 1000×1000 `cover.jpg`, no `_cover.jpg`, and that `.m3u8` playlists match `.flac` files.
+
+- Fix cover art dimensions
+  ```bash
+  # Preview what would be fixed (non-destructive)
+  python3 bin/check_album_integrity.py --fix-covers --dry-run
+  
+  # Actually resize cover.jpg images that aren't 1000x1000
+  python3 bin/check_album_integrity.py --fix-covers
+  
+  # Combine with other options
+  python3 bin/check_album_integrity.py --albums "Artist/Album" --fix-covers --dry-run
+  ```
+  Uses ImageMagick (preferred) or Pillow to resize cover images to exactly 1000×1000 pixels. The `--dry-run` option shows what would be changed without modifying files.
+
+- Download missing cover art
+  ```bash
+  # Preview what would be downloaded (non-destructive)
+  python3 bin/check_album_integrity.py --get-covers --dry-run
+  
+  # Actually download missing cover.jpg images as _cover.jpg
+  python3 bin/check_album_integrity.py --get-covers
+  
+  # Combine with fixing existing covers
+  python3 bin/check_album_integrity.py --fix-covers --get-covers --dry-run
+  ```
+  Downloads album covers from MusicBrainz and saves them as `_cover.jpg` when `cover.jpg` is missing or too small for `--fix-covers` to handle. Skips download if `_cover.jpg` already exists or if `cover.jpg` is within `--fix-covers` tolerance. Requires `pip install requests mutagen`.
 
 - Fetch missing cover art only
   - `./fix_album_covers.sh "/path/or/library/root"`

@@ -42,7 +42,7 @@ Artifacts:
 - `.../CDs/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`)
 
 ### A4) Sync to a destination server while excluding explicit/unknown (optional)
-- Script: `bin/sync-to-jellyfin.py`
+- Script: `bin/sync-library.py`
 - Excludes are driven by the `EXPLICIT` tag:
   - `--exclude-explicit` skips `EXPLICIT=Yes`
   - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
