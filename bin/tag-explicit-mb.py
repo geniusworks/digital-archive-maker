@@ -740,6 +740,9 @@ parser.add_argument("--max-tracks", type=int, default=0,
                     help="Maximum number of tracks to process (0 = no limit)")
 parser.add_argument("--generate-explicit-playlist", action="store_true",
                     help="Generate Explicit.m3u8 playlist file (disabled by default)")
+parser.add_argument("--verbose", action="store_true",
+                    help="Print all EXPLICIT=Yes tracks (including already-tagged ones) and increase output limit")
+
 args = parser.parse_args()
 
 ROOT = args.root
@@ -748,6 +751,10 @@ if args.max_tracks > 0:
     MAX_TRACKS = args.max_tracks
 if args.dry_run:
     DRY_RUN = True
+
+if args.verbose:
+    PRINT_EXPLICIT_TO_CONSOLE = True
+    MAX_EXPLICIT_CONSOLE_LINES = 1000
 
 cache = _load_cache()
 mb_cache = cache["mb_albums"]
@@ -849,11 +856,21 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
             if override_val is not None:
                 # Override exists — check if tag already matches
                 if override_val == prev_explicit_tag:
+                    # Print verbose output for already-tagged tracks before skipping
+                    if args.verbose and prev_explicit_tag == "Yes":
+                        if PRINT_EXPLICIT_TO_CONSOLE and explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
+                            tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} (cached)")
+                            explicit_console_lines += 1
                     continue
                 # Override doesn't match current tag — need to re-tag
             else:
                 # No override — skip if already tagged Yes/No, but NOT Unknown (need to check Unknown against overrides)
                 if prev_explicit_tag in {"Yes", "No"}:
+                    # Print verbose output for already-tagged tracks before skipping
+                    if args.verbose and prev_explicit_tag == "Yes":
+                        if PRINT_EXPLICIT_TO_CONSOLE and explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
+                            tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} (cached)")
+                            explicit_console_lines += 1
                     continue
                 # For Unknown tags, only process if overrides file changed since last cache write
                 if prev_explicit_tag == UNKNOWN_VALUE:
@@ -1106,13 +1123,15 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
         stats[tag_value] = stats.get(tag_value, 0) + 1
         source_counts[source] = source_counts.get(source, 0) + 1
 
-        if PRINT_EXPLICIT_TO_CONSOLE and tag_value == "Yes" and prev_explicit_tag != "Yes":
-            if explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
-                tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} ({source})")
-                explicit_console_lines += 1
-            elif not explicit_console_suppressed:
-                tqdm.write("Further EXPLICIT=Yes messages suppressed")
-                explicit_console_suppressed = True
+        if PRINT_EXPLICIT_TO_CONSOLE and tag_value == "Yes":
+            # In verbose mode, print all Yes tracks; otherwise only print newly-tagged ones
+            if args.verbose or prev_explicit_tag != "Yes":
+                if explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
+                    tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} ({source})")
+                    explicit_console_lines += 1
+                elif not explicit_console_suppressed:
+                    tqdm.write("Further EXPLICIT=Yes messages suppressed")
+                    explicit_console_suppressed = True
 
         if tag_value == "Yes":
             explicit_playlist_entries.add(os.path.relpath(audio_path, ROOT))
