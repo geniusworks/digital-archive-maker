@@ -188,6 +188,9 @@ Run `make help` for a summary. Common tasks:
   
   # Generate Explicit.m3u8 playlist (disabled by default)
   python3 bin/tag-explicit-mb.py "/path/to/music/folder" --generate-explicit-playlist
+  
+  # Verbose output (show all EXPLICIT=Yes tracks, including cached ones)
+  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --verbose
   ```
   
   **Note**: The script supports both FLAC (from CD rips) and MP3 (digital purchases) files. EXPLICIT tags are written using format-specific metadata (FLAC: `EXPLICIT` field, MP3: `TXXX:EXPLICIT` ID3 tag). Playlist generation is disabled by default to avoid creating broken playlists when using `--exclude-explicit` sync jobs.
@@ -222,11 +225,8 @@ Run `make help` for a summary. Common tasks:
   
   # Dry run to see what would be created
   python3 bin/generate-playlists.py "/path/to/music" --dry-run
-  
-  # Custom playlist filename
-  python3 bin/generate-playlists.py "/path/to/music" --playlist-name "Playlist.m3u8"
   ```
-  Scans for albums containing audio files but no playlist, then creates simple M3U playlists with natural track ordering.
+  Scans for albums containing audio files but no playlist, then creates simple M3U playlists with natural track ordering. Uses album-specific naming (e.g., "Dark Side of the Moon.m3u8") based on metadata or folder name.
 
 - Audit album integrity (cover + playlists)
   ```bash
