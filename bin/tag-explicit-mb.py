@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import time
+import fnmatch
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -129,6 +130,21 @@ def _normalize_title(title):
     return " ".join(s.split())
 
 
+def _normalize_override_pattern(value):
+    s = (value or "").strip().lower()
+    s = s.replace("&", "and")
+    s = re.sub(r"[^\w*]+", " ", s, flags=re.UNICODE)
+    return " ".join(s.split())
+
+
+def _override_field_matches(rule_val, actual_val):
+    if rule_val == "*":
+        return True
+    if any(ch in rule_val for ch in ["*", "?", "["]):
+        return fnmatch.fnmatchcase(actual_val, rule_val)
+    return rule_val == actual_val
+
+
 def _lookup_track_value(track_map, title_norm):
     if not track_map:
         return None
@@ -188,9 +204,9 @@ def _load_overrides():
                 if not artist or not album or not title or not explicit_val:
                     continue
 
-                artist_norm = artist if artist == "*" else _normalize_title(artist)
-                album_norm = album if album == "*" else _normalize_title(_normalize_album_for_search(album))
-                title_norm = title if title == "*" else _normalize_title(title)
+                artist_norm = artist if artist == "*" else _normalize_override_pattern(artist)
+                album_norm = album if album == "*" else _normalize_override_pattern(_normalize_album_for_search(album))
+                title_norm = title if title == "*" else _normalize_override_pattern(title)
 
                 val = explicit_val.strip().lower()
                 if val in {"yes", "y", "true", "1", "explicit"}:
@@ -223,11 +239,12 @@ def _resolve_override(overrides, artist_norm, album_norm, title_norm):
         ra = rule.get("artist")
         rb = rule.get("album")
         rt = rule.get("title")
-        if ra not in {"*", artist_norm}:
+
+        if not _override_field_matches(ra, artist_norm):
             continue
-        if rb not in {"*", album_norm}:
+        if not _override_field_matches(rb, album_norm):
             continue
-        if rt not in {"*", title_norm}:
+        if not _override_field_matches(rt, title_norm):
             continue
 
         spec = 0
@@ -248,23 +265,52 @@ def _resolve_override(overrides, artist_norm, album_norm, title_norm):
     return best.get("value")
 
 
-def _write_explicit_tag(flac_path, audio, value):
+def _write_explicit_tag(audio_path, audio, value):
     if DRY_RUN:
         return value
 
-    existing = audio.get(EXPLICIT_TAG)
-    if existing and isinstance(existing, (list, tuple)):
+    # Check existing tag to avoid unnecessary writes
+    if audio_path.lower().endswith(".flac"):
+        existing = audio.get(EXPLICIT_TAG)
+        if existing and isinstance(existing, (list, tuple)):
+            try:
+                existing0 = str(existing[0]).strip()
+            except Exception:
+                existing0 = None
+            if existing0 == value and len(existing) == 1:
+                return value
+    else:  # MP3
+        existing0 = None
         try:
-            existing0 = str(existing[0]).strip()
+            if getattr(audio, "tags", None):
+                frame = audio.tags.get("TXXX:" + EXPLICIT_TAG)
+                if frame is not None:
+                    # Mutagen returns a TXXX frame; its .text is list[str]
+                    if hasattr(frame, "text") and frame.text:
+                        existing0 = str(frame.text[0]).strip()
+                    else:
+                        existing0 = str(frame).strip()
         except Exception:
             existing0 = None
-        if existing0 == value and len(existing) == 1:
+
+        if existing0 == value:
             return value
 
-    orig_mtime = os.path.getmtime(flac_path)
-    audio[EXPLICIT_TAG] = [value]
+    orig_mtime = os.path.getmtime(audio_path)
+    
+    # Write tag based on format
+    if audio_path.lower().endswith(".flac"):
+        audio[EXPLICIT_TAG] = [value]
+    else:  # MP3 - need to create proper ID3 frame
+        from mutagen.id3 import TXXX
+        # Remove existing TXXX:EXPLICIT tag if present
+        if getattr(audio, "tags", None) and ("TXXX:" + EXPLICIT_TAG) in audio.tags:
+            del audio.tags["TXXX:" + EXPLICIT_TAG]
+        # Add new TXXX:EXPLICIT tag
+        audio.tags.add(TXXX(encoding=3, desc=EXPLICIT_TAG, text=value))
+    
     audio.save()
-    os.utime(flac_path, (orig_mtime, orig_mtime))
+    os.utime(audio_path, (orig_mtime, orig_mtime))
     return value
 
 def _mb_call(callable_, *args, **kwargs):
@@ -1042,9 +1088,18 @@ for root, _dirs, files in os.walk(ROOT):
         try:
             if name.lower().endswith(".flac"):
                 audio = FLAC(fullpath)
+                tag_val = _first_tag(audio, EXPLICIT_TAG)
             else:  # MP3
                 audio = MP3(fullpath)
-            tag_val = _first_tag(audio, EXPLICIT_TAG)
+                # For MP3, check TXXX:EXPLICIT tag
+                tag_val = None
+                if getattr(audio, "tags", None):
+                    frame = audio.tags.get("TXXX:" + EXPLICIT_TAG)
+                    if frame is not None:
+                        if hasattr(frame, "text") and frame.text:
+                            tag_val = str(frame.text[0]).strip()
+                        else:
+                            tag_val = str(frame).strip()
             if tag_val == "Yes":
                 explicit_playlist_entries.add(os.path.relpath(fullpath, ROOT))
         except Exception:
