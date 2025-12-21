@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import argparse
 import csv
 import json
 import logging
 import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -12,6 +14,8 @@ import musicbrainzngs
 import requests
 from rapidfuzz import fuzz, process
 from mutagen.flac import FLAC
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3NoHeaderError
 from tqdm import tqdm
 
 # Load .env from repo root
@@ -19,7 +23,7 @@ _repo_root = Path(__file__).resolve().parent.parent
 load_dotenv(_repo_root / ".env")
 
 # --- Configuration ---
-ROOT = "/Volumes/Data/Media/Rips/CDs"  # change to your library root
+DEFAULT_ROOT = "/Volumes/Data/Media/Rips/CDs"  # default library root
 USER_AGENT = ("JellyfinTagger", "1.0", "youremail@example.com")
 RATE_LIMIT = 1.0  # seconds between MusicBrainz API requests
 ITUNES_RATE_LIMIT = 0.25
@@ -35,7 +39,7 @@ LOG_FILE = os.path.join(LOG_DIR, "explicit_tagging.log")
 CACHE_FILE = os.path.join(LOG_DIR, "explicit_tagging_cache.json")
 LEGACY_CACHE_FILE = os.path.join(REPO_ROOT, "explicit_tagging_cache.json")
 ERROR_LOG_FILE = os.path.join(LOG_DIR, "explicit_tagging_errors.log")
-EXPLICIT_PLAYLIST_FILE = os.path.join(ROOT, "Explicit.m3u8")
+# EXPLICIT_PLAYLIST_FILE will be set after argument parsing
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -657,6 +661,23 @@ def _fetch_spotify_track_search(artist, album, title):
     }
 
 
+# --- Parse command line arguments ---
+parser = argparse.ArgumentParser(description="Tag FLAC files with explicit content information")
+parser.add_argument("root", nargs="?", default=DEFAULT_ROOT, 
+                    help="Root directory to scan for FLAC files (default: %(default)s)")
+parser.add_argument("--dry-run", action="store_true", 
+                    help="Don't write tags, just report what would be done")
+parser.add_argument("--max-tracks", type=int, default=0,
+                    help="Maximum number of tracks to process (0 = no limit)")
+args = parser.parse_args()
+
+ROOT = args.root
+EXPLICIT_PLAYLIST_FILE = os.path.join(ROOT, "Explicit.m3u8")
+if args.max_tracks > 0:
+    MAX_TRACKS = args.max_tracks
+if args.dry_run:
+    DRY_RUN = True
+
 cache = _load_cache()
 mb_cache = cache["mb_albums"]
 itunes_cache = cache["itunes_albums"]
@@ -697,7 +718,7 @@ if ONLY_UNKNOWN:
                     explicit_val = (row[4] or "").strip().lower()
                     if explicit_val not in {"", UNKNOWN_VALUE.lower()}:
                         continue
-                    if not path or not path.lower().endswith(".flac"):
+                    if not path or not path.lower().endswith((".flac", ".mp3")):
                         continue
                     if os.path.exists(path):
                         all_flacs.append(path)
@@ -706,8 +727,8 @@ if ONLY_UNKNOWN:
 
 if not all_flacs:
     for root, dirs, files in os.walk(ROOT):
-        flacs = [os.path.join(root, f) for f in files if f.lower().endswith(".flac")]
-        all_flacs.extend(flacs)
+        audio_files = [os.path.join(root, f) for f in files if f.lower().endswith((".flac", ".mp3"))]
+        all_flacs.extend(audio_files)
 
 if MAX_TRACKS > 0:
     all_flacs = all_flacs[:MAX_TRACKS]
@@ -717,23 +738,33 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
     writer = csv.writer(log)
     writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
 
-    for flac_path in tqdm(all_flacs, desc="Tagging FLACs"):
-        audio = FLAC(flac_path)
+    for audio_path in tqdm(all_flacs, desc="Tagging audio files"):
+        # Load audio file based on extension
+        if audio_path.lower().endswith(".flac"):
+            audio = FLAC(audio_path)
+        else:  # MP3
+            try:
+                audio = MP3(audio_path)
+            except ID3NoHeaderError:
+                # MP3 has no ID3 tags, create empty ID3
+                audio = MP3()
+                audio.add_tags()
+        
         prev_explicit_tag = _first_tag(audio, EXPLICIT_TAG)
 
         if ONLY_UNKNOWN and prev_explicit_tag is not None and prev_explicit_tag.strip().lower() not in {UNKNOWN_VALUE.lower(), ""}:
             continue
 
         # Prefer tags over folder names to avoid issues like "Purple Rain (1984)"
-        album = _first_tag(audio, "album") or os.path.basename(os.path.dirname(flac_path))
+        album = _first_tag(audio, "album") or os.path.basename(os.path.dirname(audio_path))
         artist = (
             _first_tag(audio, "albumartist")
             or _first_tag(audio, "artist")
-            or os.path.basename(os.path.dirname(os.path.dirname(flac_path)))
+            or os.path.basename(os.path.dirname(os.path.dirname(audio_path)))
         )
         title = _first_tag(audio, "title")
         if not title:
-            title = os.path.basename(flac_path).rsplit(".", 1)[0]
+            title = os.path.basename(audio_path).rsplit(".", 1)[0]
             m = re.match(r"^\s*\d+\s*-\s*(.*)$", title)
             if m:
                 title = m.group(1)
@@ -975,11 +1006,11 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     source = "MusicBrainz"
 
         if explicit_status is True:
-            tag_value = _write_explicit_tag(flac_path, audio, "Yes")
+            tag_value = _write_explicit_tag(audio_path, audio, "Yes")
         elif explicit_status is False:
-            tag_value = _write_explicit_tag(flac_path, audio, "No")
+            tag_value = _write_explicit_tag(audio_path, audio, "No")
         else:
-            tag_value = _write_explicit_tag(flac_path, audio, UNKNOWN_VALUE)
+            tag_value = _write_explicit_tag(audio_path, audio, UNKNOWN_VALUE)
         
         # Force save the cache after each successful tag to ensure persistence
         if tag_value and (explicit_status is not None or source == "Override"):
@@ -997,19 +1028,22 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                 explicit_console_suppressed = True
 
         if tag_value == "Yes":
-            explicit_playlist_entries.add(os.path.relpath(flac_path, ROOT))
+            explicit_playlist_entries.add(os.path.relpath(audio_path, ROOT))
 
-        writer.writerow([flac_path, artist, album, title, tag_value, source])
+        writer.writerow([audio_path, artist, album, title, tag_value, source])
 
 # Build playlist from ALL files with EXPLICIT=Yes tag (not just processed ones)
 explicit_playlist_entries = set()
 for root, _dirs, files in os.walk(ROOT):
     for name in files:
-        if not name.lower().endswith(".flac"):
+        if not name.lower().endswith((".flac", ".mp3")):
             continue
         fullpath = os.path.join(root, name)
         try:
-            audio = FLAC(fullpath)
+            if name.lower().endswith(".flac"):
+                audio = FLAC(fullpath)
+            else:  # MP3
+                audio = MP3(fullpath)
             tag_val = _first_tag(audio, EXPLICIT_TAG)
             if tag_val == "Yes":
                 explicit_playlist_entries.add(os.path.relpath(fullpath, ROOT))

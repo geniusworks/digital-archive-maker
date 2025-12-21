@@ -25,3 +25,6 @@ only_in_old.txt
 .backfill_ocr_*
 *.tmp.mp4
 *.bak
+
+# Ignore custom sync configuration
+custom-sync/sync-config.yaml

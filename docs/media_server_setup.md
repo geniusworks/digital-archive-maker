@@ -38,11 +38,12 @@ Notes:
 ---
 
 ## Explicit tagging and “family safe” sync
-This repo supports explicit content tagging via per-track FLAC metadata, which can later drive sync policies (e.g., skip explicit content on a destination Jellyfin server).
+This repo supports explicit content tagging via per-track metadata (FLAC and MP3), which can later drive sync policies (e.g., skip explicit content on a destination Jellyfin server).
 
 ### Tagging
 - Script: `bin/tag-explicit-mb.py`
 - Writes a per-track tag: `EXPLICIT=Yes|No|Unknown`
+- Supports both FLAC (CD rips) and MP3 (digital purchases) files
 - Automatically loads `.env` for API credentials (no manual sourcing needed)
 - Waterfall (highest priority first):
   1. **Manual overrides** from `log/explicit_overrides.csv` (use `*` as wildcard for artist/album/title)
@@ -70,12 +71,21 @@ Environment variables:
 ### Manual tag management
 To manually set or override EXPLICIT tags:
 
-**Using metaflac (command line):**
+**Using metaflac (FLAC files):**
 ```bash
 # Set single track
 metaflac --set-tag=EXPLICIT=Yes "Artist/Album/01 - Song.flac"
 
 # Set all tracks in album
+
+**Using set-explicit.sh (both FLAC and MP3):**
+```bash
+# Set single file (auto-detects format)
+./bin/set-explicit.sh "/path/to/file" "Yes"
+
+# Set entire album
+./bin/set-explicit.sh "/path/to/album" "Yes" --album
+```
 for f in "Artist/Album"/*.flac; do
   metaflac --set-tag=EXPLICIT=No "$f"
 done

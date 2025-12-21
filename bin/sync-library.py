@@ -4,6 +4,8 @@ import os
 import subprocess
 
 from mutagen.flac import FLAC
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3NoHeaderError
 
 
 EXPLICIT_TAG = "EXPLICIT"
@@ -23,9 +25,22 @@ def _normalize_explicit_value(raw):
     return UNKNOWN_VALUE
 
 
-def _read_explicit_tag(flac_path):
-    audio = FLAC(flac_path)
-    values = audio.get(EXPLICIT_TAG) or audio.get(EXPLICIT_TAG.lower())
+def _read_explicit_tag(audio_path):
+    # Load audio file based on extension
+    if audio_path.lower().endswith(".flac"):
+        audio = FLAC(audio_path)
+    else:  # MP3
+        try:
+            audio = MP3(audio_path)
+        except ID3NoHeaderError:
+            return UNKNOWN_VALUE
+    
+    # Try different tag names for different formats
+    if audio_path.lower().endswith(".flac"):
+        values = audio.get(EXPLICIT_TAG) or audio.get(EXPLICIT_TAG.lower())
+    else:  # MP3 - use ID3 tag names
+        values = audio.get("TXXX:" + EXPLICIT_TAG) or audio.get("EXPLICIT")
+    
     if not values:
         return UNKNOWN_VALUE
     return _normalize_explicit_value(values[0])
@@ -87,7 +102,7 @@ def main():
 
     for root, _dirs, files in os.walk(src):
         for name in files:
-            if not name.lower().endswith(".flac"):
+            if not name.lower().endswith((".flac", ".mp3")):
                 continue
 
             fullpath = os.path.join(root, name)

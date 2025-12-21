@@ -45,6 +45,9 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - `fix_track.py` — organizes a single loose track into `Artist/Album/NN - Title.ext`. Attempts metadata from tags, AcoustID, MusicBrainz; falls back to filename parsing.
 - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist.
 - `compare_music 2025-08-30.py` — earlier implementation of compare tool (kept for reference).
+- `custom-sync/` — custom sync configuration (gitignored)
+  - `master-sync.py` — run multiple sync jobs from YAML config; automatically runs explicit tagging before each sync
+  - `sync-config.yaml` — define source/destination mappings (gitignored)
 - `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album (`ffmpeg`-based).
 - `.abcde.conf.sample` — sample abcde configuration matching this repo's defaults.
 - `.env.sample` — example environment variables (e.g., `ACOUSTID_API_KEY`).
@@ -55,11 +58,11 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - Core tools: `abcde`, `flac` (metaflac), `imagemagick` (`convert`/`magick`), `jq`, `curl`, `wget`, `ffmpeg`.
   - Use `_install/install_setup_abcde_environment.sh` to verify/install common packages.
 - Python 3 with packages:
-  - `mutagen`, `rapidfuzz`, `musicbrainzngs`, `acoustid`
+  - `mutagen`, `rapidfuzz`, `musicbrainzngs`, `acoustid`, `pyyaml`
   - Install via `requirements.txt`:
     - Create venv: `python3 -m venv ~/venvs/media && source ~/venvs/media/bin/activate`
     - Install deps: `pip install -r requirements.txt`
-  - Example manual install: `pip install mutagen rapidfuzz musicbrainzngs pyacoustid`
+  - Example manual install: `pip install mutagen rapidfuzz musicbrainzngs pyacoustid pyyaml`
 - Accounts/keys (optional but recommended):
   - AcoustID API key for `fix_track.py`.
     - Set in your shell: `export ACOUSTID_API_KEY=...`
@@ -171,23 +174,40 @@ Run `make help` for a summary. Common tasks:
 
 - Tag explicit content across the library
   ```bash
+  # Tag default library (CDs) - supports FLAC and MP3
   python3 bin/tag-explicit-mb.py
+  
+  # Tag specific folder - supports FLAC and MP3
+  python3 bin/tag-explicit-mb.py "/path/to/music/folder"
+  
+  # Dry run (no writes)
+  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --dry-run
+  
+  # Limit number of tracks processed
+  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --max-tracks 100 --dry-run
   ```
-  Dry run (no writes):
-  ```bash
-  EXPLICIT_DRY_RUN=1 EXPLICIT_MAX_TRACKS=500 python3 bin/tag-explicit-mb.py
-  ```
+  
+  **Note**: The script now supports both FLAC (from CD rips) and MP3 (digital purchases) files. EXPLICIT tags are written using format-specific metadata (FLAC: `EXPLICIT` field, MP3: `TXXX:EXPLICIT` ID3 tag).
 
 - Sync to a Jellyfin server while excluding explicit and/or unknown tracks
   - Script: `bin/sync-library.py`
-  - Exclusion is based on the `EXPLICIT` FLAC tag.
+  - Exclusion is based on the `EXPLICIT` tag (supports both FLAC and MP3).
   - Missing `EXPLICIT` is treated as `Unknown`.
   ```bash
+  # Single sync job
   python3 bin/sync-library.py \
     --src "/Volumes/Data/Media/Rips/CDs" \
     --dest "/path/to/jellyfin/music" \
     --exclude-explicit \
     --dry-run
+  
+  # Multiple sync jobs with custom configuration
+  cd custom-sync && python master-sync.py --dry-run
+  python master-sync.py --job clean-library
+  
+  # Master sync automatically runs explicit tagging before each sync job
+  python master-sync.py  # Tags new content then syncs all jobs
+  python master-sync.py --skip-tagging  # Skip tagging phase
   ```
 
 - Audit album integrity (cover + playlists)
