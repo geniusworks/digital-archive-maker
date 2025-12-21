@@ -79,7 +79,7 @@ def main():
         help="Exclude tracks tagged EXPLICIT=Unknown or missing EXPLICIT tag",
     )
     parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to rsync")
-    parser.add_argument("--delete", action="store_true", help="Pass --delete to rsync")
+    parser.add_argument("--no-delete", action="store_true", help="Skip cleanup of empty destination directories (default: enabled)")
     parser.add_argument("--ssh", default=None, help="Rsync remote shell, e.g. 'ssh -p 2222'")
     parser.add_argument("--exclude-file", default=None, help="Write rsync excludes to this file")
     parser.add_argument("--max-flacs", type=int, default=0, help="Only scan first N FLACs (debug)")
@@ -145,7 +145,7 @@ def main():
     ]
     if args.dry_run:
         cmd.append("--dry-run")
-    if args.delete:
+    if not args.no_delete:
         cmd.append("--delete")
     if args.ssh:
         cmd.extend(["-e", args.ssh])
@@ -169,7 +169,82 @@ def main():
         print(" ".join(cmd))
         return 0
 
-    return subprocess.call(cmd)
+    result = subprocess.call(cmd)
+    
+    # Post-process playlists on destination (only if not remote and not dry-run)
+    if result == 0 and not args.dry_run and ":" not in args.dest:
+        _fix_destination_playlists(args.dest, patterns)
+    
+    return result
+
+
+def _fix_destination_playlists(dest_root, exclude_patterns):
+    """Fix .m3u8 playlists on destination to replace missing tracks with (skipped) placeholders"""
+    import re
+    
+    print("Fixing playlists on destination...")
+    fixed_count = 0
+    
+    # Convert exclude patterns to a set of relative paths for quick lookup
+    excluded_files = set()
+    for pattern in exclude_patterns:
+        if pattern.startswith("/") and not pattern.startswith("**"):
+            # Convert rsync pattern to relative path
+            rel_path = pattern[1:]  # Remove leading /
+            excluded_files.add(rel_path)
+    
+    for root, dirs, files in os.walk(dest_root):
+        for name in files:
+            if not name.lower().endswith(".m3u8"):
+                continue
+            
+            playlist_path = os.path.join(root, name)
+            try:
+                with open(playlist_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                
+                new_lines = []
+                track_num = 0
+                changed = False
+                
+                for line in lines:
+                    line = line.rstrip("\n")
+                    
+                    # Skip header and empty lines
+                    if line.startswith("#EXTM3U") or not line.strip():
+                        new_lines.append(line)
+                        continue
+                    
+                    # Skip comment lines (already processed)
+                    if line.startswith("#"):
+                        new_lines.append(line)
+                        continue
+                    
+                    track_num += 1
+                    rel_path = os.path.relpath(os.path.join(root, line), dest_root).replace(os.sep, "/")
+                    
+                    # Check if file exists or was excluded
+                    full_path = os.path.join(root, line)
+                    if not os.path.exists(full_path) or rel_path in excluded_files:
+                        # Replace with placeholder
+                        new_lines.append(f"# Track {track_num} (skipped)")
+                        changed = True
+                    else:
+                        new_lines.append(line)
+                
+                if changed:
+                    with open(playlist_path, "w", encoding="utf-8", newline="\n") as f:
+                        f.write("\n".join(new_lines) + "\n")
+                    fixed_count += 1
+                    print(f"  Fixed: {os.path.relpath(playlist_path, dest_root)}")
+            
+            except Exception as e:
+                print(f"  Error fixing {playlist_path}: {e}")
+    
+    if fixed_count > 0:
+        print(f"Fixed {fixed_count} playlist files")
+    else:
+        print("No playlist fixes needed")
 
 
 if __name__ == "__main__":

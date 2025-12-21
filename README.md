@@ -185,14 +185,19 @@ Run `make help` for a summary. Common tasks:
   
   # Limit number of tracks processed
   python3 bin/tag-explicit-mb.py "/path/to/music/folder" --max-tracks 100 --dry-run
+  
+  # Generate Explicit.m3u8 playlist (disabled by default)
+  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --generate-explicit-playlist
   ```
   
-  **Note**: The script now supports both FLAC (from CD rips) and MP3 (digital purchases) files. EXPLICIT tags are written using format-specific metadata (FLAC: `EXPLICIT` field, MP3: `TXXX:EXPLICIT` ID3 tag).
+  **Note**: The script supports both FLAC (from CD rips) and MP3 (digital purchases) files. EXPLICIT tags are written using format-specific metadata (FLAC: `EXPLICIT` field, MP3: `TXXX:EXPLICIT` ID3 tag). Playlist generation is disabled by default to avoid creating broken playlists when using `--exclude-explicit` sync jobs.
 
 - Sync to a Jellyfin server while excluding explicit and/or unknown tracks
   - Script: `bin/sync-library.py`
   - Exclusion is based on the `EXPLICIT` tag (supports both FLAC and MP3).
   - Missing `EXPLICIT` is treated as `Unknown`.
+  - **Automatic cleanup:** Empty directories are removed by default (use `--no-delete` to disable)
+  - **Playlist fixing:** Automatically fixes .m3u8 files to replace missing tracks with "(skipped)" placeholders
   ```bash
   # Single sync job
   python3 bin/sync-library.py \
@@ -209,6 +214,19 @@ Run `make help` for a summary. Common tasks:
   python master-sync.py  # Tags new content then syncs all jobs
   python master-sync.py --skip-tagging  # Skip tagging phase
   ```
+
+- Generate .m3u8 playlists for albums missing them
+  ```bash
+  # Generate playlists for all albums in a directory
+  python3 bin/generate-playlists.py "/path/to/music"
+  
+  # Dry run to see what would be created
+  python3 bin/generate-playlists.py "/path/to/music" --dry-run
+  
+  # Custom playlist filename
+  python3 bin/generate-playlists.py "/path/to/music" --playlist-name "Playlist.m3u8"
+  ```
+  Scans for albums containing audio files but no playlist, then creates simple M3U playlists with natural track ordering.
 
 - Audit album integrity (cover + playlists)
   ```bash
