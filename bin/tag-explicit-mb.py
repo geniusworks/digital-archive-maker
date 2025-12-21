@@ -164,9 +164,25 @@ def _lookup_track_value(track_map, title_norm):
     return track_map.get(best_key)
 
 def _first_tag(audio, key):
-    values = audio.get(key)
+    values = None
+    try:
+        values = audio.get(key)
+    except Exception:
+        values = None
+
     if not values:
+        # MP3 uses ID3 frames; EXPLICIT is stored as TXXX:EXPLICIT.
+        if key == EXPLICIT_TAG and getattr(audio, "tags", None):
+            try:
+                frame = audio.tags.get("TXXX:" + EXPLICIT_TAG)
+                if frame is not None:
+                    if hasattr(frame, "text") and frame.text:
+                        return str(frame.text[0]).strip()
+                    return str(frame).strip()
+            except Exception:
+                return None
         return None
+
     return str(values[0]).strip() if values[0] is not None else None
 
 
@@ -802,7 +818,7 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                 audio = MP3(audio_path)
             except ID3NoHeaderError:
                 # MP3 has no ID3 tags, create empty ID3
-                audio = MP3()
+                audio = MP3(audio_path)
                 audio.add_tags()
         
         prev_explicit_tag = _first_tag(audio, EXPLICIT_TAG)
