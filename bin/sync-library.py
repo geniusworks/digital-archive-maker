@@ -4,12 +4,22 @@ import os
 import subprocess
 
 from mutagen.flac import FLAC
+from mutagen.mp4 import MP4
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3NoHeaderError
 
 
 EXPLICIT_TAG = "EXPLICIT"
+MPAA_TAG = "©rat"
 UNKNOWN_VALUE = "Unknown"
+
+MPAA_ORDER = {
+    "G": 0,
+    "PG": 1,
+    "PG-13": 2,
+    "R": 3,
+    "NC-17": 4,
+}
 
 
 def _normalize_explicit_value(raw):
@@ -40,10 +50,33 @@ def _read_explicit_tag(audio_path):
         values = audio.get(EXPLICIT_TAG) or audio.get(EXPLICIT_TAG.lower())
     else:  # MP3 - use ID3 tag names
         values = audio.get("TXXX:" + EXPLICIT_TAG) or audio.get("EXPLICIT")
-    
+        if not values:
+            return UNKNOWN_VALUE
+    return _normalize_explicit_value(values[0])
+
+
+def _normalize_mpaa_value(raw):
+    if raw is None:
+        return UNKNOWN_VALUE
+    v = str(raw).strip()
+    if not v:
+        return UNKNOWN_VALUE
+    v_upper = v.upper()
+    if v_upper in {"G", "PG", "PG-13", "R", "NC-17"}:
+        return v_upper
+    if v_upper in {"NR", "NOT RATED"}:
+        return "NR"
+    if v_upper in {"UNRATED"}:
+        return "Unrated"
+    return UNKNOWN_VALUE
+
+
+def _read_mpaa_tag(video_path):
+    video = MP4(video_path)
+    values = video.get(MPAA_TAG)
     if not values:
         return UNKNOWN_VALUE
-    return _normalize_explicit_value(values[0])
+    return _normalize_mpaa_value(values[0])
 
 
 def _escape_rsync_pattern(path):
@@ -66,8 +99,14 @@ def _write_exclude_file(exclude_file, patterns):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src", required=True, help="Source music root (the folder that contains Artist/Album/...)")
+    parser.add_argument("--src", required=True, help="Source root")
     parser.add_argument("--dest", required=True, help="Destination (path or rsync remote like user@host:/path)")
+    parser.add_argument(
+        "--media",
+        choices=["music", "movies"],
+        default="music",
+        help="Media type to sync (default: music)",
+    )
     parser.add_argument(
         "--exclude-explicit",
         action="store_true",
@@ -78,7 +117,18 @@ def main():
         action="store_true",
         help="Exclude tracks tagged EXPLICIT=Unknown or missing EXPLICIT tag",
     )
+    parser.add_argument(
+        "--max-mpaa",
+        default=None,
+        help="Exclude movies with MPAA rating above this value (G, PG, PG-13, R, NC-17)",
+    )
+    parser.add_argument(
+        "--exclude-unrated",
+        action="store_true",
+        help="Exclude movies tagged NR or Unrated",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to rsync")
+    parser.add_argument("--delete", action="store_true", help="(compat) Enable rsync --delete (default: enabled)")
     parser.add_argument("--no-delete", action="store_true", help="Skip cleanup of empty destination directories (default: enabled)")
     parser.add_argument("--ssh", default=None, help="Rsync remote shell, e.g. 'ssh -p 2222'")
     parser.add_argument("--exclude-file", default=None, help="Write rsync excludes to this file")
@@ -96,14 +146,26 @@ def main():
     total_flacs = 0
     excluded_yes = 0
     excluded_unknown = 0
+    excluded_mpaa = 0
+    excluded_unrated = 0
     errors = 0
 
     patterns = []
 
+    max_mpaa = None
+    if args.max_mpaa:
+        max_mpaa = _normalize_mpaa_value(args.max_mpaa)
+        if max_mpaa not in MPAA_ORDER:
+            raise SystemExit(f"Invalid --max-mpaa: {args.max_mpaa}")
+
     for root, _dirs, files in os.walk(src):
         for name in files:
-            if not name.lower().endswith((".flac", ".mp3")):
-                continue
+            if args.media == "music":
+                if not name.lower().endswith((".flac", ".mp3")):
+                    continue
+            else:
+                if not name.lower().endswith((".mp4",)):
+                    continue
 
             fullpath = os.path.join(root, name)
             total_flacs += 1
@@ -111,19 +173,36 @@ def main():
             if args.max_flacs and total_flacs > args.max_flacs:
                 break
 
-            try:
-                tag = _read_explicit_tag(fullpath)
-            except Exception:
-                errors += 1
-                tag = UNKNOWN_VALUE
-
             exclude = False
-            if tag == "Yes" and args.exclude_explicit:
-                exclude = True
-                excluded_yes += 1
-            elif tag == UNKNOWN_VALUE and args.exclude_unknown:
-                exclude = True
-                excluded_unknown += 1
+            if args.media == "music":
+                try:
+                    tag = _read_explicit_tag(fullpath)
+                except Exception:
+                    errors += 1
+                    tag = UNKNOWN_VALUE
+
+                if tag == "Yes" and args.exclude_explicit:
+                    exclude = True
+                    excluded_yes += 1
+                elif tag == UNKNOWN_VALUE and args.exclude_unknown:
+                    exclude = True
+                    excluded_unknown += 1
+            else:
+                try:
+                    rating = _read_mpaa_tag(fullpath)
+                except Exception:
+                    errors += 1
+                    rating = UNKNOWN_VALUE
+
+                if rating in {"NR", "Unrated"} and args.exclude_unrated:
+                    exclude = True
+                    excluded_unrated += 1
+                elif rating == UNKNOWN_VALUE and args.exclude_unknown:
+                    exclude = True
+                    excluded_unknown += 1
+                elif max_mpaa and rating in MPAA_ORDER and MPAA_ORDER[rating] > MPAA_ORDER[max_mpaa]:
+                    exclude = True
+                    excluded_mpaa += 1
 
             if exclude:
                 rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
@@ -158,10 +237,17 @@ def main():
 
     cmd.extend([src_arg, dest_arg])
 
-    print(f"Scanned FLACs: {total_flacs}")
-    print(f"Excluded EXPLICIT=Yes: {excluded_yes} (exclude-explicit={args.exclude_explicit})")
-    print(f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
-    print(f"FLAC read errors treated as Unknown: {errors}")
+    if args.media == "music":
+        print(f"Scanned files: {total_flacs}")
+        print(f"Excluded EXPLICIT=Yes: {excluded_yes} (exclude-explicit={args.exclude_explicit})")
+        print(f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        print(f"Tag read errors treated as Unknown: {errors}")
+    else:
+        print(f"Scanned files: {total_flacs}")
+        print(f"Excluded MPAA above {max_mpaa}: {excluded_mpaa} (max-mpaa={args.max_mpaa})")
+        print(f"Excluded NR/Unrated: {excluded_unrated} (exclude-unrated={args.exclude_unrated})")
+        print(f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        print(f"Tag read errors treated as Unknown: {errors}")
     print(f"Exclude file: {exclude_file} ({len(patterns)} lines)")
 
     if args.print_command:

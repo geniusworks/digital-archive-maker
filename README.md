@@ -103,6 +103,45 @@ Environment variables:
 For manual tag management and media server sync details, see `docs/media_server_setup.md`.
 
 
+## MPAA rating tagging (movies)
+- Script: `bin/tag-movie-ratings.py`
+- Writes MP4 atom: `©rat` with MPAA rating (G, PG, PG-13, R, NC-17, NR, Unrated)
+- Automatic lookups require **one** of:
+  - `TMDB_API_KEY` (preferred; free from TMDb)
+  - `OMDB_API_KEY` (fallback; from OMDb)
+  - The script will auto-load these from `.env` at the repo root if present.
+- Waterfall (highest priority first):
+  1. **Manual overrides** from `movie_rating_overrides.csv`
+  2. **Cache** from `movie_rating_cache.json`
+  3. **Existing tags** in the MP4 file
+  4. **TMDb** lookup by title/year (US certification only) when `TMDB_API_KEY` is set
+  5. **OMDb** lookup by title/year when `OMDB_API_KEY` is set
+
+If neither API key is set, the script will still run but will only use overrides/cache/existing tags.
+
+Rate limits:
+- OMDb has a daily request limit depending on your plan. If the script detects a daily limit error, it will stop making OMDb requests for the rest of the day and record this in `movie_rating_cache.json` so you can rerun the next day and continue.
+
+Outputs:
+- Cache: `movie_rating_cache.json`
+- Overrides: `movie_rating_overrides.csv` (create manually)
+
+Usage:
+```bash
+# Tag movies (dry run by default)
+python3 bin/tag-movie-ratings.py "/path/to/movies" --dry-run
+
+# Actually write tags
+python3 bin/tag-movie-ratings.py "/path/to/movies"
+
+# Verbose output
+python3 bin/tag-movie-ratings.py "/path/to/movies" --verbose
+
+# Limit files processed
+python3 bin/tag-movie-ratings.py "/path/to/movies" --max-files 50
+```
+
+
 ## Configuration: `.abcde.conf`
 - Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
 - Uses MusicBrainz for album/track lookup and `getalbumart` in the `ACTIONS` chain.

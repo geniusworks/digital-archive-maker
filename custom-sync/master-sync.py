@@ -34,11 +34,34 @@ def build_sync_command(job, sync_script_path, global_opts):
         "--dest", job["dest"]
     ]
     
+    media = job.get("media", "music")
+    if media in {"music", "movies"}:
+        cmd.extend(["--media", media])
+
     # Add optional flags
-    if job.get("exclude_explicit", False):
-        cmd.append("--exclude-explicit")
-    if job.get("exclude_unknown", False):
-        cmd.append("--exclude-unknown")
+    if media == "music":
+        if job.get("exclude_explicit", False):
+            cmd.append("--exclude-explicit")
+        if job.get("exclude_unknown", False):
+            cmd.append("--exclude-unknown")
+    else:
+        max_mpaa = job.get("max_mpaa")
+        if not max_mpaa:
+            max_mpaa = "PG-13"
+        cmd.extend(["--max-mpaa", str(max_mpaa)])
+
+        exclude_unknown = job.get("exclude_unknown")
+        if exclude_unknown is None:
+            exclude_unknown = True
+        if exclude_unknown:
+            cmd.append("--exclude-unknown")
+
+        exclude_unrated = job.get("exclude_unrated")
+        if exclude_unrated is None:
+            exclude_unrated = True
+        if exclude_unrated:
+            cmd.append("--exclude-unrated")
+
     if job.get("delete", False):
         cmd.append("--delete")
     if job.get("dry_run", False):
@@ -95,6 +118,44 @@ def run_explicit_tagging(source_path, dry_run=False):
         return False
 
 
+def run_movie_rating_tagging(source_path, dry_run=False):
+    """Run movie rating tagging on source path before sync."""
+    print(f"\n{'='*60}")
+    print(f"Running movie rating tagging on: {source_path}")
+    print(f"{'='*60}")
+
+    repo_root = Path(__file__).parent.parent
+    tag_script = repo_root / "bin" / "tag-movie-ratings.py"
+
+    cmd = [
+        sys.executable,
+        str(tag_script),
+        source_path,
+        "--dry-run" if dry_run else "",
+    ]
+
+    cmd = [arg for arg in cmd if arg]
+
+    if dry_run:
+        print("DRY RUN - Would execute movie rating tagging:")
+        print(" ".join(cmd))
+        return True
+
+    try:
+        print("Running movie rating tagging to detect new content...")
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print(result.stdout)
+        if result.stderr:
+            print("STDERR:", result.stderr)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error running movie rating tagging on '{source_path}':")
+        print(f"Exit code: {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        return False
+
+
 def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False):
     """Run a single sync job."""
     print(f"\n{'='*60}")
@@ -103,10 +164,16 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
     print(f"Destination: {job['dest']}")
     print(f"{'='*60}")
     
-    # Run explicit tagging first unless skipped
+    media = job.get("media", "music")
+
+    # Run tagging first unless skipped
     if not skip_tagging and not dry_run:
-        if not run_explicit_tagging(job['src'], dry_run=False):
-            print("Warning: Explicit tagging failed, proceeding with sync anyway")
+        if media == "movies":
+            if not run_movie_rating_tagging(job["src"], dry_run=False):
+                print("Warning: Movie rating tagging failed, proceeding with sync anyway")
+        else:
+            if not run_explicit_tagging(job["src"], dry_run=False):
+                print("Warning: Explicit tagging failed, proceeding with sync anyway")
     
     cmd = build_sync_command(job, sync_script_path, global_opts)
     

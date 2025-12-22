@@ -30,6 +30,20 @@ sync_jobs:
     delete: false
     dry_run: false
 
+  - name: "movies-family"
+    # Movie root (contains Title (Year)/Title (Year).mp4)
+    src: "/path/to/your/source/movies"
+    dest: "/path/to/your/destination/movies"
+    media: "movies"
+    # Exclude movies rated higher than PG-13 (i.e. excludes R and NC-17)
+    max_mpaa: "PG-13"
+    # Optionally exclude NR/Unrated movies
+    exclude_unrated: true
+    # Optionally exclude Unknown/missing ratings
+    exclude_unknown: true
+    delete: false
+    dry_run: false
+
   # Remote sync example
   # - name: "remote-backup"
   #   src: "/path/to/your/source/music"
@@ -37,6 +51,18 @@ sync_jobs:
   #   exclude_explicit: false
   #   exclude_unknown: false
   #   delete: true
+  #   ssh: "ssh -p 2222"
+  #   dry_run: false
+
+  # Remote movies sync example
+  # - name: "remote-movies-family"
+  #   src: "/path/to/your/source/movies"
+  #   dest: "user@server:/path/to/backup/movies"
+  #   media: "movies"
+  #   max_mpaa: "PG-13"
+  #   exclude_unrated: true
+  #   exclude_unknown: true
+  #   delete: false
   #   ssh: "ssh -p 2222"
   #   dry_run: false
 
