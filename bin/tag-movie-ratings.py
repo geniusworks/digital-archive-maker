@@ -19,6 +19,7 @@ import re
 import signal
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -28,8 +29,9 @@ from pathlib import Path
 # Constants
 RATING_TAG = "©rat"  # Copyright Rating field for MPAA ratings
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-CACHE_FILE = _REPO_ROOT / "movie_rating_cache.json"
-OVERRIDES_FILE = _REPO_ROOT / "movie_rating_overrides.csv"
+_LOG_DIR = _REPO_ROOT / "log"
+CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
+OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.csv"
 UNKNOWN_VALUE = "Unknown"
 VALID_RATINGS = {"G", "PG", "PG-13", "R", "NC-17", "NR", "Unrated"}
 
@@ -58,6 +60,16 @@ def normalize_title(title):
     title = re.sub(r'\s*:\s.*$', '', title)  # Remove subtitle after colon
     title = title.strip()
     return title
+
+
+def _format_display_title(title, year):
+    """Format title for console display, avoiding double year"""
+    if re.search(r'\s*\(\d{4}\)\s*$', title):
+        return title
+    elif year:
+        return f"{title} ({year})"
+    else:
+        return title
 
 
 def extract_year_from_path(file_path):
@@ -112,9 +124,18 @@ def write_rating_to_file(file_path, rating, audio=None):
         return False
 
 
+def _ensure_log_dir_exists():
+    try:
+        _LOG_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+
+
 def load_overrides():
     """Load manual rating overrides from CSV"""
     overrides = {}
+
+    _ensure_log_dir_exists()
     overrides_file = OVERRIDES_FILE
     
     if not overrides_file.exists():
@@ -123,14 +144,19 @@ def load_overrides():
     with open(overrides_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            key = f"{normalize_title(row['title'])}"
-            overrides[key] = row['rating']
+            title = (row.get('title') or '').strip()
+            rating = (row.get('rating') or '').strip()
+            if not title or not rating:
+                continue
+            key = f"{normalize_title(title)}"
+            overrides[key] = rating
     
     return overrides
 
 
 def load_cache():
     """Load rating cache"""
+    _ensure_log_dir_exists()
     if CACHE_FILE.exists():
         with open(CACHE_FILE, 'r') as f:
             return json.load(f)
@@ -139,6 +165,7 @@ def load_cache():
 
 def save_cache(cache):
     """Save rating cache"""
+    _ensure_log_dir_exists()
     if OMDB_RATE_LIMITED and OMDB_RATE_LIMITED_DATE:
         meta = cache.get("__meta__")
         if not isinstance(meta, dict):
@@ -179,7 +206,7 @@ def _tmdb_get_json(path, query):
     url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(query)}"
 
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         body = resp.read().decode("utf-8")
     return json.loads(body)
 
@@ -194,7 +221,7 @@ def _omdb_get_json(query):
     url = f"https://www.omdbapi.com/?{urllib.parse.urlencode(query)}"
 
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         body = resp.read().decode("utf-8")
     return json.loads(body)
 
@@ -247,15 +274,24 @@ def get_omdb_rating(title, year=None):
 
 def get_movie_rating(title, year=None):
     """Get MPAA rating from TMDb or OMDb API"""
+    start_time = time.time()
+    
     # Try TMDb first if API key is available
     if os.getenv("TMDB_API_KEY"):
         rating = get_tmdb_rating(title, year)
         if rating:
+            elapsed = time.time() - start_time
+            if VERBOSE and elapsed > 2.0:
+                print(f"Slow TMDb lookup ({elapsed:.1f}s): {title} ({year})")
             return rating
     
     # Fall back to OMDb if API key is available
     if os.getenv("OMDB_API_KEY") and not OMDB_RATE_LIMITED:
-        return get_omdb_rating(title, year)
+        rating = get_omdb_rating(title, year)
+        elapsed = time.time() - start_time
+        if VERBOSE and elapsed > 2.0:
+            print(f"Slow OMDb lookup ({elapsed:.1f}s): {title} ({year})")
+        return rating
 
     if VERBOSE:
         if OMDB_RATE_LIMITED:
@@ -399,22 +435,29 @@ def main():
                 print("\nInterrupt requested; stopping after current progress.")
                 break
 
-            print(f"\rProcessing: {i}/{len(movie_files)}", end="", flush=True)
+            # Update progress on same line, but move to next line before printing rating info
+            if PRINT_RATING_TO_CONSOLE:
+                print(f"Processing: {i}/{len(movie_files)}")
+            else:
+                print(f"\rProcessing: {i}/{len(movie_files)}", end="", flush=True)
          
             # Extract title from filename
             title = file_path.stem
             year = extract_year_from_path(file_path)
             title_norm = normalize_title(title)
         
-            # Check existing rating
-            audio, existing_rating = read_rating_from_file(file_path)
-        
-            # Check cache
+            # Check cache first (fastest)
             cache_key = f"{title_norm}_{year}" if year else title_norm
             cached_rating = cache.get(cache_key)
         
-            # Check overrides
+            # Check overrides next (fast)
             override_rating = overrides.get(title_norm)
+        
+            # Only read file if we need to (for existing rating check)
+            existing_rating = None
+            audio = None
+            if not override_rating and not cached_rating:
+                audio, existing_rating = read_rating_from_file(file_path)
         
             # Determine rating
             new_rating = None
@@ -440,16 +483,32 @@ def main():
                     source = "Unknown"
         
             # Write rating if different from existing
-            if new_rating != existing_rating and new_rating != UNKNOWN_VALUE:
+            # For overrides/cache, we only need to write if we don't know the existing rating
+            # or if we explicitly read the file and found a different rating
+            should_write = False
+            if override_rating or cached_rating:
+                # For overrides/cache, only write if we read the file and rating differs
+                if audio is not None and new_rating != existing_rating:
+                    should_write = True
+            elif new_rating != existing_rating and new_rating != UNKNOWN_VALUE:
+                # For API ratings, write if different from existing
+                should_write = True
+            
+            if should_write:
                 success = write_rating_to_file(file_path, new_rating, audio=audio)
                 if success:
                     cache[cache_key] = new_rating
         
             # Print rating info
-            if PRINT_RATING_TO_CONSOLE and new_rating in VALID_RATINGS:
-                if rating_console_lines < MAX_RATING_CONSOLE_LINES:
-                    print(f"\nRATING={new_rating}: {title} ({year}) ({source})")
-                    rating_console_lines += 1
+            if PRINT_RATING_TO_CONSOLE:
+                if new_rating in VALID_RATINGS:
+                    if rating_console_lines < MAX_RATING_CONSOLE_LINES:
+                        print(f"RATING={new_rating}: {_format_display_title(title, year)} ({source})")
+                        rating_console_lines += 1
+                elif VERBOSE and new_rating == UNKNOWN_VALUE:
+                    if rating_console_lines < MAX_RATING_CONSOLE_LINES:
+                        print(f"UNKNOWN: {_format_display_title(title, year)} ({source})")
+                        rating_console_lines += 1
 
             stats[new_rating] = stats.get(new_rating, 0) + 1
 
