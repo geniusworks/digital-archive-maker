@@ -10,8 +10,8 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
 - `compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
 - `bin/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
-- `bin/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories and playlist fixing for missing tracks.
-- `custom-sync/master-sync.py` — orchestrates multiple sync jobs from YAML config; automatically runs explicit tagging before each sync to ensure new content is properly flagged.
+- `bin/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
+- `custom-sync/master-sync.py` — orchestrates multiple sync jobs from YAML config with intelligent global delete mode; automatically runs explicit tagging before each sync to ensure new content is properly flagged; features two-phase sync (sync all jobs, then global cleanup) and target-specific deletion logic.
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.
 - `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album.
 

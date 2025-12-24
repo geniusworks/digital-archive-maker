@@ -151,6 +151,9 @@ def main():
     errors = 0
 
     patterns = []
+    
+    # Track directories that have included files
+    dirs_with_included_files = set()
 
     max_mpaa = None
     if args.max_mpaa:
@@ -207,9 +210,34 @@ def main():
             if exclude:
                 rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
                 patterns.append("/" + _escape_rsync_pattern(rel))
+            else:
+                # Track directories that have included files
+                dirs_with_included_files.add(root)
 
         if args.max_flacs and total_flacs >= args.max_flacs:
             break
+
+    # Add exclude patterns for empty directories
+    all_dirs = set()
+    dirs_with_files = set()
+    
+    # First pass: collect all directories and those with files
+    for root, dirs, files in os.walk(src):
+        all_dirs.add(root)
+        for file in files:
+            if args.media == "music":
+                if file.lower().endswith((".flac", ".mp3")):
+                    dirs_with_files.add(root)
+            else:
+                if file.lower().endswith((".mp4",)):
+                    dirs_with_files.add(root)
+    
+    # Exclude empty directories (those without any media files)
+    empty_dirs = all_dirs - dirs_with_files
+    for empty_dir in sorted(empty_dirs, reverse=True):  # Process deepest first
+        rel = os.path.relpath(empty_dir, src).replace(os.sep, "/")
+        if rel != ".":  # Don't exclude the root source directory
+            patterns.append("/" + _escape_rsync_pattern(rel) + "/")
 
     _write_exclude_file(exclude_file, patterns)
 
@@ -219,12 +247,42 @@ def main():
         "--human-readable",
         "--stats",
         "--progress",
+        "--info=progress2",
         "--exclude-from",
         exclude_file,
     ]
     if args.dry_run:
         cmd.append("--dry-run")
-    if not args.no_delete:
+    
+    # Build source-aware delete patterns if delete is enabled
+    delete_patterns = []
+    if not args.no_delete and ":" in args.dest:  # Remote sync with delete
+        # Create include patterns for all directories in source
+        source_dirs = set()
+        for root, dirs, files in os.walk(src):
+            rel_dir = os.path.relpath(root, src).replace(os.sep, "/")
+            if rel_dir != ".":
+                source_dirs.add(rel_dir)
+        
+        # Add include patterns for source directories
+        for source_dir in sorted(source_dirs):
+            delete_patterns.append(f"+ /{source_dir}/")
+        
+        # Include all files in source directories
+        delete_patterns.append("+ */")
+        delete_patterns.append("+ *")
+        
+        # Exclude everything else (other library folders)
+        delete_patterns.append("- *")
+        
+        # Write delete patterns to a separate file
+        delete_exclude_file = exclude_file.replace('.txt', '_delete.txt')
+        _write_exclude_file(delete_exclude_file, delete_patterns)
+        
+        # Use --delete --exclude-from=delete_patterns_file
+        cmd.extend(["--delete", "--exclude-from", delete_exclude_file])
+    elif not args.no_delete:
+        # Local sync or no remote - use regular delete
         cmd.append("--delete")
     if args.ssh:
         cmd.extend(["-e", args.ssh])
@@ -250,9 +308,10 @@ def main():
         print(f"Tag read errors treated as Unknown: {errors}")
     print(f"Exclude file: {exclude_file} ({len(patterns)} lines)")
 
+    # Try direct subprocess call without shell - let Python handle argument escaping
     if args.print_command:
         print("Command:")
-        print(" ".join(cmd))
+        print(" ".join(f'"{arg}"' for arg in cmd))
         return 0
 
     result = subprocess.call(cmd)

@@ -244,6 +244,7 @@ Run `make help` for a summary. Common tasks:
   - Exclusion is based on the `EXPLICIT` tag (supports both FLAC and MP3).
   - Missing `EXPLICIT` is treated as `Unknown`.
   - **Automatic cleanup:** Empty directories are removed by default (use `--no-delete` to disable)
+  - **Enhanced progress:** Shows detailed transfer progress with `--info=progress2`
   - **Playlist fixing:** Automatically fixes .m3u8 files to replace missing tracks with "(skipped)" placeholders
   ```bash
   # Single sync job
@@ -253,7 +254,7 @@ Run `make help` for a summary. Common tasks:
     --exclude-explicit \
     --dry-run
   
-  # Multiple sync jobs with custom configuration
+  # Multiple sync jobs with global delete mode
   cd custom-sync && python master-sync.py --dry-run
   python master-sync.py --job clean-library
   
@@ -261,6 +262,70 @@ Run `make help` for a summary. Common tasks:
   python master-sync.py  # Tags new content then syncs all jobs
   python master-sync.py --skip-tagging  # Skip tagging phase
   ```
+
+### Master Sync Configuration (custom-sync/)
+The `custom-sync/` directory provides orchestration for multiple sync jobs with intelligent delete mode:
+
+**Configuration (sync-config.yaml):**
+```yaml
+# Global options
+global:
+  delete: false  # Global delete mode - removes folders that no longer exist in ANY source
+  dry_run: false
+  print_command: false
+  max_flacs: null  # Optional limit for testing
+
+sync_jobs:
+  # Clean CD library
+  - name: "clean-cd-library"
+    src: "/Volumes/Data/Media/Rips/CDs"
+    dest: "jellyfin@10.0.4.75:/mnt/media/Music"
+    exclude_explicit: true
+    exclude_unknown: true
+    
+  # Clean digital library
+  - name: "clean-digital-library"
+    src: "/Volumes/Data/Media/Rips/Digital"
+    dest: "jellyfin@10.0.4.75:/mnt/media/Music"
+    exclude_explicit: true
+    exclude_unknown: true
+
+  # Clean movies library
+  - name: "clean-movies-library"
+    src: "/Volumes/Data/Media/Rips/Movies"
+    dest: "jellyfin@10.0.4.75:/mnt/media/Movies"
+    media: "movies"
+    max_mpaa: "PG-13"
+    exclude_unrated: true
+    exclude_unknown: true
+```
+
+**Features:**
+- **Two-phase sync:** All jobs sync first (without delete), then global cleanup runs
+- **Source-aware delete:** Only deletes folders that don't exist in ANY source for that destination
+- **Target-specific:** Each destination (Music, Movies) is handled separately
+- **Empty folder exclusion:** Automatically skips artist/album folders with no included files
+- **Progress tracking:** Enhanced rsync progress with detailed transfer information
+
+**Usage:**
+```bash
+cd custom-sync
+
+# List available jobs
+python3 master-sync.py --list-jobs
+
+# Dry run all jobs
+python3 master-sync.py --dry-run
+
+# Run specific job
+python3 master-sync.py --job clean-cd-library
+
+# Run all jobs with global delete enabled
+python3 master-sync.py  # Uses global.delete from config
+
+# Skip explicit tagging phase
+python3 master-sync.py --skip-tagging
+```
 
 - Generate .m3u8 playlists for albums missing them
   ```bash

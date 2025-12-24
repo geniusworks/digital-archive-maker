@@ -4,12 +4,87 @@ Master sync script for running multiple library sync jobs.
 Reads sync-config.yaml and executes sync-library.py for each job.
 """
 
-import argparse
-import subprocess
-import sys
 import os
+import sys
+import subprocess
+import argparse
 import yaml
+import time
+import re
 from pathlib import Path
+
+
+def _parse_int(value):
+    if value is None:
+        return 0
+    return int(str(value).replace(",", "").strip())
+
+
+def _format_bytes(num_bytes):
+    try:
+        n = float(num_bytes)
+    except Exception:
+        n = 0.0
+    units = ["B", "KiB", "MiB", "GiB", "TiB"]
+    i = 0
+    while n >= 1024.0 and i < len(units) - 1:
+        n /= 1024.0
+        i += 1
+    if i == 0:
+        return f"{int(n)} {units[i]}"
+    return f"{n:.2f} {units[i]}"
+
+
+def _format_duration(seconds):
+    try:
+        total = int(round(float(seconds)))
+    except Exception:
+        total = 0
+    h = total // 3600
+    m = (total % 3600) // 60
+    s = total % 60
+    if h > 0:
+        return f"{h}h {m}m {s}s"
+    if m > 0:
+        return f"{m}m {s}s"
+    return f"{s}s"
+
+
+def parse_rsync_stats(output_text):
+    stats = {
+        "files_copied": 0,
+        "bytes_transferred": 0,
+        "bytes_sent": 0,
+        "bytes_received": 0,
+    }
+
+    if not output_text:
+        return stats
+
+    m = re.search(r"^Number of regular files transferred:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    if not m:
+        m = re.search(r"^Number of files transferred:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    if m:
+        stats["files_copied"] = _parse_int(m.group(1))
+
+    m = re.search(r"^Total transferred file size:\s+([0-9,]+)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+    if m:
+        stats["bytes_transferred"] = _parse_int(m.group(1))
+
+    m_sent = re.search(r"^Total bytes sent:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    m_recv = re.search(r"^Total bytes received:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    if m_sent:
+        stats["bytes_sent"] = _parse_int(m_sent.group(1))
+    if m_recv:
+        stats["bytes_received"] = _parse_int(m_recv.group(1))
+
+    if not (m_sent and m_recv):
+        m = re.search(r"sent\s+([0-9,]+)\s+bytes\s+received\s+([0-9,]+)\s+bytes", output_text)
+        if m:
+            stats["bytes_sent"] = _parse_int(m.group(1))
+            stats["bytes_received"] = _parse_int(m.group(2))
+
+    return stats
 
 
 def load_config(config_path):
@@ -62,9 +137,9 @@ def build_sync_command(job, sync_script_path, global_opts):
         if exclude_unrated:
             cmd.append("--exclude-unrated")
 
-    if job.get("delete", False):
-        cmd.append("--delete")
-    if job.get("dry_run", False):
+    # Note: delete is now handled globally, not per-job
+    
+    if job.get("dry_run", False) or global_opts.get("dry_run", False):
         cmd.append("--dry-run")
     if job.get("ssh"):
         cmd.extend(["--ssh", job["ssh"]])
@@ -72,8 +147,11 @@ def build_sync_command(job, sync_script_path, global_opts):
     # Add global options
     if global_opts.get("print_command", False):
         cmd.append("--print-command")
-    if global_opts.get("max_flacs", 0) > 0:
+    if global_opts.get("max_flacs"):
         cmd.extend(["--max-flacs", str(global_opts["max_flacs"])])
+    
+    # For all sync jobs, use --no-delete to avoid cross-library deletion
+    cmd.append("--no-delete")
     
     return cmd
 
@@ -105,7 +183,7 @@ def run_explicit_tagging(source_path, dry_run=False):
     
     try:
         print("Running explicit tagging to detect new content...")
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
@@ -143,7 +221,7 @@ def run_movie_rating_tagging(source_path, dry_run=False):
 
     try:
         print("Running movie rating tagging to detect new content...")
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
@@ -157,7 +235,7 @@ def run_movie_rating_tagging(source_path, dry_run=False):
 
 
 def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False):
-    """Run a single sync job."""
+    """Run a single sync job and return statistics."""
     print(f"\n{'='*60}")
     print(f"Running sync job: {job['name']}")
     print(f"Source: {job['src']}")
@@ -165,6 +243,19 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
     print(f"{'='*60}")
     
     media = job.get("media", "music")
+    
+    job_stats = {
+        'name': job['name'],
+        'media_type': media,
+        'start_time': time.time(),
+        'end_time': None,
+        'elapsed_seconds': 0,
+        'files_copied': 0,
+        'bytes_transferred': 0,
+        'bytes_sent': 0,
+        'bytes_received': 0,
+        'success': False
+    }
 
     # Run tagging first unless skipped
     if not skip_tagging and not dry_run:
@@ -180,20 +271,117 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
     if dry_run or job.get("dry_run", False):
         print("DRY RUN - Would execute:")
         print(" ".join(cmd))
-        return True
+        job_stats['end_time'] = time.time()
+        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        job_stats['success'] = True
+        return job_stats
     
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
-        return True
+        
+        job_stats.update(parse_rsync_stats(result.stdout))
+        job_stats['success'] = True
+        job_stats['end_time'] = time.time()
+        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        
+        return job_stats
     except subprocess.CalledProcessError as e:
         print(f"Error running sync job '{job['name']}':")
         print(f"Exit code: {e.returncode}")
         print(f"STDOUT: {e.stdout}")
         print(f"STDERR: {e.stderr}")
-        return False
+        job_stats['success'] = False
+        job_stats['end_time'] = time.time()
+        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        return job_stats
+
+
+def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
+    """Run global cleanup to remove folders that no longer exist in any source."""
+    if not global_opts.get("delete", False):
+        return True
+    
+    print(f"\n{'='*60}")
+    print("Running global cleanup (delete mode)")
+    print(f"{'='*60}")
+    
+    # Group jobs by destination
+    dest_groups = {}
+    for job in jobs:
+        dest = job["dest"]
+        if dest not in dest_groups:
+            dest_groups[dest] = []
+        dest_groups[dest].append(job)
+    
+    cleanup_success = True
+    
+    for dest, dest_jobs in dest_groups.items():
+        print(f"\nCleaning destination: {dest}")
+        
+        # Create a comprehensive exclude file that includes all sources
+        all_sources = [job["src"] for job in dest_jobs]
+        
+        # Build include patterns for all sources
+        include_patterns = []
+        for src in all_sources:
+            for root, dirs, files in os.walk(src):
+                rel_dir = os.path.relpath(root, src).replace(os.sep, "/")
+                if rel_dir != ".":
+                    include_patterns.append(f"+ /{rel_dir}/")
+        
+        # Include all files and directories
+        include_patterns.append("+ */")
+        include_patterns.append("+ *")
+        
+        # Exclude everything else
+        include_patterns.append("- *")
+        
+        # Write cleanup patterns file
+        cleanup_file = f"/tmp/cleanup_{hash(dest)}.txt"
+        with open(cleanup_file, 'w') as f:
+            for pattern in include_patterns:
+                f.write(pattern + '\n')
+        
+        # Build cleanup command
+        cmd = [
+            sys.executable,
+            sync_script_path,
+            "--src", "/dev/null",  # Dummy source
+            "--dest", dest,
+            "--exclude-from", cleanup_file,
+            "--delete"
+        ]
+        
+        if dry_run:
+            cmd.append("--dry-run")
+        
+        if global_opts.get("print_command", False):
+            print("Cleanup command:")
+            print(" ".join(cmd))
+        
+        try:
+            print("Running cleanup...")
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            print(result.stdout)
+            if result.stderr:
+                print("STDERR:", result.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running cleanup for {dest}:")
+            print(f"Exit code: {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+            cleanup_success = False
+        
+        # Cleanup temp file
+        try:
+            os.remove(cleanup_file)
+        except:
+            pass
+    
+    return cleanup_success
 
 
 def main():
@@ -247,7 +435,11 @@ def main():
         return 1
     
     # Get global options
-    global_opts = config.get("global_options", {})
+    global_opts = config.get("global", {})  # Changed from "global_options" to "global"
+    
+    # Override with command line args
+    if args.dry_run:
+        global_opts["dry_run"] = True
     
     # Filter jobs if specific job requested
     jobs = config.get("sync_jobs", [])
@@ -257,13 +449,19 @@ def main():
             print(f"Error: Job '{args.job}' not found in configuration")
             return 1
     
-    # Run jobs
+    run_start = time.time()
     success_count = 0
     total_count = len(jobs)
+    job_stats_list = []
     
     for job in jobs:
-        if run_sync_job(job, str(sync_script_path), global_opts, args.dry_run, args.skip_tagging):
+        stats = run_sync_job(job, str(sync_script_path), global_opts, args.dry_run, args.skip_tagging)
+        job_stats_list.append(stats)
+        if stats.get("success"):
             success_count += 1
+    
+    # Run global cleanup if enabled
+    cleanup_success = run_global_cleanup(jobs, str(sync_script_path), global_opts, args.dry_run)
     
     # Summary
     print(f"\n{'='*60}")
@@ -271,9 +469,59 @@ def main():
     print(f"  Total jobs: {total_count}")
     print(f"  Successful: {success_count}")
     print(f"  Failed: {total_count - success_count}")
+    print(f"  Cleanup: {'Success' if cleanup_success else 'Failed'}")
+
+    run_elapsed = time.time() - run_start
+    per_media = {}
+    for s in job_stats_list:
+        media = s.get("media_type") or "unknown"
+        bucket = per_media.setdefault(
+            media,
+            {
+                "jobs": 0,
+                "failed": 0,
+                "files_copied": 0,
+                "bytes_transferred": 0,
+                "bytes_sent": 0,
+                "bytes_received": 0,
+                "elapsed_seconds": 0,
+            },
+        )
+        bucket["jobs"] += 1
+        if not s.get("success"):
+            bucket["failed"] += 1
+        bucket["files_copied"] += int(s.get("files_copied") or 0)
+        bucket["bytes_transferred"] += int(s.get("bytes_transferred") or 0)
+        bucket["bytes_sent"] += int(s.get("bytes_sent") or 0)
+        bucket["bytes_received"] += int(s.get("bytes_received") or 0)
+        bucket["elapsed_seconds"] += float(s.get("elapsed_seconds") or 0)
+
+    if job_stats_list:
+        print("\nStats by media type:")
+        for media in sorted(per_media.keys()):
+            b = per_media[media]
+            print(f"  {media}:")
+            print(f"    Jobs: {b['jobs']} (failed: {b['failed']})")
+            print(f"    Files copied: {b['files_copied']}")
+            print(f"    Data transferred: {_format_bytes(b['bytes_transferred'])}")
+            if b["bytes_sent"] or b["bytes_received"]:
+                print(f"    Network: sent {_format_bytes(b['bytes_sent'])}, received {_format_bytes(b['bytes_received'])}")
+            print(f"    Job time: {_format_duration(b['elapsed_seconds'])}")
+
+        total_files = sum(int(s.get("files_copied") or 0) for s in job_stats_list)
+        total_bytes = sum(int(s.get("bytes_transferred") or 0) for s in job_stats_list)
+        total_sent = sum(int(s.get("bytes_sent") or 0) for s in job_stats_list)
+        total_recv = sum(int(s.get("bytes_received") or 0) for s in job_stats_list)
+        print("\nOverall stats:")
+        print(f"  Total files copied: {total_files}")
+        print(f"  Total data transferred: {_format_bytes(total_bytes)}")
+        if total_sent or total_recv:
+            print(f"  Total network: sent {_format_bytes(total_sent)}, received {_format_bytes(total_recv)}")
+        print(f"  Wall time: {_format_duration(run_elapsed)}")
+
     print(f"{'='*60}")
     
-    return 0 if success_count == total_count else 1
+    return 0 if (success_count == total_count and cleanup_success) else 1
 
 
 if __name__ == "__main__":

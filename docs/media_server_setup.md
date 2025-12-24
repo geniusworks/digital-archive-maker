@@ -107,35 +107,78 @@ metaflac --show-tag=EXPLICIT "Artist/Album/01 - Song.flac"
 1. Remove the EXPLICIT tag: `metaflac --remove-tag=EXPLICIT "file.flac"`
 2. Run the tagging script again to re-query APIs
 
-### Syncing to a Jellyfin server (optional)
-If your source archive contains both explicit and non-explicit content, you can sync to a destination server while excluding content based on the `EXPLICIT` tag.
+### Sync to media server (Jellyfin/Plex/Emby)
+This repo provides intelligent sync capabilities that respect explicit content tagging:
 
-- Script: `bin/sync-library.py`
-- Options:
-  - `--exclude-explicit` skips `EXPLICIT=Yes`
-  - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
-  - `--dry-run` previews the copy plan
-  - `--ssh "ssh -p 2222"` custom SSH command
-  - `--delete` removes files from destination that no longer exist in source
-
-**Local sync example:**
-```
+#### Single library sync
+```bash
 python3 bin/sync-library.py \
   --src "/Volumes/Data/Media/Rips/CDs" \
-  --dest "/path/to/jellyfin/music" \
+  --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
-  --dry-run
+  --exclude-unknown
 ```
 
-**Remote SSH sync example:**
+#### Multi-library orchestration (recommended)
+The `custom-sync/` system provides advanced sync orchestration:
+
+**Configuration (sync-config.yaml):**
+```yaml
+global:
+  delete: false  # Global delete mode - removes folders that no longer exist in ANY source
+  dry_run: false
+
+sync_jobs:
+  - name: "clean-cd-library"
+    src: "/Volumes/Data/Media/Rips/CDs"
+    dest: "jellyfin@server:/mnt/media/Music"
+    exclude_explicit: true
+    exclude_unknown: true
+    
+  - name: "clean-digital-library"
+    src: "/Volumes/Data/Media/Rips/Digital"
+    dest: "jellyfin@server:/mnt/media/Music"
+    exclude_explicit: true
+    exclude_unknown: true
+
+  - name: "clean-movies-library"
+    src: "/Volumes/Data/Media/Rips/Movies"
+    dest: "jellyfin@server:/mnt/media/Movies"
+    media: "movies"
+    max_mpaa: "PG-13"
+    exclude_unrated: true
+    exclude_unknown: true
 ```
-python3 bin/sync-library.py \
-  --src "/Volumes/Data/Media/Rips/CDs" \
-  --dest "user@server:/path/to/music" \
-  --ssh "ssh -p 2222" \
-  --exclude-explicit \
-  --dry-run
+
+**Key features:**
+- **Two-phase sync:** All jobs sync first (without delete), then global cleanup runs
+- **Source-aware delete:** Only deletes folders that don't exist in ANY source for that destination
+- **Target-specific:** Each destination (Music, Movies) is handled separately
+- **Empty folder exclusion:** Automatically skips artist/album folders with no included files
+- **Enhanced progress:** Shows detailed transfer progress information
+
+**Usage:**
+```bash
+cd custom-sync
+
+# Dry run to test configuration
+python3 master-sync.py --dry-run
+
+# Run all jobs
+python3 master-sync.py
+
+# Run specific job only
+python3 master-sync.py --job clean-cd-library
+
+# Enable global delete mode (set in config)
+python3 master-sync.py  # Will clean up orphaned folders
 ```
+
+**Benefits for media servers:**
+- Maintains clean library structure without cross-library conflicts
+- Respects explicit content policies automatically
+- Handles multiple sources (CDs, Digital) to same destination safely
+- Provides detailed progress and error reporting
 
 ---
 
