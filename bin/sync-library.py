@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import csv
 import os
 import subprocess
 import shutil
+import fnmatch
+import re
 
 from mutagen.flac import FLAC
 from mutagen.mp4 import MP4
@@ -13,6 +16,180 @@ from mutagen.id3 import ID3NoHeaderError
 EXPLICIT_TAG = "EXPLICIT"
 MPAA_TAG = "©rat"
 UNKNOWN_VALUE = "Unknown"
+
+
+def _normalize_text(value):
+    if value is None:
+        return ""
+    s = str(value)
+    s = s.replace("\u2019", "'")
+    s = s.replace("\u2018", "'")
+    s = s.replace("\u201c", '"')
+    s = s.replace("\u201d", '"')
+    s = " ".join(s.strip().lower().split())
+    return s
+
+
+def _override_field_matches(rule_val, actual_val):
+    if rule_val == "*":
+        return True
+    if any(ch in rule_val for ch in ["*", "?", "["]):
+        return fnmatch.fnmatchcase(actual_val, rule_val)
+    return rule_val == actual_val
+
+
+def _load_explicit_overrides(repo_root):
+    overrides_file = os.path.join(repo_root, "log", "explicit_overrides.csv")
+    overrides = []
+    if not os.path.exists(overrides_file):
+        return overrides
+
+    try:
+        with open(overrides_file, "r", encoding="utf-8", newline="") as f:
+            reader = csv.reader(f)
+            order = 0
+            for row in reader:
+                if not row:
+                    continue
+                if row[0].strip().startswith("#"):
+                    continue
+                if row[0].strip().lower() in {"artist", "#artist"}:
+                    continue
+                if len(row) < 4:
+                    continue
+
+                artist, album, title, explicit_val = (x.strip() for x in row[:4])
+                if not artist or not album or not title or not explicit_val:
+                    continue
+
+                val = explicit_val.strip().lower()
+                if val in {"yes", "y", "true", "1", "explicit"}:
+                    val_out = "Yes"
+                elif val in {"no", "n", "false", "0", "clean", "notexplicit"}:
+                    val_out = "No"
+                else:
+                    val_out = UNKNOWN_VALUE
+
+                overrides.append(
+                    {
+                        "artist": artist if artist == "*" else _normalize_text(artist),
+                        "album": album if album == "*" else _normalize_text(album),
+                        "title": title if title == "*" else _normalize_text(title),
+                        "value": val_out,
+                        "order": order,
+                    }
+                )
+                order += 1
+    except Exception:
+        return []
+
+    return overrides
+
+
+def _resolve_override(overrides, artist_norm, album_norm, title_norm):
+    best = None
+    best_score = (-1, -1)
+    for rule in overrides or []:
+        ra = rule.get("artist")
+        rb = rule.get("album")
+        rt = rule.get("title")
+
+        if not _override_field_matches(ra, artist_norm):
+            continue
+        if not _override_field_matches(rb, album_norm):
+            continue
+        if not _override_field_matches(rt, title_norm):
+            continue
+
+        spec = 0
+        if ra != "*":
+            spec += 1
+        if rb != "*":
+            spec += 1
+        if rt != "*":
+            spec += 1
+
+        score = (spec, int(rule.get("order") or 0))
+        if score > best_score:
+            best_score = score
+            best = rule
+
+    if best is None:
+        return None
+    return best.get("value")
+
+
+def _infer_music_identity_from_path(audio_path, src_root):
+    try:
+        rel = os.path.relpath(audio_path, src_root).replace(os.sep, "/")
+    except Exception:
+        rel = os.path.basename(audio_path)
+
+    parts = [p for p in rel.split("/") if p and p != "."]
+    artist = parts[0] if len(parts) >= 3 else ""
+    album = parts[1] if len(parts) >= 3 else ""
+    filename = parts[-1] if parts else os.path.basename(audio_path)
+    title = filename.rsplit(".", 1)[0]
+    m = re.match(r"^\s*\d+\s*-\s*(.*)$", title)
+    if m:
+        title = m.group(1)
+    return _normalize_text(artist), _normalize_text(album), _normalize_text(title)
+
+
+def _read_music_identity(audio_path, src_root=None):
+    artist = ""
+    album = ""
+    title = ""
+
+    if audio_path.lower().endswith(".flac"):
+        try:
+            audio = FLAC(audio_path)
+            artist = (audio.get("artist") or [""])[0]
+            album = (audio.get("album") or [""])[0]
+            title = (audio.get("title") or [""])[0]
+        except Exception:
+            artist = ""
+            album = ""
+            title = ""
+    else:
+        try:
+            audio = MP3(audio_path)
+            if audio.tags:
+                a = audio.tags.get("TPE1")
+                b = audio.tags.get("TALB")
+                t = audio.tags.get("TIT2")
+                if a is not None and getattr(a, "text", None):
+                    artist = a.text[0]
+                if b is not None and getattr(b, "text", None):
+                    album = b.text[0]
+                if t is not None and getattr(t, "text", None):
+                    title = t.text[0]
+        except ID3NoHeaderError:
+            artist = ""
+            album = ""
+            title = ""
+        except Exception:
+            artist = ""
+            album = ""
+            title = ""
+
+    if not title:
+        title = os.path.basename(audio_path).rsplit(".", 1)[0]
+
+    artist_norm = _normalize_text(artist)
+    album_norm = _normalize_text(album)
+    title_norm = _normalize_text(title)
+
+    if src_root and (not artist_norm or not album_norm):
+        p_artist, p_album, p_title = _infer_music_identity_from_path(audio_path, src_root)
+        if not artist_norm:
+            artist_norm = p_artist
+        if not album_norm:
+            album_norm = p_album
+        if not title_norm:
+            title_norm = p_title
+
+    return artist_norm, album_norm, title_norm
 
 MPAA_ORDER = {
     "G": 0,
@@ -128,6 +305,23 @@ def _write_exclude_file(exclude_file, patterns):
             f.write("\n")
 
 
+def _is_under_excluded_dir(rel_path, excluded_dirs):
+    if not excluded_dirs:
+        return False
+    parts = rel_path.split("/")
+    if len(parts) <= 1:
+        return False
+    prefix = ""
+    for part in parts[:-1]:
+        if prefix:
+            prefix = prefix + part + "/"
+        else:
+            prefix = part + "/"
+        if prefix in excluded_dirs:
+            return True
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", required=True, help="Source root")
@@ -165,6 +359,8 @@ def main():
     parser.add_argument("--exclude-file", default=None, help="Write rsync excludes to this file")
     parser.add_argument("--max-flacs", type=int, default=0, help="Only scan first N FLACs (debug)")
     parser.add_argument("--print-command", action="store_true", help="Print rsync command and exit")
+    parser.add_argument("--scan-only", action="store_true", help="Scan and write exclude/keep files, but do not run rsync")
+    parser.add_argument("--keep-file", default=None, help="Write included (kept) relative file paths to this file")
 
     args = parser.parse_args()
 
@@ -174,14 +370,22 @@ def main():
     default_exclude_file = os.path.join(repo_root, "log", "sync_exclude.txt")
     exclude_file = args.exclude_file or default_exclude_file
 
+    overrides = []
+    if args.media == "music" and args.exclude_explicit:
+        overrides = _load_explicit_overrides(repo_root)
+
     total_flacs = 0
     excluded_yes = 0
     excluded_unknown = 0
     excluded_mpaa = 0
     excluded_unrated = 0
     errors = 0
+    override_yes_excluded = 0
+    override_no_included = 0
 
     patterns = []
+    excluded_files = set()
+    excluded_dirs = set()
     
     # Track directories that have included files
     dirs_with_included_files = set()
@@ -215,10 +419,22 @@ def main():
                     errors += 1
                     tag = UNKNOWN_VALUE
 
-                if tag == "Yes" and args.exclude_explicit:
+                override_val = None
+                if overrides:
+                    artist_norm, album_norm, title_norm = _read_music_identity(fullpath, src)
+                    override_val = _resolve_override(overrides, artist_norm, album_norm, title_norm)
+
+                effective = override_val if override_val is not None else tag
+
+                if override_val == "Yes":
+                    override_yes_excluded += 1
+                elif override_val == "No":
+                    override_no_included += 1
+
+                if effective == "Yes" and args.exclude_explicit:
                     exclude = True
                     excluded_yes += 1
-                elif tag == UNKNOWN_VALUE and args.exclude_unknown:
+                elif effective == UNKNOWN_VALUE and args.exclude_unknown:
                     exclude = True
                     excluded_unknown += 1
             else:
@@ -238,11 +454,11 @@ def main():
                     exclude = True
                     excluded_mpaa += 1
 
+            rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
             if exclude:
-                rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
                 patterns.append("/" + _escape_rsync_pattern(rel))
+                excluded_files.add(rel)
             else:
-                # Track directories that have included files
                 dirs_with_included_files.add(root)
 
         if args.max_flacs and total_flacs >= args.max_flacs:
@@ -269,8 +485,27 @@ def main():
         rel = os.path.relpath(empty_dir, src).replace(os.sep, "/")
         if rel != ".":  # Don't exclude the root source directory
             patterns.append("/" + _escape_rsync_pattern(rel) + "/")
+            excluded_dirs.add(rel + "/")
 
     _write_exclude_file(exclude_file, patterns)
+
+    if args.keep_file:
+        kept_files = set()
+        for root, _dirs, files in os.walk(src):
+            for name in files:
+                fullpath = os.path.join(root, name)
+                rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
+                if rel in excluded_files:
+                    continue
+                if _is_under_excluded_dir(rel, excluded_dirs):
+                    continue
+                kept_files.add(rel)
+
+        os.makedirs(os.path.dirname(os.path.abspath(args.keep_file)), exist_ok=True)
+        with open(args.keep_file, "w", encoding="utf-8", newline="\n") as f:
+            for p in sorted(kept_files):
+                f.write(p)
+                f.write("\n")
 
     rsync_bin = _resolve_rsync_bin()
     cmd = [
@@ -333,6 +568,9 @@ def main():
         print(f"Scanned files: {total_flacs}")
         print(f"Excluded EXPLICIT=Yes: {excluded_yes} (exclude-explicit={args.exclude_explicit})")
         print(f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        if args.exclude_explicit:
+            print(f"Overrides matched Yes: {override_yes_excluded}")
+            print(f"Overrides matched No: {override_no_included}")
         print(f"Tag read errors treated as Unknown: {errors}")
     else:
         print(f"Scanned files: {total_flacs}")
@@ -346,6 +584,9 @@ def main():
     if args.print_command:
         print("Command:")
         print(" ".join(f'"{arg}"' for arg in cmd))
+        return 0
+
+    if args.scan_only:
         return 0
 
     result = subprocess.call(cmd)

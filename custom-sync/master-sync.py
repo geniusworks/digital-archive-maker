@@ -11,6 +11,8 @@ import argparse
 import yaml
 import time
 import re
+import tempfile
+import shutil
 from pathlib import Path
 
 
@@ -48,6 +50,18 @@ def _format_duration(seconds):
     if m > 0:
         return f"{m}m {s}s"
     return f"{s}s"
+
+
+def _resolve_rsync_bin():
+    override = os.environ.get("RSYNC_BIN")
+    if override:
+        return override
+
+    for candidate in ("/opt/homebrew/bin/rsync", "/usr/local/bin/rsync"):
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return shutil.which("rsync") or "rsync"
 
 
 def parse_rsync_stats(output_text):
@@ -320,65 +334,146 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
     
     for dest, dest_jobs in dest_groups.items():
         print(f"\nCleaning destination: {dest}")
-        
-        # Create a comprehensive exclude file that includes all sources
-        all_sources = [job["src"] for job in dest_jobs]
-        
-        # Build include patterns for all sources
-        include_patterns = []
-        for src in all_sources:
-            for root, dirs, files in os.walk(src):
-                rel_dir = os.path.relpath(root, src).replace(os.sep, "/")
-                if rel_dir != ".":
-                    include_patterns.append(f"+ /{rel_dir}/")
-        
-        # Include all files and directories
-        include_patterns.append("+ */")
-        include_patterns.append("+ *")
-        
-        # Exclude everything else
-        include_patterns.append("- *")
-        
-        # Write cleanup patterns file
-        cleanup_file = f"/tmp/cleanup_{hash(dest)}.txt"
-        with open(cleanup_file, 'w') as f:
-            for pattern in include_patterns:
-                f.write(pattern + '\n')
-        
-        # Build cleanup command
-        cmd = [
-            sys.executable,
-            sync_script_path,
-            "--src", "/dev/null",  # Dummy source
-            "--dest", dest,
-            "--exclude-from", cleanup_file,
-            "--delete"
-        ]
-        
-        if dry_run:
-            cmd.append("--dry-run")
-        
-        if global_opts.get("print_command", False):
-            print("Cleanup command:")
-            print(" ".join(cmd))
-        
+
+        keep_set = set()
+        ssh_cmd = None
+        for job in dest_jobs:
+            if job.get("ssh"):
+                ssh_cmd = job.get("ssh")
+                break
+
+        for job in dest_jobs:
+            media = job.get("media", "music")
+            keep_file = f"/tmp/keep_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
+            exclude_file = f"/tmp/exclude_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
+
+            cmd = [
+                sys.executable,
+                sync_script_path,
+                "--src",
+                job["src"],
+                "--dest",
+                dest,
+                "--media",
+                media,
+                "--no-delete",
+                "--scan-only",
+                "--keep-file",
+                keep_file,
+                "--exclude-file",
+                exclude_file,
+            ]
+
+            if media == "music":
+                if job.get("exclude_explicit", False):
+                    cmd.append("--exclude-explicit")
+                if job.get("exclude_unknown", False):
+                    cmd.append("--exclude-unknown")
+            else:
+                max_mpaa = job.get("max_mpaa")
+                if not max_mpaa:
+                    max_mpaa = "PG-13"
+                cmd.extend(["--max-mpaa", str(max_mpaa)])
+
+                exclude_unknown = job.get("exclude_unknown")
+                if exclude_unknown is None:
+                    exclude_unknown = True
+                if exclude_unknown:
+                    cmd.append("--exclude-unknown")
+
+                exclude_unrated = job.get("exclude_unrated")
+                if exclude_unrated is None:
+                    exclude_unrated = True
+                if exclude_unrated:
+                    cmd.append("--exclude-unrated")
+
+            if job.get("ssh"):
+                cmd.extend(["--ssh", job["ssh"]])
+
+            if global_opts.get("print_command", False):
+                cmd.append("--print-command")
+
+            try:
+                result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    print("STDERR:", result.stderr)
+            except subprocess.CalledProcessError as e:
+                print(f"Error building keep list for job '{job.get('name', '')}' (dest={dest}):")
+                print(f"Exit code: {e.returncode}")
+                print(f"STDOUT: {e.stdout}")
+                print(f"STDERR: {e.stderr}")
+                cleanup_success = False
+                continue
+
+            try:
+                with open(keep_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        p = line.strip().replace("\\", "/")
+                        if p:
+                            keep_set.add(p)
+            except FileNotFoundError:
+                pass
+            finally:
+                try:
+                    os.remove(keep_file)
+                except Exception:
+                    pass
+                try:
+                    os.remove(exclude_file)
+                except Exception:
+                    pass
+
+        filter_file = f"/tmp/cleanup_filter_{hash(dest)}.txt"
+        with open(filter_file, "w", encoding="utf-8", newline="\n") as f:
+            for p in sorted(keep_set):
+                f.write(f"P /{p}\n")
+
+        dest_arg = dest
+        if not dest_arg.endswith("/"):
+            dest_arg = dest_arg + "/"
+
+        with tempfile.TemporaryDirectory(prefix="master_sync_empty_") as empty_dir:
+            src_arg = empty_dir.rstrip(os.sep) + os.sep
+            rsync_bin = _resolve_rsync_bin()
+            rsync_cmd = [
+                rsync_bin,
+                "-a",
+                "--delete",
+                "--filter",
+                f"merge {filter_file}",
+                src_arg,
+                dest_arg,
+            ]
+
+            if ssh_cmd:
+                rsync_cmd.extend(["-e", ssh_cmd])
+
+            if dry_run:
+                rsync_cmd.append("--dry-run")
+
+            if global_opts.get("print_command", False):
+                print("Cleanup rsync command:")
+                print(" ".join(rsync_cmd))
+
+            try:
+                print("Running cleanup...")
+                result = subprocess.run(rsync_cmd, check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    print("STDERR:", result.stderr)
+            except subprocess.CalledProcessError as e:
+                print(f"Error running cleanup for {dest}:")
+                print(f"Exit code: {e.returncode}")
+                print(f"STDOUT: {e.stdout}")
+                print(f"STDERR: {e.stderr}")
+                cleanup_success = False
+
         try:
-            print("Running cleanup...")
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
-            print(result.stdout)
-            if result.stderr:
-                print("STDERR:", result.stderr)
-        except subprocess.CalledProcessError as e:
-            print(f"Error running cleanup for {dest}:")
-            print(f"Exit code: {e.returncode}")
-            print(f"STDOUT: {e.stdout}")
-            print(f"STDERR: {e.stderr}")
-            cleanup_success = False
-        
-        # Cleanup temp file
-        try:
-            os.remove(cleanup_file)
-        except:
+            os.remove(filter_file)
+        except Exception:
             pass
     
     return cleanup_success
