@@ -464,23 +464,26 @@ def main():
         if args.max_flacs and total_flacs >= args.max_flacs:
             break
 
-    # Add exclude patterns for empty directories
+    # Add exclude patterns for empty directories (directories with no INCLUDED media files)
+    # Use dirs_with_included_files which was populated during the main scan loop
+    # A directory is "empty" if it has no included media files (all were excluded or none exist)
     all_dirs = set()
-    dirs_with_files = set()
-    
-    # First pass: collect all directories and those with files
     for root, dirs, files in os.walk(src):
         all_dirs.add(root)
-        for file in files:
-            if args.media == "music":
-                if file.lower().endswith((".flac", ".mp3")):
-                    dirs_with_files.add(root)
-            else:
-                if file.lower().endswith((".mp4",)):
-                    dirs_with_files.add(root)
     
-    # Exclude empty directories (those without any media files)
-    empty_dirs = all_dirs - dirs_with_files
+    # Propagate: if a child dir has included files, all ancestors should be kept
+    dirs_to_keep = set()
+    for d in dirs_with_included_files:
+        current = d
+        while current and current != src:
+            dirs_to_keep.add(current)
+            parent = os.path.dirname(current)
+            if parent == current:
+                break
+            current = parent
+    
+    # Exclude directories that have no included files (and no children with included files)
+    empty_dirs = all_dirs - dirs_to_keep - {src}
     for empty_dir in sorted(empty_dirs, reverse=True):  # Process deepest first
         rel = os.path.relpath(empty_dir, src).replace(os.sep, "/")
         if rel != ".":  # Don't exclude the root source directory

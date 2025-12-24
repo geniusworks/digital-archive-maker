@@ -13,6 +13,7 @@ import time
 import re
 import tempfile
 import shutil
+import signal
 from pathlib import Path
 
 
@@ -195,18 +196,41 @@ def run_explicit_tagging(source_path, dry_run=False):
         print(" ".join(cmd))
         return True
     
+    process = None
     try:
         print("Running explicit tagging to detect new content...")
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
-        print(result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        _, stderr = process.communicate()
+        if stderr:
+            print("STDERR:", stderr)
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
         return True
+    except KeyboardInterrupt:
+        print("\n\nTagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Tagging aborted.")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"Error running explicit tagging on '{source_path}':")
         print(f"Exit code: {e.returncode}")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
         return False
 
 
@@ -233,18 +257,41 @@ def run_movie_rating_tagging(source_path, dry_run=False):
         print(" ".join(cmd))
         return True
 
+    process = None
     try:
         print("Running movie rating tagging to detect new content...")
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
-        print(result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        _, stderr = process.communicate()
+        if stderr:
+            print("STDERR:", stderr)
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
         return True
+    except KeyboardInterrupt:
+        print("\n\nTagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Tagging aborted.")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"Error running movie rating tagging on '{source_path}':")
         print(f"Exit code: {e.returncode}")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
         return False
 
 
@@ -290,23 +337,62 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
         job_stats['success'] = True
         return job_stats
     
+    process = None
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='replace')
-        print(result.stdout)
-        if result.stderr:
-            print("STDERR:", result.stderr)
+        # Stream output in real-time while collecting for stats parsing
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1  # Line buffered
+        )
         
-        job_stats.update(parse_rsync_stats(result.stdout))
+        stdout_lines = []
+        # Read stdout line by line and print in real-time
+        for line in process.stdout:
+            print(line, end='', flush=True)
+            stdout_lines.append(line)
+        
+        # Wait for process to complete and get stderr
+        _, stderr = process.communicate()
+        
+        if stderr:
+            print("STDERR:", stderr)
+        
+        stdout_text = ''.join(stdout_lines)
+        
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text, stderr)
+        
+        job_stats.update(parse_rsync_stats(stdout_text))
         job_stats['success'] = True
         job_stats['end_time'] = time.time()
         job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
         
         return job_stats
+    except KeyboardInterrupt:
+        print("\n\nSync interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        job_stats['success'] = False
+        job_stats['end_time'] = time.time()
+        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        print("Sync aborted.")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"Error running sync job '{job['name']}':")
         print(f"Exit code: {e.returncode}")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        if e.stdout:
+            print(f"STDOUT: {e.stdout}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
         job_stats['success'] = False
         job_stats['end_time'] = time.time()
         job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
@@ -457,18 +543,41 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                 print("Cleanup rsync command:")
                 print(" ".join(rsync_cmd))
 
+            process = None
             try:
                 print("Running cleanup...")
-                result = subprocess.run(rsync_cmd, check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
-                if result.stdout:
-                    print(result.stdout)
-                if result.stderr:
-                    print("STDERR:", result.stderr)
+                # Stream output in real-time
+                process = subprocess.Popen(
+                    rsync_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    bufsize=1
+                )
+                for line in process.stdout:
+                    print(line, end='', flush=True)
+                _, stderr = process.communicate()
+                if stderr:
+                    print("STDERR:", stderr)
+                if process.returncode != 0:
+                    raise subprocess.CalledProcessError(process.returncode, rsync_cmd, "", stderr)
+            except KeyboardInterrupt:
+                print("\n\nCleanup interrupted by user. Cleaning up...")
+                if process:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                print("Cleanup aborted.")
+                cleanup_success = False
             except subprocess.CalledProcessError as e:
                 print(f"Error running cleanup for {dest}:")
                 print(f"Exit code: {e.returncode}")
-                print(f"STDOUT: {e.stdout}")
-                print(f"STDERR: {e.stderr}")
+                if e.stderr:
+                    print(f"STDERR: {e.stderr}")
                 cleanup_success = False
 
         try:
