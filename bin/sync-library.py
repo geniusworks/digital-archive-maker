@@ -2,6 +2,7 @@
 import argparse
 import os
 import subprocess
+import shutil
 
 from mutagen.flac import FLAC
 from mutagen.mp4 import MP4
@@ -20,6 +21,36 @@ MPAA_ORDER = {
     "R": 3,
     "NC-17": 4,
 }
+
+
+def _rsync_supports_info_progress2():
+    rsync_bin = _resolve_rsync_bin()
+    try:
+        p = subprocess.run(
+            [rsync_bin, "--help"],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except Exception:
+        return False
+
+    out = (p.stdout or "") + "\n" + (p.stderr or "")
+    return "--info" in out and "progress2" in out
+
+
+def _resolve_rsync_bin():
+    override = os.environ.get("RSYNC_BIN")
+    if override:
+        return override
+
+    for candidate in ("/opt/homebrew/bin/rsync", "/usr/local/bin/rsync"):
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return shutil.which("rsync") or "rsync"
 
 
 def _normalize_explicit_value(raw):
@@ -241,16 +272,19 @@ def main():
 
     _write_exclude_file(exclude_file, patterns)
 
+    rsync_bin = _resolve_rsync_bin()
     cmd = [
-        "rsync",
+        rsync_bin,
         "-a",
         "--human-readable",
         "--stats",
         "--progress",
-        "--info=progress2",
         "--exclude-from",
         exclude_file,
     ]
+
+    if _rsync_supports_info_progress2():
+        cmd.append("--info=progress2")
     if args.dry_run:
         cmd.append("--dry-run")
     
