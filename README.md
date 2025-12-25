@@ -110,7 +110,7 @@ For manual tag management and media server sync details, see `docs/media_server_
 - Automatic lookups require **one** of:
   - `TMDB_API_KEY` (preferred; free from TMDb)
   - `OMDB_API_KEY` (fallback; from OMDb)
-  - The script will auto-load these from `.env` at the repo root if present.
+  - The script will auto-load these from `.env` at the repo root if present (via `python-dotenv`).
 - Waterfall (highest priority first):
   1. **Manual overrides** from `log/movie_rating_overrides.csv` (or `log/shows_rating_overrides.csv` for shows)
   2. **Cache** from `log/movie_rating_cache.json` (or `log/shows_rating_cache.json` for shows)
@@ -155,6 +155,51 @@ python3 bin/tag-movie-ratings.py "/path/to/movies" --max-files 50
 # Tag shows library (uses shows_rating_* files)
 python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows --dry-run
 python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows
+```
+
+## Comprehensive movie metadata tagging
+- Script: `bin/tag-movie-metadata.py`
+- Writes comprehensive MP4 metadata including title, year, genre, director, actors, synopsis, ratings, studio, and poster artwork
+- Automatic lookups require **one** of:
+  - `TMDB_API_KEY` (preferred; free from TMDb, includes poster artwork)
+  - `OMDB_API_KEY` (fallback; from OMDb)
+  - The script will auto-load these from `.env` at the repo root if present (via `python-dotenv`).
+- Input methods:
+  - `--imdb-id` (tt####### format)
+  - `--tmdb-id` (numeric TMDb ID)
+  - `--title` and `--year` (for search lookup)
+- Metadata sources (highest priority first):
+  1. **TMDb** lookup by IMDb ID, TMDb ID, or title/year when `TMDB_API_KEY` is set
+  2. **OMDb** lookup by IMDb ID when `OMDB_API_KEY` is set
+- Written MP4 atoms:
+  - `©nam` - Title
+  - `©day` - Year/Release date
+  - `©des` - Description/Synopsis
+  - `©gen` - Genre
+  - `©ART` - Director
+  - `©wrt` - Writers
+  - `©act` - Actors
+  - `©rat` - MPAA rating
+  - `©cpy` - Studio
+  - `covr` - Poster artwork (TMDb only)
+  - Custom atoms: IMDb ID, TMDb ID, runtime, budget, revenue, keywords
+
+Usage:
+```bash
+# Tag single movie by IMDb ID (dry run by default)
+python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250 --dry-run
+
+# Actually write metadata
+python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250
+
+# Tag by title/year search
+python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --title "The Big Blue" --year 1988
+
+# Process directory recursively
+python3 bin/tag-movie-metadata.py "/path/to/movies/" --recursive
+
+# Verbose output to see all metadata found
+python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250 --verbose
 ```
 
 

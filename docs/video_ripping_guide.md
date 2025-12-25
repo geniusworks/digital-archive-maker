@@ -141,6 +141,21 @@ To organize into a different category folder (default is `Movies`), set `DEST_CA
 DEST_CATEGORY=Films make rip-movie TITLE="Movie Name" YEAR=1999
 ```
 
+## Tag MP4 movie metadata (optional)
+After ripping/encoding and organizing into `Movies/Title (Year)/Title (Year).mp4`, you can tag the MP4 with rich metadata (title, year, plot, genres, director, cast, rating, and artwork) using:
+
+- Script: `bin/tag-movie-metadata.py`
+- API keys:
+  - `TMDB_API_KEY` (recommended; enables artwork)
+  - `OMDB_API_KEY` (fallback)
+  - Scripts auto-load `.env` at the repo root via `python-dotenv` when available.
+
+Example:
+```bash
+python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456 --dry-run --verbose
+python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456
+```
+
 ## Handling multi-feature discs (double features, TV movies, etc.)
 Some discs ship with two full movies or a mini-series. Use these tips when ripping:
 

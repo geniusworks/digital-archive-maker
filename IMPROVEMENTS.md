@@ -10,6 +10,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
 - `compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
 - `bin/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
+- `bin/tag-movie-metadata.py` — tags MP4 files with rich movie metadata (title/year/plot/genres/director/cast/rating/artwork) via TMDb/OMDb using IMDb ID (and supports title/year search).
 - `bin/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
 - `custom-sync/master-sync.py` — orchestrates multiple sync jobs from YAML config with intelligent global delete mode; automatically runs explicit tagging before each sync to ensure new content is properly flagged; features two-phase sync (sync all jobs, then global cleanup) and target-specific deletion logic.
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.
@@ -74,10 +75,10 @@ Deliverables:
   - `make install-video-deps` — one-command setup for all video tools
   - `make rip-video` / `make rip-movie` — streamlined ripping workflows
   - `make backfill-subs` — subtitle backfilling
-- ✅ Comprehensive documentation in `docs/video_ripping_guide.md`
+- Comprehensive documentation in `docs/video_ripping_guide.md`
 
 ### Remaining enhancements:
-- Metadata fetching via TMDb/OMDb (poster/backdrop/`.nfo` files)
+- ✅ Metadata fetching via TMDb/OMDb for tagging MP4 movie files (`bin/tag-movie-metadata.py`)
 - HDR10/SDR tone mapping strategies for UHD content
 - TV series episode detection and naming automation
 

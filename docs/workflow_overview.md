@@ -67,3 +67,8 @@ Artifacts:
 - Video guide covers:
   - English subtitle selection/burn-in policies
   - Backfilling English soft subs into existing MP4s
+
+### B4) Tag movie metadata and ratings (optional)
+- Scripts:
+  - `bin/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
+  - `bin/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache
