@@ -154,6 +154,14 @@ Example:
 ```bash
 python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456 --dry-run --verbose
 python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456
+
+# Recursively tag an entire Movies folder (tries to infer Title/Year from folder/file names).
+# By default, only missing tags/artwork are filled.
+python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive --dry-run --verbose
+python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive
+
+# Overwrite existing tags/artwork (use carefully)
+python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive --force
 ```
 
 ## Handling multi-feature discs (double features, TV movies, etc.)

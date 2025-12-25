@@ -168,9 +168,11 @@ python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows
   - `--imdb-id` (tt####### format)
   - `--tmdb-id` (numeric TMDb ID)
   - `--title` and `--year` (for search lookup)
+  - If no ID/title is provided, the script will try to infer `Title (Year)` from the filename or parent folder (recommended layout: `Movies/Title (Year)/Title (Year).mp4`).
 - Metadata sources (highest priority first):
   1. **TMDb** lookup by IMDb ID, TMDb ID, or title/year when `TMDB_API_KEY` is set
-  2. **OMDb** lookup by IMDb ID when `OMDB_API_KEY` is set
+  2. **OMDb** lookup by IMDb ID (or title/year) when `OMDB_API_KEY` is set
+- By default, the script only fills missing tags/artwork. Use `--force` to overwrite existing tags.
 - Written MP4 atoms:
   - `©nam` - Title
   - `©day` - Year/Release date
@@ -195,8 +197,12 @@ python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250
 # Tag by title/year search
 python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --title "The Big Blue" --year 1988
 
-# Process directory recursively
+# Process directory recursively (attempt to infer Title/Year per movie)
+python3 bin/tag-movie-metadata.py "/path/to/movies/" --recursive --dry-run --verbose
 python3 bin/tag-movie-metadata.py "/path/to/movies/" --recursive
+
+# Overwrite existing tags/artwork (use carefully)
+python3 bin/tag-movie-metadata.py "/path/to/movies/" --recursive --force
 
 # Verbose output to see all metadata found
 python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250 --verbose

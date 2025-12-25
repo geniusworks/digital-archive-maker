@@ -299,6 +299,67 @@ def run_movie_rating_tagging(source_path, dry_run=False):
         return False
 
 
+def run_movie_metadata_tagging(source_path, dry_run=False):
+    print(f"\n{'='*60}")
+    print(f"Running movie metadata tagging on: {source_path}")
+    print(f"{'='*60}")
+
+    repo_root = Path(__file__).parent.parent
+    tag_script = repo_root / "bin" / "tag-movie-metadata.py"
+
+    cmd = [
+        sys.executable,
+        str(tag_script),
+        source_path,
+        "--recursive",
+        "--dry-run" if dry_run else "",
+    ]
+
+    cmd = [arg for arg in cmd if arg]
+
+    if dry_run:
+        print("DRY RUN - Would execute movie metadata tagging:")
+        print(" ".join(cmd))
+        return True
+
+    process = None
+    try:
+        print("Running movie metadata tagging to detect/fill missing metadata...")
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        _, stderr = process.communicate()
+        if stderr:
+            print("STDERR:", stderr)
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+        return True
+    except KeyboardInterrupt:
+        print("\n\nTagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Tagging aborted.")
+        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running movie metadata tagging on '{source_path}':")
+        print(f"Exit code: {e.returncode}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
+        return False
+
+
 def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False):
     """Run a single sync job and return statistics."""
     print(f"\n{'='*60}")
@@ -322,24 +383,36 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
         'success': False
     }
 
+    effective_dry_run = bool(dry_run or job.get("dry_run", False) or global_opts.get("dry_run", False))
+
     # Run tagging first unless skipped
-    if not skip_tagging and not dry_run:
+    if not skip_tagging and not effective_dry_run:
+        tag_metadata = job.get("tag_metadata")
+        if tag_metadata is None:
+            tag_metadata = media == "movies"
+
         if media == "movies":
+            if tag_metadata:
+                if not run_movie_metadata_tagging(job["src"], dry_run=False):
+                    print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             if not run_movie_rating_tagging(job["src"], dry_run=False):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
+        elif media == "shows":
+            if tag_metadata:
+                if not run_movie_metadata_tagging(job["src"], dry_run=False):
+                    print("Warning: Show metadata tagging failed, proceeding with sync anyway")
+            else:
+                print("Shows sync - skipping metadata tagging")
         elif media == "music":
             if not run_explicit_tagging(job["src"], dry_run=False):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
-        elif media == "shows":
-            # Shows don't have tagging yet - skip for now
-            print("Shows sync - skipping tagging (no rating system implemented yet)")
         else:
             if not run_explicit_tagging(job["src"], dry_run=False):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
     
     cmd = build_sync_command(job, sync_script_path, global_opts)
     
-    if dry_run or job.get("dry_run", False):
+    if effective_dry_run:
         print("DRY RUN - Would execute:")
         print(" ".join(cmd))
         job_stats['end_time'] = time.time()
