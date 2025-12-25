@@ -30,8 +30,10 @@ from pathlib import Path
 RATING_TAG = "©rat"  # Copyright Rating field for MPAA ratings
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
-CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
-OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.csv"
+MOVIE_CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
+MOVIE_OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.csv"
+SHOWS_CACHE_FILE = _LOG_DIR / "shows_rating_cache.json"
+SHOWS_OVERRIDES_FILE = _LOG_DIR / "shows_rating_overrides.csv"
 UNKNOWN_VALUE = "Unknown"
 VALID_RATINGS = {"G", "PG", "PG-13", "R", "NC-17", "NR", "Unrated"}
 
@@ -131,13 +133,11 @@ def _ensure_log_dir_exists():
         pass
 
 
-def load_overrides():
+def load_overrides(overrides_file: Path):
     """Load manual rating overrides from CSV"""
     overrides = {}
 
     _ensure_log_dir_exists()
-    overrides_file = OVERRIDES_FILE
-    
     if not overrides_file.exists():
         return overrides
     
@@ -154,16 +154,16 @@ def load_overrides():
     return overrides
 
 
-def load_cache():
+def load_cache(cache_file: Path):
     """Load rating cache"""
     _ensure_log_dir_exists()
-    if CACHE_FILE.exists():
-        with open(CACHE_FILE, 'r') as f:
+    if cache_file.exists():
+        with open(cache_file, 'r') as f:
             return json.load(f)
     return {}
 
 
-def save_cache(cache):
+def save_cache(cache, cache_file: Path):
     """Save rating cache"""
     _ensure_log_dir_exists()
     if OMDB_RATE_LIMITED and OMDB_RATE_LIMITED_DATE:
@@ -179,15 +179,15 @@ def save_cache(cache):
             mode="w",
             encoding="utf-8",
             delete=False,
-            dir=str(CACHE_FILE.parent),
-            prefix=CACHE_FILE.name + ".",
+            dir=str(cache_file.parent),
+            prefix=cache_file.name + ".",
             suffix=".tmp",
         ) as tf:
             tmp_name = tf.name
             json.dump(cache, tf, indent=2)
             tf.flush()
             os.fsync(tf.fileno())
-        os.replace(tmp_name, CACHE_FILE)
+        os.replace(tmp_name, cache_file)
     finally:
         if tmp_name and os.path.exists(tmp_name):
             try:
@@ -375,6 +375,12 @@ def main():
     parser = argparse.ArgumentParser(description="Tag MP4 movie files with MPAA ratings")
     parser.add_argument("root", nargs="?", default=".", 
                        help="Root directory to scan for MP4 files")
+    parser.add_argument(
+        "--media",
+        choices=["movies", "shows"],
+        default="movies",
+        help="Which library is being tagged (controls which overrides/cache files are used)",
+    )
     parser.add_argument("--dry-run", action="store_true", 
                        help="Don't write tags, just report what would be done")
     parser.add_argument("--verbose", action="store_true",
@@ -405,9 +411,16 @@ def main():
     else:
         print("No TMDB_API_KEY or OMDB_API_KEY set; API lookups disabled (override/cache/existing tags only)")
     
+    if args.media == "movies":
+        overrides_file = MOVIE_OVERRIDES_FILE
+        cache_file = MOVIE_CACHE_FILE
+    else:
+        overrides_file = SHOWS_OVERRIDES_FILE
+        cache_file = SHOWS_CACHE_FILE
+
     # Load data
-    overrides = load_overrides()
-    cache = load_cache()
+    overrides = load_overrides(overrides_file)
+    cache = load_cache(cache_file)
 
     global OMDB_RATE_LIMITED, OMDB_RATE_LIMITED_DATE
     meta = cache.get("__meta__")
@@ -446,18 +459,13 @@ def main():
             year = extract_year_from_path(file_path)
             title_norm = normalize_title(title)
         
-            # Check cache first (fastest)
+            # Check cache/overrides
             cache_key = f"{title_norm}_{year}" if year else title_norm
             cached_rating = cache.get(cache_key)
-        
-            # Check overrides next (fast)
             override_rating = overrides.get(title_norm)
-        
-            # Only read file if we need to (for existing rating check)
+
             existing_rating = None
             audio = None
-            if not override_rating and not cached_rating:
-                audio, existing_rating = read_rating_from_file(file_path)
         
             # Determine rating
             new_rating = None
@@ -469,30 +477,30 @@ def main():
             elif cached_rating:
                 new_rating = cached_rating
                 source = "Cache"
-            elif existing_rating and existing_rating in VALID_RATINGS:
-                new_rating = existing_rating
-                source = "Existing"
             else:
-                # Query movie rating (TMDb or OMDb)
-                new_rating = get_movie_rating(title, year)
-                if new_rating:
-                    source = "API"
-                    cache[cache_key] = new_rating
+                audio, existing_rating = read_rating_from_file(file_path)
+                if existing_rating and existing_rating in VALID_RATINGS:
+                    new_rating = existing_rating
+                    source = "Existing"
                 else:
-                    new_rating = UNKNOWN_VALUE
-                    source = "Unknown"
+                    # Query movie rating (TMDb or OMDb)
+                    new_rating = get_movie_rating(title, year)
+                    if new_rating:
+                        source = "API"
+                        cache[cache_key] = new_rating
+                    else:
+                        new_rating = UNKNOWN_VALUE
+                        source = "Unknown"
         
-            # Write rating if different from existing
-            # For overrides/cache, we only need to write if we don't know the existing rating
-            # or if we explicitly read the file and found a different rating
-            should_write = False
+            # For overrides/cache, we need to read the file to check existing rating
             if override_rating or cached_rating:
-                # For overrides/cache, only write if we read the file and rating differs
-                if audio is not None and new_rating != existing_rating:
-                    should_write = True
-            elif new_rating != existing_rating and new_rating != UNKNOWN_VALUE:
-                # For API ratings, write if different from existing
-                should_write = True
+                if audio is None:
+                    audio, existing_rating = read_rating_from_file(file_path)
+
+            should_write = (
+                new_rating in VALID_RATINGS and
+                new_rating != existing_rating
+            )
             
             if should_write:
                 success = write_rating_to_file(file_path, new_rating, audio=audio)
@@ -514,7 +522,7 @@ def main():
 
             processed_count += 1
     finally:
-        save_cache(cache)
+        save_cache(cache, cache_file)
         signal.signal(signal.SIGINT, previous_sigint_handler)
      
     # Print summary

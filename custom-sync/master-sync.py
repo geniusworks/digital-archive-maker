@@ -125,7 +125,7 @@ def build_sync_command(job, sync_script_path, global_opts):
     ]
     
     media = job.get("media", "music")
-    if media in {"music", "movies"}:
+    if media in {"music", "movies", "shows"}:
         cmd.extend(["--media", media])
 
     # Add optional flags
@@ -134,7 +134,7 @@ def build_sync_command(job, sync_script_path, global_opts):
             cmd.append("--exclude-explicit")
         if job.get("exclude_unknown", False):
             cmd.append("--exclude-unknown")
-    else:
+    elif media == "movies":
         max_mpaa = job.get("max_mpaa")
         if not max_mpaa:
             max_mpaa = "PG-13"
@@ -151,6 +151,10 @@ def build_sync_command(job, sync_script_path, global_opts):
             exclude_unrated = True
         if exclude_unrated:
             cmd.append("--exclude-unrated")
+    elif media == "shows":
+        # Shows sync - no special filtering for now
+        # Could add TV rating filters here in the future
+        pass
 
     # Note: delete is now handled globally, not per-job
     
@@ -323,6 +327,12 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
         if media == "movies":
             if not run_movie_rating_tagging(job["src"], dry_run=False):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
+        elif media == "music":
+            if not run_explicit_tagging(job["src"], dry_run=False):
+                print("Warning: Explicit tagging failed, proceeding with sync anyway")
+        elif media == "shows":
+            # Shows don't have tagging yet - skip for now
+            print("Shows sync - skipping tagging (no rating system implemented yet)")
         else:
             if not run_explicit_tagging(job["src"], dry_run=False):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
@@ -455,7 +465,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     cmd.append("--exclude-explicit")
                 if job.get("exclude_unknown", False):
                     cmd.append("--exclude-unknown")
-            else:
+            elif media == "movies":
                 max_mpaa = job.get("max_mpaa")
                 if not max_mpaa:
                     max_mpaa = "PG-13"
@@ -472,6 +482,9 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     exclude_unrated = True
                 if exclude_unrated:
                     cmd.append("--exclude-unrated")
+            elif media == "shows":
+                # Shows sync - no special filtering for now
+                pass
 
             if job.get("ssh"):
                 cmd.extend(["--ssh", job["ssh"]])
@@ -513,6 +526,11 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
 
         filter_file = f"/tmp/cleanup_filter_{hash(dest)}.txt"
         with open(filter_file, "w", encoding="utf-8", newline="\n") as f:
+            # Always protect Playlists folder in music destinations
+            if "/Music" in dest:
+                f.write("P /Playlists/\n")
+            
+            # Add all files from keep set
             for p in sorted(keep_set):
                 f.write(f"P /{p}\n")
 

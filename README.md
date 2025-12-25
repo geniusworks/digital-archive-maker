@@ -42,6 +42,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - `fix_album.sh` — given an album folder, fetches track titles from MusicBrainz, renames `*.flac` to `NN - Title.flac`, makes an `.m3u8`, runs `fix_metadata.py --fix`, then `fix_album_covers.sh`.
 - `fix_album_covers.sh` — finds albums missing `cover.jpg` and downloads a 1000x1000 front cover from Cover Art Archive (via MusicBrainz).
 - `fix_metadata.py` — checks/updates FLAC tags (TITLE, ARTIST, ALBUM, TRACKNUMBER) based on the path/filename pattern `NN - Title.flac`.
+- `repair-flac-tags.py` — repairs missing FLAC tags (ARTIST, ALBUM, TITLE, TRACKNUMBER) using .m3u8 playlist and folder structure.
 - `fix_track.py` — organizes a single loose track into `Artist/Album/NN - Title.ext`. Attempts metadata from tags, AcoustID, MusicBrainz; falls back to filename parsing.
 - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist.
 - `compare_music 2025-08-30.py` — earlier implementation of compare tool (kept for reference).
@@ -103,7 +104,7 @@ Environment variables:
 For manual tag management and media server sync details, see `docs/media_server_setup.md`.
 
 
-## MPAA rating tagging (movies)
+## MPAA rating tagging (movies and shows)
 - Script: `bin/tag-movie-ratings.py`
 - Writes MP4 atom: `©rat` with MPAA rating (G, PG, PG-13, R, NC-17, NR, Unrated)
 - Automatic lookups require **one** of:
@@ -111,11 +112,17 @@ For manual tag management and media server sync details, see `docs/media_server_
   - `OMDB_API_KEY` (fallback; from OMDb)
   - The script will auto-load these from `.env` at the repo root if present.
 - Waterfall (highest priority first):
-  1. **Manual overrides** from `log/movie_rating_overrides.csv`
-  2. **Cache** from `log/movie_rating_cache.json`
+  1. **Manual overrides** from `log/movie_rating_overrides.csv` (or `log/shows_rating_overrides.csv` for shows)
+  2. **Cache** from `log/movie_rating_cache.json` (or `log/shows_rating_cache.json` for shows)
   3. **Existing tags** in the MP4 file
   4. **TMDb** lookup by title/year (US certification only) when `TMDB_API_KEY` is set
   5. **OMDb** lookup by title/year when `OMDB_API_KEY` is set
+
+Shows:
+- Ratings for items under the Shows library are tracked separately for reference:
+  - Overrides: `log/shows_rating_overrides.csv`
+  - Cache: `log/shows_rating_cache.json`
+- Use `--media shows` to tag the Shows library (defaults to movies).
 
 If neither API key is set, the script will still run but will only use overrides/cache/existing tags.
 
@@ -144,6 +151,10 @@ python3 bin/tag-movie-ratings.py "/path/to/movies" --verbose
 
 # Limit files processed
 python3 bin/tag-movie-ratings.py "/path/to/movies" --max-files 50
+
+# Tag shows library (uses shows_rating_* files)
+python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows --dry-run
+python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows
 ```
 
 
@@ -214,7 +225,27 @@ Run `make help` for a summary. Common tasks:
 
 - Normalize and complete an album folder
   1. `./fix_album.sh "/path/to/Artist/Album"`
-  2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u8`, fixes tags, and fetches `cover.jpg` if missing.
+  2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u8`, fixes tags, and fetchs `cover.jpg` if missing.
+
+- Repair FLAC tags using .m3u8 playlist and folder structure
+  ```bash
+  # Preview what would be repaired (dry run)
+  python3 bin/repair-flac-tags.py --dry-run "/path/to/album/folder"
+  
+  # Actually repair the tags
+  python3 bin/repair-flac-tags.py "/path/to/album/folder"
+  
+  # Verbose output
+  python3 bin/repair-flac-tags.py -v "/path/to/album/folder"
+  ```
+  Repairs FLAC tags (ARTIST, ALBUM, TITLE, TRACKNUMBER) by detecting differences between current tags and expected values:
+  - Extracts expected artist/album from folder structure (e.g., `/Artist/Album/`)
+  - Parses .m3u8 playlist to get expected track titles and filenames
+  - Matches FLAC files to playlist entries
+  - Compares current tags against expected values and fixes any differences
+  - Shows detailed diff output (current → expected) for each field that needs repair
+  - Supports both simple and extended M3U playlist formats
+  - Safe operation: only modifies tags that differ from expected values
 
 - Tag explicit content across the library
   ```bash
@@ -246,6 +277,7 @@ Run `make help` for a summary. Common tasks:
   - **Automatic cleanup:** Empty directories are removed by default (use `--no-delete` to disable)
   - **Enhanced progress:** Shows detailed transfer progress with `--info=progress2`
   - **Playlist fixing:** Automatically fixes .m3u8 files to replace missing tracks with "(skipped)" placeholders
+  - **M3U exclusion:** .m3u8 playlist files are automatically excluded from sync (Jellyfin doesn't need them, but they're kept locally for tag repair)
   ```bash
   # Single sync job
   python3 bin/sync-library.py \
@@ -256,6 +288,13 @@ Run `make help` for a summary. Common tasks:
   
   # Multiple sync jobs with global delete mode
   cd custom-sync && python master-sync.py --dry-run
+  
+  # Shows library sync (no rating filtering yet)
+  python3 bin/sync-library.py \
+    --src "/Volumes/Data/Media/Rips/Shows" \
+    --dest "jellyfin@10.0.4.75:/mnt/media/Shows" \
+    --media shows \
+    --dry-run
   python master-sync.py --job clean-library
   
   # Master sync automatically runs explicit tagging before each sync job

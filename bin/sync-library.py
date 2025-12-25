@@ -328,7 +328,7 @@ def main():
     parser.add_argument("--dest", required=True, help="Destination (path or rsync remote like user@host:/path)")
     parser.add_argument(
         "--media",
-        choices=["music", "movies"],
+        choices=["music", "movies", "shows"],
         default="music",
         help="Media type to sync (default: music)",
     )
@@ -391,7 +391,7 @@ def main():
     dirs_with_included_files = set()
 
     max_mpaa = None
-    if args.max_mpaa:
+    if args.media == "movies" and args.max_mpaa:
         max_mpaa = _normalize_mpaa_value(args.max_mpaa)
         if max_mpaa not in MPAA_ORDER:
             raise SystemExit(f"Invalid --max-mpaa: {args.max_mpaa}")
@@ -437,7 +437,7 @@ def main():
                 elif effective == UNKNOWN_VALUE and args.exclude_unknown:
                     exclude = True
                     excluded_unknown += 1
-            else:
+            elif args.media == "movies":
                 try:
                     rating = _read_mpaa_tag(fullpath)
                 except Exception:
@@ -453,6 +453,9 @@ def main():
                 elif max_mpaa and rating in MPAA_ORDER and MPAA_ORDER[rating] > MPAA_ORDER[max_mpaa]:
                     exclude = True
                     excluded_mpaa += 1
+
+            elif args.media == "shows":
+                pass
 
             rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
             if exclude:
@@ -489,6 +492,38 @@ def main():
         if rel != ".":  # Don't exclude the root source directory
             patterns.append("/" + _escape_rsync_pattern(rel) + "/")
             excluded_dirs.add(rel + "/")
+
+    # Special protection for Jellyfin Playlists folder in music syncs
+    if args.media == "music":
+        # Always exclude the Playlists folder from sync operations
+        patterns.append("/Playlists/")
+        excluded_dirs.add("Playlists/")
+        
+        # Exclude .m3u8 playlist files (Jellyfin doesn't need them)
+        patterns.append("*.m3u8")
+        
+        # Create Playlists directory if it doesn't exist (for remote destinations)
+        if ":" in args.dest:  # Remote destination
+            try:
+                # Extract host from dest (format: user@host:path)
+                host = args.dest.split(":")[0]
+                dest_path = args.dest.split(":")[1]
+                playlists_path = dest_path.rstrip("/") + "/Playlists"
+                
+                # Use ssh to create the directory if it doesn't exist
+                ssh_parts = ["ssh"]
+                if args.ssh:
+                    ssh_parts.extend(["-e", args.ssh])
+                
+                create_cmd = ssh_parts + [host, f"mkdir -p '{playlists_path}'"]
+                subprocess.run(create_cmd, check=True, capture_output=True)
+            except Exception:
+                # If we can't create it, that's okay - just continue
+                pass
+
+    # Exclude macOS .DS_Store files from all sync operations (Jellyfin/Ubuntu don't need them)
+    patterns.append(".DS_Store")
+    patterns.append("*/.DS_Store")
 
     _write_exclude_file(exclude_file, patterns)
 
@@ -575,11 +610,14 @@ def main():
             print(f"Overrides matched Yes: {override_yes_excluded}")
             print(f"Overrides matched No: {override_no_included}")
         print(f"Tag read errors treated as Unknown: {errors}")
-    else:
+    elif args.media == "movies":
         print(f"Scanned files: {total_flacs}")
         print(f"Excluded MPAA above {max_mpaa}: {excluded_mpaa} (max-mpaa={args.max_mpaa})")
         print(f"Excluded NR/Unrated: {excluded_unrated} (exclude-unrated={args.exclude_unrated})")
         print(f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        print(f"Tag read errors treated as Unknown: {errors}")
+    elif args.media == "shows":
+        print(f"Scanned files: {total_flacs}")
         print(f"Tag read errors treated as Unknown: {errors}")
     print(f"Exclude file: {exclude_file} ({len(patterns)} lines)")
 
