@@ -105,7 +105,7 @@ def read_rating_from_file(file_path):
         return None, None
 
 
-def write_rating_to_file(file_path, rating, audio=None):
+def write_rating_to_file(file_path, rating, audio=None, force=False):
     """Write MPAA rating to MP4 file"""
     if DRY_RUN:
         print(f"DRY RUN: Would write {RATING_TAG}={rating} to {file_path}")
@@ -115,6 +115,9 @@ def write_rating_to_file(file_path, rating, audio=None):
         if audio is None:
             from mutagen.mp4 import MP4
             audio = MP4(file_path)
+        existing = audio.get(RATING_TAG, [None])[0]
+        if not force and existing == rating:
+            return False  # No change needed
         audio[RATING_TAG] = [rating]
         audio.save()
         return True
@@ -387,6 +390,8 @@ def main():
                        help="Verbose output")
     parser.add_argument("--max-files", type=int, default=0,
                        help="Maximum number of files to process (0 = no limit)")
+    parser.add_argument("--force", action="store_true",
+                       help="Overwrite existing rating tags (default: only write if missing)")
     
     args = parser.parse_args()
     
@@ -497,13 +502,19 @@ def main():
                 if audio is None:
                     audio, existing_rating = read_rating_from_file(file_path)
 
-            should_write = (
-                new_rating in VALID_RATINGS and
-                new_rating != existing_rating
-            )
+            should_write = False
+            if override_rating:
+                # Overrides always win: write if file doesn't match override
+                should_write = new_rating != existing_rating
+            elif cached_rating:
+                # Cached values win unless --force is set
+                should_write = args.force and new_rating != existing_rating
+            else:
+                # API/Existing: write only if different or --force
+                should_write = new_rating != existing_rating
             
-            if should_write:
-                success = write_rating_to_file(file_path, new_rating, audio=audio)
+            if should_write and new_rating in VALID_RATINGS:
+                success = write_rating_to_file(file_path, new_rating, audio=audio, force=args.force)
                 if success:
                     cache[cache_key] = new_rating
         
