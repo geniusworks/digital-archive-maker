@@ -360,6 +360,67 @@ def run_movie_metadata_tagging(source_path, dry_run=False):
         return False
 
 
+def run_show_metadata_tagging(source_path, dry_run=False):
+    print(f"\n{'='*60}")
+    print(f"Running show metadata tagging on: {source_path}")
+    print(f"{'='*60}")
+
+    repo_root = Path(__file__).parent.parent
+    tag_script = repo_root / "bin" / "tag-show-metadata.py"
+
+    cmd = [
+        sys.executable,
+        str(tag_script),
+        source_path,
+        "--recursive",
+        "--dry-run" if dry_run else "",
+    ]
+
+    cmd = [arg for arg in cmd if arg]
+
+    if dry_run:
+        print("DRY RUN - Would execute show metadata tagging:")
+        print(" ".join(cmd))
+        return True
+
+    process = None
+    try:
+        print("Running show metadata tagging to detect/fill missing metadata...")
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1,
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        _, stderr = process.communicate()
+        if stderr:
+            print("STDERR:", stderr)
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+        return True
+    except KeyboardInterrupt:
+        print("\n\nTagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Tagging aborted.")
+        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running show metadata tagging on '{source_path}':")
+        print(f"Exit code: {e.returncode}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
+        return False
+
+
 def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False):
     """Run a single sync job and return statistics."""
     print(f"\n{'='*60}")
@@ -389,7 +450,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
     if not skip_tagging and not effective_dry_run:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
-            tag_metadata = media == "movies"
+            tag_metadata = media in {"movies", "shows"}
 
         if media == "movies":
             if tag_metadata:
@@ -399,7 +460,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
         elif media == "shows":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False):
+                if not run_show_metadata_tagging(job["src"], dry_run=False):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Shows sync - skipping metadata tagging")

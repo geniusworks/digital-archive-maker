@@ -200,15 +200,22 @@ def save_cache(cache, cache_file: Path):
 
 
 def _tmdb_get_json(path, query):
+    read_token = os.getenv("TMDB_READ_ACCESS_TOKEN")
     api_key = os.getenv("TMDB_API_KEY")
-    if not api_key:
-        raise RuntimeError("TMDB_API_KEY environment variable not set")
+    if not read_token and not api_key:
+        raise RuntimeError("TMDB_READ_ACCESS_TOKEN or TMDB_API_KEY environment variable not set")
 
     query = dict(query or {})
-    query["api_key"] = api_key
+    if api_key and not read_token:
+        query["api_key"] = api_key
+
     url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(query)}"
 
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    headers = {"Accept": "application/json"}
+    if read_token:
+        headers["Authorization"] = f"Bearer {read_token}"
+
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=10) as resp:
         body = resp.read().decode("utf-8")
     return json.loads(body)
@@ -409,8 +416,10 @@ def main():
         pass
     
     # API keys are optional, but at least one is required for automatic lookups.
-    if os.getenv("TMDB_API_KEY"):
-        print("Using TMDb API (with OMDb fallback if OMDB_API_KEY is set)")
+    if os.getenv("TMDB_READ_ACCESS_TOKEN"):
+        print("Using TMDb API (read access token; with OMDb fallback if OMDB_API_KEY is set)")
+    elif os.getenv("TMDB_API_KEY"):
+        print("Using TMDb API (api key; with OMDb fallback if OMDB_API_KEY is set)")
     elif os.getenv("OMDB_API_KEY"):
         print("Using OMDb API")
     else:

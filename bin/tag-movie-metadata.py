@@ -112,19 +112,24 @@ def find_tmdb_id_from_file(file_path):
 
 def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose=False):
     """Fetch comprehensive metadata from TMDb."""
+    read_token = os.getenv("TMDB_READ_ACCESS_TOKEN")
     api_key = os.getenv("TMDB_API_KEY")
-    if not api_key:
+    if not read_token and not api_key:
         if verbose:
-            print("Warning: TMDB_API_KEY not set, skipping TMDb lookup")
+            print("Warning: TMDB_READ_ACCESS_TOKEN / TMDB_API_KEY not set, skipping TMDb lookup")
         return None
- 
+
     headers = {"Accept": "application/json"}
+    if read_token:
+        headers["Authorization"] = f"Bearer {read_token}"
     
     # Try to find movie by IMDb ID first
     if imdb_id:
         try:
             url = f"https://api.themoviedb.org/3/find/{imdb_id}"
-            params = {"api_key": api_key, "external_source": "imdb_id"}
+            params = {"external_source": "imdb_id"}
+            if api_key and not read_token:
+                params["api_key"] = api_key
             response = requests.get(url, headers=headers, params=params, timeout=20)
             response.raise_for_status()
             data = response.json()
@@ -143,10 +148,11 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
         try:
             url = "https://api.themoviedb.org/3/search/movie"
             params = {
-                "api_key": api_key,
                 'query': title,
                 'page': 1
             }
+            if api_key and not read_token:
+                params["api_key"] = api_key
             if year:
                 params['year'] = year
             response = requests.get(url, headers=headers, params=params, timeout=20)
@@ -169,9 +175,10 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
     try:
         url = f"https://api.themoviedb.org/3/movie/{tmdb_id}"
         params = {
-            "api_key": api_key,
             'append_to_response': 'credits,videos,images,releases,keywords'
         }
+        if api_key and not read_token:
+            params["api_key"] = api_key
         response = requests.get(url, headers=headers, params=params, timeout=20)
         response.raise_for_status()
         return response.json()
