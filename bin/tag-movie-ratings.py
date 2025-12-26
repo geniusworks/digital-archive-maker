@@ -31,7 +31,8 @@ RATING_TAG = "©rat"  # Copyright Rating field for MPAA ratings
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
 MOVIE_CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
-MOVIE_OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.csv"
+MOVIE_OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.json"
+MOVIE_OVERRIDES_FILE_CSV = _LOG_DIR / "movie_rating_overrides.csv"
 SHOWS_CACHE_FILE = _LOG_DIR / "shows_rating_cache.json"
 SHOWS_OVERRIDES_FILE = _LOG_DIR / "shows_rating_overrides.csv"
 UNKNOWN_VALUE = "Unknown"
@@ -137,23 +138,50 @@ def _ensure_log_dir_exists():
 
 
 def load_overrides(overrides_file: Path):
-    """Load manual rating overrides from CSV"""
+    """Load manual rating overrides from JSON or CSV.
+
+    Preferred format is JSON mapping: {"Title": "R", ...}.
+    CSV fallback supports columns: title,rating
+    """
     overrides = {}
 
     _ensure_log_dir_exists()
-    if not overrides_file.exists():
+
+    # Prefer JSON overrides; fallback to legacy CSV if present.
+    candidate_files = [overrides_file]
+    if overrides_file.name == "movie_rating_overrides.json":
+        candidate_files.append(MOVIE_OVERRIDES_FILE_CSV)
+
+    selected = None
+    for p in candidate_files:
+        if p.exists():
+            selected = p
+            break
+    if selected is None:
         return overrides
-    
-    with open(overrides_file, 'r', encoding='utf-8') as f:
+
+    if selected.suffix.lower() == ".json":
+        with open(selected, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            for title, rating in data.items():
+                title = (str(title) if title is not None else "").strip()
+                rating = (str(rating) if rating is not None else "").strip()
+                if not title or not rating:
+                    continue
+                overrides[normalize_title(title)] = rating
+        return overrides
+
+    # CSV legacy
+    with open(selected, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             title = (row.get('title') or '').strip()
             rating = (row.get('rating') or '').strip()
             if not title or not rating:
                 continue
-            key = f"{normalize_title(title)}"
-            overrides[key] = rating
-    
+            overrides[normalize_title(title)] = rating
+
     return overrides
 
 
@@ -162,8 +190,25 @@ def load_cache(cache_file: Path):
     _ensure_log_dir_exists()
     if cache_file.exists():
         with open(cache_file, 'r') as f:
-            return json.load(f)
-    return {}
+            cache = json.load(f)
+    else:
+        cache = {}
+    
+    # Migrate old keys that include year to normalized title keys
+    migrated = {}
+    for key, val in cache.items():
+        if key.startswith("__"):
+            migrated[key] = val
+            continue
+        # Old format: Title_YYYY or Title_YYYY_extra
+        if re.match(r'.*_\d{4}$', key):
+            base = key.rsplit('_', 1)[0]
+            norm = normalize_title(base)
+            if norm not in migrated:
+                migrated[norm] = val
+        else:
+            migrated[key] = val
+    return migrated
 
 
 def save_cache(cache, cache_file: Path):
@@ -474,7 +519,7 @@ def main():
             title_norm = normalize_title(title)
         
             # Check cache/overrides
-            cache_key = f"{title_norm}_{year}" if year else title_norm
+            cache_key = title_norm
             cached_rating = cache.get(cache_key)
             override_rating = overrides.get(title_norm)
 
