@@ -8,13 +8,59 @@ import os
 import sys
 import subprocess
 import argparse
-import yaml
 import time
 import re
 import tempfile
 import shutil
 import signal
 from pathlib import Path
+
+
+def _require_python_deps():
+    missing = []
+
+    try:
+        import yaml  # noqa: F401
+    except Exception:
+        missing.append("PyYAML")
+
+    try:
+        import dotenv  # noqa: F401
+    except Exception:
+        missing.append("python-dotenv")
+
+    try:
+        import requests  # noqa: F401
+    except Exception:
+        missing.append("requests")
+
+    try:
+        import mutagen  # noqa: F401
+    except Exception:
+        missing.append("mutagen")
+
+    try:
+        import musicbrainzngs  # noqa: F401
+    except Exception:
+        missing.append("musicbrainzngs")
+
+    try:
+        import rapidfuzz  # noqa: F401
+    except Exception:
+        missing.append("rapidfuzz")
+
+    try:
+        import tqdm  # noqa: F401
+    except Exception:
+        missing.append("tqdm")
+
+    if missing:
+        print("Error: Missing required Python dependencies:")
+        for name in missing:
+            print(f"  - {name}")
+        print("\nInstall the repo requirements using the SAME python interpreter you are running:")
+        print(f"  {sys.executable} -m pip install -r requirements.txt")
+        sys.exit(1)
 
 
 def _parse_int(value):
@@ -104,6 +150,7 @@ def parse_rsync_stats(output_text):
 
 def load_config(config_path):
     """Load sync configuration from YAML file."""
+    import yaml
     try:
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
@@ -741,6 +788,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
 
 
 def main():
+    _require_python_deps()
     parser = argparse.ArgumentParser(description="Run multiple library sync jobs")
     parser.add_argument(
         "--config", 
