@@ -392,10 +392,6 @@ def _mp4_needs_metadata(file_path):
 
 def write_metadata_to_file(file_path, metadata, dry_run=False, force=False):
     """Write comprehensive metadata to MP4 file."""
-    if dry_run:
-        print(f"DRY RUN: Would write metadata to {file_path}")
-        return True
-
     try:
         if not isinstance(metadata, dict):
             return False
@@ -486,13 +482,19 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False):
             poster_url = metadata.get('_poster_url')
 
         if poster_url and (force or _is_missing_mp4_tag(mp4, 'covr')):
-            poster_data = download_image(poster_url)
-            if poster_data:
-                mp4['covr'] = [MP4Cover(poster_data, MP4Cover.FORMAT_JPEG)]
+            if dry_run:
                 changed = True
+            else:
+                poster_data = download_image(poster_url)
+                if poster_data:
+                    mp4['covr'] = [MP4Cover(poster_data, imageformat=MP4Cover.FORMAT_JPEG)]
+                    changed = True
 
         if not changed:
             return False
+
+        if dry_run:
+            return True
 
         mp4.save()
         return True
@@ -631,7 +633,10 @@ def main():
         # Write metadata
         wrote = write_metadata_to_file(file_path, metadata, args.dry_run, force=args.force)
         if args.dry_run:
-            print(f"  [DRY RUN] Would write metadata to {file_path}")
+            if wrote:
+                print(f"  [DRY RUN] Would write metadata to {file_path}")
+            else:
+                print(f"  No changes needed")
         else:
             if wrote:
                 print(f"  Wrote metadata to {file_path}")

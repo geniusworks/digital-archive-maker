@@ -575,21 +575,51 @@ def main():
             else:
                 should_write = new_rating in VALID_RATINGS and new_rating != existing_rating
             
+            # Handle dry-run mode
             if should_write and new_rating in VALID_RATINGS:
-                success = write_rating_to_file(file_path, new_rating, audio=audio, force=args.force)
-                if success:
-                    cache[cache_key] = new_rating
+                if DRY_RUN:
+                    try:
+                        print(f"  Would update rating: {existing_rating or 'None'} → {new_rating} ({source})")
+                    except BrokenPipeError:
+                        sys.exit(0)
+                else:
+                    success = write_rating_to_file(file_path, new_rating, audio=audio, force=args.force)
+                    if success:
+                        try:
+                            print(f"  Updated rating: {existing_rating or 'None'} → {new_rating} ({source})")
+                        except BrokenPipeError:
+                            sys.exit(0)
+                        cache[cache_key] = new_rating
+            elif new_rating in VALID_RATINGS and new_rating == existing_rating:
+                if VERBOSE or DRY_RUN:
+                    try:
+                        print(f"  Rating already correct: {new_rating} ({source})")
+                    except BrokenPipeError:
+                        sys.exit(0)
+            elif new_rating == UNKNOWN_VALUE:
+                if VERBOSE or DRY_RUN:
+                    try:
+                        print(f"  No rating found")
+                    except BrokenPipeError:
+                        sys.exit(0)
         
             # Print rating info
             if PRINT_RATING_TO_CONSOLE:
                 if new_rating in VALID_RATINGS:
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
-                        print(f"RATING={new_rating}: {_format_display_title(title, year)} ({source})")
-                        rating_console_lines += 1
+                        try:
+                            print(f"RATING={new_rating}: {_format_display_title(title, year)} ({source})")
+                            rating_console_lines += 1
+                        except BrokenPipeError:
+                            # Exit gracefully when output is piped to commands like head
+                            sys.exit(0)
                 elif VERBOSE and new_rating == UNKNOWN_VALUE:
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
-                        print(f"UNKNOWN: {_format_display_title(title, year)} ({source})")
-                        rating_console_lines += 1
+                        try:
+                            print(f"UNKNOWN: {_format_display_title(title, year)} ({source})")
+                            rating_console_lines += 1
+                        except BrokenPipeError:
+                            sys.exit(0)
 
             stats[new_rating] = stats.get(new_rating, 0) + 1
 
@@ -599,8 +629,11 @@ def main():
         signal.signal(signal.SIGINT, previous_sigint_handler)
      
     # Print summary
-    print(f"\n\nProcessed: {processed_count} files")
-    print("Ratings:", ", ".join(f"{k}={v}" for k, v in sorted(stats.items())))
+    try:
+        print(f"\n\nProcessed: {processed_count} files")
+        print("Ratings:", ", ".join(f"{k}={v}" for k, v in sorted(stats.items())))
+    except BrokenPipeError:
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
