@@ -92,6 +92,17 @@ def extract_year_from_path(file_path):
     return None
 
 
+def read_imdb_id_from_file(file_path):
+    """Read IMDb ID from MP4 file metadata"""
+    try:
+        from mutagen.mp4 import MP4
+        audio = MP4(file_path)
+        imdb_id = audio.get("----:com.apple.iTunes:imdb_id", [None])[0]
+        return imdb_id
+    except Exception:
+        return None
+
+
 def read_rating_from_file(file_path):
     """Read existing MPAA rating from MP4 file"""
     try:
@@ -526,7 +537,29 @@ def main():
             # Check cache/overrides
             cache_key = title_norm
             cached_rating = cache.get(cache_key)
-            override_rating = overrides.get(title_norm)
+            
+            # Check for IMDb ID-based override first
+            imdb_id = read_imdb_id_from_file(file_path)
+            override_rating = None
+            override_source = None
+            
+            if imdb_id and isinstance(overrides, dict):
+                # Support both flat and nested override formats
+                if imdb_id in overrides:
+                    override_rating = overrides[imdb_id]
+                    override_source = f"IMDb ID ({imdb_id})"
+                elif isinstance(overrides.get('imdb_id_based'), dict) and imdb_id in overrides['imdb_id_based']:
+                    override_rating = overrides['imdb_id_based'][imdb_id]
+                    override_source = f"IMDb ID ({imdb_id})"
+            
+            # Fall back to title-based override
+            if not override_rating:
+                if title_norm in overrides:
+                    override_rating = overrides[title_norm]
+                    override_source = f"Title ({title_norm})"
+                elif isinstance(overrides.get('title_based'), dict) and title_norm in overrides['title_based']:
+                    override_rating = overrides['title_based'][title_norm]
+                    override_source = f"Title ({title_norm})"
 
             # Always read existing rating so we can compare and update.
             audio, existing_rating = read_rating_from_file(file_path)
@@ -539,7 +572,7 @@ def main():
 
             if override_rating:
                 new_rating = override_rating
-                source = "Override"
+                source = override_source or "Override"
             else:
                 # Prefer cached value; only hit online sources when cache is missing.
                 if cached_rating in VALID_RATINGS:

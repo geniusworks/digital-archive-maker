@@ -113,13 +113,51 @@ For manual tag management and media server sync details, see `docs/media_server_
   - `OMDB_API_KEY` (optional fallback; OMDb)
   - The script will auto-load these from `.env` at the repo root if present (via `python-dotenv`).
 - Waterfall (highest priority first):
-  1. **Manual overrides** from `log/movie_rating_overrides.json` (movies) or `log/shows_rating_overrides.csv` (shows)
-     - Movies overrides format is a JSON mapping: `{ "Title": "PG-13", ... }`
-     - Legacy fallback: if the JSON file is missing, movies will fall back to `log/movie_rating_overrides.csv`
-  2. **Cache** from `log/movie_rating_cache.json` (or `log/shows_rating_cache.json` for shows)
-  3. **Existing tags** in the MP4 file
-  4. **TMDb** lookup by title/year (US certification only) when TMDb credentials are set
-  5. **OMDb** lookup by title/year when `OMDB_API_KEY` is set
+  1. **IMDb ID-based overrides** from `log/movie_rating_overrides.json` (if IMDb ID exists in MP4 metadata)
+  2. **Title-based overrides** from `log/movie_rating_overrides.json` (fallback)
+  3. **Cache** from `log/movie_rating_cache.json` (or `log/shows_rating_cache.json` for shows)
+  4. **Existing tags** in the MP4 file
+  5. **TMDb** lookup by title/year (US certification only) when TMDb credentials are set
+  6. **OMDb** lookup by title/year when `OMDB_API_KEY` is set
+
+### IMDb ID-based overrides (recommended for "same title, wrong movie" cases)
+The override system now supports IMDb ID as the definitive key, solving conflicts where different movies share the same title.
+
+**Override format:**
+```json
+{
+  "title_based": {
+    "Groundhog Day": "PG-13"
+  },
+  "imdb_id_based": {
+    "tt0107048": "PG-13",
+    "tt0111167": "R"
+  }
+}
+```
+
+**Priority logic:**
+1. If MP4 has IMDb ID metadata → check `imdb_id_based` first
+2. Fall back to `title_based` overrides
+3. Use cache/API lookups if no override found
+
+**Managing IMDb ID overrides:**
+```bash
+# List movies with their IMDb IDs
+python3 bin/set-movie-imdb-override.py --list --directory "/Volumes/Data/Media/Rips/Movies"
+
+# Add IMDb ID-based override (reads IMDb ID from file metadata)
+python3 bin/set-movie-imdb-override.py --add "/path/to/movie.mp4" --rating "R"
+
+# Add override with explicit IMDb ID
+python3 bin/set-movie-imdb-override.py --add "/path/to/movie.mp4" --rating "R" --imdb-id "tt1234567"
+```
+
+**Benefits:**
+- Permanent fix for "same title, wrong movie" issues
+- Different movies with same title get distinct overrides
+- Backward compatible with existing title-based overrides
+- Clear source identification in output (shows "IMDb ID (tt1234567)" vs "Title (Movie Name)")
 
 Shows:
 - Ratings for items under the Shows library are tracked separately for reference:
@@ -135,11 +173,13 @@ Rate limits:
 Outputs:
 - Cache: `log/movie_rating_cache.json`
 - Overrides: `log/movie_rating_overrides.json` (create/edit manually)
+- Utility: `bin/set-movie-imdb-override.py` (manage IMDb ID-based overrides)
 
 Console output:
 - Valid ratings print as `RATING=PG: Title (Year) (Source)`
 - With `--verbose`, Unknown titles also print as `UNKNOWN: Title (Year) (Source)`
 - Titles already ending with `(YYYY)` avoid double-printing the year.
+- IMDb ID-based overrides show source as `IMDb ID (tt1234567)`
 
 Usage:
 ```bash
