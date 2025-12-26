@@ -610,7 +610,7 @@ def main():
 
             if key:
                 cache[key] = {
-                    "fetched_at": datetime.utcnow().isoformat() + "Z",
+                    "fetched_at": datetime.now(datetime.UTC).isoformat(),
                     "not_found": metadata is None,
                     "metadata": metadata,
                 }
