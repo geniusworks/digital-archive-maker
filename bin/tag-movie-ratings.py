@@ -528,49 +528,52 @@ def main():
             cached_rating = cache.get(cache_key)
             override_rating = overrides.get(title_norm)
 
-            existing_rating = None
-            audio = None
-        
-            # Determine rating
+            # Always read existing rating so we can compare and update.
+            audio, existing_rating = read_rating_from_file(file_path)
+            if existing_rating not in VALID_RATINGS:
+                existing_rating = None
+
+            # Determine desired rating.
             new_rating = None
             source = "Unknown"
-        
+
             if override_rating:
                 new_rating = override_rating
                 source = "Override"
-            elif cached_rating:
-                new_rating = cached_rating
-                source = "Cache"
             else:
-                audio, existing_rating = read_rating_from_file(file_path)
-                if existing_rating and existing_rating in VALID_RATINGS:
-                    new_rating = existing_rating
-                    source = "Existing"
+                # Prefer cached value; only hit online sources when cache is missing.
+                if cached_rating in VALID_RATINGS:
+                    new_rating = cached_rating
+                    source = "Cache"
                 else:
-                    # Query movie rating (TMDb or OMDb)
-                    new_rating = get_movie_rating(title, year)
-                    if new_rating:
-                        source = "API"
+                    # Cache miss: try TMDb first if credentials exist.
+                    tmdb_rating = None
+                    if os.getenv("TMDB_READ_ACCESS_TOKEN") or os.getenv("TMDB_API_KEY"):
+                        tmdb_rating = get_tmdb_rating(title, year)
+
+                    if tmdb_rating:
+                        new_rating = tmdb_rating
+                        source = "TMDb"
                         cache[cache_key] = new_rating
                     else:
-                        new_rating = UNKNOWN_VALUE
-                        source = "Unknown"
-        
-            # For overrides/cache, we need to read the file to check existing rating
-            if override_rating or cached_rating:
-                if audio is None:
-                    audio, existing_rating = read_rating_from_file(file_path)
+                        # Final fallback: OMDb (if enabled and not rate-limited).
+                        if os.getenv("OMDB_API_KEY") and not OMDB_RATE_LIMITED:
+                            new_rating = get_omdb_rating(title, year)
+                            if new_rating:
+                                source = "OMDb"
+                                cache[cache_key] = new_rating
 
+                if not new_rating:
+                    new_rating = UNKNOWN_VALUE
+                    source = "Unknown"
+
+            # Decide whether to write.
+            # Overrides always win; otherwise write whenever we have a valid rating that differs.
             should_write = False
             if override_rating:
-                # Overrides always win: write if file doesn't match override
                 should_write = new_rating != existing_rating
-            elif cached_rating:
-                # Cached values win unless --force is set
-                should_write = args.force and new_rating != existing_rating
             else:
-                # API/Existing: write only if different or --force
-                should_write = new_rating != existing_rating
+                should_write = new_rating in VALID_RATINGS and new_rating != existing_rating
             
             if should_write and new_rating in VALID_RATINGS:
                 success = write_rating_to_file(file_path, new_rating, audio=audio, force=args.force)

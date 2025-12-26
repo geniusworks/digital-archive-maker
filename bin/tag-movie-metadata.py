@@ -175,7 +175,7 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
     try:
         url = f"https://api.themoviedb.org/3/movie/{tmdb_id}"
         params = {
-            'append_to_response': 'credits,videos,images,releases,keywords'
+            'append_to_response': 'credits,videos,images,keywords'
         }
         if api_key and not read_token:
             params["api_key"] = api_key
@@ -382,7 +382,6 @@ def _mp4_needs_metadata(file_path):
         "\xa9ART",
         "\xa9wrt",
         "\xa9act",
-        "\xa9rat",
         "\xa9cpy",
         "covr",
         "----:com.apple.iTunes:imdb_id",
@@ -448,20 +447,6 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False):
                     actors.append(str(name))
             if actors:
                 changed = _set_mp4_text(mp4, '\xa9act', '\n'.join(actors), force=force) or changed
-
-        releases = metadata.get('releases') or {}
-        countries = releases.get('countries') or []
-        if countries:
-            us_release = None
-            for country in countries:
-                if not isinstance(country, dict):
-                    continue
-                if country.get('iso_3166_1') == 'US':
-                    us_release = country
-                    break
-
-            if us_release and us_release.get('certification'):
-                changed = _set_mp4_text(mp4, '\xa9rat', us_release['certification'], force=force) or changed
 
         companies = metadata.get('production_companies') or []
         if companies:
