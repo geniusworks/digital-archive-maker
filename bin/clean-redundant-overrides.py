@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Remove overrides that are redundant with the movie rating cache.
+"""Remove movie rating overrides that are redundant.
 
-This compares:
-- log/movie_rating_overrides.json
-- log/movie_rating_cache.json
+Compares:
+- log/movie_rating_overrides.json (manual overrides)
+- log/movie_rating_cache.json (cached ratings)
 
-Any override where the title exists in the cache with the same rating is removed
-from the overrides file.
+If an override has the same title and rating as the cache, it is removed from the
+overrides file.
 """
 
 import argparse
@@ -17,8 +17,14 @@ OVERRIDES_FILE = Path("log/movie_rating_overrides.json")
 CACHE_FILE = Path("log/movie_rating_cache.json")
 
 def main():
-    parser = argparse.ArgumentParser(description="Remove overrides that match metadata cache entries.")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be removed without making changes")
+    parser = argparse.ArgumentParser(
+        description="Remove redundant entries from movie_rating_overrides.json (already present in movie_rating_cache.json)."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be removed without modifying the overrides file",
+    )
     args = parser.parse_args()
 
     if not CACHE_FILE.exists():

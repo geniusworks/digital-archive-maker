@@ -107,15 +107,18 @@ For manual tag management and media server sync details, see `docs/media_server_
 ## MPAA rating tagging (movies and shows)
 - Script: `bin/tag-movie-ratings.py`
 - Writes MP4 atom: `©rat` with MPAA rating (G, PG, PG-13, R, NC-17, NR, Unrated)
-- Automatic lookups require **one** of:
-  - `TMDB_API_KEY` (preferred; free from TMDb)
-  - `OMDB_API_KEY` (fallback; from OMDb)
+- Automatic lookups use **any** of:
+  - `TMDB_READ_ACCESS_TOKEN` (preferred; TMDb v4 read token)
+  - `TMDB_API_KEY` (fallback; TMDb v3 API key)
+  - `OMDB_API_KEY` (optional fallback; OMDb)
   - The script will auto-load these from `.env` at the repo root if present (via `python-dotenv`).
 - Waterfall (highest priority first):
-  1. **Manual overrides** from `log/movie_rating_overrides.csv` (or `log/shows_rating_overrides.csv` for shows)
+  1. **Manual overrides** from `log/movie_rating_overrides.json` (movies) or `log/shows_rating_overrides.csv` (shows)
+     - Movies overrides format is a JSON mapping: `{ "Title": "PG-13", ... }`
+     - Legacy fallback: if the JSON file is missing, movies will fall back to `log/movie_rating_overrides.csv`
   2. **Cache** from `log/movie_rating_cache.json` (or `log/shows_rating_cache.json` for shows)
   3. **Existing tags** in the MP4 file
-  4. **TMDb** lookup by title/year (US certification only) when `TMDB_API_KEY` is set
+  4. **TMDb** lookup by title/year (US certification only) when TMDb credentials are set
   5. **OMDb** lookup by title/year when `OMDB_API_KEY` is set
 
 Shows:
@@ -124,14 +127,14 @@ Shows:
   - Cache: `log/shows_rating_cache.json`
 - Use `--media shows` to tag the Shows library (defaults to movies).
 
-If neither API key is set, the script will still run but will only use overrides/cache/existing tags.
+If no API keys are set, the script will still run but will only use overrides/cache/existing tags.
 
 Rate limits:
 - OMDb has a daily request limit depending on your plan. If the script detects a daily limit error, it will stop making OMDb requests for the rest of the day and record this in `log/movie_rating_cache.json` so you can rerun the next day and continue.
 
 Outputs:
 - Cache: `log/movie_rating_cache.json`
-- Overrides: `log/movie_rating_overrides.csv` (create manually)
+- Overrides: `log/movie_rating_overrides.json` (create/edit manually)
 
 Console output:
 - Valid ratings print as `RATING=PG: Title (Year) (Source)`

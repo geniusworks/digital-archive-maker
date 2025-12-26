@@ -33,6 +33,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - Central `logs/` with timestamped runs, plus a summary CSV per session (albums processed, errors, durations).
 - Safety/keys:
   - Move API keys and toggles to environment variables (`.env` pattern) and reference them in scripts.
+  - Missing API keys should degrade gracefully (skip that lookup source) rather than crashing the run.
 
 Deliverables:
 - `generate_checksums.sh` — writes/verifies `SHA256SUMS` in each album folder.

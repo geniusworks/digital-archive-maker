@@ -248,7 +248,7 @@ def _tmdb_get_json(path, query):
     read_token = os.getenv("TMDB_READ_ACCESS_TOKEN")
     api_key = os.getenv("TMDB_API_KEY")
     if not read_token and not api_key:
-        raise RuntimeError("TMDB_READ_ACCESS_TOKEN or TMDB_API_KEY environment variable not set")
+        return None
 
     query = dict(query or {})
     if api_key and not read_token:
@@ -269,7 +269,7 @@ def _tmdb_get_json(path, query):
 def _omdb_get_json(query):
     api_key = os.getenv("OMDB_API_KEY")
     if not api_key:
-        raise RuntimeError("OMDB_API_KEY environment variable not set")
+        return None
 
     query = dict(query or {})
     query["apikey"] = api_key
@@ -289,6 +289,8 @@ def get_omdb_rating(title, year=None):
             query["y"] = str(year)
         
         data = _omdb_get_json(query)
+        if not data:
+            return None
         
         if data.get("Response") != "True":
             if VERBOSE:
@@ -332,7 +334,7 @@ def get_movie_rating(title, year=None):
     start_time = time.time()
     
     # Try TMDb first if API key is available
-    if os.getenv("TMDB_API_KEY"):
+    if os.getenv("TMDB_READ_ACCESS_TOKEN") or os.getenv("TMDB_API_KEY"):
         rating = get_tmdb_rating(title, year)
         if rating:
             elapsed = time.time() - start_time
@@ -362,12 +364,13 @@ def get_tmdb_rating(title, year=None):
         search_query = {
             "query": normalize_title(title),
             "include_adult": "false",
-            "language": "en-US",
         }
         if year:
             search_query["year"] = str(year)
 
         search_data = _tmdb_get_json("/search/movie", search_query)
+        if not search_data:
+            return None
         search_results = search_data.get("results") or []
 
         if not search_results:
@@ -387,6 +390,8 @@ def get_tmdb_rating(title, year=None):
             return None
 
         release_dates = _tmdb_get_json(f"/movie/{movie_id}/release_dates", {"language": "en-US"})
+        if not release_dates:
+            return None
         for country in release_dates.get("results") or []:
             if country.get("iso_3166_1") != "US":
                 continue

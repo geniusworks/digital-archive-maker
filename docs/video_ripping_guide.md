@@ -150,6 +150,8 @@ After ripping/encoding and organizing into `Movies/Title (Year)/Title (Year).mp4
   - `OMDB_API_KEY` (fallback)
   - Scripts auto-load `.env` at the repo root via `python-dotenv` when available.
 
+If no API keys are set, tagging scripts will still run, but online lookups are disabled and the scripts will only use local data (existing file tags, caches, and any manual overrides).
+
 Example:
 ```bash
 python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456 --dry-run --verbose

@@ -45,6 +45,8 @@ This repo supports explicit content tagging via per-track metadata (FLAC and MP3
 - Writes a per-track tag: `EXPLICIT=Yes|No|Unknown`
 - Supports both FLAC (CD rips) and MP3 (digital purchases) files
 - Automatically loads `.env` for API credentials (no manual sourcing needed)
+
+If optional API credentials are not configured (e.g., Spotify), the script will still run and will simply skip that lookup source.
 - Waterfall (highest priority first):
   1. **Manual overrides** from `log/explicit_overrides.csv` (use `*` as wildcard for artist/album/title)
   2. **iTunes** album/track lookup — `explicit` and `cleaned` count as explicit; `notExplicit` blocks album inference

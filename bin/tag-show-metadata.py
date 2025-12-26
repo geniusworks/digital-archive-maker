@@ -59,7 +59,7 @@ def _tmdb_get_json(path, query=None, timeout=20):
     read_token = os.getenv("TMDB_READ_ACCESS_TOKEN")
     api_key = os.getenv("TMDB_API_KEY")
     if not read_token and not api_key:
-        raise RuntimeError("TMDB_READ_ACCESS_TOKEN or TMDB_API_KEY environment variable not set")
+        return None
 
     url = f"https://api.themoviedb.org/3{path}"
 
@@ -283,6 +283,8 @@ def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verb
         query["first_air_date_year"] = str(show_year)
 
     data = _tmdb_get_json("/search/tv", query)
+    if not data:
+        return None
     results = data.get("results") or []
     if not results:
         cache[key] = {"not_found": True, "fetched_at": _utcnow_isoz()}
@@ -317,13 +319,16 @@ def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verb
 def _tmdb_get_episode(cache, show_id, season, episode, language="en-US"):
     key = _cache_key_episode(show_id, season, episode)
     cached = cache.get(key)
-    if isinstance(cached, dict) and cached.get("not_found") is True:
+    if isinstance(cached, dict) and cached.get("not_found"):
         return None
     if isinstance(cached, dict) and isinstance(cached.get("episode"), dict):
         return cached["episode"]
 
     try:
         ep = _tmdb_get_json(f"/tv/{show_id}/season/{int(season)}/episode/{int(episode)}", {"language": language})
+        if not ep:
+            cache[key] = {"not_found": True, "fetched_at": _utcnow_isoz()}
+            return None
     except Exception:
         cache[key] = {"not_found": True, "fetched_at": _utcnow_isoz()}
         return None
