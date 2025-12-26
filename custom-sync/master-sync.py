@@ -16,6 +16,78 @@ import signal
 from pathlib import Path
 
 
+_RSYNC_PROGRESS_RE = re.compile(r"^\s*\d+(?:\.\d+)?[KMG]?\s+\d+%")
+
+
+def _stream_process_output(process, *, quiet=False, label=None):
+    """Stream a subprocess' stdout (and optionally filtered stderr) to console.
+
+    In quiet mode:
+    - Suppresses extremely noisy progress-bar output (tqdm) and repetitive no-op lines.
+    - Collapses rsync-style progress lines into a single updating row.
+    """
+
+    def _should_print(line):
+        if not quiet:
+            return True
+
+        stripped = line.strip()
+        if not stripped:
+            return False
+
+        # tqdm progress lines are handled separately (single-row updates).
+        if stripped.startswith("Tagging audio files:"):
+            return False
+
+        # Suppress high-volume no-op chatter from taggers.
+        if stripped.startswith("Processing:") and "No changes needed" not in stripped:
+            # Allow the tagger to show the file being processed only in non-quiet.
+            return False
+        if stripped.endswith("No changes needed"):
+            return False
+
+        return True
+
+    last_was_progress = False
+    suppressed_processing = 0
+    for line in process.stdout:
+        if quiet and line.strip().startswith("Tagging audio files:"):
+            # Collapse tqdm progress into a single updating row.
+            sys.stdout.write("\r" + line.rstrip("\n"))
+            sys.stdout.flush()
+            last_was_progress = True
+            continue
+
+        if quiet and line.strip().startswith("Processing:"):
+            # Many taggers print one line per file. In quiet mode, suppress the spam
+            # but keep a heartbeat so long runs don't look hung.
+            suppressed_processing += 1
+            if suppressed_processing % 50 == 0:
+                sys.stdout.write(f"\rProcessing... {suppressed_processing}")
+                sys.stdout.flush()
+                last_was_progress = True
+            continue
+
+        if quiet and _RSYNC_PROGRESS_RE.match(line):
+            # Update in-place (single row) for rsync progress lines.
+            sys.stdout.write("\r" + line.rstrip("\n"))
+            sys.stdout.flush()
+            last_was_progress = True
+            continue
+
+        if last_was_progress:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+            last_was_progress = False
+
+        if _should_print(line):
+            print(line, end="", flush=True)
+
+    if last_was_progress:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+
 def _require_python_deps():
     missing = []
 
@@ -222,11 +294,12 @@ def build_sync_command(job, sync_script_path, global_opts):
     return cmd
 
 
-def run_explicit_tagging(source_path, dry_run=False):
+def run_explicit_tagging(source_path, dry_run=False, quiet=False):
     """Run explicit tagging on source path before sync."""
-    print(f"\n{'='*60}")
-    print(f"Running explicit tagging on: {source_path}")
-    print(f"{'='*60}")
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"Running explicit tagging on: {source_path}")
+        print(f"{'='*60}")
     
     # Get the directory of this script to find repo root
     repo_root = Path(__file__).parent.parent
@@ -249,23 +322,21 @@ def run_explicit_tagging(source_path, dry_run=False):
     
     process = None
     try:
-        print("Running explicit tagging to detect new content...")
+        if not quiet:
+            print("Running explicit tagging to detect new content...")
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
             errors='replace',
             bufsize=1
         )
-        for line in process.stdout:
-            print(line, end='', flush=True)
-        _, stderr = process.communicate()
-        if stderr:
-            print("STDERR:", stderr)
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
         return True
     except KeyboardInterrupt:
         print("\n\nTagging interrupted by user. Cleaning up...")
@@ -285,11 +356,12 @@ def run_explicit_tagging(source_path, dry_run=False):
         return False
 
 
-def run_movie_rating_tagging(source_path, dry_run=False):
+def run_movie_rating_tagging(source_path, dry_run=False, quiet=False):
     """Run movie rating tagging on source path before sync."""
-    print(f"\n{'='*60}")
-    print(f"Running movie rating tagging on: {source_path}")
-    print(f"{'='*60}")
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"Running movie rating tagging on: {source_path}")
+        print(f"{'='*60}")
 
     repo_root = Path(__file__).parent.parent
     tag_script = repo_root / "bin" / "tag-movie-ratings.py"
@@ -310,23 +382,21 @@ def run_movie_rating_tagging(source_path, dry_run=False):
 
     process = None
     try:
-        print("Running movie rating tagging to detect new content...")
+        if not quiet:
+            print("Running movie rating tagging to detect new content...")
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
             errors='replace',
             bufsize=1
         )
-        for line in process.stdout:
-            print(line, end='', flush=True)
-        _, stderr = process.communicate()
-        if stderr:
-            print("STDERR:", stderr)
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
         return True
     except KeyboardInterrupt:
         print("\n\nTagging interrupted by user. Cleaning up...")
@@ -346,10 +416,11 @@ def run_movie_rating_tagging(source_path, dry_run=False):
         return False
 
 
-def run_movie_metadata_tagging(source_path, dry_run=False):
-    print(f"\n{'='*60}")
-    print(f"Running movie metadata tagging on: {source_path}")
-    print(f"{'='*60}")
+def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False):
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"Running movie metadata tagging on: {source_path}")
+        print(f"{'='*60}")
 
     repo_root = Path(__file__).parent.parent
     tag_script = repo_root / "bin" / "tag-movie-metadata.py"
@@ -371,23 +442,21 @@ def run_movie_metadata_tagging(source_path, dry_run=False):
 
     process = None
     try:
-        print("Running movie metadata tagging to detect/fill missing metadata...")
+        if not quiet:
+            print("Running movie metadata tagging to detect/fill missing metadata...")
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
             errors='replace',
             bufsize=1
         )
-        for line in process.stdout:
-            print(line, end='', flush=True)
-        _, stderr = process.communicate()
-        if stderr:
-            print("STDERR:", stderr)
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
         return True
     except KeyboardInterrupt:
         print("\n\nTagging interrupted by user. Cleaning up...")
@@ -407,10 +476,11 @@ def run_movie_metadata_tagging(source_path, dry_run=False):
         return False
 
 
-def run_show_metadata_tagging(source_path, dry_run=False):
-    print(f"\n{'='*60}")
-    print(f"Running show metadata tagging on: {source_path}")
-    print(f"{'='*60}")
+def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"Running show metadata tagging on: {source_path}")
+        print(f"{'='*60}")
 
     repo_root = Path(__file__).parent.parent
     tag_script = repo_root / "bin" / "tag-show-metadata.py"
@@ -432,23 +502,21 @@ def run_show_metadata_tagging(source_path, dry_run=False):
 
     process = None
     try:
-        print("Running show metadata tagging to detect/fill missing metadata...")
+        if not quiet:
+            print("Running show metadata tagging to detect/fill missing metadata...")
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
             errors='replace',
             bufsize=1,
         )
-        for line in process.stdout:
-            print(line, end='', flush=True)
-        _, stderr = process.communicate()
-        if stderr:
-            print("STDERR:", stderr)
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd, "", stderr)
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
         return True
     except KeyboardInterrupt:
         print("\n\nTagging interrupted by user. Cleaning up...")
@@ -468,13 +536,14 @@ def run_show_metadata_tagging(source_path, dry_run=False):
         return False
 
 
-def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False):
+def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False, quiet=False):
     """Run a single sync job and return statistics."""
-    print(f"\n{'='*60}")
-    print(f"Running sync job: {job['name']}")
-    print(f"Source: {job['src']}")
-    print(f"Destination: {job['dest']}")
-    print(f"{'='*60}")
+    if not quiet:
+        print(f"\n{'='*60}")
+        print(f"Running sync job: {job['name']}")
+        print(f"Source: {job['src']}")
+        print(f"Destination: {job['dest']}")
+        print(f"{'='*60}")
     
     media = job.get("media", "music")
     
@@ -501,21 +570,21 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
 
         if media == "movies":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False):
+                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
-            if not run_movie_rating_tagging(job["src"], dry_run=False):
+            if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
         elif media == "shows":
             if tag_metadata:
-                if not run_show_metadata_tagging(job["src"], dry_run=False):
+                if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Shows sync - skipping metadata tagging")
         elif media == "music":
-            if not run_explicit_tagging(job["src"], dry_run=False):
+            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
         else:
-            if not run_explicit_tagging(job["src"], dry_run=False):
+            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
     
     cmd = build_sync_command(job, sync_script_path, global_opts)
@@ -543,14 +612,42 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
         
         stdout_lines = []
         # Read stdout line by line and print in real-time
+        last_was_progress = False
         for line in process.stdout:
-            print(line, end='', flush=True)
             stdout_lines.append(line)
+
+            if quiet and _RSYNC_PROGRESS_RE.match(line):
+                sys.stdout.write("\r" + line.rstrip("\n"))
+                sys.stdout.flush()
+                last_was_progress = True
+                continue
+
+            if last_was_progress:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                last_was_progress = False
+
+            if quiet:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Keep rsync's summary-ish lines, but drop the verbose file list.
+                if stripped in {"sending incremental file list", "./"}:
+                    continue
+                # Drop directory listing spam (e.g. "Foo/"), keep file transfer stats/progress.
+                if stripped.endswith("/") and not stripped.startswith("Number of"):
+                    continue
+
+            print(line, end='', flush=True)
+
+        if last_was_progress:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
         
         # Wait for process to complete and get stderr
         _, stderr = process.communicate()
         
-        if stderr:
+        if stderr and process.returncode != 0:
             print("STDERR:", stderr)
         
         stdout_text = ''.join(stdout_lines)
@@ -814,6 +911,12 @@ def main():
         action="store_true",
         help="Skip explicit tagging before sync"
     )
+
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Verbose console output (disables quiet mode)"
+    )
     
     args = parser.parse_args()
     
@@ -858,8 +961,17 @@ def main():
     total_count = len(jobs)
     job_stats_list = []
     
+    quiet = not bool(args.verbose)
+
     for job in jobs:
-        stats = run_sync_job(job, str(sync_script_path), global_opts, args.dry_run, args.skip_tagging)
+        stats = run_sync_job(
+            job,
+            str(sync_script_path),
+            global_opts,
+            args.dry_run,
+            args.skip_tagging,
+            quiet=quiet,
+        )
         job_stats_list.append(stats)
         if stats.get("success"):
             success_count += 1
