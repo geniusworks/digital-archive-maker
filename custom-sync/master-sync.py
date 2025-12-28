@@ -138,7 +138,25 @@ def _require_python_deps():
 def _parse_int(value):
     if value is None:
         return 0
-    return int(str(value).replace(",", "").strip())
+    # Handle values like "329.53M" by converting to bytes
+    value_str = str(value).replace(",", "").strip()
+    
+    # Handle decimal with unit suffixes (K, M, G, T)
+    if re.match(r'^[\d.]+[KMG]T?$', value_str):
+        number_part = float(value_str[:-1])
+        unit = value_str[-1].upper()
+        
+        multipliers = {
+            'K': 1024,
+            'M': 1024 * 1024,
+            'G': 1024 * 1024 * 1024,
+            'T': 1024 * 1024 * 1024 * 1024,
+        }
+        
+        return int(number_part * multipliers.get(unit, 1))
+    
+    # Handle plain integers
+    return int(float(value_str))
 
 
 def _format_bytes(num_bytes):
@@ -202,20 +220,34 @@ def parse_rsync_stats(output_text):
     if m:
         stats["files_copied"] = _parse_int(m.group(1))
 
-    m = re.search(r"^Total transferred file size:\s+([0-9,]+)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+    m = re.search(r"^Total transferred file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$", output_text, flags=re.MULTILINE)
     if m:
         stats["bytes_transferred"] = _parse_int(m.group(1))
     else:
         # Fallback: try "Literal data" which rsync uses for actual data transferred
-        m = re.search(r"^Literal data:\s+([0-9,]+)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+        m = re.search(r"^Literal data:\s+([\d.,]+[KMG]T?)\s+bytes\s*$", output_text, flags=re.MULTILINE)
         if m:
             stats["bytes_transferred"] = _parse_int(m.group(1))
         else:
-            # Another fallback: try to calculate from file count and average size if available
-            # This is a rough estimate for when rsync output format is unexpected
-            if stats["files_copied"] > 0:
-                # If we know files were copied but can't determine bytes, mark as unknown
-                stats["bytes_transferred"] = -1  # Unknown/parse error
+            # Try other rsync output formats
+            patterns = [
+                r"^sent\s+([\d.,]+[KMG]T?)\s+bytes\s+received\s+[\d.,]+[KMG]T?\s+bytes.*([\d.,]+\s+bytes)?/sec",
+                r"^Total bytes sent:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
+                r"^Total file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
+                r"([\d.,]+[KMG]T?)\s+bytes.*transferred",
+            ]
+            
+            for pattern in patterns:
+                m = re.search(pattern, output_text, flags=re.MULTILINE | re.IGNORECASE)
+                if m:
+                    stats["bytes_transferred"] = _parse_int(m.group(1))
+                    break
+            else:
+                # Another fallback: try to calculate from file count and average size if available
+                # This is a rough estimate for when rsync output format is unexpected
+                if stats["files_copied"] > 0:
+                    # If we know files were copied but can't determine bytes, mark as unknown
+                    stats["bytes_transferred"] = -1  # Unknown/parse error
 
     m_sent = re.search(r"^Total bytes sent:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
     m_recv = re.search(r"^Total bytes received:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
@@ -673,6 +705,20 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
             print("STDERR:", stderr)
         
         stdout_text = ''.join(stdout_lines)
+        
+        # Debug: Log rsync output for parsing issues
+        if "files_copied" not in job_stats or job_stats.get("files_copied", 0) > 0:
+            bytes_transferred = parse_rsync_stats(stdout_text).get("bytes_transferred", 0)
+            if bytes_transferred == 0 or bytes_transferred == -1:
+                print(f"DEBUG: Rsync output parsing issue for job '{job['name']}'")
+                print(f"DEBUG: Files copied reported: {job_stats.get('files_copied', 'unknown')}")
+                print(f"DEBUG: Bytes transferred detected: {bytes_transferred}")
+                print(f"DEBUG: Rsync stdout snippet:")
+                # Show last 20 lines of rsync output for debugging
+                debug_lines = stdout_text.strip().split('\n')[-20:]
+                for line in debug_lines:
+                    print(f"  {line}")
+                print(f"DEBUG: End of rsync output")
         
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text, stderr)
