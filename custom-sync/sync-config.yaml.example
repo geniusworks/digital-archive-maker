@@ -1,48 +1,60 @@
-# Example sync configuration
-#
-# Copy this file to sync-config.yaml and customize paths.
-# The real sync-config.yaml is intended to be gitignored.
-
-sync_jobs:
-  - name: "main-library"
-    # Source music root (contains Artist/Album/...)
-    src: "/path/to/your/source/music"
-    # Destination root (local path or rsync remote like user@host:/path)
-    dest: "/path/to/your/destination/music"
-    exclude_explicit: false
-    exclude_unknown: false
-    delete: false
-    dry_run: false
-
-  - name: "clean-library"
-    src: "/path/to/your/source/music"
-    dest: "/path/to/your/destination/clean"
-    exclude_explicit: true
-    exclude_unknown: true
-    delete: false
-    dry_run: false
-
-  - name: "digital-library"
-    src: "/path/to/your/source/digital"
-    dest: "/path/to/your/destination/digital"
-    exclude_explicit: true
-    exclude_unknown: false
-    delete: false
-    dry_run: false
-
-  - name: "movies-family"
-    # Movie root (contains Title (Year)/Title (Year).mp4)
-    src: "/path/to/your/source/movies"
-    dest: "/path/to/your/destination/movies"
-    media: "movies"
-    # Exclude movies rated higher than PG-13 (i.e. excludes R and NC-17)
-    max_mpaa: "PG-13"
-    # Optionally exclude NR/Unrated movies
-    exclude_unrated: true
-    # Optionally exclude Unknown/missing ratings
-    exclude_unknown: true
-    delete: false
-    dry_run: false
+ # Example sync configuration
+ #
+ # Copy this file to sync-config.yaml and customize paths.
+ # The real sync-config.yaml is intended to be gitignored.
+ 
+ # Global options
+ global:
+   delete: false
+   dry_run: false
+   print_command: false
+   max_flacs: null
+ 
+ sync_jobs:
+   - name: "main-library"
+     # Source music root (contains Artist/Album/...)
+     src: "/path/to/your/source/music"
+     # Destination root (local path or rsync remote like user@host:/path)
+     dest: "/path/to/your/destination/music"
+     exclude_explicit: false
+     exclude_unknown: false
+ 
+   - name: "clean-library"
+     src: "/path/to/your/source/music"
+     dest: "/path/to/your/destination/clean"
+     exclude_explicit: true
+     exclude_unknown: true
+ 
+   - name: "digital-library"
+     src: "/path/to/your/source/digital"
+     dest: "/path/to/your/destination/digital"
+     exclude_explicit: true
+     exclude_unknown: false
+ 
+   - name: "movies-library"
+     # Movie root (contains Title (Year)/Title (Year).mp4)
+     src: "/path/to/your/source/movies"
+     dest: "/path/to/your/destination/movies"
+     media: "movies"
+     tag_metadata: true
+     # Exclude movies rated higher than PG-13 (i.e. excludes R and NC-17)
+     max_mpaa: "PG-13"
+     # Optionally exclude NR/Unrated movies
+     exclude_unrated: true
+     # Optionally exclude Unknown/missing ratings
+     exclude_unknown: true
+ 
+   - name: "shows-library"
+     src: "/path/to/your/source/shows"
+     dest: "/path/to/your/destination/shows"
+     media: "shows"
+     tag_metadata: true
+ 
+   - name: "cartoons-library"
+     src: "/path/to/your/source/cartoons"
+     dest: "/path/to/your/destination/cartoons"
+     media: "cartoons"
+     tag_metadata: true
 
   # Remote sync example
   # - name: "remote-backup"
@@ -50,9 +62,7 @@ sync_jobs:
   #   dest: "user@server:/path/to/backup/music"
   #   exclude_explicit: false
   #   exclude_unknown: false
-  #   delete: true
   #   ssh: "ssh -p 2222"
-  #   dry_run: false
 
   # Remote movies sync example
   # - name: "remote-movies-family"
@@ -62,13 +72,5 @@ sync_jobs:
   #   max_mpaa: "PG-13"
   #   exclude_unrated: true
   #   exclude_unknown: true
-  #   delete: false
   #   ssh: "ssh -p 2222"
-  #   dry_run: false
 
-global_options:
-  # Print commands without executing
-  print_command: false
-
-  # Limit number of audio files to scan (debug/testing, 0 = no limit)
-  max_flacs: 0

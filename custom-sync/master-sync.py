@@ -244,8 +244,11 @@ def build_sync_command(job, sync_script_path, global_opts):
     ]
     
     media = job.get("media", "music")
-    if media in {"music", "movies", "shows"}:
-        cmd.extend(["--media", media])
+    cli_media = media
+    if media == "cartoons":
+        cli_media = "shows"
+    if cli_media in {"music", "movies", "shows"}:
+        cmd.extend(["--media", cli_media])
 
     # Add optional flags
     if media == "music":
@@ -566,7 +569,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
     if not skip_tagging and not effective_dry_run:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
-            tag_metadata = media in {"movies", "shows"}
+            tag_metadata = media in {"movies", "shows", "cartoons"}
 
         if media == "movies":
             if tag_metadata:
@@ -574,7 +577,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
-        elif media == "shows":
+        elif media in {"shows", "cartoons"}:
             if tag_metadata:
                 if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
@@ -718,6 +721,9 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
 
         for job in dest_jobs:
             media = job.get("media", "music")
+            cli_media = media
+            if media == "cartoons":
+                cli_media = "shows"
             keep_file = f"/tmp/keep_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
             exclude_file = f"/tmp/exclude_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
 
@@ -729,7 +735,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                 "--dest",
                 dest,
                 "--media",
-                media,
+                cli_media,
                 "--no-delete",
                 "--scan-only",
                 "--keep-file",
@@ -760,7 +766,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     exclude_unrated = True
                 if exclude_unrated:
                     cmd.append("--exclude-unrated")
-            elif media == "shows":
+            elif media in {"shows", "cartoons"}:
                 # Shows sync - no special filtering for now
                 pass
 
