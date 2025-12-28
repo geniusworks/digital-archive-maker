@@ -142,6 +142,8 @@ def _parse_int(value):
 
 
 def _format_bytes(num_bytes):
+    if num_bytes == -1:
+        return "Unknown"
     try:
         n = float(num_bytes)
     except Exception:
@@ -203,6 +205,17 @@ def parse_rsync_stats(output_text):
     m = re.search(r"^Total transferred file size:\s+([0-9,]+)\s+bytes\s*$", output_text, flags=re.MULTILINE)
     if m:
         stats["bytes_transferred"] = _parse_int(m.group(1))
+    else:
+        # Fallback: try "Literal data" which rsync uses for actual data transferred
+        m = re.search(r"^Literal data:\s+([0-9,]+)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+        if m:
+            stats["bytes_transferred"] = _parse_int(m.group(1))
+        else:
+            # Another fallback: try to calculate from file count and average size if available
+            # This is a rough estimate for when rsync output format is unexpected
+            if stats["files_copied"] > 0:
+                # If we know files were copied but can't determine bytes, mark as unknown
+                stats["bytes_transferred"] = -1  # Unknown/parse error
 
     m_sent = re.search(r"^Total bytes sent:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
     m_recv = re.search(r"^Total bytes received:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
