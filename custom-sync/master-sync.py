@@ -577,12 +577,18 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
-        elif media in {"shows", "cartoons"}:
+        elif media == "shows":
             if tag_metadata:
                 if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Shows sync - skipping metadata tagging")
+        elif media == "cartoons":
+            if tag_metadata:
+                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
+                    print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
+            else:
+                print("Cartoons sync - skipping metadata tagging")
         elif media == "music":
             if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
