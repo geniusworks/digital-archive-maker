@@ -287,14 +287,15 @@ def _normalize_omdb_metadata(data):
         "_poster_url": poster_url,
     }
 
-def download_image(url, timeout=30):
+def download_image(url, timeout=30, verbose=False):
     """Download image from URL."""
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.content
     except Exception as e:
-        print(f"Failed to download image from {url}: {e}")
+        if verbose:
+            print(f"Failed to download image from {url}: {e}")
         return None
 
 def _is_missing_mp4_tag(mp4, key):
@@ -390,7 +391,7 @@ def _mp4_needs_metadata(file_path):
     return any(_is_missing_mp4_tag(mp4, k) for k in keys)
 
 
-def write_metadata_to_file(file_path, metadata, dry_run=False, force=False):
+def write_metadata_to_file(file_path, metadata, dry_run=False, force=False, verbose=False):
     """Write comprehensive metadata to MP4 file."""
     try:
         if not isinstance(metadata, dict):
@@ -485,7 +486,7 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False):
             if dry_run:
                 changed = True
             else:
-                poster_data = download_image(poster_url)
+                poster_data = download_image(poster_url, verbose=verbose)
                 if poster_data:
                     mp4['covr'] = [MP4Cover(poster_data, imageformat=MP4Cover.FORMAT_JPEG)]
                     changed = True
@@ -609,11 +610,19 @@ def main():
                 metadata = _normalize_omdb_metadata(omdb)
 
             if key:
-                cache[key] = {
-                    "fetched_at": datetime.now(datetime.UTC).isoformat(),
-                    "not_found": metadata is None,
-                    "metadata": metadata,
-                }
+                try:
+                    from datetime import timezone
+                    cache[key] = {
+                        "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        "not_found": metadata is None,
+                        "metadata": metadata,
+                    }
+                except ImportError:
+                    cache[key] = {
+                        "fetched_at": datetime.utcnow().isoformat(),
+                        "not_found": metadata is None,
+                        "metadata": metadata,
+                    }
                 cache_dirty = True
         
         if not metadata:
@@ -631,7 +640,7 @@ def main():
             print(f"  Overview: {overview[:100]}...")
         
         # Write metadata
-        wrote = write_metadata_to_file(file_path, metadata, args.dry_run, force=args.force)
+        wrote = write_metadata_to_file(file_path, metadata, args.dry_run, force=args.force, verbose=args.verbose)
         if args.dry_run:
             if wrote:
                 print(f"  [DRY RUN] Would write metadata to {file_path}")
