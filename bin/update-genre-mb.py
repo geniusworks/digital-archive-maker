@@ -348,8 +348,9 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         mode_text = "FORCE UPDATING" if force else "Updating"
         print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
         
-        pbar = tqdm(flac_files, desc="Processing files", unit="files")
-        flac_iterator = pbar
+        # Use a stable total and manually update so the bar advances even when we skip.
+        pbar = tqdm(total=len(flac_files), desc="Tagging genre", unit="files")
+        flac_iterator = sorted(flac_files)
     else:
         if not HAS_TQDM and not verbose:
             print("Note: Install 'tqdm' for progress bar: pip install tqdm")
@@ -359,7 +360,7 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
         flac_iterator = sorted(flac_files)
     
-    for flac_file in flac_iterator:
+    for i, flac_file in enumerate(flac_iterator, start=1):
         # Check for shutdown request
         if SHUTDOWN_REQUESTED:
             if HAS_TQDM:
@@ -375,19 +376,25 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
             
         # Update progress bar if available
         if HAS_TQDM and not verbose:
-            pbar.set_postfix({
-                'updated': updated_count, 
-                'skipped': skipped_count
-            })
+            pbar.update(1)
+            # Refresh postfix occasionally to avoid excessive redraws
+            if i == 1 or i % 25 == 0:
+                pbar.set_postfix({
+                    'updated': updated_count,
+                    'skipped': skipped_count,
+                }, refresh=True)
         elif not HAS_TQDM and (updated_count + skipped_count) % 100 == 0:
             # Show progress every 100 files when no tqdm
             print(f"Progress: {updated_count + skipped_count}/{len(flac_files)} files processed (updated: {updated_count}, skipped: {skipped_count})")
     
     if HAS_TQDM and not verbose:
+        pbar.set_postfix({
+            'updated': updated_count,
+            'skipped': skipped_count,
+        }, refresh=True)
         pbar.close()
-        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
-    else:
-        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
+
+    print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
     
     return updated_count
 
