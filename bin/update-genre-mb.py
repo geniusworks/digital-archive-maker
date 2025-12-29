@@ -33,6 +33,18 @@ except ImportError:
     HAS_TQDM = False
     tqdm = None
 
+ACTIVE_TQDM = False
+
+
+def _log(msg: str) -> None:
+    if HAS_TQDM and ACTIVE_TQDM and tqdm is not None:
+        try:
+            tqdm.write(msg)
+            return
+        except Exception:
+            pass
+    print(msg)
+
 # Global flag for graceful shutdown
 SHUTDOWN_REQUESTED = False
 
@@ -77,6 +89,17 @@ def normalize_tag_value(value: str) -> str:
         return ""
     return str(value).strip()
 
+
+def _cache_key_artist_album(artist: str, album: str) -> str:
+    a = normalize_tag_value(artist).lower()
+    b = normalize_tag_value(album).lower()
+    return f"artist={a}||album={b}"
+
+
+def _cache_key_artist(artist: str) -> str:
+    a = normalize_tag_value(artist).lower()
+    return f"artist={a}"
+
 def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
     """Retry MusicBrainz API calls with exponential backoff for network errors."""
     for attempt in range(max_retries):
@@ -85,12 +108,12 @@ def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
         except (ssl.SSLError, urllib.error.URLError, OSError) as e:
             if attempt < max_retries - 1:
                 delay = base_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
-                print(f"  Network error (attempt {attempt + 1}/{max_retries}): {e}")
-                print(f"  Retrying in {delay} seconds...")
+                _log(f"Network error (attempt {attempt + 1}/{max_retries}): {e}")
+                _log(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
                 continue
             else:
-                print(f"  Failed after {max_retries} attempts: {e}")
+                _log(f"Failed after {max_retries} attempts: {e}")
                 raise
         except Exception as e:
             # Non-network errors, don't retry
@@ -102,12 +125,20 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
         import musicbrainzngs
         musicbrainzngs.set_useragent("update-genre-mb", "1.0", "https://yourdomain.example")
         
-        # Create cache key
-        cache_key = f"{normalize_tag_value(artist)}_{normalize_tag_value(album)}_{normalize_tag_value(title)}"
-        
-        # Check cache first
-        if cache_key in GENRE_CACHE:
-            return GENRE_CACHE[cache_key]
+        # Cache by artist+album so we don't re-query per-track.
+        # Also cache negative results (empty string) to avoid repeated failed lookups.
+        cache_key_album = _cache_key_artist_album(artist, album)
+        cache_key_artist = _cache_key_artist(artist)
+
+        cached = GENRE_CACHE.get(cache_key_album)
+        if cached is not None:
+            return cached or None
+
+        # If no album tag or album lookup not yet cached, allow artist-level cache.
+        if not normalize_tag_value(album):
+            cached_artist = GENRE_CACHE.get(cache_key_artist)
+            if cached_artist is not None:
+                return cached_artist or None
         
         # Try release group lookup first (more reliable for genres)
         def search_release_groups():
@@ -164,8 +195,12 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
                     else:
                         # Fall back to first available genre (but not decades)
                         genre = sorted(genre_tags, key=lambda x: x.lower())[0]
-                    
-                    GENRE_CACHE[cache_key] = genre
+
+                    # Cache the successful lookup
+                    GENRE_CACHE[cache_key_album] = genre
+                    # Also populate an artist-level cache if not already present.
+                    if GENRE_CACHE.get(cache_key_artist) is None:
+                        GENRE_CACHE[cache_key_artist] = genre
                     return genre
                     
             except Exception:
@@ -224,15 +259,20 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
                     else:
                         # Fall back to first available genre (but not decades)
                         genre = sorted(genre_tags, key=lambda x: x.lower())[0]
-                    
-                    GENRE_CACHE[cache_key] = genre
+
+                    # Cache the successful lookup
+                    GENRE_CACHE[cache_key_album] = genre
+                    GENRE_CACHE[cache_key_artist] = genre
                     return genre
                     
         except Exception:
             pass
         
-        # Cache the miss to avoid repeated lookups
-        GENRE_CACHE[cache_key] = ""
+        # Cache the miss to avoid repeated lookups.
+        # Only cache the artist-level miss when we don't have album context.
+        GENRE_CACHE[cache_key_album] = ""
+        if not normalize_tag_value(album):
+            GENRE_CACHE[cache_key_artist] = ""
         return None
         
     except ImportError:
@@ -302,7 +342,7 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     if not genre:
         if verbose:
             print(f"  No genre found for {artist} - {album}")
-        return True
+        return "unresolved"
     
     # Update tags
     new_tags = {'GENRE': genre}
@@ -317,12 +357,10 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     
     if dry_run:
         print(f"    [DRY RUN] Would set genre to '{genre}'")
-        return True
+        return "updated"
     else:
         if write_flac_tags(flac_path, new_tags):
-            if not verbose and not force:
-                print(f"    Updated genre: {genre}")
-            return True
+            return "updated"
         else:
             print(f"    Failed to update genre")
             return False
@@ -331,8 +369,10 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
                            dry_run: bool = False, verbose: bool = False, force: bool = False) -> int:
     """Update genres for FLAC files in a folder."""
     global SHUTDOWN_REQUESTED
+    global ACTIVE_TQDM
     updated_count = 0
     skipped_count = 0
+    unresolved_count = 0
     
     if recursive:
         flac_files = list(folder_path.rglob("*.flac"))
@@ -343,58 +383,61 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         print(f"No FLAC files found in {folder_path}")
         return 0
     
-    # Use progress bar if available and not verbose
-    if HAS_TQDM and not verbose:
-        mode_text = "FORCE UPDATING" if force else "Updating"
-        print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
-        
-        # Use a stable total and manually update so the bar advances even when we skip.
-        pbar = tqdm(total=len(flac_files), desc="Tagging genre", unit="files")
-        flac_iterator = sorted(flac_files)
+    flac_files = sorted(flac_files)
+    mode_text = "FORCE UPDATING" if force else "Updating"
+    print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
+
+    # Prefer tqdm when its output stream is a TTY. tqdm defaults to stderr; match that.
+    use_tqdm = HAS_TQDM and not verbose and sys.stderr.isatty()
+    pbar = None
+
+    if use_tqdm:
+        ACTIVE_TQDM = True
+        # Use default tqdm formatting (same style as tag-explicit-mb) for compact bar width.
+        pbar = tqdm(
+            flac_files,
+            desc="Tagging genre",
+            file=sys.stderr,
+            dynamic_ncols=False,
+            ncols=80,
+            miniters=1,
+            mininterval=0.05,
+        )
+        flac_iterator = pbar
     else:
-        if not HAS_TQDM and not verbose:
-            print("Note: Install 'tqdm' for progress bar: pip install tqdm")
-        
-        # Simple progress indicator when no tqdm or verbose mode
-        mode_text = "FORCE UPDATING" if force else "Updating"
-        print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
-        flac_iterator = sorted(flac_files)
+        if HAS_TQDM and not verbose and not sys.stderr.isatty():
+            _log("Note: progress bar disabled (stderr is not a TTY); showing periodic progress instead")
+        flac_iterator = flac_files
     
     for i, flac_file in enumerate(flac_iterator, start=1):
         # Check for shutdown request
         if SHUTDOWN_REQUESTED:
-            if HAS_TQDM:
+            if pbar is not None:
                 pbar.close()
+            ACTIVE_TQDM = False
             print(f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown.")
             break
         
         result = update_file_genre(flac_file, dry_run, verbose, force)
         if result == "skipped":
             skipped_count += 1
-        elif result:
+        elif result == "unresolved":
+            unresolved_count += 1
+        elif result == "updated":
             updated_count += 1
             
-        # Update progress bar if available
-        if HAS_TQDM and not verbose:
-            pbar.update(1)
-            # Refresh postfix occasionally to avoid excessive redraws
-            if i == 1 or i % 25 == 0:
-                pbar.set_postfix({
-                    'updated': updated_count,
-                    'skipped': skipped_count,
-                }, refresh=True)
-        elif not HAS_TQDM and (updated_count + skipped_count) % 100 == 0:
-            # Show progress every 100 files when no tqdm
-            print(f"Progress: {updated_count + skipped_count}/{len(flac_files)} files processed (updated: {updated_count}, skipped: {skipped_count})")
+        # If no tqdm bar (e.g. non-TTY), show periodic progress without spamming
+        if not use_tqdm and (i == 1 or i % 500 == 0):
+            print(f"Progress: {i}/{len(flac_files)}")
     
-    if HAS_TQDM and not verbose:
-        pbar.set_postfix({
-            'updated': updated_count,
-            'skipped': skipped_count,
-        }, refresh=True)
+    if pbar is not None:
         pbar.close()
+    ACTIVE_TQDM = False
 
-    print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
+    if unresolved_count:
+        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged, unresolved {unresolved_count})")
+    else:
+        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
     
     return updated_count
 

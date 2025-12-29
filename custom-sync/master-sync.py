@@ -414,23 +414,20 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False):
         if not quiet:
             print("Running genre metadata tagging...")
 
-        # IMPORTANT: when piping stdout, tqdm progress bars get broken into line-by-line output.
-        # Let the subprocess inherit the terminal streams when not quiet so tqdm can render in-place.
-        if quiet:
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding='utf-8',
-                errors='replace',
-                bufsize=1,
-            )
-            _stream_process_output(process, quiet=quiet)
-            process.wait()
-        else:
-            process = subprocess.Popen(cmd)
-            process.wait()
+        # Keep STDERR attached to the terminal so tqdm (which writes to stderr by default)
+        # can render a single in-place progress line.
+        # Only pipe STDOUT so we can still stream any non-progress output.
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=None,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1,
+        )
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
