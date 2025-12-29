@@ -21,6 +21,8 @@ import ssl
 import sys
 import time
 import urllib.error
+import re
+import unicodedata
 from pathlib import Path
 from mutagen.flac import FLAC
 from typing import Dict, List, Optional, Set
@@ -90,14 +92,24 @@ def normalize_tag_value(value: str) -> str:
     return str(value).strip()
 
 
+def _normalize_cache_component(value: str) -> str:
+    v = normalize_tag_value(value)
+    if not v:
+        return ""
+    v = unicodedata.normalize("NFKC", v)
+    v = v.casefold()
+    v = re.sub(r"\s+", " ", v).strip()
+    return v
+
+
 def _cache_key_artist_album(artist: str, album: str) -> str:
-    a = normalize_tag_value(artist).lower()
-    b = normalize_tag_value(album).lower()
+    a = _normalize_cache_component(artist)
+    b = _normalize_cache_component(album)
     return f"artist={a}||album={b}"
 
 
 def _cache_key_artist(artist: str) -> str:
-    a = normalize_tag_value(artist).lower()
+    a = _normalize_cache_component(artist)
     return f"artist={a}"
 
 def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
@@ -119,7 +131,7 @@ def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
             # Non-network errors, don't retry
             raise
 
-def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Optional[str]:
+def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, return_source: bool = False):
     """Try to get genre information from MusicBrainz."""
     try:
         import musicbrainzngs
@@ -132,12 +144,16 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
 
         cached = GENRE_CACHE.get(cache_key_album)
         if cached is not None:
+            if return_source:
+                return (cached or None, "cache")
             return cached or None
 
         # If no album tag or album lookup not yet cached, allow artist-level cache.
         if not normalize_tag_value(album):
             cached_artist = GENRE_CACHE.get(cache_key_artist)
             if cached_artist is not None:
+                if return_source:
+                    return (cached_artist or None, "cache")
                 return cached_artist or None
         
         # Try release group lookup first (more reliable for genres)
@@ -201,6 +217,8 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
                     # Also populate an artist-level cache if not already present.
                     if GENRE_CACHE.get(cache_key_artist) is None:
                         GENRE_CACHE[cache_key_artist] = genre
+                    if return_source:
+                        return (genre, "api")
                     return genre
                     
             except Exception:
@@ -263,6 +281,8 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
                     # Cache the successful lookup
                     GENRE_CACHE[cache_key_album] = genre
                     GENRE_CACHE[cache_key_artist] = genre
+                    if return_source:
+                        return (genre, "api")
                     return genre
                     
         except Exception:
@@ -273,13 +293,19 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
         GENRE_CACHE[cache_key_album] = ""
         if not normalize_tag_value(album):
             GENRE_CACHE[cache_key_artist] = ""
+        if return_source:
+            return (None, "api")
         return None
         
     except ImportError:
         print("MusicBrainz library not available, install with: pip install musicbrainzngs")
+        if return_source:
+            return (None, "error")
         return None
     except Exception as e:
         print(f"Error fetching genre from MusicBrainz for {artist} - {album}: {e}")
+        if return_source:
+            return (None, "error")
         return None
 
 def read_flac_tags(flac_path: Path) -> Dict[str, str]:
@@ -328,6 +354,7 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     
     # Get metadata for lookup
     artist = current_tags.get('artist', '')
+    albumartist = current_tags.get('albumartist', '')
     album = current_tags.get('album', '')
     title = current_tags.get('title', '')
     
@@ -335,13 +362,24 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
         if verbose:
             print(f"  Skipping {flac_path.name} (no artist tag)")
         return "skipped"
+
+    # Prefer albumartist for caching/lookups. Track artist can vary (feat., punctuation, etc.)
+    # which causes repeated cache misses for the same album.
+    lookup_artist = albumartist or artist
     
     # Get genre from MusicBrainz
-    genre = get_genre_from_musicbrainz(artist, album, title)
+    if verbose:
+        genre, genre_source = get_genre_from_musicbrainz(lookup_artist, album, title, return_source=True)
+    else:
+        genre = get_genre_from_musicbrainz(lookup_artist, album, title)
+        genre_source = None
     
     if not genre:
         if verbose:
-            print(f"  No genre found for {artist} - {album}")
+            if genre_source == "cache":
+                print(f"  No genre found (cached) for {lookup_artist} - {album}")
+            else:
+                print(f"  No genre found for {lookup_artist} - {album}")
         return "unresolved"
     
     # Update tags
@@ -350,10 +388,10 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     if verbose or force:
         current_genre = current_tags.get('genre', '')
         if current_genre:
-            print(f"  Updating {flac_path.name}: {artist} - {album}")
+            print(f"  Updating {flac_path.name}: {lookup_artist} - {album}")
             print(f"    {current_genre} -> {genre}")
         else:
-            print(f"  Setting {flac_path.name}: {artist} - {album} -> {genre}")
+            print(f"  Setting {flac_path.name}: {lookup_artist} - {album} -> {genre}")
     
     if dry_run:
         print(f"    [DRY RUN] Would set genre to '{genre}'")

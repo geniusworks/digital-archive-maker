@@ -435,11 +435,15 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False):
     except KeyboardInterrupt:
         print("\n\nGenre tagging interrupted by user. Cleaning up...")
         if process:
-            process.terminate()
             try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
+                process.send_signal(signal.SIGINT)
+                process.wait(timeout=10)
+            except Exception:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
         print("Genre tagging aborted.")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
