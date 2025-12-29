@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""Update genre metadata for FLAC files using MusicBrainz.
+
+This script updates genre tags for FLAC files by:
+1. Checking if genre tag already exists (skips if present)
+2. Fetching genre information from MusicBrainz
+3. Writing genre tags to FLAC files
+4. Supporting dry-run mode and verbose output
+
+Usage:
+    python3 bin/update-genre-mb.py /path/to/music/folder
+    python3 bin/update-genre-mb.py /path/to/music/folder --dry-run
+    python3 bin/update-genre-mb.py /path/to/music/folder --recursive
+"""
+
+import argparse
+import os
+import sys
+from pathlib import Path
+from mutagen.flac import FLAC
+from typing import Dict, List, Optional, Set
+
+# Global cache for genre lookups to avoid repeated API calls
+GENRE_CACHE: Dict[str, str] = {}
+
+def normalize_tag_value(value: str) -> str:
+    """Normalize a tag value by trimming and cleaning."""
+    if not value:
+        return ""
+    return str(value).strip()
+
+def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Optional[str]:
+    """Try to get genre information from MusicBrainz."""
+    try:
+        import musicbrainzngs
+        musicbrainzngs.set_useragent("update-genre-mb", "1.0", "https://yourdomain.example")
+        
+        # Create cache key
+        cache_key = f"{normalize_tag_value(artist)}_{normalize_tag_value(album)}_{normalize_tag_value(title)}"
+        
+        # Check cache first
+        if cache_key in GENRE_CACHE:
+            return GENRE_CACHE[cache_key]
+        
+        # Try release group lookup first (more reliable for genres)
+        result = musicbrainzngs.search_release_groups(artist=artist, release=album, limit=1)
+        if result.get('release-group-list'):
+            release_group = result['release-group-list'][0]
+            release_group_id = release_group['id']
+            
+            # Get release group details with tags
+            try:
+                rg_info = musicbrainzngs.get_release_group_by_id(release_group_id, includes=['tags'])
+                tags = rg_info.get('release-group', {}).get('tag-list', [])
+                
+                # Extract genre tags (filter out non-genre tags)
+                genre_tags = []
+                non_genre_tags = {
+                    'seen live', 'favorite', 'owned', 'wants', 'recommendations',
+                    'beautiful', 'amazing', 'awesome', 'best', 'classic', 'great',
+                    'love', 'liked', 'disliked', 'overrated', 'underrated',
+                    # Decade/era tags (not real genres)
+                    '90s', '80s', '70s', '60s', '50s', '2000s', '2010s', '2020s',
+                    '1990s', '1980s', '1970s', '1960s', '1950s',
+                    # Quality/subjective tags
+                    'catchy', 'danceable', 'melodic', 'energetic', 'chill',
+                    'relaxing', 'upbeat', 'mellow', 'dark', 'happy', 'sad'
+                }
+                
+                # Priority genres (prefer these over decade tags)
+                priority_genres = {
+                    'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip hop',
+                    'rap', 'r&b', 'soul', 'funk', 'reggae', 'country', 'folk',
+                    'blues', 'metal', 'punk', 'alternative', 'indie', 'ambient',
+                    'techno', 'house', 'trance', 'dubstep', 'drum and bass',
+                    'new wave', 'post-punk', 'grunge', 'shoegaze', 'emo',
+                    'ska', 'punk rock', 'hard rock', 'progressive rock',
+                    'synthpop', 'new romantic', 'gothic rock', 'indie rock'
+                }
+                
+                for tag in tags:
+                    tag_name = normalize_tag_value(tag.get('name', ''))
+                    if tag_name and tag_name.lower() not in non_genre_tags:
+                        genre_tags.append(tag_name)
+                
+                if genre_tags:
+                    # Prioritize real genres over decade/era tags
+                    priority_matches = [g for g in genre_tags if g.lower() in priority_genres]
+                    if priority_matches:
+                        genre = priority_matches[0]  # Use first priority genre found
+                    else:
+                        # Fall back to first available genre (but not decades)
+                        genre = sorted(genre_tags, key=lambda x: x.lower())[0]
+                    
+                    GENRE_CACHE[cache_key] = genre
+                    return genre
+                    
+            except Exception:
+                pass
+        
+        # Fallback to artist lookup
+        try:
+            artist_result = musicbrainzngs.search_artists(artist=artist, limit=1)
+            if artist_result.get('artist-list'):
+                artist_info = artist_result['artist-list'][0]
+                artist_id = artist_info['id']
+                
+                artist_info = musicbrainzngs.get_artist_by_id(artist_id, includes=['tags'])
+                tags = artist_info.get('artist', {}).get('tag-list', [])
+                
+                genre_tags = []
+                non_genre_tags = {
+                    'seen live', 'favorite', 'owned', 'wants', 'recommendations',
+                    'beautiful', 'amazing', 'awesome', 'best', 'classic', 'great',
+                    'love', 'liked', 'disliked', 'overrated', 'underrated',
+                    # Decade/era tags (not real genres)
+                    '90s', '80s', '70s', '60s', '50s', '2000s', '2010s', '2020s',
+                    '1990s', '1980s', '1970s', '1960s', '1950s',
+                    # Quality/subjective tags
+                    'catchy', 'danceable', 'melodic', 'energetic', 'chill',
+                    'relaxing', 'upbeat', 'mellow', 'dark', 'happy', 'sad'
+                }
+                
+                # Priority genres (prefer these over decade tags)
+                priority_genres = {
+                    'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip hop',
+                    'rap', 'r&b', 'soul', 'funk', 'reggae', 'country', 'folk',
+                    'blues', 'metal', 'punk', 'alternative', 'indie', 'ambient',
+                    'techno', 'house', 'trance', 'dubstep', 'drum and bass',
+                    'new wave', 'post-punk', 'grunge', 'shoegaze', 'emo',
+                    'ska', 'punk rock', 'hard rock', 'progressive rock',
+                    'synthpop', 'new romantic', 'gothic rock', 'indie rock'
+                }
+                
+                for tag in tags:
+                    tag_name = normalize_tag_value(tag.get('name', ''))
+                    if tag_name and tag_name.lower() not in non_genre_tags:
+                        genre_tags.append(tag_name)
+                
+                if genre_tags:
+                    # Prioritize real genres over decade/era tags
+                    priority_matches = [g for g in genre_tags if g.lower() in priority_genres]
+                    if priority_matches:
+                        genre = priority_matches[0]  # Use first priority genre found
+                    else:
+                        # Fall back to first available genre (but not decades)
+                        genre = sorted(genre_tags, key=lambda x: x.lower())[0]
+                    
+                    GENRE_CACHE[cache_key] = genre
+                    return genre
+                    
+        except Exception:
+            pass
+        
+        # Cache the miss to avoid repeated lookups
+        GENRE_CACHE[cache_key] = ""
+        return None
+        
+    except ImportError:
+        print("MusicBrainz library not available, install with: pip install musicbrainzngs")
+        return None
+    except Exception as e:
+        print(f"Error fetching genre from MusicBrainz for {artist} - {album}: {e}")
+        return None
+
+def read_flac_tags(flac_path: Path) -> Dict[str, str]:
+    """Read tags from a FLAC file."""
+    try:
+        audio = FLAC(flac_path)
+        tags = {}
+        for key in audio.keys():
+            if audio[key]:
+                tags[key.lower()] = str(audio[key][0])
+        return tags
+    except Exception as e:
+        print(f"Error reading tags from {flac_path}: {e}")
+        return {}
+
+def write_flac_tags(flac_path: Path, tags: Dict[str, str]) -> bool:
+    """Write tags to a FLAC file."""
+    try:
+        audio = FLAC(flac_path)
+        for key, value in tags.items():
+            if value:
+                audio[key] = [value]
+        audio.save()
+        return True
+    except Exception as e:
+        print(f"Error writing tags to {flac_path}: {e}")
+        return False
+
+def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = False, force: bool = False) -> bool:
+    """Update genre for a single FLAC file."""
+    # Read current tags
+    current_tags = read_flac_tags(flac_path)
+    
+    # Skip if genre already exists (unless force mode)
+    if not force and 'genre' in current_tags and current_tags['genre']:
+        if verbose:
+            print(f"  Skipping {flac_path.name} (already has genre: {current_tags['genre']})")
+        return True
+    
+    # Show current genre if force mode
+    if force and 'genre' in current_tags and current_tags['genre']:
+        if verbose:
+            print(f"  Force updating {flac_path.name} (current: {current_tags['genre']})")
+    elif verbose:
+        print(f"  Processing {flac_path.name}")
+    
+    # Get metadata for lookup
+    artist = current_tags.get('artist', '')
+    album = current_tags.get('album', '')
+    title = current_tags.get('title', '')
+    
+    if not artist:
+        if verbose:
+            print(f"  Skipping {flac_path.name} (no artist tag)")
+        return True
+    
+    # Get genre from MusicBrainz
+    genre = get_genre_from_musicbrainz(artist, album, title)
+    
+    if not genre:
+        if verbose:
+            print(f"  No genre found for {artist} - {album}")
+        return True
+    
+    # Update tags
+    new_tags = {'GENRE': genre}
+    
+    if verbose or force:
+        current_genre = current_tags.get('genre', '')
+        if current_genre:
+            print(f"  Updating {flac_path.name}: {artist} - {album}")
+            print(f"    {current_genre} -> {genre}")
+        else:
+            print(f"  Setting {flac_path.name}: {artist} - {album} -> {genre}")
+    
+    if dry_run:
+        print(f"    [DRY RUN] Would set genre to '{genre}'")
+        return True
+    else:
+        if write_flac_tags(flac_path, new_tags):
+            if not verbose and not force:
+                print(f"    Updated genre: {genre}")
+            return True
+        else:
+            print(f"    Failed to update genre")
+            return False
+
+def update_genres_in_folder(folder_path: Path, recursive: bool = False, 
+                           dry_run: bool = False, verbose: bool = False, force: bool = False) -> int:
+    """Update genres for FLAC files in a folder."""
+    updated_count = 0
+    
+    if recursive:
+        flac_files = list(folder_path.rglob("*.flac"))
+    else:
+        flac_files = list(folder_path.glob("*.flac"))
+    
+    if not flac_files:
+        print(f"No FLAC files found in {folder_path}")
+        return 0
+    
+    mode_text = "FORCE UPDATING" if force else "Processing"
+    print(f"{mode_text} {len(flac_files)} FLAC files in {folder_path}")
+    
+    for flac_file in sorted(flac_files):
+        if update_file_genre(flac_file, dry_run, verbose, force):
+            updated_count += 1
+    
+    return updated_count
+
+def main():
+    parser = argparse.ArgumentParser(description='Update genre metadata for FLAC files')
+    parser.add_argument('folder', help='Folder containing FLAC files')
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be changed without making changes')
+    parser.add_argument('--recursive', action='store_true', help='Process subdirectories recursively')
+    parser.add_argument('--verbose', action='store_true', help='Verbose output')
+    parser.add_argument('--force', action='store_true', help='Force update existing genre tags')
+    
+    args = parser.parse_args()
+    
+    folder_path = Path(args.folder).resolve()
+    if not folder_path.exists():
+        print(f"Error: Path {folder_path} does not exist")
+        sys.exit(1)
+    
+    if args.dry_run:
+        print("DRY RUN MODE - No changes will be made")
+    
+    if args.force:
+        print("FORCE MODE - Will overwrite existing genre tags")
+    
+    updated_count = update_genres_in_folder(
+        folder_path, 
+        recursive=args.recursive,
+        dry_run=args.dry_run,
+        verbose=args.verbose,
+        force=args.force
+    )
+    
+    if args.dry_run:
+        action = "Would update" if args.force else "Would update"
+        print(f"\n{action} {updated_count} files")
+    else:
+        action = "Force updated" if args.force else "Updated"
+        print(f"\n{action} {updated_count} files")
+
+if __name__ == '__main__':
+    main()

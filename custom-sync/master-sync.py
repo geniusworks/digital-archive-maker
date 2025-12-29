@@ -356,22 +356,12 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
     cmd = [
         sys.executable,  # Use current python interpreter
         str(tag_script),
-        source_path,
-        "--dry-run" if dry_run else ""
     ]
-    
-    # Remove empty string from args
-    cmd = [arg for arg in cmd if arg]
-    
-    if dry_run:
-        print("DRY RUN - Would execute explicit tagging:")
-        print(" ".join(cmd))
-        return True
     
     process = None
     try:
         if not quiet:
-            print("Running explicit tagging to detect new content...")
+            print("Running explicit tagging...")
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -379,7 +369,7 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
             text=True,
             encoding='utf-8',
             errors='replace',
-            bufsize=1
+            bufsize=1,
         )
         _stream_process_output(process, quiet=quiet)
         process.wait()
@@ -387,17 +377,66 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
         return True
     except KeyboardInterrupt:
-        print("\n\nTagging interrupted by user. Cleaning up...")
+        print("\n\nExplicit tagging interrupted by user. Cleaning up...")
         if process:
             process.terminate()
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
-        print("Tagging aborted.")
+        print("Explicit tagging aborted.")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"Error running explicit tagging on '{source_path}':")
+        print(f"Exit code: {e.returncode}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
+        return False
+
+
+def run_genre_tagging(source_path, dry_run=False, quiet=False):
+    """Run genre tagging on music files."""
+    script_path = SCRIPT_DIR.parent / "bin" / "update-genre-mb.py"
+    cmd = [
+        sys.executable,
+        str(script_path),
+        source_path,
+        "--recursive"
+    ]
+    
+    if dry_run:
+        cmd.append("--dry-run")
+    
+    process = None
+    try:
+        if not quiet:
+            print("Running genre metadata tagging...")
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1,
+        )
+        _stream_process_output(process, quiet=quiet)
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
+        return True
+    except KeyboardInterrupt:
+        print("\n\nGenre tagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Genre tagging aborted.")
+        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running genre tagging on '{source_path}':")
         print(f"Exit code: {e.returncode}")
         if e.stderr:
             print(f"STDERR: {e.stderr}")
@@ -637,6 +676,8 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
         elif media == "music":
             if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
+            if not run_genre_tagging(job["src"], dry_run=False, quiet=quiet):
+                print("Warning: Genre tagging failed, proceeding with sync anyway")
         else:
             if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
