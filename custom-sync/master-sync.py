@@ -396,7 +396,9 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
 
 def run_genre_tagging(source_path, dry_run=False, quiet=False):
     """Run genre tagging on music files."""
-    script_path = SCRIPT_DIR.parent / "bin" / "update-genre-mb.py"
+    # Get the directory of this script to find repo root
+    repo_root = Path(__file__).parent.parent
+    script_path = repo_root / "bin" / "update-genre-mb.py"
     cmd = [
         sys.executable,
         str(script_path),
@@ -623,7 +625,7 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging=False, quiet=False):
+def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False):
     """Run a single sync job and return statistics."""
     if not quiet:
         print(f"\n{'='*60}")
@@ -649,8 +651,8 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, skip_tagging
 
     effective_dry_run = bool(dry_run or job.get("dry_run", False) or global_opts.get("dry_run", False))
 
-    # Run tagging first unless skipped
-    if not skip_tagging and not effective_dry_run:
+    # Run tagging first unless dry run
+    if not effective_dry_run:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
             tag_metadata = media in {"movies", "shows", "cartoons"}
@@ -1018,12 +1020,7 @@ def main():
         action="store_true",
         help="List available jobs and exit"
     )
-    parser.add_argument(
-        "--skip-tagging", 
-        action="store_true",
-        help="Skip explicit tagging before sync"
-    )
-
+    
     parser.add_argument(
         "--verbose",
         action="store_true",
@@ -1081,7 +1078,6 @@ def main():
             str(sync_script_path),
             global_opts,
             args.dry_run,
-            args.skip_tagging,
             quiet=quiet,
         )
         job_stats_list.append(stats)

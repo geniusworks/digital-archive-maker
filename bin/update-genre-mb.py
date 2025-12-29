@@ -14,20 +14,87 @@ Usage:
 """
 
 import argparse
+import json
 import os
+import signal
+import ssl
 import sys
+import time
+import urllib.error
 from pathlib import Path
 from mutagen.flac import FLAC
 from typing import Dict, List, Optional, Set
 
+# Try to import tqdm for progress bar
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+    tqdm = None
+
+# Global flag for graceful shutdown
+SHUTDOWN_REQUESTED = False
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully."""
+    global SHUTDOWN_REQUESTED
+    SHUTDOWN_REQUESTED = True
+    print("\n\nInterrupt received. Finishing current file and saving cache...")
+    print("Use Ctrl+C again to force exit.")
+
+# Set up signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
 # Global cache for genre lookups to avoid repeated API calls
 GENRE_CACHE: Dict[str, str] = {}
+CACHE_FILE = Path.home() / ".cache" / "genre_cache.json"
+
+def load_cache():
+    """Load genre cache from disk."""
+    global GENRE_CACHE
+    try:
+        if CACHE_FILE.exists():
+            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+                GENRE_CACHE = json.load(f)
+            print(f"Loaded {len(GENRE_CACHE)} cached genre entries")
+    except Exception as e:
+        print(f"Warning: Could not load cache: {e}")
+        GENRE_CACHE = {}
+
+def save_cache():
+    """Save genre cache to disk."""
+    try:
+        CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(GENRE_CACHE, f, indent=2)
+    except Exception as e:
+        print(f"Warning: Could not save cache: {e}")
 
 def normalize_tag_value(value: str) -> str:
     """Normalize a tag value by trimming and cleaning."""
     if not value:
         return ""
     return str(value).strip()
+
+def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
+    """Retry MusicBrainz API calls with exponential backoff for network errors."""
+    for attempt in range(max_retries):
+        try:
+            return func(*args)
+        except (ssl.SSLError, urllib.error.URLError, OSError) as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
+                print(f"  Network error (attempt {attempt + 1}/{max_retries}): {e}")
+                print(f"  Retrying in {delay} seconds...")
+                time.sleep(delay)
+                continue
+            else:
+                print(f"  Failed after {max_retries} attempts: {e}")
+                raise
+        except Exception as e:
+            # Non-network errors, don't retry
+            raise
 
 def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Optional[str]:
     """Try to get genre information from MusicBrainz."""
@@ -43,14 +110,20 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
             return GENRE_CACHE[cache_key]
         
         # Try release group lookup first (more reliable for genres)
-        result = musicbrainzngs.search_release_groups(artist=artist, release=album, limit=1)
+        def search_release_groups():
+            return musicbrainzngs.search_release_groups(artist=artist, release=album, limit=1)
+        
+        result = retry_musicbrainz_call(search_release_groups)
         if result.get('release-group-list'):
             release_group = result['release-group-list'][0]
             release_group_id = release_group['id']
             
             # Get release group details with tags
             try:
-                rg_info = musicbrainzngs.get_release_group_by_id(release_group_id, includes=['tags'])
+                def get_release_group():
+                    return musicbrainzngs.get_release_group_by_id(release_group_id, includes=['tags'])
+                
+                rg_info = retry_musicbrainz_call(get_release_group)
                 tags = rg_info.get('release-group', {}).get('tag-list', [])
                 
                 # Extract genre tags (filter out non-genre tags)
@@ -100,12 +173,18 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "") -> Opti
         
         # Fallback to artist lookup
         try:
-            artist_result = musicbrainzngs.search_artists(artist=artist, limit=1)
+            def search_artists():
+                return musicbrainzngs.search_artists(artist=artist, limit=1)
+            
+            artist_result = retry_musicbrainz_call(search_artists)
             if artist_result.get('artist-list'):
                 artist_info = artist_result['artist-list'][0]
                 artist_id = artist_info['id']
                 
-                artist_info = musicbrainzngs.get_artist_by_id(artist_id, includes=['tags'])
+                def get_artist():
+                    return musicbrainzngs.get_artist_by_id(artist_id, includes=['tags'])
+                
+                artist_info = retry_musicbrainz_call(get_artist)
                 tags = artist_info.get('artist', {}).get('tag-list', [])
                 
                 genre_tags = []
@@ -198,7 +277,7 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     if not force and 'genre' in current_tags and current_tags['genre']:
         if verbose:
             print(f"  Skipping {flac_path.name} (already has genre: {current_tags['genre']})")
-        return True
+        return "skipped"
     
     # Show current genre if force mode
     if force and 'genre' in current_tags and current_tags['genre']:
@@ -215,7 +294,7 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     if not artist:
         if verbose:
             print(f"  Skipping {flac_path.name} (no artist tag)")
-        return True
+        return "skipped"
     
     # Get genre from MusicBrainz
     genre = get_genre_from_musicbrainz(artist, album, title)
@@ -251,7 +330,9 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
 def update_genres_in_folder(folder_path: Path, recursive: bool = False, 
                            dry_run: bool = False, verbose: bool = False, force: bool = False) -> int:
     """Update genres for FLAC files in a folder."""
+    global SHUTDOWN_REQUESTED
     updated_count = 0
+    skipped_count = 0
     
     if recursive:
         flac_files = list(folder_path.rglob("*.flac"))
@@ -262,12 +343,46 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         print(f"No FLAC files found in {folder_path}")
         return 0
     
-    mode_text = "FORCE UPDATING" if force else "Processing"
-    print(f"{mode_text} {len(flac_files)} FLAC files in {folder_path}")
+    # Use progress bar if available, otherwise simple text
+    if HAS_TQDM and not verbose:
+        mode_text = "FORCE UPDATING" if force else "Updating"
+        print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
+        
+        pbar = tqdm(flac_files, desc="Processing files", unit="files")
+        flac_iterator = pbar
+    else:
+        if not HAS_TQDM and not verbose:
+            print("Note: Install 'tqdm' for progress bar: pip install tqdm")
+        mode_text = "FORCE UPDATING" if force else "Processing"
+        print(f"{mode_text} {len(flac_files)} FLAC files in {folder_path}")
+        flac_iterator = sorted(flac_files)
     
-    for flac_file in sorted(flac_files):
-        if update_file_genre(flac_file, dry_run, verbose, force):
+    for flac_file in flac_iterator:
+        # Check for shutdown request
+        if SHUTDOWN_REQUESTED:
+            if HAS_TQDM:
+                pbar.close()
+            print(f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown.")
+            break
+        
+        result = update_file_genre(flac_file, dry_run, verbose, force)
+        if result == "skipped":
+            skipped_count += 1
+        elif result:
             updated_count += 1
+            
+        # Update progress bar description with counts
+        if HAS_TQDM and not verbose:
+            pbar.set_postfix({
+                'updated': updated_count, 
+                'skipped': skipped_count
+            })
+    
+    if HAS_TQDM and not verbose:
+        pbar.close()
+        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
+    elif verbose:
+        print(f"Updated {updated_count} files (skipped {skipped_count})")
     
     return updated_count
 
@@ -292,6 +407,9 @@ def main():
     if args.force:
         print("FORCE MODE - Will overwrite existing genre tags")
     
+    # Load cache at start
+    load_cache()
+    
     updated_count = update_genres_in_folder(
         folder_path, 
         recursive=args.recursive,
@@ -300,7 +418,17 @@ def main():
         force=args.force
     )
     
-    if args.dry_run:
+    # Save cache at end (unless dry run)
+    if not args.dry_run and not SHUTDOWN_REQUESTED:
+        save_cache()
+        print(f"Saved genre cache with {len(GENRE_CACHE)} entries")
+    elif SHUTDOWN_REQUESTED and not args.dry_run:
+        save_cache()
+        print(f"Graceful shutdown: Saved genre cache with {len(GENRE_CACHE)} entries")
+    
+    if SHUTDOWN_REQUESTED:
+        print(f"Script interrupted by user. Progress saved.")
+    elif args.dry_run:
         action = "Would update" if args.force else "Would update"
         print(f"\n{action} {updated_count} files")
     else:
