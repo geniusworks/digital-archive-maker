@@ -58,9 +58,9 @@ def parse_m3u8(m3u8_path: Path) -> List[Tuple[str, str]]:
                         title = line[2:].strip()
                         filename = ""
                 else:
-                    # Simple filename
+                    # Simple filename - this is the full filename with extension
                     filename = line
-                    # Extract title from filename
+                    # Extract title from filename by removing track number and extension
                     title = os.path.splitext(os.path.basename(line))[0]
                     # Remove track number if present (e.g., "01 - Title" -> "Title")
                     title = re.sub(r'^\d+\s*-\s*', '', title)
@@ -158,6 +158,15 @@ def match_flac_to_track(flac_path: Path, tracks: List[Tuple[str, str]]) -> Optio
     for filename, title in tracks:
         if os.path.basename(filename) == flac_name:
             return filename, title
+    
+    # Try to match by track number
+    flac_track_match = re.match(r'^(\d+)', flac_name)
+    if flac_track_match:
+        flac_track_num = flac_track_match.group(1)
+        for filename, title in tracks:
+            playlist_track_match = re.match(r'^(\d+)', filename)
+            if playlist_track_match and playlist_track_match.group(1) == flac_track_num:
+                return filename, title
     
     # Try to match by extracting title from filename
     flac_title = os.path.splitext(flac_name)[0]
