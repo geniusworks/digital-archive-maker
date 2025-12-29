@@ -343,18 +343,24 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         print(f"No FLAC files found in {folder_path}")
         return 0
     
-    # Use progress bar if available, otherwise simple text
-    if HAS_TQDM and not verbose:
+    # Check if running through subprocess (no tty)
+    import sys
+    is_subprocess = not sys.stdout.isatty()
+    
+    # Use progress bar if available and not running through subprocess
+    if HAS_TQDM and not verbose and not is_subprocess:
         mode_text = "FORCE UPDATING" if force else "Updating"
         print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
         
         pbar = tqdm(flac_files, desc="Processing files", unit="files")
         flac_iterator = pbar
     else:
-        if not HAS_TQDM and not verbose:
+        if not HAS_TQDM and not verbose and not is_subprocess:
             print("Note: Install 'tqdm' for progress bar: pip install tqdm")
-        mode_text = "FORCE UPDATING" if force else "Processing"
-        print(f"{mode_text} {len(flac_files)} FLAC files in {folder_path}")
+        
+        # Simple progress indicator for subprocess or verbose mode
+        mode_text = "FORCE UPDATING" if force else "Updating"
+        print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
         flac_iterator = sorted(flac_files)
     
     for flac_file in flac_iterator:
@@ -371,18 +377,21 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         elif result:
             updated_count += 1
             
-        # Update progress bar description with counts
-        if HAS_TQDM and not verbose:
+        # Update progress bar or show simple progress
+        if HAS_TQDM and not verbose and not is_subprocess:
             pbar.set_postfix({
                 'updated': updated_count, 
                 'skipped': skipped_count
             })
+        elif is_subprocess and (updated_count + skipped_count) % 100 == 0:
+            # Show progress every 100 files in subprocess mode
+            print(f"Progress: {updated_count + skipped_count}/{len(flac_files)} files processed (updated: {updated_count}, skipped: {skipped_count})")
     
-    if HAS_TQDM and not verbose:
+    if HAS_TQDM and not verbose and not is_subprocess:
         pbar.close()
         print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
-    elif verbose:
-        print(f"Updated {updated_count} files (skipped {skipped_count})")
+    else:
+        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
     
     return updated_count
 
