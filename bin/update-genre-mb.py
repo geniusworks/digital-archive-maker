@@ -92,7 +92,7 @@ GENRE_WHITELIST = {
     # Folk / Traditional family
     'folk', 'folk rock', 'country', 'bluegrass', 'americana', 'country folk',
     'traditional', 'world', 'celtic', 'gaelic', 'irish folk', 'scottish folk',
-    'english folk', 'american folk', 'appalachian', 'blues', 'delta blues',
+    'english folk', 'american folk', 'appalachian', 'appalachian folk', 'blues', 'delta blues',
     'chicago blues', 'electric blues', 'country blues',
     
     # Reggae / Caribbean family
@@ -114,6 +114,11 @@ GENRE_WHITELIST = {
     'blues', 'gospel', 'spirituals', 'new age', 'meditation', 'soundtrack',
     'experimental', 'avant-garde', 'noise', 'drone', 'minimalism',
     'spoken word', 'comedy', 'children\'s music', 'holiday', 'march',
+    
+    # Additional genres from rejected list
+    'compilation', 'contemporary christian', 'contemporary r&b', 'dance',
+    'minneapolis sound', 'musical', 'new romantic', 'non-music',
+    'traditional cajun music', 'traditional pop',
 }
 
 def signal_handler(signum, frame):
