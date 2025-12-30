@@ -50,6 +50,68 @@ def _log(msg: str) -> None:
 # Global flag for graceful shutdown
 SHUTDOWN_REQUESTED = False
 
+# Global cache for genre lookups to avoid repeated API calls
+GENRE_CACHE: Dict[str, str] = {}
+CACHE_FILE = Path.home() / ".cache" / "genre_cache.json"
+
+# Curated whitelist of real genres
+GENRE_WHITELIST = {
+    # Rock family
+    'rock', 'pop rock', 'hard rock', 'soft rock', 'progressive rock', 'art rock',
+    'punk rock', 'punk', 'post-punk', 'new wave', 'gothic rock', 'indie rock',
+    'alternative rock', 'alternative', 'grunge', 'shoegaze', 'emo', 'ska',
+    'metal', 'heavy metal', 'thrash metal', 'death metal', 'black metal',
+    'power metal', 'doom metal', 'folk metal', 'symphonic metal',
+    
+    # Pop family
+    'pop', 'synthpop', 'electropop', 'dance-pop', 'bubblegum pop', 'indie pop',
+    'teen pop', 'k-pop', 'j-pop', 'cantopop', 'mandopop',
+    
+    # Electronic family
+    'electronic', 'electro', 'techno', 'house', 'trance', 'drum and bass',
+    'dubstep', 'ambient', 'downtempo', 'trip hop', 'idm', 'industrial',
+    'ebm', 'darkwave', 'synthwave', 'vaporwave',
+    
+    # Hip hop / R&B family
+    'hip hop', 'rap', 'trap', 'r&b', 'soul', 'funk', 'disco', 'boogie',
+    'new jack swing', 'neo soul', 'quiet storm',
+    
+    # Jazz family
+    'jazz', 'bebop', 'cool jazz', 'hard bop', 'free jazz', 'fusion',
+    'smooth jazz', 'acid jazz', 'latin jazz', 'swing', 'big band',
+    
+    # Classical family
+    'classical', 'orchestral', 'symphony', 'concerto', 'chamber music',
+    'opera', 'choral', 'baroque', 'romantic', 'renaissance', 'modern classical',
+    'minimalism', 'avant-garde', 'contemporary classical',
+    
+    # Folk / Traditional family
+    'folk', 'folk rock', 'country', 'bluegrass', 'americana', 'country folk',
+    'traditional', 'world', 'celtic', 'gaelic', 'irish folk', 'scottish folk',
+    'english folk', 'american folk', 'appalachian', 'blues', 'delta blues',
+    'chicago blues', 'electric blues', 'country blues',
+    
+    # Reggae / Caribbean family
+    'reggae', 'dub', 'dancehall', 'ska', 'rocksteady', 'roots reggae',
+    'calypso', 'soca', 'zouk', 'kompa',
+    
+    # Latin family
+    'latin', 'salsa', 'bossa nova', 'samba', 'tango', 'bolero', 'rumba',
+    'mambo', 'cha-cha-cha', 'latin jazz', 'afro-cuban', 'norteño',
+    'ranchera', 'mariachi', 'tejano',
+    
+    # World / Regional
+    'world', 'african', 'afrobeat', 'highlife', 'soukous', 'mbalax',
+    'indian classical', 'hindustani', 'carnatic', 'bollywood', 'filmi',
+    'chinese traditional', 'japanese traditional', 'korean traditional',
+    'middle eastern', 'arabic', 'persian', 'turkish', 'greek',
+    
+    # Other significant genres
+    'blues', 'gospel', 'spirituals', 'new age', 'meditation', 'soundtrack',
+    'experimental', 'avant-garde', 'noise', 'drone', 'minimalism',
+    'spoken word', 'comedy', 'children\'s music', 'holiday', 'march',
+}
+
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully."""
     global SHUTDOWN_REQUESTED
@@ -100,6 +162,14 @@ def _normalize_cache_component(value: str) -> str:
     v = v.casefold()
     v = re.sub(r"\s+", " ", v).strip()
     return v
+
+
+def _is_valid_genre(genre: str) -> bool:
+    """Check if a genre is in our curated whitelist."""
+    if not genre:
+        return False
+    normalized = _normalize_cache_component(genre)
+    return normalized in {g.lower() for g in GENRE_WHITELIST}
 
 
 def _cache_key_artist_album(artist: str, album: str) -> str:
@@ -217,6 +287,11 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                     # Also populate an artist-level cache if not already present.
                     if GENRE_CACHE.get(cache_key_artist) is None:
                         GENRE_CACHE[cache_key_artist] = genre
+                    
+                    # Validate against whitelist
+                    if not _is_valid_genre(genre):
+                        genre = None
+                    
                     if return_source:
                         return (genre, "api")
                     return genre
@@ -281,6 +356,11 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                     # Cache the successful lookup
                     GENRE_CACHE[cache_key_album] = genre
                     GENRE_CACHE[cache_key_artist] = genre
+                    
+                    # Validate against whitelist
+                    if not _is_valid_genre(genre):
+                        genre = None
+                    
                     if return_source:
                         return (genre, "api")
                     return genre
@@ -339,11 +419,19 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     # Read current tags
     current_tags = read_flac_tags(flac_path)
     
-    # Skip if genre already exists (unless force mode)
+    # Skip if genre tag already exists (unless force mode)
     if not force and 'genre' in current_tags and current_tags['genre']:
-        if verbose:
-            print(f"  Skipping {flac_path.name} (already has genre: {current_tags['genre']})")
-        return "skipped"
+        current_genre = current_tags['genre']
+        if _is_valid_genre(current_genre):
+            if verbose:
+                print(f"  Skipping {flac_path.name} (already has valid genre: {current_genre})")
+            return "skipped"
+        else:
+            # Current genre is not in whitelist, remove it
+            if verbose:
+                print(f"  Removing invalid genre: {current_genre}")
+            # Continue to process as if no genre exists
+            # Don't return here - let the lookup happen
     
     # Show current genre if force mode
     if force and 'genre' in current_tags and current_tags['genre']:
@@ -377,9 +465,24 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     if not genre:
         if verbose:
             if genre_source == "cache":
-                print(f"  No genre found (cached) for {lookup_artist} - {album}")
+                print(f"  No valid genre found (cached) for {lookup_artist} - {album}")
             else:
-                print(f"  No genre found for {lookup_artist} - {album}")
+                print(f"  No valid genre found for {lookup_artist} - {album}")
+        
+        # Remove invalid genre if it exists
+        if 'genre' in current_tags and current_tags['genre'] and not _is_valid_genre(current_tags['genre']):
+            if not dry_run:
+                if write_flac_tags(flac_path, {'GENRE': ''}):
+                    if verbose:
+                        print(f"    Removed invalid genre: {current_tags['genre']}")
+                    return "updated"  # Count as updated since we removed a tag
+                else:
+                    print(f"    Failed to remove genre")
+                    return False
+            else:
+                print(f"    [DRY RUN] Would remove invalid genre: {current_tags['genre']}")
+                return "updated"
+        
         return "unresolved"
     
     # Update tags
