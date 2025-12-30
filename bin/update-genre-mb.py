@@ -214,14 +214,26 @@ def _cache_key_artist(artist: str) -> str:
     a = _normalize_cache_component(artist)
     return f"artist={a}"
 
-def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
+def retry_musicbrainz_call(func, *args, max_retries=2, base_delay=1, timeout=8):
     """Retry MusicBrainz API calls with exponential backoff for network errors."""
+    import signal
+    import urllib.request
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("API call timed out")
+    
     for attempt in range(max_retries):
         try:
-            return func(*args)
-        except (ssl.SSLError, urllib.error.URLError, OSError) as e:
+            # Add timeout to prevent hanging
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+            result = func(*args)
+            signal.alarm(0)  # Cancel timeout
+            return result
+        except (ssl.SSLError, urllib.error.URLError, OSError, TimeoutError) as e:
+            signal.alarm(0)  # Cancel timeout on error
             if attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
+                delay = base_delay * (2 ** attempt)  # Exponential backoff: 1s, 2s
                 _log(f"Network error (attempt {attempt + 1}/{max_retries}): {e}")
                 _log(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
@@ -230,6 +242,7 @@ def retry_musicbrainz_call(func, *args, max_retries=3, base_delay=1):
                 _log(f"Failed after {max_retries} attempts: {e}")
                 raise
         except Exception as e:
+            signal.alarm(0)  # Cancel timeout on error
             # Non-network errors, don't retry
             raise
 
@@ -238,6 +251,7 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
     try:
         import musicbrainzngs
         musicbrainzngs.set_useragent("update-genre-mb", "1.0", "https://yourdomain.example")
+        musicbrainzngs.set_hostname("musicbrainz.org")
         
         # Cache by artist+album so we don't re-query per-track.
         # Also cache negative results (empty string) to avoid repeated failed lookups.
@@ -245,18 +259,18 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
         cache_key_artist = _cache_key_artist(artist)
 
         cached = GENRE_CACHE.get(cache_key_album)
-        if cached is not None:
+        if cache_key_album in GENRE_CACHE:
             if return_source:
-                return (cached or None, "cache")
-            return cached or None
+                return (cached, "cache")
+            return cached
 
         # If no album tag or album lookup not yet cached, allow artist-level cache.
         if not normalize_tag_value(album):
-            cached_artist = GENRE_CACHE.get(cache_key_artist)
-            if cached_artist is not None:
+            if cache_key_artist in GENRE_CACHE:
+                cached_artist = GENRE_CACHE.get(cache_key_artist)
                 if return_source:
-                    return (cached_artist or None, "cache")
-                return cached_artist or None
+                    return (cached_artist, "cache")
+                return cached_artist
         
         # Try release group lookup first (more reliable for genres)
         def search_release_groups():
@@ -444,6 +458,10 @@ def write_flac_tags(flac_path: Path, tags: Dict[str, str]) -> bool:
         for key, value in tags.items():
             if value:
                 audio[key] = [value]
+            else:
+                # Empty value means remove the tag
+                if key in audio:
+                    del audio[key]
         audio.save()
         return True
     except Exception as e:
@@ -452,6 +470,9 @@ def write_flac_tags(flac_path: Path, tags: Dict[str, str]) -> bool:
 
 def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = False, force: bool = False) -> bool:
     """Update genre for a single FLAC file."""
+    import time
+    start_time = time.time()
+    
     # Read current tags
     current_tags = read_flac_tags(flac_path)
     
@@ -497,6 +518,10 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     else:
         genre = get_genre_from_musicbrainz(lookup_artist, album, title)
         genre_source = None
+    
+    elapsed = time.time() - start_time
+    if elapsed > 2.0 and verbose:
+        print(f"    Slow processing ({elapsed:.1f}s): {lookup_artist} - {album}")
     
     if not genre:
         if verbose:
