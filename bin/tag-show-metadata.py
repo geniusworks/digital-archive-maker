@@ -525,8 +525,19 @@ def main():
                 
                 # For IMDb mode, we'll use filename-based episode info
                 # OMDb doesn't have reliable episode data for TV series
+                # But fix common filesystem character conversions
+                episode_title = local_title or f"Episode {episode}"
+                
+                # Fix common filesystem character conversions
+                # macOS converts ":" to "-" in filenames
+                if show_name and episode_title:
+                    # If show name contains ":", fix episode title to match
+                    if ':' in show_name and '-' in episode_title:
+                        # Replace first dash with colon to match show title format
+                        episode_title = episode_title.replace('-', ':', 1)
+                
                 ep_data = {
-                    "name": local_title or f"Episode {episode}",
+                    "name": episode_title,
                     "overview": "",
                     "air_date": "",
                     "episode_number": episode,
