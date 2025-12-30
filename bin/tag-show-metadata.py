@@ -270,6 +270,41 @@ def _cache_key_episode(show_id, season, episode):
     return f"episode:{show_id}:S{int(season):02d}E{int(episode):02d}"
 
 
+def _get_omdb_show_data(imdb_id, language="en-US"):
+    """Fetch TV show data from OMDb using IMDb ID."""
+    if not imdb_id:
+        return None
+    
+    # Ensure IMDb ID starts with 'tt'
+    if not imdb_id.startswith('tt'):
+        imdb_id = f'tt{imdb_id}'
+    
+    api_key = os.getenv("OMDB_API_KEY")
+    if not api_key:
+        print("Warning: OMDB_API_KEY not set, cannot use IMDb lookup")
+        return None
+    
+    try:
+        url = "http://www.omdbapi.com/"
+        params = {'apikey': api_key, 'i': imdb_id, 'r': 'json'}
+        
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get('Response') == 'True' and data.get('Type') in ['series', 'movie']:
+            return data
+        else:
+            if data.get('Error'):
+                print(f"OMDb error: {data.get('Error')}")
+            else:
+                print(f"OMDb: Not found or not a series/movie")
+            return None
+    except Exception as e:
+        print(f"OMDb lookup failed: {e}")
+        return None
+
+
 def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verbose=False):
     key = _cache_key_show(show_title, show_year)
     cached = cache.get(key)
@@ -419,6 +454,8 @@ def main():
     parser.add_argument("--force", action="store_true", help="Overwrite existing tags (default is fill-missing)")
     parser.add_argument("--language", default="en-US", help="TMDb language (default: en-US)")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("--tmdb-id", type=int, help="Override TMDb show ID (skips search)")
+    parser.add_argument("--imdb-id", help="Override IMDb ID (e.g., 'tt1234567') - converts to TMDb ID")
     args = parser.parse_args()
 
     files = _find_video_files(args.paths, recursive=args.recursive)
@@ -458,42 +495,89 @@ def main():
             print(f"  S{season:02d}E{episode:02d}")
 
         try:
-            show_id = _tmdb_find_show_id(cache, show_title, show_year, language=args.language, verbose=args.verbose)
-            if show_id is None:
-                show_nf_key = (show_title or "", show_year or "")
-                if show_nf_key not in printed_show_not_found:
-                    print(f"  No TMDb show match for: {show_title} ({show_year})")
-                    printed_show_not_found.add(show_nf_key)
-                skipped += 1
+            # Use provided TMDb ID, convert IMDb ID, or search for it
+            if args.tmdb_id:
+                show_id = args.tmdb_id
+                if args.verbose:
+                    print(f"  Using provided TMDb ID: {show_id}")
+                # Get show info for display
+                try:
+                    show_info = _tmdb_get_json(f"/tv/{show_id}", {"language": args.language})
+                    if show_info:
+                        print(f"  TMDb show: {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]")
+                except Exception:
+                    print(f"  TMDb show: id={show_id}")
+            elif args.imdb_id:
+                # Use IMDb ID via OMDb for show info
+                omdb_data = _get_omdb_show_data(args.imdb_id, args.language)
+                if omdb_data is None:
+                    print(f"  Could not fetch IMDb data for {args.imdb_id}")
+                    skipped += 1
+                    continue
+                
+                if args.verbose:
+                    print(f"  Using IMDb ID: {args.imdb_id}")
+                
+                # Display show info from OMDb
+                show_name = omdb_data.get('Title', 'Unknown')
+                show_year = omdb_data.get('Year', '').split('–')[0]  # Take first year for range
+                print(f"  IMDb show: {show_name} ({show_year}) [id={args.imdb_id}]")
+                
+                # For IMDb mode, we'll use filename-based episode info
+                # OMDb doesn't have reliable episode data for TV series
+                ep_data = {
+                    "name": local_title or f"Episode {episode}",
+                    "overview": "",
+                    "air_date": "",
+                    "episode_number": episode,
+                    "season_number": season,
+                    "imdb_id": args.imdb_id
+                }
+                show_id = f"imdb_{args.imdb_id}"  # Use special prefix for IMDb shows
+            else:
+                show_id = _tmdb_find_show_id(cache, show_title, show_year, language=args.language, verbose=args.verbose)
+                if show_id is None:
+                    show_nf_key = (show_title or "", show_year or "")
+                    if show_nf_key not in printed_show_not_found:
+                        print(f"  No TMDb show match for: {show_title} ({show_year})")
+                        printed_show_not_found.add(show_nf_key)
+                    skipped += 1
+                    cache_dirty = True
+                    continue
+
+                show_match_key = (show_title or "", show_year or "")
+                if show_match_key not in printed_show_match:
+                    cached_show = cache.get(_cache_key_show(show_title, show_year))
+                    if isinstance(cached_show, dict) and isinstance(cached_show.get("show_id"), int):
+                        matched_name = cached_show.get("name") or show_title
+                        matched_date = cached_show.get("first_air_date")
+                        if matched_date:
+                            print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]")
+                        else:
+                            print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]")
+                    else:
+                        print(f"  TMDb show match: {show_title} ({show_year}) -> id={show_id}")
+                    printed_show_match.add(show_match_key)
+
+            # Get episode data (skip for IMDb shows since we created it above)
+            if args.imdb_id:
+                # ep_data already created above from filename/local title
                 cache_dirty = True
-                continue
-
-            show_match_key = (show_title or "", show_year or "")
-            if show_match_key not in printed_show_match:
-                cached_show = cache.get(_cache_key_show(show_title, show_year))
-                if isinstance(cached_show, dict) and isinstance(cached_show.get("show_id"), int):
-                    matched_name = cached_show.get("name") or show_title
-                    matched_date = cached_show.get("first_air_date")
-                    if matched_date:
-                        print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]")
-                    else:
-                        print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]")
-                else:
-                    print(f"  TMDb show match: {show_title} ({show_year}) -> id={show_id}")
-                printed_show_match.add(show_match_key)
-
-            ep_data = _tmdb_get_episode(cache, show_id, season, episode, language=args.language)
-            cache_dirty = True
-            if not isinstance(ep_data, dict):
-                ep_nf_key = (int(show_id), int(season), int(episode))
-                if ep_nf_key not in printed_episode_not_found:
-                    if local_title:
-                        print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
-                    else:
-                        print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
-                    printed_episode_not_found.add(ep_nf_key)
-                skipped += 1
-                continue
+                if args.verbose:
+                    print(f"  Using filename-based episode data for IMDb show")
+            else:
+                ep_data = _tmdb_get_episode(cache, show_id, season, episode, language=args.language)
+                cache_dirty = True
+                if not isinstance(ep_data, dict):
+                    ep_nf_key = (int(show_id), int(season), int(episode))
+                    if ep_nf_key not in printed_episode_not_found:
+                        if local_title:
+                            print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
+                        else:
+                            print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
+                        printed_episode_not_found.add(ep_nf_key)
+                    skipped += 1
+                    continue
 
             planned_updates = []
             try:
