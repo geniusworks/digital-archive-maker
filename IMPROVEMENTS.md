@@ -38,12 +38,21 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 
 ### 🔄 Genre Transformer System
 - **Smart genre normalization** - Maps variants to standardized whitelist entries:
-  - "rhythm and blues" → "r&b"
-  - "symphony orchestra" → "classical"
-  - "rhythm & blues" → "r&b"
-  - "orchestral" → "classical"
-  - Plus 8 additional common variants
-- **Eliminates rejected genres** - Reduces manual whitelist management
+  - **R&B variants** - "rhythm & blues", "rnb", "r and b" → "rhythm and blues"
+  - **Classical variants** - "symphony orchestra" → "classical"
+  - **Latin variants** - "guaguancó" → "afro-cuban" (Cuban rumba style)
+  - **Whitelist protection** - Never transforms already-valid whitelisted genres
+- **Enhanced whitelist** - Added "rhythm and blues" alongside "r&b" for proper naming
+- **Cleaned duplicate entries** - Removed "blues", "avant-garde", "minimalism", "musical" duplicates
+- **Fixed categorization** - Properly assigned "ska", "world", "latin jazz" to correct families
+- **Rejected genres cleanup** - Removed valid genres with transformations from rejected list
+
+### 🛑 Signal Handling & Graceful Shutdown
+- **Dual-level Ctrl+C handling** - First press graceful shutdown, second press force exit
+- **API call interruption** - Checks shutdown flags during MusicBrainz API calls and retry delays
+- **Responsive interruption** - No more hanging on long network operations
+- **Progress preservation** - Graceful shutdown saves cache and progress before exit
+- **Force escape hatch** - Second Ctrl+C provides immediate termination if needed
 
 ### 📝 Logging and Cache Improvements
 - **Additive rejected genres** - Preserves existing entries across script runs
