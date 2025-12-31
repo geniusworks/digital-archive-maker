@@ -13,6 +13,12 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **`--force-missing` flag** - Only update files without existing genre tags
   - **Improved API reliability** - 15s timeout, 4 retries with exponential backoff
   - **Smart genre selection** - Prioritizes core genres over decades/subjective tags
+  - **Unresolved files logging** - Records files with no genre found for manual review
+- **Manual genre tagging (`bin/tag-manual-genre.py`)** - NEW script for manual genre assignment:
+  - **Whitelist validation** - Uses same curated whitelist as automatic script
+  - **Genre transformers** - Applies same transformations for consistency
+  - **Bulk operations** - Single files, folders, or recursive processing
+  - **Safe operation** - Dry-run mode and force options for control
 
 ### 📺 TV Show Metadata Enhancement  
 - **Show metadata tagging (`bin/tag-show-metadata.py`)** - Advanced override system:
@@ -42,6 +48,8 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - **Duplicate removal** - Only stores unique genre names (no artist/album examples)
 - **Improved cache handling** - Better timeout and retry logic for reliable API calls
 - **Smart cache bypassing** - Force modes bypass cache for untagged files to ensure fresh lookups
+- **Real-time unresolved file logging** - Files with no genre appear in log immediately for manual review
+- **Fresh log reset** - Each run starts with clean unresolved files log (no accumulation)
 - **Historical preservation** - Maintains audit trail of genre improvements
 
 ## Current capabilities (from this repo)

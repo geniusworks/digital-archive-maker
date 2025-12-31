@@ -130,6 +130,7 @@ python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
 - Genre cache: `~/.cache/genre_cache.json` (avoids repeated API calls)
 - **Smart cache bypassing**: Force modes bypass cache for untagged files to ensure fresh lookups
 - Rejected genres: `log/rejected_genres.txt` (additive, unique entries only)
+- **Unresolved files**: `log/unresolved_genres.txt` (real-time logging of files with no genre found)
 - Cache busting: Remove `~/.cache/genre_cache.json` to force fresh lookups for all files
 
 **Benefits:**
@@ -138,7 +139,63 @@ python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
 - Smart mapping of genre variants to standardized whitelist entries
 - Reliable API handling with improved timeouts and retry logic
 - **Intelligent cache management** - Uses cache for tagged files, forces fresh lookups for untagged files in force modes
+- **Manual override capability** - Manual genre tagging script for problematic cases
+- **Real-time unresolved file logging** - See problematic files immediately while script runs
 - Comprehensive logging for whitelist management and improvement
+
+## Manual genre tagging (music)
+- Script: `bin/tag-manual-genre.py`
+- **NEW:** Manual genre assignment with whitelist validation
+- Leverages the same curated whitelist and transformers as the automatic script
+- Perfect for problematic cases where automatic lookup fails or needs correction
+- Supports single files, folders, and recursive processing
+
+**Features:**
+- **Whitelist validation** - Only accepts genres from the curated whitelist
+- **Genre transformers** - Applies the same transformations (e.g., "rhythm and blues" → "r&b")
+- **Dry-run mode** - Preview changes without modifying files
+- **Force mode** - Overwrite existing genre tags
+- **Verbose output** - Detailed progress information
+- **Genre listing** - `--list-genres` shows all valid whitelist entries
+
+**Usage:**
+```bash
+# Tag single file
+python3 bin/tag-manual-genre.py "/path/to/song.flac" --genre "jazz"
+
+# Tag entire album
+python3 bin/tag-manual-genre.py "/path/to/album" --genre "rock" --recursive
+
+# Preview changes
+python3 bin/tag-manual-genre.py "/path/to/album" --genre "classical" --dry-run --verbose
+
+# Force overwrite existing genres
+python3 bin/tag-manual-genre.py "/path/to/album" --genre "progressive rock" --force --recursive
+
+# List all valid genres
+python3 bin/tag-manual-genre.py --list-genres
+```
+
+**Real-time workflow:**
+```bash
+# Run automatic tagging with real-time unresolved logging
+python3 bin/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
+
+# In another terminal, monitor unresolved files as they appear
+tail -f /Users/martin/Herd/digital-library/log/unresolved_genres.txt
+
+# Or check progress periodically
+cat /Users/martin/Herd/digital-library/log/unresolved_genres.txt
+
+# Use manual tagging script for problematic files
+python3 bin/tag-manual-genre.py "/path/to/problematic.flac" --genre "punk"
+```
+
+**Benefits:**
+- **Perfect for problematic albums** where automatic lookup fails
+- **Consistent with automatic script** - uses same whitelist and transformers
+- **Safe operation** - validation prevents invalid genre assignments
+- **Bulk operations** - can tag entire albums or collections efficiently
 
 ## Explicit content tagging (music)
 - Script: `bin/tag-explicit-mb.py`
