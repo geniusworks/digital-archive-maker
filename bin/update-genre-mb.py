@@ -117,7 +117,8 @@ GENRE_WHITELIST = {
     
     # Other significant genres
     'blues', 'gospel', 'spirituals', 'new age', 'meditation', 'soundtrack',
-    'experimental', 'noise', 'drone', 'spoken word', 'comedy', 'children\'s music', 'holiday', 'march',
+    'experimental', 'noise', 'drone', 'spoken word', 'comedy',
+    'children\'s', 'children\'s music', 'holiday', 'march',
     
     # Additional genres from rejected list
     'compilation', 'contemporary christian', 'contemporary r&b', 'dance',
