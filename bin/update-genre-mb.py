@@ -122,7 +122,7 @@ GENRE_WHITELIST = {
     
     # Additional genres from rejected list
     'compilation', 'contemporary christian', 'contemporary r&b', 'dance',
-    'minneapolis sound', 'new romantic',
+    'minneapolis sound', 'new romantic', 'sound effects',
     'traditional cajun music', 'traditional pop', 'christmas',
 }
 
