@@ -74,6 +74,72 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - DVD/Blu-ray ripping: see `docs/video_ripping_guide.md`.
 - Media server setup: see `docs/media_server_setup.md`.
 
+## Genre metadata tagging (music)
+- Script: `bin/update-genre-mb.py`
+- Updates FLAC genre tags using MusicBrainz API with curated whitelist validation
+- **NEW:** Automatic Christmas content detection (tags as "christmas")
+- **NEW:** Genre transformers (e.g., "rhythm and blues" → "r&b", "symphony orchestra" → "classical")
+- **NEW:** Additive rejected genres logging (preserves existing entries, removes duplicates)
+- **NEW:** `--force-missing` flag to only update files without existing genre tags
+- **NEW:** Improved timeout/retry logic (15s timeout, 4 retries) for reliable API calls
+- **NEW:** Smart cache bypassing - forces fresh API lookups for untagged files in force modes
+- **NEW:** Comprehensive genre whitelist with 100+ curated genres across all major families
+- Waterfall (highest priority first):
+  1. **Christmas detection** - automatically detects Christmas content in artist/album/title
+  2. **Genre transformers** - maps common variants to whitelist equivalents
+  3. **MusicBrainz API** - primary genre source with priority genre selection
+  4. **Whitelist validation** - only accepts curated real genres (not decades/subjective tags)
+
+**Genre selection logic:**
+- Prioritizes core genres (rock, pop, jazz, classical, etc.) over decade tags
+- Filters out non-genre tags (seen live, favorite, beautiful, 90s, catchy, etc.)
+- Validates against curated whitelist before caching
+- Logs rejected genres for review in `log/rejected_genres.txt`
+
+**Christmas detection:**
+- Detects Christmas terms: christmas, xmas, noel, holiday, winter, santa, carol, jingle, etc.
+- Includes classic carol names: silent night, joy to the world, hark the herald, etc.
+- Automatically tags as "christmas" genre (added to whitelist)
+- Takes priority over other genres when both detected
+
+**Genre transformers:**
+- "rhythm and blues" → "r&b"
+- "symphony orchestra" → "classical" 
+- "rhythm & blues" → "r&b"
+- "rnb" → "r&b"
+- "orchestral" → "classical"
+- "symphonic" → "classical"
+- "orchestra" → "classical"
+
+**Usage:**
+```bash
+# Normal mode (skip files with valid existing genres)
+python3 bin/update-genre-mb.py "/path/to/music" --verbose --recursive
+
+# Force mode (update ALL files, overwrite existing genres)
+python3 bin/update-genre-mb.py "/path/to/music" --force --verbose --recursive
+
+# Force missing mode (only update files without genre tags)
+python3 bin/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
+
+# Dry run to preview changes
+python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
+```
+
+**Cache and logging:**
+- Genre cache: `~/.cache/genre_cache.json` (avoids repeated API calls)
+- **Smart cache bypassing**: Force modes bypass cache for untagged files to ensure fresh lookups
+- Rejected genres: `log/rejected_genres.txt` (additive, unique entries only)
+- Cache busting: Remove `~/.cache/genre_cache.json` to force fresh lookups for all files
+
+**Benefits:**
+- Consistent, high-quality genre tagging across entire music library
+- Automatic handling of Christmas content without manual intervention
+- Smart mapping of genre variants to standardized whitelist entries
+- Reliable API handling with improved timeouts and retry logic
+- **Intelligent cache management** - Uses cache for tagged files, forces fresh lookups for untagged files in force modes
+- Comprehensive logging for whitelist management and improvement
+
 ## Explicit content tagging (music)
 - Script: `bin/tag-explicit-mb.py`
 - Writes per-track FLAC tag: `EXPLICIT=Yes|No|Unknown`
@@ -251,6 +317,66 @@ python3 bin/tag-movie-metadata.py "/path/to/movies/" --recursive --force
 python3 bin/tag-movie-metadata.py "/path/to/movie.mp4" --imdb-id tt0095250 --verbose
 ```
 
+## TV show metadata tagging
+- Script: `bin/tag-show-metadata.py`
+- **NEW:** Manual override support for problematic shows using `--tmdb-id` and `--imdb-id`
+- **NEW:** Automatic show override system via `log/show_tmdb_overrides.json`
+- **NEW:** Filename character correction (macOS colon → dash conversion handling)
+- **NEW:** IMDb fallback using OMDb API for shows not available on TMDb
+- Writes comprehensive TV show metadata including title, year, genre, description, and episode information
+- Supports both TMDb and IMDb metadata sources with intelligent fallback logic
+
+**Override system:**
+- **TMDb overrides**: Use `--tmdb-id` to specify exact TMDb show ID (skips search)
+- **IMDb overrides**: Use `--imdb-id` to fetch show metadata via OMDb API
+- **Automatic overrides**: Create `log/show_tmdb_overrides.json` for persistent problematic show handling
+- **Filename correction**: Automatically fixes macOS filesystem colon-to-dash conversion in episode titles
+
+**Override file format:**
+```json
+{
+  "overrides": {
+    "Alan Parson's Art & Science of Sound Recording (2002)": {
+      "tmdb_id": null,
+      "imdb_id": "tt3461480",
+      "notes": "Use IMDb - TMDb deleted this show"
+    },
+    "China - A Century of Revolution (1989)": {
+      "tmdb_id": null,
+      "imdb_id": "tt5776992",
+      "notes": "Use IMDb - better episode coverage"
+    }
+  }
+}
+```
+
+**Usage:**
+```bash
+# Normal TMDb lookup
+python3 bin/tag-show-metadata.py "/path/to/show" --recursive --dry-run
+
+# Manual TMDb ID override
+python3 bin/tag-show-metadata.py "/path/to/show" --tmdb-id 12345 --recursive
+
+# Manual IMDb ID override (uses OMDb)
+python3 bin/tag-show-metadata.py "/path/to/show" --imdb-id tt3461480 --recursive
+
+# Verbose output to see lookup process
+python3 bin/tag-show-metadata.py "/path/to/show" --verbose --recursive --dry-run
+```
+
+**Metadata sources:**
+1. **TMDb ID override** (highest priority) - exact TMDb show ID
+2. **IMDb ID override** - OMDb API lookup for show metadata
+3. **Automatic overrides** - reads from `show_tmdb_overrides.json`
+4. **TMDb search** - fallback search by show name/year
+5. **Filename-based episodes** - for IMDb shows without episode data
+
+**Benefits:**
+- Handles shows deleted from TMDb by using IMDb as fallback
+- Corrects filesystem character conversion issues automatically
+- Persistent override system for consistently problematic shows
+- Verbose logging shows exactly which metadata source is being used
 
 ## Configuration: `.abcde.conf`
 - Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.

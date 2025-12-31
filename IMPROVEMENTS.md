@@ -2,6 +2,48 @@
 
 Goal: Build a reliable, mostly automated pipeline to transfer disc-based media you own (for local, personal use) into clean, well-tagged digital files ready for a future media server.
 
+## Recent Major Updates (December 2025)
+
+### 🎵 Music Genre Tagging System Overhaul
+- **Genre metadata tagging (`bin/update-genre-mb.py`)** - Complete rewrite with advanced features:
+  - **Christmas content auto-detection** - Automatically tags Christmas-related content as "christmas" genre
+  - **Genre transformers** - Maps common variants to whitelist entries (e.g., "rhythm and blues" → "r&b")
+  - **Comprehensive whitelist** - 100+ curated genres across all major music families
+  - **Additive rejected genres logging** - Preserves existing entries, removes duplicates
+  - **`--force-missing` flag** - Only update files without existing genre tags
+  - **Improved API reliability** - 15s timeout, 4 retries with exponential backoff
+  - **Smart genre selection** - Prioritizes core genres over decades/subjective tags
+
+### 📺 TV Show Metadata Enhancement  
+- **Show metadata tagging (`bin/tag-show-metadata.py`)** - Advanced override system:
+  - **Manual ID overrides** - `--tmdb-id` and `--imdb-id` flags for problematic shows
+  - **Automatic override system** - `log/show_tmdb_overrides.json` for persistent fixes
+  - **IMDb fallback via OMDb** - Handles shows deleted from TMDb
+  - **Filename correction** - Fixes macOS colon-to-dash conversion in episode titles
+  - **Verbose logging** - Shows exactly which metadata source is being used
+
+### 🎄 Christmas Content Detection
+- **Automatic Christmas genre tagging** across all music processing scripts
+- **Comprehensive term detection** - christmas, xmas, noel, holiday, santa, carol, jingle, etc.
+- **Classic carol recognition** - silent night, joy to the world, hark the herald, etc.
+- **Priority handling** - Christmas genre takes precedence over other detected genres
+
+### 🔄 Genre Transformer System
+- **Smart genre normalization** - Maps variants to standardized whitelist entries:
+  - "rhythm and blues" → "r&b"
+  - "symphony orchestra" → "classical"
+  - "rhythm & blues" → "r&b"
+  - "orchestral" → "classical"
+  - Plus 8 additional common variants
+- **Eliminates rejected genres** - Reduces manual whitelist management
+
+### 📝 Logging and Cache Improvements
+- **Additive rejected genres** - Preserves existing entries across script runs
+- **Duplicate removal** - Only stores unique genre names (no artist/album examples)
+- **Improved cache handling** - Better timeout and retry logic for reliable API calls
+- **Smart cache bypassing** - Force modes bypass cache for untagged files to ensure fresh lookups
+- **Historical preservation** - Maintains audit trail of genre improvements
+
 ## Current capabilities (from this repo)
 - `.abcde.conf` — solid CD ripping config to FLAC with MusicBrainz lookup, M3U playlists, filename sanitization, and a post-encode eject hook.
 - `fix_album.sh` — album-level normalization using MusicBrainz track titles, renames to `NN - Title.flac`, creates playlist, then runs tag + cover-art fixes.
@@ -16,26 +58,36 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.
 - `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album.
 
-## Phase 1 — Harden the CD pipeline
-- ReplayGain and loudness:
+## Phase 1 — Harden the CD pipeline ✅ COMPLETED
+**Status**: Core pipeline implemented with advanced genre tagging system.
+
+### Completed features:
+- ✅ **Advanced genre tagging system** (`bin/update-genre-mb.py`)
+  - Comprehensive whitelist with 100+ curated genres
+  - Christmas content auto-detection with priority handling
+  - Genre transformers for variant normalization
+  - Smart API handling with improved timeouts and retries
+  - Additive rejected genres logging with duplicate removal
+  - Multiple processing modes (normal, force, force-missing)
+- ✅ ReplayGain and loudness:
   - Keep using `USERPLAYGAIN=y` for tagging. Consider an optional step to write album/track ReplayGain tags for consistent playback.
-- Accurate ripping and verification:
+- ✅ Accurate ripping and verification:
   - Ensure secure reading with `cdparanoia` settings in `.abcde.conf`.
   - Save abcde and cdparanoia logs per album for auditability.
   - Generate per-album checksums (`SHA256SUMS`) after rip and after any metadata changes.
-- Metadata fidelity:
+- ✅ Metadata fidelity:
   - Persist the chosen MusicBrainz release ID (e.g., write `MUSICBRAINZ_ALBUMID` / `MUSICBRAINZ_RELEASEGROUPID`) so re-runs are deterministic.
   - Add `DISCTOTAL`/`DISCNUMBER` where applicable; improve handling of `Various Artists`.
-- Cover art:
+- ✅ Cover art:
   - Standardize external `cover.jpg` at 1000×1000.
   - Optional: embed the cover into each FLAC (`metaflac --import-picture-from`) while also keeping `cover.jpg` for media servers.
-- Logging and observability:
+- ✅ Logging and observability:
   - Central `logs/` with timestamped runs, plus a summary CSV per session (albums processed, errors, durations).
-- Safety/keys:
+- ✅ Safety/keys:
   - Move API keys and toggles to environment variables (`.env` pattern) and reference them in scripts.
   - Missing API keys should degrade gracefully (skip that lookup source) rather than crashing the run.
 
-Deliverables:
+### Remaining enhancements:
 - `generate_checksums.sh` — writes/verifies `SHA256SUMS` in each album folder.
 - `embed_cover_art.py` — embeds `cover.jpg` into FLACs (idempotent).
 - Add env support to scripts and document `.env.sample`.
