@@ -79,7 +79,7 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
   ```
 - Organize a single loose track:
   ```bash
-  ./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Digital"
+  ./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Music"
   ```
 
 ---

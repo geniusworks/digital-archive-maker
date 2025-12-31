@@ -465,7 +465,7 @@ Run `make help` for a summary. Common tasks:
 - Notes: you can set `MINLENGTH=1800` to skip short titles and `DEST_CATEGORY=Films` to change the destination category from `Movies`.
 - `make fix-album DIR="/path/to/Artist/Album"` — normalize, tag, covers, playlist
 - `make fetch-covers ROOT="/path/or/library"` — fetch missing `cover.jpg`
-- `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Digital"` — organize a single track
+- `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Music"` — organize a single track
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 - `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
 - `make vobsub-to-srt FILE="/path/to/subtitle.idx"` — convert VobSub files to placeholder SRT for muxing
@@ -609,7 +609,7 @@ sync_jobs:
     
   # Clean digital library
   - name: "clean-digital-library"
-    src: "/Volumes/Data/Media/Rips/Digital"
+    src: "/Volumes/Data/Media/Rips/Music"
     dest: "jellyfin@10.0.4.75:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
@@ -704,7 +704,7 @@ python3 master-sync.py --skip-tagging
   - Outputs: either grouped summary to stdout or writes `only_in_old.txt` and `only_in_new.txt`.
 
 - Organize a single loose track
-  - `./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Digital"`
+  - `./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Music"`
   - Attempts AcoustID+MusicBrainz; falls back to tags/filename; writes to `Artist/Album/NN - Title.ext`.
 
 - Special-case split for a one-file album

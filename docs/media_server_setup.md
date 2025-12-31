@@ -138,7 +138,7 @@ sync_jobs:
     exclude_unknown: true
     
   - name: "clean-digital-library"
-    src: "/Volumes/Data/Media/Rips/Digital"
+    src: "/Volumes/Data/Media/Rips/Music"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
