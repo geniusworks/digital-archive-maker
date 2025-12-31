@@ -176,6 +176,12 @@ python3 bin/tag-manual-genre.py "/path/to/album" --genre "progressive rock" --fo
 python3 bin/tag-manual-genre.py --list-genres
 ```
 
+**Technical details:**
+- **Import system**: Uses `importlib` to load functions from `update-genre-mb.py` (handles hyphenated filename)
+- **Shared whitelist**: Leverages the same curated genre whitelist as automatic tagging
+- **Consistent transformers**: Applies the same genre transformations for standardization
+- **Safe validation**: Only accepts genres that pass whitelist validation
+
 **Real-time workflow:**
 ```bash
 # Run automatic tagging with real-time unresolved logging
@@ -196,6 +202,8 @@ python3 bin/tag-manual-genre.py "/path/to/problematic.flac" --genre "punk"
 - **Consistent with automatic script** - uses same whitelist and transformers
 - **Safe operation** - validation prevents invalid genre assignments
 - **Bulk operations** - can tag entire albums or collections efficiently
+- **Robust import system** - handles hyphenated filenames with importlib
+- **Real-time validation** - immediate feedback on genre validity
 
 ## Explicit content tagging (music)
 - Script: `bin/tag-explicit-mb.py`

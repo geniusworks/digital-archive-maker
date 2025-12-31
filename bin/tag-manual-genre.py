@@ -18,21 +18,23 @@ from typing import Dict, List, Set
 
 # Import the same whitelist and validation functions from update-genre-mb.py
 sys.path.append(str(Path(__file__).parent))
-from update_genre_mb import GENRE_WHITELIST, _is_valid_genre, _transform_genre, write_flac_tags, read_flac_tags
-
-
-def read_flac_tags(flac_path: Path) -> Dict[str, str]:
-    """Read tags from a FLAC file."""
-    try:
-        audio = FLAC(flac_path)
-        tags = {}
-        for key, value in audio.items():
-            if value:
-                tags[key.lower()] = str(value[0]) if isinstance(value, list) else str(value)
-        return tags
-    except Exception as e:
-        print(f"Error reading tags from {flac_path}: {e}")
-        return {}
+try:
+    # Import the module using importlib to handle hyphenated filename
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("update_genre_mb", Path(__file__).parent / "update-genre-mb.py")
+    update_genre_mb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(update_genre_mb)
+    
+    # Get the functions and whitelist we need
+    GENRE_WHITELIST = update_genre_mb.GENRE_WHITELIST
+    _is_valid_genre = update_genre_mb._is_valid_genre
+    _transform_genre = update_genre_mb._transform_genre
+    write_flac_tags = update_genre_mb.write_flac_tags
+    read_flac_tags = update_genre_mb.read_flac_tags
+except Exception as e:
+    print(f"Error importing from update-genre-mb.py: {e}")
+    print("Make sure update-genre-mb.py exists and is accessible")
+    sys.exit(1)
 
 
 def validate_genre(genre: str) -> tuple[bool, str]:

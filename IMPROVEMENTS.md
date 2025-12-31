@@ -19,6 +19,8 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Genre transformers** - Applies same transformations for consistency
   - **Bulk operations** - Single files, folders, or recursive processing
   - **Safe operation** - Dry-run mode and force options for control
+  - **Robust import system** - Uses importlib to handle hyphenated filenames
+  - **Real-time validation** - Immediate feedback on genre validity
 
 ### 📺 TV Show Metadata Enhancement  
 - **Show metadata tagging (`bin/tag-show-metadata.py`)** - Advanced override system:

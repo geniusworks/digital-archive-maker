@@ -49,6 +49,7 @@ def _log(msg: str) -> None:
 
 # Global flag for graceful shutdown
 SHUTDOWN_REQUESTED = False
+FORCE_EXIT_REQUESTED = False
 
 # Global cache for genre lookups to avoid repeated API calls
 GENRE_CACHE: Dict[str, str] = {}
@@ -67,7 +68,7 @@ GENRE_WHITELIST = {
     # Rock family
     'rock', 'pop rock', 'hard rock', 'soft rock', 'progressive rock', 'art rock',
     'punk rock', 'punk', 'post-punk', 'new wave', 'gothic rock', 'indie rock',
-    'alternative rock', 'alternative', 'grunge', 'shoegaze', 'emo', 'ska',
+    'alternative rock', 'alternative', 'grunge', 'shoegaze', 'emo',
     'metal', 'heavy metal', 'thrash metal', 'death metal', 'black metal',
     'power metal', 'doom metal', 'folk metal', 'symphonic metal',
     
@@ -95,7 +96,7 @@ GENRE_WHITELIST = {
     
     # Folk / Traditional family
     'folk', 'folk rock', 'country', 'bluegrass', 'americana', 'country folk',
-    'traditional', 'world', 'celtic', 'gaelic', 'irish folk', 'scottish folk',
+    'traditional', 'celtic', 'gaelic', 'irish folk', 'scottish folk',
     'english folk', 'american folk', 'appalachian', 'appalachian folk', 'delta blues',
     'chicago blues', 'electric blues', 'country blues',
     
@@ -105,7 +106,7 @@ GENRE_WHITELIST = {
     
     # Latin family
     'latin', 'salsa', 'bossa nova', 'samba', 'tango', 'bolero', 'rumba',
-    'mambo', 'cha-cha-cha', 'latin jazz', 'afro-cuban', 'norteño',
+    'mambo', 'cha-cha-cha', 'afro-cuban', 'norteño',
     'ranchera', 'mariachi', 'tejano',
     
     # World / Regional
@@ -120,16 +121,26 @@ GENRE_WHITELIST = {
     
     # Additional genres from rejected list
     'compilation', 'contemporary christian', 'contemporary r&b', 'dance',
-    'minneapolis sound', 'new romantic', 'non-music',
+    'minneapolis sound', 'new romantic',
     'traditional cajun music', 'traditional pop', 'christmas',
 }
 
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully."""
     global SHUTDOWN_REQUESTED
-    SHUTDOWN_REQUESTED = True
-    print("\n\nInterrupt received. Finishing current file and saving cache...")
-    print("Use Ctrl+C again to force exit.")
+    global FORCE_EXIT_REQUESTED
+    
+    if not SHUTDOWN_REQUESTED:
+        # First Ctrl+C - graceful shutdown
+        SHUTDOWN_REQUESTED = True
+        print("\n\nInterrupt received. Finishing current file and saving cache...")
+        print("Use Ctrl+C again to force exit.")
+    else:
+        # Second Ctrl+C - force exit
+        FORCE_EXIT_REQUESTED = True
+        print("\nForce exit requested. Terminating immediately...")
+        import os
+        os._exit(1)
 
 # Set up signal handler
 signal.signal(signal.SIGINT, signal_handler)
@@ -299,6 +310,7 @@ def _transform_genre(genre: str) -> str:
     transformers = {
         # Only transform truly rejected/problematic variants
         'symphony orchestra': 'classical',  # Not in whitelist, maps to classical
+        'guaguancó': 'afro-cuban',          # Cuban rumba style maps to afro-cuban (whitelisted)
         'rhythm & blues': 'rhythm and blues',  # Variant maps to full name (whitelisted)
         'rnb': 'rhythm and blues',           # Abbreviation maps to full name (whitelisted)
         'r and b': 'rhythm and blues',       # Variant maps to full name (whitelisted)
@@ -333,6 +345,14 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
         raise TimeoutError("API call timed out")
     
     for attempt in range(max_retries):
+        # Check for shutdown request before making API call
+        if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
+            if FORCE_EXIT_REQUESTED:
+                import os
+                os._exit(1)
+            _log("Shutdown requested, skipping API call")
+            return None
+        
         try:
             # Add timeout to prevent hanging
             signal.signal(signal.SIGALRM, timeout_handler)
@@ -343,10 +363,27 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
         except (ssl.SSLError, urllib.error.URLError, OSError, TimeoutError) as e:
             signal.alarm(0)  # Cancel timeout on error
             if attempt < max_retries - 1:
+                # Check for shutdown request before retrying
+                if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
+                    if FORCE_EXIT_REQUESTED:
+                        import os
+                        os._exit(1)
+                    _log("Shutdown requested, aborting retry")
+                    return None
+                
                 delay = base_delay * (2 ** attempt)  # Exponential backoff: 2s, 4s, 8s, 16s
                 _log(f"Network error (attempt {attempt + 1}/{max_retries}): {e}")
                 _log(f"Retrying in {delay} seconds...")
-                time.sleep(delay)
+                
+                # Sleep with interruption check
+                for i in range(int(delay)):
+                    if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
+                        if FORCE_EXIT_REQUESTED:
+                            import os
+                            os._exit(1)
+                        _log("Shutdown requested during retry delay")
+                        return None
+                    time.sleep(1)
                 continue
             else:
                 _log(f"Failed after {max_retries} attempts: {e}")
@@ -370,7 +407,7 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
         def is_christmas_content():
             """Check if artist, album, or title contains Christmas-related terms."""
             christmas_terms = {
-                'christmas', 'xmas', 'noel', 'holiday', 'winter', 'snow', 'santa',
+                'christmas', 'xmas', 'nöel', 'holiday', 'winter', 'snow', 'santa',
                 'reindeer', 'mistletoe', 'carol', 'jingle', 'bell', 'silent night',
                 'holy night', 'first noel', 'away in a manger', 'o come all ye faithful',
                 'joy to the world', 'hark the herald', 'we three kings', 'good king wenceslas',
@@ -408,6 +445,10 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
             return musicbrainzngs.search_release_groups(artist=artist, release=album, limit=1)
         
         result = retry_musicbrainz_call(search_release_groups)
+        if result is None:
+            # Shutdown occurred during API call
+            return None if not return_source else (None, "shutdown")
+        
         if result.get('release-group-list'):
             release_group = result['release-group-list'][0]
             release_group_id = release_group['id']
@@ -418,6 +459,10 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                     return musicbrainzngs.get_release_group_by_id(release_group_id, includes=['tags'])
                 
                 rg_info = retry_musicbrainz_call(get_release_group)
+                if rg_info is None:
+                    # Shutdown occurred during API call
+                    return None if not return_source else (None, "shutdown")
+                
                 tags = rg_info.get('release-group', {}).get('tag-list', [])
                 
                 # Extract genre tags (filter out non-genre tags)
@@ -497,6 +542,10 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                 return musicbrainzngs.search_artists(artist=artist, limit=1)
             
             artist_result = retry_musicbrainz_call(search_artists)
+            if artist_result is None:
+                # Shutdown occurred during API call
+                return None if not return_source else (None, "shutdown")
+            
             if artist_result.get('artist-list'):
                 artist_info = artist_result['artist-list'][0]
                 artist_id = artist_info['id']
@@ -505,6 +554,10 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                     return musicbrainzngs.get_artist_by_id(artist_id, includes=['tags'])
                 
                 artist_info = retry_musicbrainz_call(get_artist)
+                if artist_info is None:
+                    # Shutdown occurred during API call
+                    return None if not return_source else (None, "shutdown")
+                
                 tags = artist_info.get('artist', {}).get('tag-list', [])
                 
                 genre_tags = []
@@ -736,6 +789,7 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
                            dry_run: bool = False, verbose: bool = False, force: bool = False, force_missing: bool = False) -> int:
     """Update genres for FLAC files in a folder."""
     global SHUTDOWN_REQUESTED
+    global FORCE_EXIT_REQUESTED
     global ACTIVE_TQDM
     updated_count = 0
     skipped_count = 0
@@ -778,11 +832,14 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
     
     for i, flac_file in enumerate(flac_iterator, start=1):
         # Check for shutdown request
-        if SHUTDOWN_REQUESTED:
+        if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
             if pbar is not None:
                 pbar.close()
             ACTIVE_TQDM = False
-            print(f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown.")
+            if FORCE_EXIT_REQUESTED:
+                print(f"\nForce exit triggered. Updated {updated_count} files before exit.")
+            else:
+                print(f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown.")
             break
         
         result = update_file_genre(flac_file, dry_run, verbose, force, force_missing)
@@ -852,22 +909,25 @@ def main():
     )
     
     # Save cache at end (unless dry run)
-    if not args.dry_run and not SHUTDOWN_REQUESTED:
+    if not args.dry_run and not SHUTDOWN_REQUESTED and not FORCE_EXIT_REQUESTED:
         save_cache()
         save_rejected_genres()
         # Unresolved files are saved immediately during processing
         print(f"Saved genre cache with {len(GENRE_CACHE)} entries")
         if REJECTED_GENRES:
             print(f"Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}")
-    elif SHUTDOWN_REQUESTED and not args.dry_run:
+    elif (SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED) and not args.dry_run and not FORCE_EXIT_REQUESTED:
         save_cache()
         save_rejected_genres()
         print(f"Graceful shutdown: Saved genre cache with {len(GENRE_CACHE)} entries")
         if REJECTED_GENRES:
             print(f"Graceful shutdown: Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}")
     
-    if SHUTDOWN_REQUESTED:
-        print(f"Script interrupted by user. Progress saved.")
+    if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
+        if FORCE_EXIT_REQUESTED:
+            print(f"Script force-exited by user.")
+        else:
+            print(f"Script interrupted by user. Progress saved.")
     elif args.dry_run:
         action = "Would update" if args.force else "Would update"
         print(f"\n{action} {updated_count} files")
