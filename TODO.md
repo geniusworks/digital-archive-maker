@@ -18,24 +18,11 @@ digital-library/
 ├── Makefile                     # Build automation ✅
 ├── .abcde.conf*                 # CD ripping config
 ├── bin/                         # Main scripts directory ✅
-│   ├── Music Scripts:
-│   │   ├── update-genre-mb.py
-│   │   ├── tag-manual-genre.py
-│   │   ├── tag-explicit-mb.py
-│   │   └── check_album_integrity.py
-│   ├── Video Scripts:
-│   │   ├── rip_video.sh
-│   │   ├── tag-movie-metadata.py
-│   │   ├── tag-movie-ratings.py
-│   │   └── backfill_subs.sh
-│   ├── TV Scripts:
-│   │   ├── tag-show-metadata.py
-│   │   └── rename_shows_jellyfin.py
-│   ├── Utility Scripts:
-│   │   ├── sync-library.py
-│   │   ├── repair-flac-tags.py
-│   │   ├── generate-playlists.py
-│   │   └── fix-*.py (various fix scripts)
+│   ├── music/                   # Music processing
+│   ├── video/                   # Video ripping + subtitles
+│   ├── metadata/                # Metadata helpers (e.g., EXPLICIT)
+│   ├── sync/                    # Sync + comparison
+│   └── utils/                   # Utilities
 ├── docs/                        # Documentation ✅
 │   ├── cd_ripping_guide.md
 │   ├── video_ripping_guide.md
@@ -44,14 +31,8 @@ digital-library/
 ├── log/                         # Logs and cache ✅
 ├── _archive/                    # Archived files
 ├── _install/                    # Installation files
-├── custom-sync/                 # Custom sync scripts
-└── Root-level scripts:          # SCATTERED - needs consolidation
-    ├── fix_album.sh
-    ├── fix_album_covers.sh
-    ├── fix_metadata.py
-    ├── fix_track.py
-    ├── compare_music.py
-    └── disc_ripping_guide.md
+├── bin/sync/                    # Sync scripts including master-sync.py
+└── docs/                        # All documentation including disc_ripping_guide.md
 ```
 
 ### Current Issues
@@ -91,9 +72,8 @@ digital-library/
 │   │   ├── sync-library.py
 │   │   ├── repair-flac-tags.py
 │   │   ├── generate-playlists.py
-│   │   ├── fix_metadata.py     # MOVED from root
-│   │   ├── fix_track.py        # MOVED from root
-│   │   └── compare_music.py    # MOVED from root
+│   │   ├── fix_metadata.py     # In bin/music/
+│   │   └── fix_track.py        # In bin/music/
 │   └── legacy/                  # DEPRECATED: Old scripts for reference
 ├── docs/                        # Enhanced documentation
 │   ├── getting-started.md       # NEW
@@ -323,9 +303,9 @@ processing:
 #### **Friendly CLI Interface**
 ```bash
 # Current: Multiple script names
-python3 bin/update-genre-mb.py --recursive --force-missing
-python3 bin/tag-manual-genre.py --genre "jazz"
-python3 bin/rip_video.sh
+python3 bin/music/update-genre-mb.py --recursive --force-missing
+python3 bin/music/tag-manual-genre.py --genre "jazz"
+python3 bin/video/rip_video.py
 
 # Proposed: Unified CLI
 mediaflow music tag --recursive --force-missing

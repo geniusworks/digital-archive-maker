@@ -8,14 +8,14 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt
+.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all
 
 help:
 	@echo "Available targets:"
 	@echo "  install-deps        Install Homebrew deps and Python packages"
 	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, sub2srt, tesseract, mkvtoolnix; link makemkvcon"
 	@echo "  rip-cd              Rip an audio CD using abcde"
-	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/rip_video.sh"
+	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/video/rip_video.py"
 	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
 	@echo "  fix-album DIR=...   Normalize and complete an album folder"
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
@@ -23,6 +23,12 @@ help:
 	@echo "  compare OLD=... NEW=... [MODE=albums|artists] [THRESHOLD=90] Compare two libraries"
 	@echo "  backfill-subs SRC_DIR=... DST_DIR=... [INPLACE=yes]  Mux English soft subs from MKV into existing MP4"
 	@echo "  vobsub-to-srt FILE=...  Convert VobSub (.idx) to placeholder SRT for muxing"
+	@echo "  set-explicit PATH=... VALUE=... [--album]  Set EXPLICIT tag for FLAC files"
+	@echo "  clean-playlists [ROOT=...] [--replace]  Clean and normalize M3U playlists"
+	@echo "  test                Run all tests"
+	@echo "  test-unit           Run unit tests only"
+	@echo "  test-integration    Run integration tests only"
+	@echo "  install-test-deps  Install test dependencies"
 
 install-deps:
 	@echo "Installing Homebrew deps via _install/install_setup_abcde_environment.sh..."
@@ -56,38 +62,35 @@ rip-cd:
 	@abcde
 
 rip-video:
-	@chmod +x bin/rip_video.sh || true
-	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(if $(TYPE),$(TYPE),auto)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
 
 rip-movie:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
 	  echo "Usage: make rip-movie [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
 	fi
-	@chmod +x bin/rip_video.sh || true
-	@TITLE="$(TITLE)" YEAR="$(YEAR)" bin/rip_video.sh $(if $(TYPE),$(TYPE),auto)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
 
 fix-album:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make fix-album DIR=\"/path/to/Artist/Album\"" >&2; exit 1; fi
-	@bash ./fix_album.sh "$(DIR)"
+	@python3 bin/music/fix_album.py "$(DIR)"
 
 fetch-covers:
 	@if [ -z "$(ROOT)" ]; then echo "Usage: make fetch-covers ROOT=\"/path/or/library/root\"" >&2; exit 1; fi
-	@bash ./fix_album_covers.sh "$(ROOT)"
+	@python3 bin/music/fix_album_covers.py "$(ROOT)"
 
 fix-track:
 	@if [ -z "$(FILE)" ] || [ -z "$(TARGET)" ]; then echo "Usage: make fix-track FILE=\"/path/to/file.ext\" TARGET=\"/Volumes/Data/Media/Library/Music\"" >&2; exit 1; fi
-	@python3 ./fix_track.py "$(FILE)" --target "$(TARGET)"
+	@python3 bin/music/fix_track.py "$(FILE)" --target "$(TARGET)"
 
 compare:
 	@if [ -z "$(OLD)" ] || [ -z "$(NEW)" ]; then echo "Usage: make compare OLD=\"/old/library\" NEW=\"/new/library\" [MODE=albums|artists] [THRESHOLD=90]" >&2; exit 1; fi
-	@python3 ./compare_music.py $(OLD) $(NEW) $(if $(MODE),--$(MODE),) $(if $(THRESHOLD),--threshold $(THRESHOLD),)
+	@python3 bin/sync/compare_music.py $(OLD) $(NEW) $(if $(MODE),--$(MODE),) $(if $(THRESHOLD),--threshold $(THRESHOLD),)
 
 backfill-subs:
 	@if [ -z "$(SRC_DIR)" ] || [ -z "$(DST_DIR)" ]; then \
 	  echo "Usage: make backfill-subs SRC_DIR=\"/path/to/source_mkv_dir\" DST_DIR=\"/path/to/target_mp4_dir\" [INPLACE=yes]" >&2; exit 1; \
 	fi
-	@chmod +x bin/backfill_subs.sh || true
-	@INPLACE="$(INPLACE)" bin/backfill_subs.sh "$(SRC_DIR)" "$(DST_DIR)"
+	@python3 bin/video/backfill_subs.py "$(SRC_DIR)" "$(DST_DIR)" $(if $(INPLACE),--inplace,)
 
 vobsub-to-srt:
 	@if [ -z "$(FILE)" ]; then \
@@ -96,4 +99,33 @@ vobsub-to-srt:
 	  echo "Creates a placeholder SRT file for muxing. Use Subtitle Edit for full OCR." >&2; \
 	  exit 1; \
 	fi
-	@python3 bin/vobsub_to_srt.py "$(FILE)"
+	@python3 bin/video/vobsub_to_srt.py "$(FILE)"
+
+set-explicit:
+	@if [ -z "$(PATH)" ] || [ -z "$(VALUE)" ]; then \
+	  echo "Usage: make set-explicit PATH=\"/path/to/file.or.album\" VALUE=\"Yes|No|Unknown\" [--album]" >&2; exit 1; \
+	fi
+	@python3 bin/metadata/set_explicit.py "$(PATH)" "$(VALUE)" $(if $(ALBUM),--album,)
+
+clean-playlists:
+	@python3 bin/utils/clean_playlists.py "$(ROOT)" $(if $(REPLACE),--replace,)
+
+install-test-deps:
+	@echo "Installing test dependencies..."
+	@python3 -m pip install -r requirements-test.txt
+
+test:
+	@echo "Running all tests..."
+	@python3 run_tests.py
+
+test-unit:
+	@echo "Running unit tests..."
+	@python3 -m pytest tests/ -m unit -v
+
+test-integration:
+	@echo "Running integration tests..."
+	@python3 -m pytest tests/ -m integration -v
+
+test-coverage:
+	@echo "Running tests with coverage..."
+	@python3 -m pytest tests/ --cov=bin --cov-report=term-missing --cov-report=html --cov-fail-under=70

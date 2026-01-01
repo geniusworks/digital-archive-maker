@@ -355,8 +355,9 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
         print(f"{'='*60}")
     
     # Get the directory of this script to find repo root
-    repo_root = Path(__file__).parent.parent
-    tag_script = repo_root / "bin" / "tag-explicit-mb.py"
+    # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
+    repo_root = Path(__file__).parent.parent.parent
+    tag_script = repo_root / "bin" / "music" / "tag-explicit-mb.py"
     
     cmd = [
         sys.executable,  # Use current python interpreter
@@ -402,8 +403,9 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
 def run_genre_tagging(source_path, dry_run=False, quiet=False):
     """Run genre tagging on music files."""
     # Get the directory of this script to find repo root
-    repo_root = Path(__file__).parent.parent
-    script_path = repo_root / "bin" / "update-genre-mb.py"
+    # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
+    repo_root = Path(__file__).parent.parent.parent
+    script_path = repo_root / "bin" / "music" / "update-genre-mb.py"
     cmd = [
         sys.executable,
         str(script_path),
@@ -466,8 +468,8 @@ def run_movie_rating_tagging(source_path, dry_run=False, quiet=False):
         print(f"Running movie rating tagging on: {source_path}")
         print(f"{'='*60}")
 
-    repo_root = Path(__file__).parent.parent
-    tag_script = repo_root / "bin" / "tag-movie-ratings.py"
+    repo_root = Path(__file__).parent.parent.parent
+    tag_script = repo_root / "bin" / "video" / "tag-movie-ratings.py"
 
     cmd = [
         sys.executable,
@@ -525,8 +527,8 @@ def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False):
         print(f"Running movie metadata tagging on: {source_path}")
         print(f"{'='*60}")
 
-    repo_root = Path(__file__).parent.parent
-    tag_script = repo_root / "bin" / "tag-movie-metadata.py"
+    repo_root = Path(__file__).parent.parent.parent
+    tag_script = repo_root / "bin" / "video" / "tag-movie-metadata.py"
 
     cmd = [
         sys.executable,
@@ -585,8 +587,8 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
         print(f"Running show metadata tagging on: {source_path}")
         print(f"{'='*60}")
 
-    repo_root = Path(__file__).parent.parent
-    tag_script = repo_root / "bin" / "tag-show-metadata.py"
+    repo_root = Path(__file__).parent.parent.parent
+    tag_script = repo_root / "bin" / "tv" / "tag-show-metadata.py"
 
     cmd = [
         sys.executable,
@@ -1016,8 +1018,8 @@ def main():
     # Load environment variables from .env file
     try:
         from dotenv import load_dotenv
-        # Get the repository root (parent of custom-sync directory)
-        repo_root = Path(__file__).parent.parent
+        # Get the repository root (bin/sync -> bin -> repo root)
+        repo_root = Path(__file__).parent.parent.parent
         env_file = repo_root / ".env"
         if env_file.exists():
             load_dotenv(env_file)
@@ -1058,8 +1060,8 @@ def main():
     # Get paths
     script_dir = Path(__file__).parent
     config_path = script_dir / args.config
-    repo_root = script_dir.parent
-    sync_script_path = repo_root / "bin" / "sync-library.py"
+    # sync-library.py is now in the same directory as master-sync.py
+    sync_script_path = script_dir / "sync-library.py"
     
     # Load configuration
     config = load_config(config_path)

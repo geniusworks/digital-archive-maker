@@ -71,15 +71,15 @@ Note: `~/.abcde.conf` uses `LIBRARY_ROOT` from the environment (defined in `.env
 ## Post-processing helpers (optional)
 - Normalize/complete an album folder:
   ```bash
-  ./fix_album.sh "/path/to/Artist/Album"
+  python3 bin/music/fix_album.py "/path/to/Artist/Album"
   ```
 - Fetch missing cover art only:
   ```bash
-  ./fix_album_covers.sh "/path/or/library/root"
+  python3 bin/music/fix_album_covers.py "/path/or/library/root"
   ```
 - Organize a single loose track:
   ```bash
-  ./fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"
+  python3 bin/music/fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"
   ```
 
 ---

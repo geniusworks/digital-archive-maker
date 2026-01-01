@@ -7,8 +7,8 @@ This script repairs missing artist, album, and title tags in FLAC files by:
 3. Writing the tags to FLAC files that have missing/unknown tags
 
 Usage:
-    python3 bin/repair-flac-tags.py /path/to/album/folder
-    python3 bin/repair-flac-tags.py /path/to/album/folder --dry-run
+    python3 bin/music/repair-flac-tags.py /path/to/album/folder
+    python3 bin/music/repair-flac-tags.py /path/to/album/folder --dry-run
 """
 
 import argparse

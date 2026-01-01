@@ -4,8 +4,8 @@ _install/
 venv/
 log/
 
-# Ignore specific file
-prince-lovesexy/Lovesexy.flac
+# Ignore specific file (legacy path, kept for compatibility)
+# prince-lovesexy/Lovesexy.flac
 
 # Ignore local env and OS files
 .env
@@ -26,5 +26,11 @@ only_in_old.txt
 *.tmp.mp4
 *.bak
 
+# Ignore CD processing config
+.abcde.conf
+
 # Ignore custom sync configuration
-custom-sync/sync-config.yaml
+bin/sync/sync-config.yaml
+
+# Ignore specialized album source files
+bin/music/specialized/prince-lovesexy/Lovesexy.flac

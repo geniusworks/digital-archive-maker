@@ -41,7 +41,7 @@ Notes:
 This repo supports explicit content tagging via per-track metadata (FLAC and MP3), which can later drive sync policies (e.g., skip explicit content on a destination Jellyfin server).
 
 ### Tagging
-- Script: `bin/tag-explicit-mb.py`
+- Script: `bin/music/tag-explicit-mb.py`
 - Writes a per-track tag: `EXPLICIT=Yes|No|Unknown`
 - Supports both FLAC (CD rips) and MP3 (digital purchases) files
 - Automatically loads `.env` for API credentials (no manual sourcing needed)
@@ -80,13 +80,13 @@ metaflac --set-tag=EXPLICIT=Yes "Artist/Album/01 - Song.flac"
 
 # Set all tracks in album
 
-**Using set-explicit.sh (both FLAC and MP3):**
+**Using the helper script (`bin/metadata/set_explicit.py`):**
 ```bash
 # Set single file (auto-detects format)
-./bin/set-explicit.sh "/path/to/file" "Yes"
+python3 bin/metadata/set_explicit.py "/path/to/file" Yes
 
 # Set entire album
-./bin/set-explicit.sh "/path/to/album" "Yes" --album
+python3 bin/metadata/set_explicit.py "/path/to/album" Yes --album
 ```
 for f in "Artist/Album"/*.flac; do
   metaflac --set-tag=EXPLICIT=No "$f"
@@ -99,10 +99,10 @@ metaflac --show-tag=EXPLICIT "Artist/Album/01 - Song.flac"
 **Using the helper script:**
 ```bash
 # Set single track
-./bin/set-explicit.sh "Artist/Album/01 - Song.flac" Yes
+python3 bin/metadata/set_explicit.py "Artist/Album/01 - Song.flac" Yes
 
 # Set all tracks in album
-./bin/set-explicit.sh "Artist/Album" No --album
+python3 bin/metadata/set_explicit.py "Artist/Album" No --album
 ```
 
 **To revert to API-determined tags:**
@@ -114,7 +114,7 @@ This repo provides intelligent sync capabilities that respect explicit content t
 
 #### Single library sync
 ```bash
-python3 bin/sync-library.py \
+python3 bin/sync/sync-library.py \
   --src "/Volumes/Data/Media/Library/CDs" \
   --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
@@ -122,7 +122,7 @@ python3 bin/sync-library.py \
 ```
 
 #### Multi-library orchestration (recommended)
-The `custom-sync/` system provides advanced sync orchestration:
+The `bin/sync/` directory provides advanced sync orchestration:
 
 **Configuration (sync-config.yaml):**
 ```yaml
@@ -161,19 +161,17 @@ sync_jobs:
 
 **Usage:**
 ```bash
-cd custom-sync
-
 # Dry run to test configuration
-python3 master-sync.py --dry-run
+python3 bin/sync/master-sync.py --dry-run
 
 # Run all jobs
-python3 master-sync.py
+python3 bin/sync/master-sync.py
 
 # Run specific job only
-python3 master-sync.py --job clean-cd-library
+python3 bin/sync/master-sync.py --job clean-cd-library
 
 # Enable global delete mode (set in config)
-python3 master-sync.py  # Will clean up orphaned folders
+python3 bin/sync/master-sync.py  # Will clean up orphaned folders
 ```
 
 **Benefits for media servers:**

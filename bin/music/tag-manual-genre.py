@@ -5,9 +5,9 @@ This script allows manual genre assignment to FLAC files with validation
 against the curated whitelist from update-genre-mb.py.
 
 Usage:
-    python3 bin/tag-manual-genre.py /path/to/file.flac --genre "jazz"
-    python3 bin/tag-manual-genre.py /path/to/album --genre "rock" --recursive
-    python3 bin/tag-manual-genre.py /path/to/music --genre "christmas" --recursive --dry-run
+    python3 bin/music/tag-manual-genre.py /path/to/file.flac --genre "jazz"
+    python3 bin/music/tag-manual-genre.py /path/to/album --genre "rock" --recursive
+    python3 bin/music/tag-manual-genre.py /path/to/music --genre "christmas" --recursive --dry-run
 """
 
 import argparse

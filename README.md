@@ -34,30 +34,40 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
   - `cd_ripping_guide.md` — end-to-end CD ripping with `abcde`
   - `video_ripping_guide.md` — DVD/Blu-ray workflow using MakeMKV + HandBrakeCLI
 - `_install/`
-  - `install_setup_abcde_environment.sh` — checks/installs Homebrew deps (abcde, eye-d3, flac, imagemagick, wget, curl) and creates an example cleanup helper.
-  - `install_cleanup_abcde_xs.sh` — removes an incompatible `DiscID.bundle` in some abcde installs.
+  - `install_setup_abcde_environment.py` — checks/installs Homebrew deps (abcde, eye-d3, flac, imagemagick, wget, curl) and creates an example cleanup helper.
+  - `install_cleanup_abcde_xs.py` — removes an incompatible `DiscID.bundle` in some abcde installs.
 - `_archive/` (kept for reference)
-  - `backup_cover_art.sh` — finds `cover.jpg`, logs dimensions, renames non-1000x1000 covers to `_cover.jpg`.
+  - `backup_cover_art.py` — finds `cover.jpg`, logs dimensions, renames non-1000x1000 covers to `_cover.jpg`.
   - `check_flac_metadata.py` — compares FLAC tags to MusicBrainz; respects a skip list in `check_flac_metadata.skip`.
-- `fix_album.sh` — given an album folder, fetches track titles from MusicBrainz, renames `*.flac` to `NN - Title.flac`, makes an `.m3u8`, runs `fix_metadata.py --fix`, then `fix_album_covers.sh`.
-- `fix_album_covers.sh` — finds albums missing `cover.jpg` and downloads a 1000x1000 front cover from Cover Art Archive (via MusicBrainz).
-- `fix_metadata.py` — checks/updates FLAC tags (TITLE, ARTIST, ALBUM, TRACKNUMBER) based on the path/filename pattern `NN - Title.flac`.
-- `repair-flac-tags.py` — repairs missing FLAC tags (ARTIST, ALBUM, TITLE, TRACKNUMBER) using .m3u8 playlist and folder structure.
-- `fix_track.py` — organizes a single loose track into `Artist/Album/NN - Title.ext`. Attempts metadata from tags, AcoustID, MusicBrainz; falls back to filename parsing.
-- `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist.
-- `compare_music 2025-08-30.py` — earlier implementation of compare tool (kept for reference).
-- `custom-sync/` — custom sync configuration (gitignored)
-  - `master-sync.py` — run multiple sync jobs from YAML config; automatically runs explicit tagging before each sync
-  - `sync-config.yaml` — define source/destination mappings (gitignored)
-- `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album (`ffmpeg`-based).
+- `bin/` — primary scripts directory (organized by domain)
+  - `bin/music/`
+    - `fix_album.py` — normalize an album folder using MusicBrainz track titles; renames to `NN - Title.flac`; writes `.m3u8`; runs tag + cover fixes
+    - `fix_album_covers.py` — fetch missing `cover.jpg` via Cover Art Archive (via MusicBrainz)
+    - `fix_metadata.py` — validates and fixes FLAC tags based on filename pattern
+    - `fix_track.py` — organizes a single loose track using AcoustID/MusicBrainz
+  - `bin/video/`
+    - `rip_video.py` — rip DVD/Blu-ray via MakeMKV + HandBrakeCLI (no interactive prompts)
+    - `backfill_subs.py` — mux English soft subs from MKV into existing MP4 (no re-encode)
+  - `bin/metadata/`
+    - `set_explicit.py` — set `EXPLICIT=Yes|No|Unknown` tags for FLAC files
+  - `bin/utils/`
+    - `clean_playlists.py` — normalize `.m3u` to `.m3u8` and validate track references
+  - `bin/sync/`
+    - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist
+  - `bin/sync/`
+    - `master-sync.py` — run multiple sync jobs from YAML config; automatically runs explicit tagging before each sync
+    - `sync-config.yaml` — define source/destination mappings (gitignored)
+    - `sync-config.yaml.example` — example configuration template
+  - `bin/music/specialized/` — special-case one-off workflows
+    - `prince-lovesexy/split_lovesexy.py` — example special-case splitter for a single-file album (`ffmpeg`-based)
 - `.abcde.conf.sample` — sample abcde configuration matching this repo's defaults.
 - `.env.sample` — example environment variables (e.g., `ACOUSTID_API_KEY`).
-- `disc_ripping_guide.md` — earlier combined guide for CDs/DVDs/Blu-rays (kept for reference).
+- `docs/disc_ripping_guide.md` — earlier combined guide for CDs/DVDs/Blu-rays (kept for reference).
 
 ## Prerequisites
 - macOS with Homebrew.
 - Core tools: `abcde`, `flac` (metaflac), `imagemagick` (`convert`/`magick`), `jq`, `curl`, `wget`, `ffmpeg`.
-  - Use `_install/install_setup_abcde_environment.sh` to verify/install common packages.
+  - Use `_install/install_setup_abcde_environment.py` to verify/install common packages.
 - Python 3 with packages:
   - `mutagen`, `rapidfuzz`, `musicbrainzngs`, `acoustid`, `pyyaml`
   - Install via `requirements.txt`:
@@ -65,7 +75,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
     - Install deps: `pip install -r requirements.txt`
   - Example manual install: `pip install mutagen rapidfuzz musicbrainzngs pyacoustid pyyaml`
 - Accounts/keys (optional but recommended):
-  - AcoustID API key for `fix_track.py`.
+  - AcoustID API key for `bin/music/fix_track.py`.
     - Set in your shell: `export ACOUSTID_API_KEY=...`
     - Or copy `.env.sample` to `.env` and load it via your shell init or a tool like `direnv`.
 
@@ -75,7 +85,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - Media server setup: see `docs/media_server_setup.md`.
 
 ## Genre metadata tagging (music)
-- Script: `bin/update-genre-mb.py`
+- Script: `bin/music/update-genre-mb.py`
 - Updates FLAC genre tags using MusicBrainz API with curated whitelist validation
 - **NEW:** Automatic Christmas content detection (tags as "christmas")
 - **NEW:** Genre transformers (e.g., "rhythm and blues" → "r&b", "symphony orchestra" → "classical")
@@ -114,16 +124,16 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 **Usage:**
 ```bash
 # Normal mode (skip files with valid existing genres)
-python3 bin/update-genre-mb.py "/path/to/music" --verbose --recursive
+python3 bin/music/update-genre-mb.py "/path/to/music" --verbose --recursive
 
 # Force mode (update ALL files, overwrite existing genres)
-python3 bin/update-genre-mb.py "/path/to/music" --force --verbose --recursive
+python3 bin/music/update-genre-mb.py "/path/to/music" --force --verbose --recursive
 
 # Force missing mode (only update files without genre tags)
-python3 bin/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
+python3 bin/music/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
 
 # Dry run to preview changes
-python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
+python3 bin/music/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
 ```
 
 **Cache and logging:**
@@ -144,7 +154,7 @@ python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
 - Comprehensive logging for whitelist management and improvement
 
 ## Manual genre tagging (music)
-- Script: `bin/tag-manual-genre.py`
+- Script: `bin/music/tag-manual-genre.py`
 - **NEW:** Manual genre assignment with whitelist validation
 - Leverages the same curated whitelist and transformers as the automatic script
 - Perfect for problematic cases where automatic lookup fails or needs correction
@@ -161,19 +171,19 @@ python3 bin/update-genre-mb.py "/path/to/music" --dry-run --verbose --recursive
 **Usage:**
 ```bash
 # Tag single file
-python3 bin/tag-manual-genre.py "/path/to/song.flac" --genre "jazz"
+python3 bin/music/tag-manual-genre.py "/path/to/song.flac" --genre "jazz"
 
 # Tag entire album
-python3 bin/tag-manual-genre.py "/path/to/album" --genre "rock" --recursive
+python3 bin/music/tag-manual-genre.py "/path/to/album" --genre "rock" --recursive
 
 # Preview changes
-python3 bin/tag-manual-genre.py "/path/to/album" --genre "classical" --dry-run --verbose
+python3 bin/music/tag-manual-genre.py "/path/to/album" --genre "classical" --dry-run --verbose
 
 # Force overwrite existing genres
-python3 bin/tag-manual-genre.py "/path/to/album" --genre "progressive rock" --force --recursive
+python3 bin/music/tag-manual-genre.py "/path/to/album" --genre "progressive rock" --force --recursive
 
 # List all valid genres
-python3 bin/tag-manual-genre.py --list-genres
+python3 bin/music/tag-manual-genre.py --list-genres
 ```
 
 **Technical details:**
@@ -185,7 +195,7 @@ python3 bin/tag-manual-genre.py --list-genres
 **Real-time workflow:**
 ```bash
 # Run automatic tagging with real-time unresolved logging
-python3 bin/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
+python3 bin/music/update-genre-mb.py "/path/to/music" --force-missing --verbose --recursive
 
 # In another terminal, monitor unresolved files as they appear
 tail -f /Users/martin/Herd/digital-library/log/unresolved_genres.txt
@@ -194,7 +204,7 @@ tail -f /Users/martin/Herd/digital-library/log/unresolved_genres.txt
 cat /Users/martin/Herd/digital-library/log/unresolved_genres.txt
 
 # Use manual tagging script for problematic files
-python3 bin/tag-manual-genre.py "/path/to/problematic.flac" --genre "punk"
+python3 bin/music/tag-manual-genre.py "/path/to/problematic.flac" --genre "punk"
 ```
 
 **Benefits:**
@@ -206,7 +216,7 @@ python3 bin/tag-manual-genre.py "/path/to/problematic.flac" --genre "punk"
 - **Real-time validation** - immediate feedback on genre validity
 
 ## Explicit content tagging (music)
-- Script: `bin/tag-explicit-mb.py`
+- Script: `bin/music/tag-explicit-mb.py`
 - Writes per-track FLAC tag: `EXPLICIT=Yes|No|Unknown`
 - Automatically loads `.env` for API credentials (no manual sourcing needed)
 - Waterfall (highest priority first):
@@ -235,7 +245,7 @@ Environment variables:
 For manual tag management and media server sync details, see `docs/media_server_setup.md`.
 
 ## M3U8 Playlist Processing
-- Script: `bin/update-from-m3u.py`
+- Script: `bin/music/update-from-m3u.py`
 - Updates filenames and metadata from M3U8 playlists
 - Supports both FLAC and MP3 formats with proper tag handling
 - Handles generic CD rip filenames ("Track 1.flac", "Track 2.flac")
@@ -244,16 +254,16 @@ For manual tag management and media server sync details, see `docs/media_server_
 **Usage:**
 ```bash
 # Process M3U8 file (dry run)
-python3 bin/update-from-m3u.py /path/to/album.m3u8 --dry-run
+python3 bin/music/update-from-m3u.py /path/to/album.m3u8 --dry-run
 
 # Process folder (finds M3U8 automatically)
-python3 bin/update-from-m3u.py /path/to/album/ --dry-run
+python3 bin/music/update-from-m3u.py /path/to/album/ --dry-run
 
 # Apply changes
-python3 bin/update-from-m3u.py /path/to/album.m3u8
+python3 bin/music/update-from-m3u.py /path/to/album.m3u8
 
 # Force updates even if metadata appears correct
-python3 bin/update-from-m3u.py /path/to/album.m3u8 --force
+python3 bin/music/update-from-m3u.py /path/to/album.m3u8 --force
 ```
 
 **Features:**
@@ -278,7 +288,7 @@ python3 bin/update-from-m3u.py /path/to/album.m3u8 --force
 
 
 ## MPAA rating tagging (movies and shows)
-- Script: `bin/tag-movie-ratings.py`
+- Script: `bin/video/tag-movie-ratings.py`
 - Writes MP4 atom: `©rat` with MPAA rating (G, PG, PG-13, R, NC-17, NR, Unrated)
 - Automatic lookups use **any** of:
   - `TMDB_READ_ACCESS_TOKEN` (preferred; TMDb v4 read token)
@@ -357,24 +367,24 @@ Console output:
 Usage:
 ```bash
 # Tag movies (dry run by default)
-python3 bin/tag-movie-ratings.py "/path/to/movies" --dry-run
+python3 bin/video/tag-movie-ratings.py "/path/to/movies" --dry-run
 
 # Actually write tags
-python3 bin/tag-movie-ratings.py "/path/to/movies"
+python3 bin/video/tag-movie-ratings.py "/path/to/movies"
 
 # Verbose output (includes Unknown titles)
-python3 bin/tag-movie-ratings.py "/path/to/movies" --verbose
+python3 bin/video/tag-movie-ratings.py "/path/to/movies" --verbose
 
 # Limit files processed
-python3 bin/tag-movie-ratings.py "/path/to/movies" --max-files 50
+python3 bin/video/tag-movie-ratings.py "/path/to/movies" --max-files 50
 
 # Tag shows library (uses shows_rating_* files)
-python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows --dry-run
-python3 bin/tag-movie-ratings.py "/path/to/shows" --media shows
+python3 bin/video/tag-movie-ratings.py "/path/to/shows" --media shows --dry-run
+python3 bin/video/tag-movie-ratings.py "/path/to/shows" --media shows
 ```
 
 ## Comprehensive movie metadata tagging
-- Script: `bin/tag-movie-metadata.py`
+- Script: `bin/video/tag-movie-metadata.py`
 - Writes comprehensive MP4 metadata including title, year, genre, director, actors, synopsis, ratings, studio, and poster artwork
 - Automatic lookups require **one** of:
   - `TMDB_API_KEY` (preferred; free from TMDb, includes poster artwork)
@@ -502,7 +512,7 @@ Run `make help` for a summary. Common tasks:
 - `make install-deps` — install Homebrew dependencies and Python packages
 - `make install-video-deps` — install video tools (HandBrakeCLI, ffmpeg, jq, tesseract, mkvtoolnix) and link makemkvcon
 - `make rip-cd` — run `abcde` using your `~/.abcde.conf`
-- `make rip-video [TYPE=dvd|bluray]` — call `bin/rip_video.sh` for video discs (auto-detects disc type if TYPE omitted)
+- `make rip-video [TYPE=dvd|bluray]` — rip video discs (auto-detects disc type if TYPE omitted)
 - `make rip-movie [TYPE=dvd|bluray] TITLE="Movie Name" YEAR=1999` — rip and organize the main feature to `Movies/Title (Year)/Title (Year).mp4` (auto-detects disc type if TYPE omitted)
 - Notes: you can set `MINLENGTH=1800` to skip short titles and `DEST_CATEGORY=Films` to change the destination category from `Movies`.
 - `make fix-album DIR="/path/to/Artist/Album"` — normalize, tag, covers, playlist
@@ -511,7 +521,7 @@ Run `make help` for a summary. Common tasks:
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 - `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
 - `make vobsub-to-srt FILE="/path/to/subtitle.idx"` — convert VobSub files to placeholder SRT for muxing
-- `python3 bin/check_album_integrity.py [--show-ok]` — validate album folders (cover, playlists, `_cover.jpg`), scanning `${LIBRARY_ROOT}/CDs`
+- `python3 bin/music/check_album_integrity.py [--show-ok]` — validate album folders (cover, playlists, `_cover.jpg`), scanning `${LIBRARY_ROOT}/CDs`
 
 ## Typical workflows
 - Rip a CD to FLAC
@@ -551,19 +561,19 @@ Run `make help` for a summary. Common tasks:
   Creates a placeholder SRT file for immediate muxing. For full OCR, use Subtitle Edit GUI with the corresponding .sub file.
 
 - Normalize and complete an album folder
-  1. `./fix_album.sh "/path/to/Artist/Album"`
+  1. `python3 bin/music/fix_album.py "/path/to/Artist/Album"`
   2. Script fetches MusicBrainz release, renames files to track order, writes `Album.m3u8`, fixes tags, and fetchs `cover.jpg` if missing.
 
 - Repair FLAC tags using .m3u8 playlist and folder structure
   ```bash
   # Preview what would be repaired (dry run)
-  python3 bin/repair-flac-tags.py --dry-run "/path/to/album/folder"
+  python3 bin/music/repair-flac-tags.py --dry-run "/path/to/album/folder"
   
   # Actually repair the tags
-  python3 bin/repair-flac-tags.py "/path/to/album/folder"
+  python3 bin/music/repair-flac-tags.py "/path/to/album/folder"
   
   # Verbose output
-  python3 bin/repair-flac-tags.py -v "/path/to/album/folder"
+  python3 bin/music/repair-flac-tags.py -v "/path/to/album/folder"
   ```
   Repairs FLAC tags (ARTIST, ALBUM, TITLE, TRACKNUMBER) by detecting differences between current tags and expected values:
   - Extracts expected artist/album from folder structure (e.g., `/Artist/Album/`)
@@ -577,28 +587,28 @@ Run `make help` for a summary. Common tasks:
 - Tag explicit content across the library
   ```bash
   # Tag default library (CDs) - supports FLAC and MP3
-  python3 bin/tag-explicit-mb.py
+  python3 bin/music/tag-explicit-mb.py
   
   # Tag specific folder - supports FLAC and MP3
-  python3 bin/tag-explicit-mb.py "/path/to/music/folder"
+  python3 bin/music/tag-explicit-mb.py "/path/to/music/folder"
   
   # Dry run (no writes)
-  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --dry-run
+  python3 bin/music/tag-explicit-mb.py "/path/to/music/folder" --dry-run
   
   # Limit number of tracks processed
-  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --max-tracks 100 --dry-run
+  python3 bin/music/tag-explicit-mb.py "/path/to/music/folder" --max-tracks 100 --dry-run
   
   # Generate Explicit.m3u8 playlist (disabled by default)
-  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --generate-explicit-playlist
+  python3 bin/music/tag-explicit-mb.py "/path/to/music/folder" --generate-explicit-playlist
   
   # Verbose output (show all EXPLICIT=Yes tracks, including cached ones)
-  python3 bin/tag-explicit-mb.py "/path/to/music/folder" --verbose
+  python3 bin/music/tag-explicit-mb.py "/path/to/music/folder" --verbose
   ```
   
   **Note**: The script supports both FLAC (from CD rips) and MP3 (digital purchases) files. EXPLICIT tags are written using format-specific metadata (FLAC: `EXPLICIT` field, MP3: `TXXX:EXPLICIT` ID3 tag). Playlist generation is disabled by default to avoid creating broken playlists when using `--exclude-explicit` sync jobs.
 
 - Sync to a Jellyfin server while excluding explicit and/or unknown tracks
-  - Script: `bin/sync-library.py`
+  - Script: `bin/sync/sync-library.py`
   - Exclusion is based on the `EXPLICIT` tag (supports both FLAC and MP3).
   - Missing `EXPLICIT` is treated as `Unknown`.
   - **Automatic cleanup:** Empty directories are removed by default (use `--no-delete` to disable)
@@ -607,30 +617,30 @@ Run `make help` for a summary. Common tasks:
   - **M3U exclusion:** .m3u8 playlist files are automatically excluded from sync (Jellyfin doesn't need them, but they're kept locally for tag repair)
   ```bash
   # Single sync job
-  python3 bin/sync-library.py \
+  python3 bin/sync/sync-library.py \
     --src "/Volumes/Data/Media/Library/CDs" \
     --dest "/path/to/jellyfin/music" \
     --exclude-explicit \
     --dry-run
   
   # Multiple sync jobs with global delete mode
-  cd custom-sync && python master-sync.py --dry-run
+  python3 bin/sync/master-sync.py --dry-run
   
   # Shows library sync (no rating filtering yet)
-  python3 bin/sync-library.py \
+  python3 bin/sync/sync-library.py \
     --src "/Volumes/Data/Media/Library/Shows" \
     --dest "jellyfin@10.0.4.75:/mnt/media/Shows" \
     --media shows \
     --dry-run
-  python master-sync.py --job clean-library
+  python3 bin/sync/master-sync.py --job clean-library
   
   # Master sync automatically runs explicit tagging before each sync job
-  python master-sync.py  # Tags new content then syncs all jobs
-  python master-sync.py --skip-tagging  # Skip tagging phase
+  python3 bin/sync/master-sync.py  # Tags new content then syncs all jobs
+  python3 bin/sync/master-sync.py --skip-tagging  # Skip tagging phase
   ```
 
-### Master Sync Configuration (custom-sync/)
-The `custom-sync/` directory provides orchestration for multiple sync jobs with intelligent delete mode:
+### Master Sync Configuration (bin/sync/)
+The `bin/sync/` directory provides orchestration for multiple sync jobs with intelligent delete mode:
 
 **Configuration (sync-config.yaml):**
 ```yaml
@@ -675,86 +685,84 @@ sync_jobs:
 
 **Usage:**
 ```bash
-cd custom-sync
-
 # List available jobs
-python3 master-sync.py --list-jobs
+python3 bin/sync/master-sync.py --list-jobs
 
 # Dry run all jobs
-python3 master-sync.py --dry-run
+python3 bin/sync/master-sync.py --dry-run
 
 # Run specific job
-python3 master-sync.py --job clean-cd-library
+python3 bin/sync/master-sync.py --job clean-cd-library
 
 # Run all jobs with global delete enabled
-python3 master-sync.py  # Uses global.delete from config
+python3 bin/sync/master-sync.py  # Uses global.delete from config
 
 # Skip explicit tagging phase
-python3 master-sync.py --skip-tagging
+python3 bin/sync/master-sync.py --skip-tagging
 ```
 
 - Generate .m3u8 playlists for albums missing them
   ```bash
   # Generate playlists for all albums in a directory
-  python3 bin/generate-playlists.py "/path/to/music"
+  python3 bin/music/generate-playlists.py "/path/to/music"
   
   # Dry run to see what would be created
-  python3 bin/generate-playlists.py "/path/to/music" --dry-run
+  python3 bin/music/generate-playlists.py "/path/to/music" --dry-run
   ```
   Scans for albums containing audio files but no playlist, then creates simple M3U playlists with natural track ordering. Uses album-specific naming (e.g., "Dark Side of the Moon.m3u8") based on metadata or folder name.
 
 - Audit album integrity (cover + playlists)
   ```bash
-  python3 bin/check_album_integrity.py            # scans ${LIBRARY_ROOT}/CDs recursively
-  python3 bin/check_album_integrity.py --show-ok  # include OK albums
-  python3 bin/check_album_integrity.py --albums "Artist/Album"
+  python3 bin/music/check_album_integrity.py            # scans ${LIBRARY_ROOT}/CDs recursively
+  python3 bin/music/check_album_integrity.py --show-ok  # include OK albums
+  python3 bin/music/check_album_integrity.py --albums "Artist/Album"
   ```
   Verifies each album has a 1000×1000 `cover.jpg`, no `_cover.jpg`, and that `.m3u8` playlists match `.flac` files.
 
 - Fix cover art dimensions
   ```bash
   # Preview what would be fixed (non-destructive)
-  python3 bin/check_album_integrity.py --fix-covers --dry-run
+  python3 bin/music/check_album_integrity.py --fix-covers --dry-run
   
   # Actually resize cover.jpg images that aren't 1000x1000
-  python3 bin/check_album_integrity.py --fix-covers
+  python3 bin/music/check_album_integrity.py --fix-covers
   
   # Combine with other options
-  python3 bin/check_album_integrity.py --albums "Artist/Album" --fix-covers --dry-run
+  python3 bin/music/check_album_integrity.py --albums "Artist/Album" --fix-covers --dry-run
   ```
   Uses ImageMagick (preferred) or Pillow to resize cover images to exactly 1000×1000 pixels. The `--dry-run` option shows what would be changed without modifying files.
 
 - Download missing cover art
   ```bash
   # Preview what would be downloaded (non-destructive)
-  python3 bin/check_album_integrity.py --get-covers --dry-run
+  python3 bin/music/check_album_integrity.py --get-covers --dry-run
   
   # Actually download missing cover.jpg images as _cover.jpg
-  python3 bin/check_album_integrity.py --get-covers
+  python3 bin/music/check_album_integrity.py --get-covers
   
   # Combine with fixing existing covers
-  python3 bin/check_album_integrity.py --fix-covers --get-covers --dry-run
+  python3 bin/music/check_album_integrity.py --fix-covers --get-covers --dry-run
   ```
   Downloads album covers from MusicBrainz and saves them as `_cover.jpg` when `cover.jpg` is missing or too small for `--fix-covers` to handle. Skips download if `_cover.jpg` already exists or if `cover.jpg` is within `--fix-covers` tolerance. Requires `pip install requests mutagen`.
 
 - Fetch missing cover art only
-  - `./fix_album_covers.sh "/path/or/library/root"`
+  - `python3 bin/music/fix_album_covers.py "/path/or/library/root"`
   - Scans for album folders containing FLACs but missing `cover.jpg`, downloads 1000x1000 JPEG.
 
 - Compare two music libraries
-  - Fast tool: `./compare_music.py /old/library /new/library [--threshold 90] [--albums|--artists]`
+  - `python3 bin/sync/compare_music.py /old/library /new/library [--threshold 90] [--albums|--artists]`
   - Outputs: either grouped summary to stdout or writes `only_in_old.txt` and `only_in_new.txt`.
 
 - Organize a single loose track
-  - `./fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"`
+  - `python3 bin/music/fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"`
   - Attempts AcoustID+MusicBrainz; falls back to tags/filename; writes to `Artist/Album/NN - Title.ext`.
 
 - Special-case split for a one-file album
-  - `./prince-lovesexy/split_lovesexy.sh /path/to/Lovesexy.flac`
+  - `python3 bin/music/specialized/prince-lovesexy/split_lovesexy.py /path/to/Lovesexy.flac`
   - Uses fixed timestamps to create track files with safe filenames.
 
 ## Notes and caveats
-- API keys: `fix_track.py` contains a placeholder AcoustID key. Prefer setting via an environment variable; see Improvements.
+- API keys: `bin/music/fix_track.py` contains a placeholder AcoustID key. Prefer setting via an environment variable; see Improvements.
 - Rate limits: MusicBrainz/Cover Art Archive have usage policies. Scripts use `curl`/`jq`; adjust delays if needed.
 - Archive folder: `_archive/` contains older or specialized tools; use with caution.
 

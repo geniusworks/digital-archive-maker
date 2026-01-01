@@ -22,13 +22,13 @@ Output (default):
 - `Album.m3u8`
 
 ### A2) Normalize/fix an existing album folder (optional)
-- Helper: `fix_album.sh`
+- Helper: `bin/music/fix_album.py`
   - Renames tracks to `NN - Title.flac`
   - Rebuilds playlist
   - Fixes tags and cover art
 
 ### A3) Tag explicit content (per-track)
-- Script: `bin/tag-explicit-mb.py`
+- Script: `bin/music/tag-explicit-mb.py`
 - Writes per-track tag: `EXPLICIT=Yes|No|Unknown`
 
 Debug options:
@@ -42,7 +42,7 @@ Artifacts:
 - `.../CDs/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`)
 
 ### A4) Sync to a destination server while excluding explicit/unknown (optional)
-- Script: `bin/sync-library.py`
+- Script: `bin/sync/sync-library.py`
 - Excludes are driven by the `EXPLICIT` tag:
   - `--exclude-explicit` skips `EXPLICIT=Yes`
   - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
@@ -70,5 +70,5 @@ Artifacts:
 
 ### B4) Tag movie metadata and ratings (optional)
 - Scripts:
-  - `bin/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
-  - `bin/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache
+  - `bin/video/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
+  - `bin/video/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache

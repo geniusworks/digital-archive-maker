@@ -70,43 +70,13 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 
 ---
 
-## Automation script (optional)
-Save as `~/rip_video.sh` and make executable `chmod +x ~/rip_video.sh`:
-```bash
-#!/bin/sh
-set -eu
-
-printf "Select disc type: 1) DVD  2) Blu-ray\n" >&2
-printf "Choice: " >&2
-read -r choice
-case "$choice" in
-  1) DISCDIR="DVDs" ;;
-  2) DISCDIR="Blurays" ;;
-  *) echo "Invalid option" >&2; exit 1 ;;
- esac
-
-TITLE=$(date "+%Y-%m-%d")
-OUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
-mkdir -p "$OUTDIR"
-
-makemkvcon mkv disc:0 all "$OUTDIR"
-
-for f in "$OUTDIR"/*.mkv; do
-  [ -e "$f" ] || continue
-  name=$(basename "$f" .mkv)
-  HandBrakeCLI -i "$f" -o "$OUTDIR/${name}.mp4" -e x264 -q 22 -B 160 --optimize
-done
-
-echo "Done: $OUTDIR"
-```
-
 ## Repo helper script
 This repository provides a ready-to-use helper and a Makefile target:
 
 - Direct script:
   ```bash
-  ./bin/rip_video.sh        # auto-detects disc type
-  ./bin/rip_video.sh dvd    # or bluray (explicit)
+  python3 bin/video/rip_video.py        # auto-detects disc type
+  python3 bin/video/rip_video.py dvd    # or bluray (explicit)
   ```
 - Makefile target:
   ```bash
@@ -114,8 +84,7 @@ This repository provides a ready-to-use helper and a Makefile target:
   make rip-video TYPE=dvd   # or TYPE=bluray (explicit)
   ```
   - **Auto-detection**: The script now automatically detects DVD vs Blu-ray discs using `drutil` and `makemkvcon`. You can still override with explicit `TYPE` if needed.
-  - If you don't provide `TITLE`/`YEAR` and you're in an interactive terminal, the script will offer to organize after transcoding and prompt you for Title and Year.
-  - In non-interactive contexts (e.g., CI), no prompt appears and only the staging folder is produced.
+  - The script is non-interactive (no prompts). To enable auto-organization, provide `TITLE` and `YEAR` via the environment/Makefile.
 
 ## Auto-organize to Movies/Title (Year)
 To rip and automatically place the main feature into a Plex/Jellyfin-friendly folder:
@@ -217,15 +186,9 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
 - **Cleanup**. Once both MP4s are confirmed, archive or remove any unused `.mkv` or `.backfill_ocr_*` files.
 
 ## Audio/subtitle language handling (English preference)
-When the default audio track is not English, the helper script will, by default, pause and prompt you to choose how to proceed. No environment variable is required for this default behavior.
+When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
 
 To guarantee inclusion when available, the script post-muxes any English text-based subtitles (SubRip/ASS/SSA/Text/WebVTT) from the source MKV into the final MP4 after encoding. This requires `ffmpeg` (for both `ffmpeg` and `ffprobe`) and `jq`.
-
-- Interactive (default when attached to a terminal):
-  - After probing the MKV, if default audio is not English and an English audio or subtitle stream is present, you’ll be prompted to choose:
-    - `[a]` Use English audio (if available)
-    - `[s]` Add English subtitles (if available)
-    - `[k]` Keep as-is
 
 - Non-interactive or to override the default policy, use `AUDIO_SUBS_POLICY`:
   ```bash
@@ -322,7 +285,7 @@ If automatic subtitle burn-in fails or subtitles don't appear in the output:
    ```
    Replace `<TRACK_NUM>` with the track number from the HandBrake scan (e.g., 2 for "2, English (VOBSUB)").
 
-4. **Recent fix**: A bug was fixed in Oct 2025 where the script incorrectly calculated HandBrake track numbers. Ensure you're using the latest version of `bin/rip_video.sh`.
+4. **Recent fix**: A bug was fixed in Oct 2025 where the script incorrectly calculated HandBrake track numbers. Ensure you're using the latest version of `bin/video/rip_video.py`.
 
 ---
 

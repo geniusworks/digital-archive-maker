@@ -5,7 +5,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 ## Recent Major Updates (December 2025 - January 2026)
 
 ### 🎵 Music Genre Tagging System Overhaul
-- **Genre metadata tagging (`bin/update-genre-mb.py`)** - Complete rewrite with advanced features:
+- **Genre metadata tagging (`bin/music/update-genre-mb.py`)** - Complete rewrite with advanced features:
   - **Christmas content auto-detection** - Automatically tags Christmas-related content as "christmas" genre
   - **Genre transformers** - Maps common variants to whitelist entries (e.g., "rhythm and blues" → "r&b")
   - **Comprehensive whitelist** - 100+ curated genres across all major music families
@@ -14,7 +14,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Improved API reliability** - 15s timeout, 4 retries with exponential backoff
   - **Smart genre selection** - Prioritizes core genres over decades/subjective tags
   - **Unresolved files logging** - Records files with no genre found for manual review
-- **Manual genre tagging (`bin/tag-manual-genre.py`)** - NEW script for manual genre assignment:
+- **Manual genre tagging (`bin/music/tag-manual-genre.py`)** - NEW script for manual genre assignment:
   - **Whitelist validation** - Uses same curated whitelist as automatic script
   - **Genre transformers** - Applies same transformations for consistency
   - **Bulk operations** - Single files, folders, or recursive processing
@@ -23,7 +23,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Real-time validation** - Immediate feedback on genre validity
 
 ### 🎵 M3U8 Playlist Processing (January 2026)
-- **M3U8 processing script (`bin/update-from-m3u.py`)** - NEW comprehensive playlist processor:
+- **M3U8 processing script (`bin/music/update-from-m3u.py`)** - NEW comprehensive playlist processor:
   - **Filename updates** - Renames files to match M3U8 entries with proper track numbering
   - **Metadata writing** - Updates artist, title, album, and track number tags
   - **Smart parsing** - Extracts "Artist - Title" from M3U8 filenames
@@ -34,7 +34,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Multiple metadata sources** - M3U8 filenames, EXTINF titles, folder structure fallbacks
 
 ### 📺 TV Show Metadata Enhancement  
-- **Show metadata tagging (`bin/tag-show-metadata.py`)** - Advanced override system:
+- **Show metadata tagging (`bin/tv/tag-show-metadata.py`)** - Advanced override system:
   - **Manual ID overrides** - `--tmdb-id` and `--imdb-id` flags for problematic shows
   - **Automatic override system** - `log/show_tmdb_overrides.json` for persistent fixes
   - **IMDb fallback via OMDb** - Handles shows deleted from TMDb
@@ -76,23 +76,23 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 
 ## Current capabilities (from this repo)
 - `.abcde.conf` — solid CD ripping config to FLAC with MusicBrainz lookup, M3U playlists, filename sanitization, and a post-encode eject hook.
-- `fix_album.sh` — album-level normalization using MusicBrainz track titles, renames to `NN - Title.flac`, creates playlist, then runs tag + cover-art fixes.
-- `fix_album_covers.sh` — fills in missing `cover.jpg` (1000×1000) via Cover Art Archive.
-- `fix_metadata.py` — validates and (optionally) fixes `TITLE/ARTIST/ALBUM/TRACKNUMBER` based on `NN - Title.flac` and folder structure.
-- `fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
-- `compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
-- `bin/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
-- `bin/tag-movie-metadata.py` — tags MP4 files with rich movie metadata (title/year/plot/genres/director/cast/rating/artwork) via TMDb/OMDb using IMDb ID (and supports title/year search).
-- `bin/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
-- `custom-sync/master-sync.py` — orchestrates multiple sync jobs from YAML config with intelligent global delete mode; automatically runs explicit tagging before each sync to ensure new content is properly flagged; features two-phase sync (sync all jobs, then global cleanup) and target-specific deletion logic.
+- `bin/music/fix_album.py` — album-level normalization using MusicBrainz track titles, renames to `NN - Title.flac`, creates playlist, then runs tag + cover-art fixes.
+- `bin/music/fix_album_covers.py` — fills in missing `cover.jpg` (1000×1000) via Cover Art Archive.
+- `bin/music/fix_metadata.py` — validates and (optionally) fixes `TITLE/ARTIST/ALBUM/TRACKNUMBER` based on `NN - Title.flac` and folder structure.
+- `bin/music/fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
+- `bin/sync/compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
+- `bin/music/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
+- `bin/video/tag-movie-metadata.py` — tags MP4 files with rich movie metadata (title/year/plot/genres/director/cast/rating/artwork) via TMDb/OMDb using IMDb ID (and supports title/year search).
+- `bin/sync/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
+- `bin/sync/master-sync.py` — orchestrates multiple sync jobs from YAML config with intelligent global delete mode; automatically runs explicit tagging before each sync to ensure new content is properly flagged; features two-phase sync (sync all jobs, then global cleanup) and target-specific deletion logic.
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.
-- `prince-lovesexy/split_lovesexy.sh` — example special-case splitter for a single-file album.
+- `bin/music/specialized/prince-lovesexy/split_lovesexy.py` — example special-case splitter for a single-file album.
 
 ## Phase 1 — Harden the CD pipeline ✅ COMPLETED
 **Status**: Core pipeline implemented with advanced genre tagging system.
 
 ### Completed features:
-- ✅ **Advanced genre tagging system** (`bin/update-genre-mb.py`)
+- ✅ **Advanced genre tagging system** (`bin/music/update-genre-mb.py`)
   - Comprehensive whitelist with 100+ curated genres
   - Christmas content auto-detection with priority handling
   - Genre transformers for variant normalization
@@ -139,7 +139,7 @@ Deliverables:
 **Status**: Core workflow implemented and battle-tested.
 
 ### Completed features:
-- ✅ Unified `bin/rip_video.sh` — MakeMKV + HandBrakeCLI wrapper with:
+- ✅ Unified `bin/video/rip_video.py` — MakeMKV + HandBrakeCLI wrapper with:
   - Auto-detection of DVD vs Blu-ray discs (via `drutil` and `makemkvcon`)
   - Title-based or date-based staging folders
   - Automatic organization to `Movies/Title (Year)/` structure
@@ -150,7 +150,7 @@ Deliverables:
   - Automatic burn-in of English image-based subtitles (VobSub/PGS) for non-English audio when no soft subs available
   - **Fixed**: HandBrake track numbering calculation (uses sequential position, not stream index)
   - Post-mux of English text-based subtitles (SubRip/ASS/SSA/WebVTT) into MP4
-- ✅ Backfill helper (`bin/backfill_subs.sh`) — mux English soft subs from MKV into existing MP4 without re-encoding
+- ✅ Backfill helper (`bin/video/backfill_subs.py`) — mux English soft subs from MKV into existing MP4 without re-encoding
 - ✅ OCR support for image-based subtitles:
   - Automatic extraction and OCR using Subtitle Edit + Tesseract (when tools available)
   - Manual OCR workflow with `vobsub-to-srt` helper for placeholder SRT creation
@@ -161,7 +161,7 @@ Deliverables:
 - Comprehensive documentation in `docs/video_ripping_guide.md`
 
 ### Remaining enhancements:
-- ✅ Metadata fetching via TMDb/OMDb for tagging MP4 movie files (`bin/tag-movie-metadata.py`)
+- ✅ Metadata fetching via TMDb/OMDb for tagging MP4 movie files (`bin/video/tag-movie-metadata.py`)
 - HDR10/SDR tone mapping strategies for UHD content
 - TV series episode detection and naming automation
 

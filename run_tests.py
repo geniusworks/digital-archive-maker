@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""
+Test runner for digital library scripts.
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+
+
+def run_command(cmd, description):
+    """Run a command and handle the result."""
+    print(f"\n{'='*60}")
+    print(f"Running: {description}")
+    print(f"Command: {' '.join(cmd)}")
+    print('='*60)
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print(result.stdout)
+        if result.stderr:
+            print("STDERR:", result.stderr)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        print("STDOUT:", e.stdout)
+        print("STDERR:", e.stderr)
+        return False
+
+
+def main():
+    """Main test runner."""
+    repo_root = Path(__file__).parent.parent
+    
+    # Check if test dependencies are installed
+    print("Checking test dependencies...")
+    try:
+        import pytest
+        import pytest_cov
+        import pytest_mock
+        import requests_mock
+        print("✅ All test dependencies are available")
+    except ImportError as e:
+        print(f"❌ Missing test dependency: {e}")
+        print("Install with: pip install -r requirements-test.txt")
+        sys.exit(1)
+    
+    # Run different test suites
+    success = True
+    
+    # Unit tests (fast)
+    success &= run_command([
+        sys.executable, "-m", "pytest",
+        "tests/",
+        "-m", "unit",
+        "-v"
+    ], "Unit tests")
+    
+    # Integration tests (may require external tools)
+    success &= run_command([
+        sys.executable, "-m", "pytest",
+        "tests/",
+        "-m", "integration",
+        "-v"
+    ], "Integration tests")
+    
+    # All tests with coverage
+    success &= run_command([
+        sys.executable, "-m", "pytest",
+        "tests/",
+        "--cov=bin",
+        "--cov-report=term-missing",
+        "--cov-report=html",
+        "--cov-fail-under=70"
+    ], "All tests with coverage")
+    
+    if success:
+        print("\n🎉 All tests passed!")
+        print("Coverage report generated in htmlcov/index.html")
+    else:
+        print("\n❌ Some tests failed!")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

@@ -6,9 +6,9 @@ This script reads M3U8 playlist files and updates audio file filenames
 and metadata tags based on the playlist information.
 
 Usage:
-    python3 bin/update-from-m3u.py /path/to/album.m3u8 --dry-run
-    python3 bin/update-from-m3u.py /path/to/album/ --dry-run
-    python3 bin/update-from-m3u.py /path/to/album.m3u8 --force
+    python3 bin/music/update-from-m3u.py /path/to/album.m3u8 --dry-run
+    python3 bin/music/update-from-m3u.py /path/to/album/ --dry-run
+    python3 bin/music/update-from-m3u.py /path/to/album.m3u8 --force
 """
 
 import argparse

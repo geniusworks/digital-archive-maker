@@ -9,11 +9,11 @@ IMPORTANT: This creates a PLACEHOLDER SRT file, not full OCR.
 For actual subtitle text content, use Subtitle Edit GUI with OCR capabilities.
 
 Usage:
-    python3 bin/vobsub_to_srt.py path/to/subtitle.idx
+    python3 bin/video/vobsub_to_srt.py path/to/subtitle.idx
 
 Example:
     cd "/path/to/movie/folder"
-    python3 ~/Herd/digital-library/bin/vobsub_to_srt.py .backfill_ocr_12345.idx
+    python3 ~/Herd/digital-library/bin/video/vobsub_to_srt.py .backfill_ocr_12345.idx
     mv .backfill_ocr_12345.srt "Movie Title (Year).en.srt"
 
 What this script does:
@@ -125,7 +125,7 @@ def main():
         print("Usage: python3 vobsub_to_srt.py <idx_file>")
         print("")
         print("Example:")
-        print("  python3 bin/vobsub_to_srt.py .backfill_ocr_12345.idx")
+        print("  python3 bin/video/vobsub_to_srt.py .backfill_ocr_12345.idx")
         print("")
         print("This creates a placeholder SRT file for muxing into MP4.")
         print("For full OCR, use Subtitle Edit GUI with the corresponding .sub file.")
