@@ -2,7 +2,7 @@
 
 Goal: Build a reliable, mostly automated pipeline to transfer disc-based media you own (for local, personal use) into clean, well-tagged digital files ready for a future media server.
 
-## Recent Major Updates (December 2025)
+## Recent Major Updates (December 2025 - January 2026)
 
 ### 🎵 Music Genre Tagging System Overhaul
 - **Genre metadata tagging (`bin/update-genre-mb.py`)** - Complete rewrite with advanced features:
@@ -21,6 +21,17 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Safe operation** - Dry-run mode and force options for control
   - **Robust import system** - Uses importlib to handle hyphenated filenames
   - **Real-time validation** - Immediate feedback on genre validity
+
+### 🎵 M3U8 Playlist Processing (January 2026)
+- **M3U8 processing script (`bin/update-from-m3u.py`)** - NEW comprehensive playlist processor:
+  - **Filename updates** - Renames files to match M3U8 entries with proper track numbering
+  - **Metadata writing** - Updates artist, title, album, and track number tags
+  - **Smart parsing** - Extracts "Artist - Title" from M3U8 filenames
+  - **Fallback logic** - Uses folder names when artist info not available
+  - **Position matching** - Handles unordered "Track N.flac" files from CD rips
+  - **Format support** - FLAC (Vorbis comments) and MP3 (ID3 tags)
+  - **Generic CD rip support** - Processes "Track 1.flac", "Track 2.flac" with position-based matching
+  - **Multiple metadata sources** - M3U8 filenames, EXTINF titles, folder structure fallbacks
 
 ### 📺 TV Show Metadata Enhancement  
 - **Show metadata tagging (`bin/tag-show-metadata.py`)** - Advanced override system:

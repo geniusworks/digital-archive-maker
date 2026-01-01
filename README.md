@@ -234,6 +234,48 @@ Environment variables:
 
 For manual tag management and media server sync details, see `docs/media_server_setup.md`.
 
+## M3U8 Playlist Processing
+- Script: `bin/update-from-m3u.py`
+- Updates filenames and metadata from M3U8 playlists
+- Supports both FLAC and MP3 formats with proper tag handling
+- Handles generic CD rip filenames ("Track 1.flac", "Track 2.flac")
+- Smart artist/title parsing with folder structure fallbacks
+
+**Usage:**
+```bash
+# Process M3U8 file (dry run)
+python3 bin/update-from-m3u.py /path/to/album.m3u8 --dry-run
+
+# Process folder (finds M3U8 automatically)
+python3 bin/update-from-m3u.py /path/to/album/ --dry-run
+
+# Apply changes
+python3 bin/update-from-m3u.py /path/to/album.m3u8
+
+# Force updates even if metadata appears correct
+python3 bin/update-from-m3u.py /path/to/album.m3u8 --force
+```
+
+**Features:**
+- **Filename updates** - Renames files to match M3U8 entries
+- **Metadata writing** - Updates artist, title, album, and track number tags
+- **Smart parsing** - Extracts "Artist - Title" from M3U8 filenames
+- **Fallback logic** - Uses folder names when artist info not available
+- **Position matching** - Handles unordered "Track N.flac" files from CD rips
+- **Format support** - FLAC (Vorbis comments) and MP3 (ID3 tags)
+
+**Metadata Sources (in priority order):**
+1. M3U8 filename parsing ("Artist - Title" format)
+2. M3U8 EXTINF title information
+3. Parent folder name (for artist fallback)
+4. Filename after track number (for title fallback)
+
+**Use Cases:**
+- CD rips with generic "Track N.flac" filenames
+- Albums with existing M3U8 playlists
+- Various artist compilations
+- Metadata restoration from playlist information
+
 
 ## MPAA rating tagging (movies and shows)
 - Script: `bin/tag-movie-ratings.py`

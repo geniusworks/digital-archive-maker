@@ -452,6 +452,7 @@ mediaflow config --edit raw
 2. **Resume capability** - Checkpoint and resume interrupted operations
 3. **Health monitoring system** - Track library quality over time
 4. **NFO generation** - Generate Jellyfin-compatible metadata files
+5. **🎵 M3U8 PROCESSING ENHANCEMENTS** - Add batch M3U8 processing, recursive folder scanning
 5. **🎯 UNIFIED CLI** - Implement mediaflow command with subcommands
 
 ### Low Priority (Future)
