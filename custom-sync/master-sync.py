@@ -266,11 +266,16 @@ def parse_rsync_stats(output_text):
 
 
 def load_config(config_path):
-    """Load sync configuration from YAML file."""
+    """Load sync configuration from YAML file with environment variable expansion."""
     import yaml
+    import os
+    
     try:
         with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
+            content = f.read()
+            # Expand environment variables in the content
+            expanded_content = os.path.expandvars(content)
+            return yaml.safe_load(expanded_content)
     except FileNotFoundError:
         print(f"Error: Config file not found: {config_path}")
         sys.exit(1)
@@ -1008,6 +1013,18 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
 
 
 def main():
+    # Load environment variables from .env file
+    try:
+        from dotenv import load_dotenv
+        # Get the repository root (parent of custom-sync directory)
+        repo_root = Path(__file__).parent.parent
+        env_file = repo_root / ".env"
+        if env_file.exists():
+            load_dotenv(env_file)
+    except ImportError:
+        # dotenv not available, continue without it
+        pass
+    
     _require_python_deps()
     parser = argparse.ArgumentParser(description="Run multiple library sync jobs")
     parser.add_argument(

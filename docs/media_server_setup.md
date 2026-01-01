@@ -9,11 +9,11 @@ This guide outlines recommended folder structures and filenames so your media se
 - Video library root (examples):
   - Movies: `/Volumes/Data/Media/Library/Movies`
   - TV: `/Volumes/Data/Media/Library/TV`
-  - Disc backups (raw MKV/MP4 by title or date): `${RIPS_ROOT:-/Volumes/Data/Media/Library}/DVDs` and `${RIPS_ROOT:-/Volumes/Data/Media/Library}/Blurays`
+  - Disc backups (raw MKV/MP4 by title or date): `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/DVDs` and `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/Blurays`
 
-Note: `RIPS_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
+Note: `LIBRARY_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
 
-Use the title-named (preferred when Title/Year are known) or date-based folders under `${RIPS_ROOT}` for staging. After verification/renaming, move items into the long-term library roots for your media server.
+Use the title-named (preferred when Title/Year are known) or date-based folders under `${LIBRARY_ROOT}` for staging. After verification/renaming, move items into the long-term library roots for your media server.
 
 ---
 
@@ -213,7 +213,7 @@ Follow Plex/Jellyfin recommendations:
 ---
 
 ## Moving from staging to library
-- Ripping guides output to title-named folders when Title/Year are provided or prompted (e.g., `${RIPS_ROOT}/DVDs/Movie Name (1999)`), otherwise to date-based folders (e.g., `${RIPS_ROOT}/DVDs/2025-09-13`). Verify, then rename/move into library roots as needed.
+- Ripping guides output to title-named folders when Title/Year are provided or prompted (e.g., `${LIBRARY_ROOT}/DVDs/Movie Name (1999)`), otherwise to date-based folders (e.g., `${LIBRARY_ROOT}/DVDs/2025-09-13`). Verify, then rename/move into library roots as needed.
 - Tools such as FileBot or tinyMediaManager can speed up renaming based on online databases.
 
 ### Backfilling English subtitles into existing MP4s
@@ -221,8 +221,8 @@ If your MP4 is missing English soft subtitles but the archival MKV has them (as 
 
 ```
 make backfill-subs \
-  SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
-  DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+  SRC_DIR="${LIBRARY_ROOT}/DVDs/Movie Name (Year)" \
+  DST_DIR="${LIBRARY_ROOT}/Movies/Movie Name (Year)" \
   [INPLACE=yes] [DEFAULT=yes]
 ```
 

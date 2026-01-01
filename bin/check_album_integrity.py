@@ -6,7 +6,7 @@ Validates:
 2. Track listings in `*.m3u8` playlists match `.flac` files present in the folder.
 3. `_cover.jpg` does not exist alongside `cover.jpg`.
 
-By default the script scans the CDs directory under `RIPS_ROOT` (default `/Volumes/Data/Media/Library/CDs`).
+By default the script scans the CDs directory under `LIBRARY_ROOT` (default `/Volumes/Data/Media/Library/CDs`).
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Iterator, List, Optional, Tuple
 
-DEFAULT_RIPS_ROOT = "/Volumes/Data/Media/Library"
+DEFAULT_LIBRARY_ROOT = "/Volumes/Data/Media/Library"
 
 
 @dataclass
@@ -36,7 +36,7 @@ def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "root",
         nargs="?",
-        help="Root directory containing album folders (default: RIPS_ROOT/CDs)",
+        help="Root directory containing album folders (default: LIBRARY_ROOT/CDs)",
     )
     parser.add_argument(
         "--albums",
@@ -85,8 +85,8 @@ def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
 
 
 def get_default_root() -> Path:
-    rips_root = os.environ.get("RIPS_ROOT", DEFAULT_RIPS_ROOT)
-    return Path(rips_root) / "CDs"
+    library_root = os.environ.get("LIBRARY_ROOT", DEFAULT_LIBRARY_ROOT)
+    return Path(library_root) / "CDs"
 
 
 def collect_explicit_albums(root: Path, entries: List[str]) -> List[Path]:

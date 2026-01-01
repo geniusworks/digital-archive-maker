@@ -4,7 +4,7 @@ This guide documents a straightforward, automation-friendly workflow for backing
 
 See also: `docs/workflow_overview.md` for the end-to-end procedures (CDs → FLACs → tagging → sync, and DVD/Blu-ray → MP4s → organize → server).
 
-Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see `.env.sample`). By default, `RIPS_ROOT` is `/Volumes/Data/Media/Library`.
+Tip: This repository centralizes output paths via `.env` using `LIBRARY_ROOT` (see `.env.sample`). By default, `LIBRARY_ROOT` is `/Volumes/Data/Media/Library`.
 
 ---
 
@@ -45,7 +45,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
    # If using the repo script/Makefile, the staging folder will prefer
   # Title (Year) when provided/prompted; otherwise it falls back to a date.
   STAMP=$(date "+%Y-%m-%d")
-  OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$STAMP"
+  OUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$STAMP"
   mkdir -p "$OUTDIR"
    ```
 
@@ -86,7 +86,7 @@ case "$choice" in
  esac
 
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
+OUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 
 makemkvcon mkv disc:0 all "$OUTDIR"
@@ -126,8 +126,8 @@ make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999    # explicit type
 ```
 
 - The script picks the largest MP4 as the main feature and moves it to:
-  - `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`
-- Extras/previews remain in the title-named (if Title/Year known) or date-stamped staging folder under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
+  - `${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`
+- Extras/previews remain in the title-named (if Title/Year known) or date-stamped staging folder under `${LIBRARY_ROOT}/DVDs/` or `${LIBRARY_ROOT}/Blurays/`.
 
 You can adjust the minimum title length MakeMKV considers with `MINLENGTH` (in seconds):
 
@@ -154,16 +154,16 @@ If no API keys are set, tagging scripts will still run, but online lookups are d
 
 Example:
 ```bash
-python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456 --dry-run --verbose
-python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456
+python3 bin/tag-movie-metadata.py "${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456 --dry-run --verbose
+python3 bin/tag-movie-metadata.py "${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4" --imdb-id tt0123456
 
 # Recursively tag an entire Movies folder (tries to infer Title/Year from folder/file names).
 # By default, only missing tags/artwork are filled.
-python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive --dry-run --verbose
-python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive
+python3 bin/tag-movie-metadata.py "${LIBRARY_ROOT}/Movies" --recursive --dry-run --verbose
+python3 bin/tag-movie-metadata.py "${LIBRARY_ROOT}/Movies" --recursive
 
 # Overwrite existing tags/artwork (use carefully)
-python3 bin/tag-movie-metadata.py "${RIPS_ROOT}/Movies" --recursive --force
+python3 bin/tag-movie-metadata.py "${LIBRARY_ROOT}/Movies" --recursive --force
 ```
 
 ## Handling multi-feature discs (double features, TV movies, etc.)
@@ -173,11 +173,11 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
   ```bash
   MINLENGTH=3000 make rip-video TYPE=dvd TITLE="Psycho Double Feature" YEAR=1985
   ```
-  This writes every qualifying `.mkv` to `${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)/` for later processing.
+  This writes every qualifying `.mkv` to `${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)/` for later processing.
 
 - **Identify which MKV is which**. Durations usually match published runtimes. From the staging folder:
   ```bash
-  cd "${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)"
+  cd "${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)"
   for f in *.mkv; do
     echo "== $f =="
     ffprobe -v error -show_entries format=duration:format_tags=title -of json "$f"
@@ -193,10 +193,10 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
     --audio-copy-mask ac3,eac3,dts --audio-fallback aac
   )
 
-  mkdir -p "${RIPS_ROOT}/Movies/Psycho III (1986)"
+  mkdir -p "${LIBRARY_ROOT}/Movies/Psycho III (1986)"
   HandBrakeCLI \
     -i "A3_t00.mkv" \
-    -o "${RIPS_ROOT}/Movies/Psycho III (1986)/Psycho III (1986).mp4" \
+    -o "${LIBRARY_ROOT}/Movies/Psycho III (1986)/Psycho III (1986).mp4" \
     "${HB_OPTS[@]}"
   ```
   Repeat for the second feature (e.g., `Psycho IV The Beginning (1990)`), adjusting input filenames and target folders.
@@ -204,13 +204,13 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
 - **Backfill subtitles per film**. After encoding, call the helper twice, pointing `SRC_DIR` to the shared staging folder but `DST_DIR` to each movie folder:
   ```bash
   make backfill-subs \
-    SRC_DIR="${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)" \
-    DST_DIR="${RIPS_ROOT}/Movies/Psycho III (1986)" \
+    SRC_DIR="${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)" \
+    DST_DIR="${LIBRARY_ROOT}/Movies/Psycho III (1986)" \
     INPLACE=yes DEFAULT=yes
 
   make backfill-subs \
-    SRC_DIR="${RIPS_ROOT}/DVDs/Psycho Double Feature (1985)" \
-    DST_DIR="${RIPS_ROOT}/Movies/Psycho IV The Beginning (1990)" \
+    SRC_DIR="${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)" \
+    DST_DIR="${LIBRARY_ROOT}/Movies/Psycho IV The Beginning (1990)" \
     INPLACE=yes DEFAULT=yes
   ```
 
@@ -260,8 +260,8 @@ Use the provided helper to mux English soft subtitles from your archival MKVs in
 - Makefile target (recommended):
   ```bash
   make backfill-subs \
-    SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
-    DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+    SRC_DIR="${LIBRARY_ROOT}/DVDs/Movie Name (Year)" \
+    DST_DIR="${LIBRARY_ROOT}/Movies/Movie Name (Year)" \
     [INPLACE=yes] [DEFAULT=yes]
   ```
 

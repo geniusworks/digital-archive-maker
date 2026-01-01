@@ -9,7 +9,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)
 ROOT_DIR=$(dirname "$SCRIPT_DIR")
 
 # Defaults
-RIPS_ROOT=${RIPS_ROOT:-/Volumes/Data/Media/Library}
+LIBRARY_ROOT=${LIBRARY_ROOT:-/Volumes/Data/Media/Library}
 MINLENGTH=${MINLENGTH:-120}  # seconds; titles shorter than this are skipped by MakeMKV
 
 # Load .env if present (centralized project config)
@@ -54,8 +54,8 @@ warn_missing_helper mmgplsrv "/Applications/MakeMKV.app/Contents/MacOS/mmgplsrv"
 warn_missing_helper mmccextr "/Applications/MakeMKV.app/Contents/MacOS/mmccextr"
 
 # Ensure output root is writable
-if ! mkdir -p "$RIPS_ROOT" 2>/dev/null; then
-  echo "Cannot create or write to RIPS_ROOT: $RIPS_ROOT" >&2
+if ! mkdir -p "$LIBRARY_ROOT" 2>/dev/null; then
+  echo "Cannot create or write to LIBRARY_ROOT: $LIBRARY_ROOT" >&2
   exit 1
 fi
 
@@ -179,13 +179,13 @@ fi
 # Decide OUTDIR (prefer Title-based; fallback to date)
 if [ -n "$SAFE_TITLE" ]; then
   if [ -n "$SAFE_YEAR" ]; then
-    OUTDIR="$RIPS_ROOT/$DISCDIR/$SAFE_TITLE ($SAFE_YEAR)"
+    OUTDIR="$LIBRARY_ROOT/$DISCDIR/$SAFE_TITLE ($SAFE_YEAR)"
   else
-    OUTDIR="$RIPS_ROOT/$DISCDIR/$SAFE_TITLE"
+    OUTDIR="$LIBRARY_ROOT/$DISCDIR/$SAFE_TITLE"
   fi
 else
   STAMP=$(date "+%Y-%m-%d")
-  OUTDIR="$RIPS_ROOT/$DISCDIR/$STAMP"
+  OUTDIR="$LIBRARY_ROOT/$DISCDIR/$STAMP"
 fi
 mkdir -p "$OUTDIR"
 
@@ -402,7 +402,7 @@ fi
 # If TITLE/YEAR not provided, optionally prompt in interactive shells
 if { [ -z "${TITLE:-}" ] || [ -z "${YEAR:-}" ]; } && [ -t 0 ]; then
   if ls "$OUTDIR"/*.mp4 >/dev/null 2>&1; then
-    printf "Organize main feature into %s/Movies/? [y/N]: " "$RIPS_ROOT"
+    printf "Organize main feature into %s/Movies/? [y/N]: " "$LIBRARY_ROOT"
     read -r _ans
     case "$_ans" in
       y|Y)
@@ -465,7 +465,7 @@ if [ "${TITLE:-}" ] && [ "${YEAR:-}" ]; then
   SAFE_YEAR=$(printf %s "${YEAR}" | tr -cd '0-9' | cut -c1-4)
   [ -n "$SAFE_YEAR" ] || SAFE_YEAR="$YEAR"
 
-  TARGET_DIR="$RIPS_ROOT/$DEST_CATEGORY/$SAFE_TITLE ($SAFE_YEAR)"
+  TARGET_DIR="$LIBRARY_ROOT/$DEST_CATEGORY/$SAFE_TITLE ($SAFE_YEAR)"
   mkdir -p "$TARGET_DIR"
 
   # Pick the largest MP4 as the main feature

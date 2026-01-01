@@ -2,8 +2,8 @@
 # Copy to ~/.abcde.conf and adjust as needed
 
 # Output format and location
-# OUTPUTDIR can be centralized via RIPS_ROOT (see .env.sample). Falls back to /Volumes/Data/Media/Library
-OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs"
+# OUTPUTDIR can be centralized via LIBRARY_ROOT (see .env.sample). Falls back to /Volumes/Data/Media/Library
+OUTPUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/CDs"
 OUTPUTTYPE="flac"
 
 # Actions pipeline

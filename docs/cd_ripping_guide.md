@@ -20,7 +20,7 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
    ```bash
    cp .env.sample .env   # at repo root
    # Option A: let the Makefile load .env automatically (recommended)
-   # Option B: source it in your shell profile so abcde sees RIPS_ROOT
+   # Option B: source it in your shell profile so abcde sees LIBRARY_ROOT
    #   echo 'set -a; . /path/to/repo/.env; set +a' >> ~/.zshrc
    ```
 
@@ -29,14 +29,14 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
    cp ./.abcde.conf.sample ~/.abcde.conf
    ```
 3. Open `~/.abcde.conf` and verify the key settings:
-   - `OUTPUTDIR="${RIPS_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Library/CDs` if `RIPS_ROOT` is unset)
+   - `OUTPUTDIR="${LIBRARY_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Library/CDs` if `LIBRARY_ROOT` is unset)
    - `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
    - `ACTIONS=cddb,getalbumart,encode,tag,move,playlist,clean`
    - `COVERFILE="cover.jpg"`
    - `PLAYLISTS=y` and playlist format ending in `.m3u8`
    - Disc eject after encode via `EJECTCD=y`
 
-Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) to set `OUTPUTDIR`. When you run `make rip-cd`, the Makefile auto-loads `.env` so `abcde` sees `RIPS_ROOT`.
+Note: `~/.abcde.conf` uses `LIBRARY_ROOT` from the environment (defined in `.env`) to set `OUTPUTDIR`. When you run `make rip-cd`, the Makefile auto-loads `.env` so `abcde` sees `LIBRARY_ROOT`.
 
 ---
 
@@ -48,13 +48,13 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
    ```
    Alternative (direct):
    ```bash
-   # ensure your shell has loaded ./.env so RIPS_ROOT is available
+   # ensure your shell has loaded ./.env so LIBRARY_ROOT is available
    set -a; . ./.env; set +a
    abcde
    ```
 3. Resulting structure (example):
    ```
-   ${RIPS_ROOT}/CDs/
+   ${LIBRARY_ROOT}/CDs/
      Artist/
        Album/
          01 - First Track.flac
@@ -79,14 +79,14 @@ Note: `~/.abcde.conf` uses `RIPS_ROOT` from the environment (defined in `.env`) 
   ```
 - Organize a single loose track:
   ```bash
-  ./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Music"
+  ./fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"
   ```
 
 ---
 
 ## Notes
 - Ensure your drive supports accurate audio extraction.
-- Prefer changing `RIPS_ROOT` in `.env` to relocate outputs for all workflows; or override `OUTPUTDIR` in `~/.abcde.conf` if needed.
+- Prefer changing `LIBRARY_ROOT` in `.env` to relocate outputs for all workflows; or override `OUTPUTDIR` in `~/.abcde.conf` if needed.
 - API usage policies (MusicBrainz, Cover Art Archive) apply; consider rate limits.
 
 ---

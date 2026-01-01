@@ -222,7 +222,7 @@ Outputs:
 - Run log: `./log/explicit_tagging.log`
 - Error log (API failures only): `./log/explicit_tagging_errors.log`
 - Cache: `./log/explicit_tagging_cache.json`
-- Playlist of tagged-explicit tracks: `${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs/Explicit.m3u8`
+- Playlist of tagged-explicit tracks: `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/CDs/Explicit.m3u8`
 
 Environment variables:
 - `EXPLICIT_DRY_RUN=1` — do not write FLAC tags (still produces logs/playlist/summary)
@@ -486,7 +486,7 @@ python3 bin/tag-show-metadata.py "/path/to/show" --verbose --recursive --dry-run
 - Verbose logging shows exactly which metadata source is being used
 
 ## Configuration: `.abcde.conf`
-- Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Library/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
+- Output: `FLAC` to `${LIBRARY_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Library/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
 - Uses MusicBrainz for album/track lookup and `getalbumart` in the `ACTIONS` chain.
 - Playlists enabled (`.m3u8`).
 - Ejects the disc after encoding via abcde built-in eject (`EJECTCD=y`).
@@ -507,23 +507,23 @@ Run `make help` for a summary. Common tasks:
 - Notes: you can set `MINLENGTH=1800` to skip short titles and `DEST_CATEGORY=Films` to change the destination category from `Movies`.
 - `make fix-album DIR="/path/to/Artist/Album"` — normalize, tag, covers, playlist
 - `make fetch-covers ROOT="/path/or/library"` — fetch missing `cover.jpg`
-- `make fix-track FILE="/path/file.ext" TARGET="${RIPS_ROOT}/Music"` — organize a single track
+- `make fix-track FILE="/path/file.ext" TARGET="${LIBRARY_ROOT}/Music"` — organize a single track
 - `make compare OLD="/old" NEW="/new" [MODE=albums|artists] [THRESHOLD=90]` — compare two libraries
 - `make backfill-subs SRC_DIR="/path/to/source_mkv_dir" DST_DIR="/path/to/target_mp4_dir" [INPLACE=yes] [DEFAULT=yes]` — mux English soft subs from MKV into existing MP4
 - `make vobsub-to-srt FILE="/path/to/subtitle.idx"` — convert VobSub files to placeholder SRT for muxing
-- `python3 bin/check_album_integrity.py [--show-ok]` — validate album folders (cover, playlists, `_cover.jpg`), scanning `${RIPS_ROOT}/CDs`
+- `python3 bin/check_album_integrity.py [--show-ok]` — validate album folders (cover, playlists, `_cover.jpg`), scanning `${LIBRARY_ROOT}/CDs`
 
 ## Typical workflows
 - Rip a CD to FLAC
   1. Insert disc; run `abcde` (uses `.abcde.conf`).
-  2. Result at `${RIPS_ROOT}/CDs/Artist/Album/NN - Title.flac` with `cover.jpg` and playlist.
+  2. Result at `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac` with `cover.jpg` and playlist.
 
 - Rip and organize a DVD/Blu-ray
   - Staging only:
     - `make rip-video` (auto-detects disc type). In an interactive terminal, the script can prompt to name the staging folder and optionally organize afterward.
   - Rip + organize in one step:
     - `make rip-movie TITLE="Movie Name" YEAR=1999` (auto-detects disc type)
-    - Moves the largest MP4 to `${RIPS_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${RIPS_ROOT}/DVDs/` or `${RIPS_ROOT}/Blurays/`.
+    - Moves the largest MP4 to `${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`; keeps MKVs (and any extras) under `${LIBRARY_ROOT}/DVDs/` or `${LIBRARY_ROOT}/Blurays/`.
   - Auto-detection: The script now automatically detects DVD vs Blu-ray discs. You can still override with `TYPE=dvd` or `TYPE=bluray` if needed.
   - Automatic subtitle burn-in: For non-English audio discs with English image-based subtitles (VobSub/PGS) but no soft English subs, the script automatically burns in the subtitles. Override with `AUDIO_SUBS_POLICY=keep` to disable.
   - Recent fix (Oct 2025): Corrected HandBrake subtitle track numbering calculation for reliable auto-burn across all disc configurations.
@@ -532,14 +532,14 @@ Run `make help` for a summary. Common tasks:
   - Create a new MP4 with subs next to the original:
     ```bash
     make backfill-subs \
-      SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
-      DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)"
+      SRC_DIR="${LIBRARY_ROOT}/DVDs/Movie Name (Year)" \
+      DST_DIR="${LIBRARY_ROOT}/Movies/Movie Name (Year)"
     ```
   - Replace the original in-place and mark subs default:
     ```bash
     make backfill-subs \
-      SRC_DIR="${RIPS_ROOT}/DVDs/Movie Name (Year)" \
-      DST_DIR="${RIPS_ROOT}/Movies/Movie Name (Year)" \
+      SRC_DIR="${LIBRARY_ROOT}/DVDs/Movie Name (Year)" \
+      DST_DIR="${LIBRARY_ROOT}/Movies/Movie Name (Year)" \
       INPLACE=yes DEFAULT=yes
     ```
   - For image-based subtitles (VobSub/PGS): The script will extract subtitle files and provide guidance for manual OCR using tools like Subtitle Edit.
@@ -705,7 +705,7 @@ python3 master-sync.py --skip-tagging
 
 - Audit album integrity (cover + playlists)
   ```bash
-  python3 bin/check_album_integrity.py            # scans ${RIPS_ROOT}/CDs recursively
+  python3 bin/check_album_integrity.py            # scans ${LIBRARY_ROOT}/CDs recursively
   python3 bin/check_album_integrity.py --show-ok  # include OK albums
   python3 bin/check_album_integrity.py --albums "Artist/Album"
   ```
@@ -746,7 +746,7 @@ python3 master-sync.py --skip-tagging
   - Outputs: either grouped summary to stdout or writes `only_in_old.txt` and `only_in_new.txt`.
 
 - Organize a single loose track
-  - `./fix_track.py /path/to/file.ext --target "${RIPS_ROOT}/Music"`
+  - `./fix_track.py /path/to/file.ext --target "${LIBRARY_ROOT}/Music"`
   - Attempts AcoustID+MusicBrainz; falls back to tags/filename; writes to `Artist/Album/NN - Title.ext`.
 
 - Special-case split for a one-file album

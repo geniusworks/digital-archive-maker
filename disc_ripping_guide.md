@@ -35,7 +35,7 @@ sudo ln -s /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/ma
 
 ### 1. Create config file `~/.abcde.conf`:
 ```bash
-OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs"
+OUTPUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/CDs"
 OUTPUTTYPE="flac"
 PADTRACKS=y
 MAXPROCS=2
@@ -50,7 +50,7 @@ abcde -x
 This will:
 - Look up metadata (MusicBrainz)
 - Rip to FLAC
-- Save to `${RIPS_ROOT}/CDs/Artist/Album/Track.flac`
+- Save to `${LIBRARY_ROOT}/CDs/Artist/Album/Track.flac`
 
 ---
 
@@ -66,7 +66,7 @@ case "$DISCTYPE" in
   *) echo "Unknown DISCTYPE: $DISCTYPE" >&2; exit 1 ;;
 esac
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
+OUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 ```
 
@@ -106,7 +106,7 @@ select disc_type in "CD" "DVD" "Blu-ray" "Quit"; do
             break;;
         "DVD"|"Blu-ray")
             title=$(date "+%Y-%m-%d")
-            outdir="${RIPS_ROOT:-/Volumes/Data/Media/Library}/${disc_type//-/}s/$title"
+            outdir="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/${disc_type//-/}s/$title"
             mkdir -p "$outdir"
             makemkvcon mkv disc:0 all "$outdir"
             for f in "$outdir"/*.mkv; do
@@ -137,9 +137,9 @@ Run with:
 ## 📌 Summary
 - FLAC is ideal for archival; MP3 is better for space-constrained playback
 - Ripped files are stored by type/date in:
-  - `${RIPS_ROOT}/CDs/`
-  - `${RIPS_ROOT}/DVDs/`
-  - `${RIPS_ROOT}/Blurays/`
+  - `${LIBRARY_ROOT}/CDs/`
+  - `${LIBRARY_ROOT}/DVDs/`
+  - `${LIBRARY_ROOT}/Blurays/`
 - Transcoded video is `.mp4` H.264 encoded
 
 Use this guide to build a consistent, reliable personal media archive.
