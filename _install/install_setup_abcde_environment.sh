@@ -29,7 +29,7 @@ if [ ! -f "$CLEAN_SCRIPT" ]; then
 #!/bin/bash
 # Example cleanup script after ripping
 
-find /Volumes/Data/Media/Rips/CDs -type f -name '*.flac' -exec metaflac --remove --block-type=PICTURE {} \;
+find /Volumes/Data/Media/Library/CDs -type f -name '*.flac' -exec metaflac --remove --block-type=PICTURE {} \;
 echo "Removed embedded album art from all FLACs in ripped CD folder (if needed)."
 EOF
     chmod +x "$CLEAN_SCRIPT"

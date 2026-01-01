@@ -17,7 +17,7 @@ Each step links to the detailed guide or script.
   - `make rip-cd`
 
 Output (default):
-- `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs/Artist/Album/NN - Title.flac`
+- `${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs/Artist/Album/NN - Title.flac`
 - `cover.jpg`
 - `Album.m3u8`
 

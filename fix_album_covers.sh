@@ -3,8 +3,8 @@
 # Usage:
 #   ./find_missing_covers.sh [/path/to/album/or/library]
 #   Examples:
-#     ./find_missing_covers.sh /Volumes/Data/Media/Rips/CDs       # full scan
-#     ./find_missing_covers.sh /Volumes/Data/Media/Rips/CDs/U2/The Joshua Tree  # specific album
+#     ./find_missing_covers.sh /Volumes/Data/Media/Library/CDs       # full scan
+#     ./find_missing_covers.sh /Volumes/Data/Media/Library/CDs/U2/The Joshua Tree  # specific album
 #   Defaults to current directory if no argument is given.
 
 set -e

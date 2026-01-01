@@ -29,7 +29,7 @@ Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common 
    cp ./.abcde.conf.sample ~/.abcde.conf
    ```
 3. Open `~/.abcde.conf` and verify the key settings:
-   - `OUTPUTDIR="${RIPS_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Rips/CDs` if `RIPS_ROOT` is unset)
+   - `OUTPUTDIR="${RIPS_ROOT}/CDs"` (defaults to `/Volumes/Data/Media/Library/CDs` if `RIPS_ROOT` is unset)
    - `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
    - `ACTIONS=cddb,getalbumart,encode,tag,move,playlist,clean`
    - `COVERFILE="cover.jpg"`

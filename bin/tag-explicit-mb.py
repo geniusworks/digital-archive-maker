@@ -24,7 +24,7 @@ _repo_root = Path(__file__).resolve().parent.parent
 load_dotenv(_repo_root / ".env")
 
 # --- Configuration ---
-DEFAULT_ROOT = "/Volumes/Data/Media/Rips/CDs"  # default library root
+DEFAULT_ROOT = "/Volumes/Data/Media/Library/CDs"  # default library root
 USER_AGENT = ("JellyfinTagger", "1.0", "youremail@example.com")
 RATE_LIMIT = 1.0  # seconds between MusicBrainz API requests
 ITUNES_RATE_LIMIT = 0.25

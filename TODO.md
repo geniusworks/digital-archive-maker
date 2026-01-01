@@ -158,7 +158,7 @@ digital-library/
 ```yaml
 # config/media.yml - NEW: Unified configuration
 paths:
-  music_library: "/Volumes/Data/Media/Rips"
+  music_library: "/Volumes/Data/Media/Library"
   video_library: "/Volumes/Data/Media/Videos"
   log_dir: "./log"
 
@@ -341,7 +341,7 @@ mediaflow library organize
 $ mediaflow setup
 🎵 Welcome to MediaFlow! Let's set up your media library.
 
-📁 Where is your music library? [/Volumes/Data/Media/Rips]: 
+📁 Where is your music library? [/Volumes/Data/Media/Library]: 
 🎬 Where is your video library? [/Volumes/Data/Media/Videos]:
 🔑 Do you have API keys? (MusicBrainz, TMDb) [y/N]: y
 🎯 What's your primary media server? [Jellyfin/Plex/Emby]: Jellyfin
@@ -355,7 +355,7 @@ $ mediaflow setup
 $ mediaflow music tag --recursive
 
 🎵 MediaFlow Music Tagger v1.0
-📁 Scanning: /Volumes/Data/Media/Rips (6,543 files found)
+📁 Scanning: /Volumes/Data/Media/Library (6,543 files found)
 ⚡ Processing: 1,234/6,543 (18.9%) • ETA: 3m 24s
 🎼 Last processed: The Beatles - Abbey Road • Genre: rock
 📊 Statistics: 1,200 tagged • 34 skipped • 0 errors

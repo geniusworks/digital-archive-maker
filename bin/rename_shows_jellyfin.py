@@ -316,7 +316,7 @@ def plan_show(show_dir, strip_years=False):
 
 def main():
     parser = argparse.ArgumentParser(description="Rename shows under the Shows folder to Jellyfin naming convention")
-    parser.add_argument("--root", default="/Volumes/Data/Media/Rips/Shows", help="Shows root folder")
+    parser.add_argument("--root", default="/Volumes/Data/Media/Library/Shows", help="Shows root folder")
     parser.add_argument("--show", action="append", default=[], help="Only process a specific show folder name (repeatable)")
     parser.add_argument("--dry-run", action="store_true", help="Show planned changes without executing")
     parser.add_argument("--strip-years", action="store_true", help="Remove trailing (YYYY) from episode titles in filenames")

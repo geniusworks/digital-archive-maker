@@ -75,7 +75,7 @@ fetch-covers:
 	@bash ./fix_album_covers.sh "$(ROOT)"
 
 fix-track:
-	@if [ -z "$(FILE)" ] || [ -z "$(TARGET)" ]; then echo "Usage: make fix-track FILE=\"/path/to/file.ext\" TARGET=\"/Volumes/Data/Media/Rips/Music\"" >&2; exit 1; fi
+	@if [ -z "$(FILE)" ] || [ -z "$(TARGET)" ]; then echo "Usage: make fix-track FILE=\"/path/to/file.ext\" TARGET=\"/Volumes/Data/Media/Library/Music\"" >&2; exit 1; fi
 	@python3 ./fix_track.py "$(FILE)" --target "$(TARGET)"
 
 compare:

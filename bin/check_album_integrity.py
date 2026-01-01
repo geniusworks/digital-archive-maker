@@ -6,7 +6,7 @@ Validates:
 2. Track listings in `*.m3u8` playlists match `.flac` files present in the folder.
 3. `_cover.jpg` does not exist alongside `cover.jpg`.
 
-By default the script scans the CDs directory under `RIPS_ROOT` (default `/Volumes/Data/Media/Rips/CDs`).
+By default the script scans the CDs directory under `RIPS_ROOT` (default `/Volumes/Data/Media/Library/CDs`).
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Iterator, List, Optional, Tuple
 
-DEFAULT_RIPS_ROOT = "/Volumes/Data/Media/Rips"
+DEFAULT_RIPS_ROOT = "/Volumes/Data/Media/Library"
 
 
 @dataclass

@@ -4,7 +4,7 @@ This guide documents a straightforward, automation-friendly workflow for backing
 
 See also: `docs/workflow_overview.md` for the end-to-end procedures (CDs → FLACs → tagging → sync, and DVD/Blu-ray → MP4s → organize → server).
 
-Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see `.env.sample`). By default, `RIPS_ROOT` is `/Volumes/Data/Media/Rips`.
+Tip: This repository centralizes output paths via `.env` using `RIPS_ROOT` (see `.env.sample`). By default, `RIPS_ROOT` is `/Volumes/Data/Media/Library`.
 
 ---
 
@@ -45,7 +45,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
    # If using the repo script/Makefile, the staging folder will prefer
   # Title (Year) when provided/prompted; otherwise it falls back to a date.
   STAMP=$(date "+%Y-%m-%d")
-  OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$STAMP"
+  OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$STAMP"
   mkdir -p "$OUTDIR"
    ```
 
@@ -86,7 +86,7 @@ case "$choice" in
  esac
 
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$TITLE"
+OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 
 makemkvcon mkv disc:0 all "$OUTDIR"
@@ -333,11 +333,11 @@ If automatic subtitle burn-in fails or subtitles don't appear in the output:
 ## Recommended naming for media servers
 - Movies:
   ```
-  /Volumes/Data/Media/Rips/Movies/Movie Name (Year)/Movie Name (Year).mp4
+  /Volumes/Data/Media/Library/Movies/Movie Name (Year)/Movie Name (Year).mp4
   ```
 - TV:
   ```
-  /Volumes/Data/Media/Rips/TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
+  /Volumes/Data/Media/Library/TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
   ```
 
 See `docs/media_server_setup.md` for more complete examples and tips.

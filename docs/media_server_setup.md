@@ -5,11 +5,11 @@ This guide outlines recommended folder structures and filenames so your media se
 ---
 
 ## Library roots
-- Music library root: `/Volumes/Data/Media/Rips/CDs`
+- Music library root: `/Volumes/Data/Media/Library/CDs`
 - Video library root (examples):
-  - Movies: `/Volumes/Data/Media/Rips/Movies`
-  - TV: `/Volumes/Data/Media/Rips/TV`
-  - Disc backups (raw MKV/MP4 by title or date): `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/DVDs` and `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/Blurays`
+  - Movies: `/Volumes/Data/Media/Library/Movies`
+  - TV: `/Volumes/Data/Media/Library/TV`
+  - Disc backups (raw MKV/MP4 by title or date): `${RIPS_ROOT:-/Volumes/Data/Media/Library}/DVDs` and `${RIPS_ROOT:-/Volumes/Data/Media/Library}/Blurays`
 
 Note: `RIPS_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
 
@@ -20,7 +20,7 @@ Use the title-named (preferred when Title/Year are known) or date-based folders 
 ## Music naming (albums)
 Recommended structure (matches `abcde` config in this repo):
 ```
-/Volumes/Data/Media/Rips/CDs/
+/Volumes/Data/Media/Library/CDs/
   Artist/
     Album/
       01 - Track Title.flac
@@ -61,7 +61,7 @@ If optional API credentials are not configured (e.g., Spotify), the script will 
   - `./log/explicit_tagging_errors.log`
   - `./log/explicit_tagging_cache.json`
 - Playlist of explicit tracks at music library root:
-  - `/Volumes/Data/Media/Rips/CDs/Explicit.m3u8`
+  - `/Volumes/Data/Media/Library/CDs/Explicit.m3u8`
 
 Environment variables:
 - `EXPLICIT_DRY_RUN=1` — preview without writing tags
@@ -115,7 +115,7 @@ This repo provides intelligent sync capabilities that respect explicit content t
 #### Single library sync
 ```bash
 python3 bin/sync-library.py \
-  --src "/Volumes/Data/Media/Rips/CDs" \
+  --src "/Volumes/Data/Media/Library/CDs" \
   --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
   --exclude-unknown
@@ -132,19 +132,19 @@ global:
 
 sync_jobs:
   - name: "clean-cd-library"
-    src: "/Volumes/Data/Media/Rips/CDs"
+    src: "/Volumes/Data/Media/Library/CDs"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
     
   - name: "clean-digital-library"
-    src: "/Volumes/Data/Media/Rips/Music"
+    src: "/Volumes/Data/Media/Library/Music"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
 
   - name: "clean-movies-library"
-    src: "/Volumes/Data/Media/Rips/Movies"
+    src: "/Volumes/Data/Media/Library/Movies"
     dest: "jellyfin@server:/mnt/media/Movies"
     media: "movies"
     max_mpaa: "PG-13"
@@ -187,7 +187,7 @@ python3 master-sync.py  # Will clean up orphaned folders
 ## Movie naming
 Follow Plex/Jellyfin recommendations:
 ```
-/Volumes/Data/Media/Rips/Movies/
+/Volumes/Data/Media/Library/Movies/
   Movie Name (Year)/
     Movie Name (Year).mp4
     Movie Name (Year).nfo   # optional
@@ -200,7 +200,7 @@ Follow Plex/Jellyfin recommendations:
 
 ## TV series naming
 ```
-/Volumes/Data/Media/Rips/TV/
+/Volumes/Data/Media/Library/TV/
   Show Name/
     Season 01/
       Show Name - S01E01 - Episode Title.mp4

@@ -9,7 +9,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)
 ROOT_DIR=$(dirname "$SCRIPT_DIR")
 
 # Defaults
-RIPS_ROOT=${RIPS_ROOT:-/Volumes/Data/Media/Rips}
+RIPS_ROOT=${RIPS_ROOT:-/Volumes/Data/Media/Library}
 MINLENGTH=${MINLENGTH:-120}  # seconds; titles shorter than this are skipped by MakeMKV
 
 # Load .env if present (centralized project config)

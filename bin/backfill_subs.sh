@@ -2,8 +2,8 @@
 # Backfill English soft subtitles from a source MKV folder into an existing MP4
 # Usage:
 #   bin/backfill_subs.sh \
-#     "/Volumes/Data/Media/Rips/DVDs/Movie Name (Year)" \
-#     "/Volumes/Data/Media/Rips/Movies/Movie Name (Year)"
+#     "/Volumes/Data/Media/Library/DVDs/Movie Name (Year)" \
+#     "/Volumes/Data/Media/Library/Movies/Movie Name (Year)"
 #
 # Behavior:
 # - Picks the largest MKV in the source folder as the source for subtitles.

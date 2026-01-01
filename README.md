@@ -222,7 +222,7 @@ Outputs:
 - Run log: `./log/explicit_tagging.log`
 - Error log (API failures only): `./log/explicit_tagging_errors.log`
 - Cache: `./log/explicit_tagging_cache.json`
-- Playlist of tagged-explicit tracks: `${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs/Explicit.m3u8`
+- Playlist of tagged-explicit tracks: `${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs/Explicit.m3u8`
 
 Environment variables:
 - `EXPLICIT_DRY_RUN=1` — do not write FLAC tags (still produces logs/playlist/summary)
@@ -317,7 +317,7 @@ The override system now supports IMDb ID as the definitive key, solving conflict
 **Managing IMDb ID overrides:**
 ```bash
 # List movies with their IMDb IDs
-python3 bin/set-movie-imdb-override.py --list --directory "/Volumes/Data/Media/Rips/Movies"
+python3 bin/set-movie-imdb-override.py --list --directory "/Volumes/Data/Media/Library/Movies"
 
 # Add IMDb ID-based override (reads IMDb ID from file metadata)
 python3 bin/set-movie-imdb-override.py --add "/path/to/movie.mp4" --rating "R"
@@ -486,7 +486,7 @@ python3 bin/tag-show-metadata.py "/path/to/show" --verbose --recursive --dry-run
 - Verbose logging shows exactly which metadata source is being used
 
 ## Configuration: `.abcde.conf`
-- Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Rips/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
+- Output: `FLAC` to `${RIPS_ROOT}/CDs` (defaults to `/Volumes/Data/Media/Library/CDs`) using format `${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}`.
 - Uses MusicBrainz for album/track lookup and `getalbumart` in the `ACTIONS` chain.
 - Playlists enabled (`.m3u8`).
 - Ejects the disc after encoding via abcde built-in eject (`EJECTCD=y`).
@@ -608,7 +608,7 @@ Run `make help` for a summary. Common tasks:
   ```bash
   # Single sync job
   python3 bin/sync-library.py \
-    --src "/Volumes/Data/Media/Rips/CDs" \
+    --src "/Volumes/Data/Media/Library/CDs" \
     --dest "/path/to/jellyfin/music" \
     --exclude-explicit \
     --dry-run
@@ -618,7 +618,7 @@ Run `make help` for a summary. Common tasks:
   
   # Shows library sync (no rating filtering yet)
   python3 bin/sync-library.py \
-    --src "/Volumes/Data/Media/Rips/Shows" \
+    --src "/Volumes/Data/Media/Library/Shows" \
     --dest "jellyfin@10.0.4.75:/mnt/media/Shows" \
     --media shows \
     --dry-run
@@ -644,21 +644,21 @@ global:
 sync_jobs:
   # Clean CD library
   - name: "clean-cd-library"
-    src: "/Volumes/Data/Media/Rips/CDs"
+    src: "/Volumes/Data/Media/Library/CDs"
     dest: "jellyfin@10.0.4.75:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
     
   # Clean digital library
   - name: "clean-digital-library"
-    src: "/Volumes/Data/Media/Rips/Music"
+    src: "/Volumes/Data/Media/Library/Music"
     dest: "jellyfin@10.0.4.75:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
 
   # Clean movies library
   - name: "clean-movies-library"
-    src: "/Volumes/Data/Media/Rips/Movies"
+    src: "/Volumes/Data/Media/Library/Movies"
     dest: "jellyfin@10.0.4.75:/mnt/media/Movies"
     media: "movies"
     max_mpaa: "PG-13"

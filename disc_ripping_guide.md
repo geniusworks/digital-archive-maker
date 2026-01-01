@@ -35,7 +35,7 @@ sudo ln -s /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/ma
 
 ### 1. Create config file `~/.abcde.conf`:
 ```bash
-OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/CDs"
+OUTPUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/CDs"
 OUTPUTTYPE="flac"
 PADTRACKS=y
 MAXPROCS=2
@@ -66,7 +66,7 @@ case "$DISCTYPE" in
   *) echo "Unknown DISCTYPE: $DISCTYPE" >&2; exit 1 ;;
 esac
 TITLE=$(date "+%Y-%m-%d")
-OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/$DISCDIR/$TITLE"
+OUTDIR="${RIPS_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$TITLE"
 mkdir -p "$OUTDIR"
 ```
 
@@ -106,7 +106,7 @@ select disc_type in "CD" "DVD" "Blu-ray" "Quit"; do
             break;;
         "DVD"|"Blu-ray")
             title=$(date "+%Y-%m-%d")
-            outdir="${RIPS_ROOT:-/Volumes/Data/Media/Rips}/${disc_type//-/}s/$title"
+            outdir="${RIPS_ROOT:-/Volumes/Data/Media/Library}/${disc_type//-/}s/$title"
             mkdir -p "$outdir"
             makemkvcon mkv disc:0 all "$outdir"
             for f in "$outdir"/*.mkv; do

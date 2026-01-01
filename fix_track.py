@@ -10,7 +10,7 @@ import acoustid
 import musicbrainzngs
 
 # ===== CONFIG =====
-TARGET_DIR = "/Volumes/Data/Media/Rips/Music"
+TARGET_DIR = "/Volumes/Data/Media/Library/Music"
 ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY", "")
 musicbrainzngs.set_useragent("FixTrackScript", "1.0", "testing@example.com")
 
