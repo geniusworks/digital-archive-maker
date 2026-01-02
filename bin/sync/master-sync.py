@@ -269,12 +269,26 @@ def load_config(config_path):
     """Load sync configuration from YAML file with environment variable expansion."""
     import yaml
     import os
+    import re
+    
+    def expand_env_vars(text):
+        """Expand environment variables with ${VAR:-default} syntax support."""
+        def replace_var(match):
+            var_expr = match.group(1)
+            if ':-' in var_expr:
+                var, default = var_expr.split(':-', 1)
+                return os.environ.get(var, default)
+            else:
+                return os.environ.get(var_expr, '')
+        
+        # Handle ${VAR} and ${VAR:-default} patterns
+        return re.sub(r'\$\{([^}]+)\}', replace_var, text)
     
     try:
         with open(config_path, 'r') as f:
             content = f.read()
             # Expand environment variables in the content
-            expanded_content = os.path.expandvars(content)
+            expanded_content = expand_env_vars(content)
             return yaml.safe_load(expanded_content)
     except FileNotFoundError:
         print(f"Error: Config file not found: {config_path}")

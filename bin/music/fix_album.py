@@ -182,7 +182,7 @@ def main():
         os.chdir(original_dir)
     
     # Get script directory (parent of music/ directory)
-    script_dir = Path(__file__).parent.parent
+    script_dir = Path(__file__).parent.parent.parent
     
     # Run metadata fix script
     print("Running metadata fix script...")

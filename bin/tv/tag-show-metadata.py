@@ -15,7 +15,7 @@ try:
 except ImportError:
     MUTAGEN_AVAILABLE = False
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
 _CACHE_FILE = _LOG_DIR / "show_metadata_cache.json"
 

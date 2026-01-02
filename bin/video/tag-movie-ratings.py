@@ -28,7 +28,7 @@ from pathlib import Path
 
 # Constants
 RATING_TAG = "©rat"  # Copyright Rating field for MPAA ratings
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
 MOVIE_CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
 MOVIE_OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.json"

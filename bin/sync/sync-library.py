@@ -366,7 +366,7 @@ def main():
 
     src = os.path.abspath(args.src)
 
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     default_exclude_file = os.path.join(repo_root, "log", "sync_exclude.txt")
     exclude_file = args.exclude_file or default_exclude_file
 

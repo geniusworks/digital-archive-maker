@@ -20,7 +20,7 @@ from mutagen.id3 import ID3NoHeaderError
 from tqdm import tqdm
 
 # Load .env from repo root
-_repo_root = Path(__file__).resolve().parent.parent
+_repo_root = Path(__file__).resolve().parent.parent.parent
 load_dotenv(_repo_root / ".env")
 
 # --- Configuration ---
@@ -34,7 +34,7 @@ SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", "").strip()
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "").strip()
 SPOTIFY_ENABLED = bool(SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET)
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(REPO_ROOT, "log")
 LOG_FILE = os.path.join(LOG_DIR, "explicit_tagging.log")
 CACHE_FILE = os.path.join(LOG_DIR, "explicit_tagging_cache.json")
