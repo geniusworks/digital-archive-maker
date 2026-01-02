@@ -10,6 +10,7 @@ log/
 # Ignore local env and OS files
 .env
 .DS_Store
+Icon*
 
 # Python caches
 __pycache__/

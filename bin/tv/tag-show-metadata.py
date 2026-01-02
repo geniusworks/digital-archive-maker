@@ -528,7 +528,8 @@ def main():
                     
                     show_name = omdb_data.get('Title', 'Unknown')
                     show_year_override = omdb_data.get('Year', '').split('–')[0]
-                    print(f"  IMDb show (override): {show_name} ({show_year_override}) [id={manual_override['imdb_id']}]")
+                    if verbose:
+                        print(f"  IMDb show (override): {show_name} ({show_year_override}) [id={manual_override['imdb_id']}]")
                     
                     episode_title = local_title or f"Episode {episode}"
                     if show_name and episode_title:
@@ -551,9 +552,11 @@ def main():
                     try:
                         show_info = _tmdb_get_json(f"/tv/{show_id}", {"language": args.language})
                         if show_info:
-                            print(f"  TMDb show (override): {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]")
+                            if verbose:
+                                print(f"  TMDb show (override): {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]")
                     except Exception:
-                        print(f"  TMDb show (override): id={show_id}")
+                        if verbose:
+                            print(f"  TMDb show (override): id={show_id}")
                     
                     ep_data = _tmdb_get_episode(cache, show_id, season, episode, language=args.language)
                     cache_dirty = True
@@ -561,14 +564,17 @@ def main():
                         ep_nf_key = (int(show_id), int(season), int(episode))
                         if ep_nf_key not in printed_episode_not_found:
                             if local_title:
-                                print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
+                                if verbose:
+                                    print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
                             else:
-                                print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
+                                if verbose:
+                                    print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
                             printed_episode_not_found.add(ep_nf_key)
                         skipped += 1
                         continue
                 else:
-                    print(f"  Invalid override for {override_key}")
+                    if verbose:
+                        print(f"  Invalid override for {override_key}")
                     skipped += 1
                     continue
                     
@@ -627,7 +633,8 @@ def main():
                 if show_id is None:
                     show_nf_key = (show_title or "", show_year or "")
                     if show_nf_key not in printed_show_not_found:
-                        print(f"  No TMDb show match for: {show_title} ({show_year})")
+                        if verbose:
+                            print(f"  No TMDb show match for: {show_title} ({show_year})")
                         printed_show_not_found.add(show_nf_key)
                     skipped += 1
                     cache_dirty = True
@@ -640,11 +647,14 @@ def main():
                         matched_name = cached_show.get("name") or show_title
                         matched_date = cached_show.get("first_air_date")
                         if matched_date:
-                            print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]")
+                            if verbose:
+                                print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]")
                         else:
-                            print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]")
+                            if args.verbose:
+                                print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]")
                     else:
-                        print(f"  TMDb show match: {show_title} ({show_year}) -> id={show_id}")
+                        if args.verbose:
+                            print(f"  TMDb show match: {show_title} ({show_year}) -> id={show_id}")
                     printed_show_match.add(show_match_key)
 
             # Get episode data (skip for IMDb shows since we created it above)
@@ -660,9 +670,11 @@ def main():
                     ep_nf_key = (int(show_id), int(season), int(episode))
                     if ep_nf_key not in printed_episode_not_found:
                         if local_title:
-                            print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
+                            if verbose:
+                                print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
                         else:
-                            print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
+                            if verbose:
+                                print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
                         printed_episode_not_found.add(ep_nf_key)
                     skipped += 1
                     continue

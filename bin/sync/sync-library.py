@@ -521,9 +521,11 @@ def main():
                 # If we can't create it, that's okay - just continue
                 pass
 
-    # Exclude macOS .DS_Store files from all sync operations (Jellyfin/Ubuntu don't need them)
+    # Exclude macOS .DS_Store and Icon files from all sync operations (Jellyfin/Ubuntu don't need them)
     patterns.append(".DS_Store")
     patterns.append("*/.DS_Store")
+    patterns.append("Icon*")
+    patterns.append("*/Icon*")
 
     _write_exclude_file(exclude_file, patterns)
 
