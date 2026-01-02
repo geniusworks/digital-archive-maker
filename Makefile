@@ -84,7 +84,7 @@ fix-track:
 
 compare:
 	@if [ -z "$(OLD)" ] || [ -z "$(NEW)" ]; then echo "Usage: make compare OLD=\"/old/library\" NEW=\"/new/library\" [MODE=albums|artists] [THRESHOLD=90]" >&2; exit 1; fi
-	@python3 bin/sync/compare_music.py $(OLD) $(NEW) $(if $(MODE),--$(MODE),) $(if $(THRESHOLD),--threshold $(THRESHOLD),)
+	@python3 bin/music/compare_music.py $(OLD) $(NEW) $(if $(MODE),--$(MODE),) $(if $(THRESHOLD),--threshold $(THRESHOLD),)
 
 backfill-subs:
 	@if [ -z "$(SRC_DIR)" ] || [ -z "$(DST_DIR)" ]; then \
@@ -105,7 +105,7 @@ set-explicit:
 	@if [ -z "$(PATH)" ] || [ -z "$(VALUE)" ]; then \
 	  echo "Usage: make set-explicit PATH=\"/path/to/file.or.album\" VALUE=\"Yes|No|Unknown\" [--album]" >&2; exit 1; \
 	fi
-	@python3 bin/metadata/set_explicit.py "$(PATH)" "$(VALUE)" $(if $(ALBUM),--album,)
+	@python3 bin/music/set_explicit.py "$(PATH)" "$(VALUE)" $(if $(ALBUM),--album,)
 
 clean-playlists:
 	@python3 bin/utils/clean_playlists.py "$(ROOT)" $(if $(REPLACE),--replace,)

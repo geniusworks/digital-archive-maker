@@ -45,15 +45,14 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
     - `fix_album_covers.py` — fetch missing `cover.jpg` via Cover Art Archive (via MusicBrainz)
     - `fix_metadata.py` — validates and fixes FLAC tags based on filename pattern
     - `fix_track.py` — organizes a single loose track using AcoustID/MusicBrainz
+    - `set_explicit.py` — set `EXPLICIT=Yes|No|Unknown` tags for FLAC files
+    - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist
   - `bin/video/`
     - `rip_video.py` — rip DVD/Blu-ray via MakeMKV + HandBrakeCLI (no interactive prompts)
     - `backfill_subs.py` — mux English soft subs from MKV into existing MP4 (no re-encode)
-  - `bin/metadata/`
-    - `set_explicit.py` — set `EXPLICIT=Yes|No|Unknown` tags for FLAC files
   - `bin/utils/`
     - `clean_playlists.py` — normalize `.m3u` to `.m3u8` and validate track references
   - `bin/sync/`
-    - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist
   - `bin/sync/`
     - `master-sync.py` — run multiple sync jobs from YAML config; automatically runs explicit tagging before each sync
     - `sync-config.yaml` — define source/destination mappings (gitignored)
@@ -750,7 +749,7 @@ python3 bin/sync/master-sync.py --skip-tagging
   - Scans for album folders containing FLACs but missing `cover.jpg`, downloads 1000x1000 JPEG.
 
 - Compare two music libraries
-  - `python3 bin/sync/compare_music.py /old/library /new/library [--threshold 90] [--albums|--artists]`
+  - `python3 bin/music/compare_music.py /old/library /new/library [--threshold 90] [--albums|--artists]`
   - Outputs: either grouped summary to stdout or writes `only_in_old.txt` and `only_in_new.txt`.
 
 - Organize a single loose track

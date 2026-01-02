@@ -80,7 +80,7 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `bin/music/fix_album_covers.py` — fills in missing `cover.jpg` (1000×1000) via Cover Art Archive.
 - `bin/music/fix_metadata.py` — validates and (optionally) fixes `TITLE/ARTIST/ALBUM/TRACKNUMBER` based on `NN - Title.flac` and folder structure.
 - `bin/music/fix_track.py` — organizes a single loose track using tags/AcoustID/MusicBrainz → `Artist/Album/NN - Title.ext`.
-- `bin/sync/compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
+- `bin/music/compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
 - `bin/music/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
 - `bin/video/tag-movie-metadata.py` — tags MP4 files with rich movie metadata (title/year/plot/genres/director/cast/rating/artwork) via TMDb/OMDb using IMDb ID (and supports title/year search).
 - `bin/sync/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
