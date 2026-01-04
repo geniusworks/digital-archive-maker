@@ -803,7 +803,7 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=F
         return False
 
 
-def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False, verbose=False):
+def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False, verbose=False, skip_tagging=False):
     """Run a single sync job and return statistics."""
     if verbose:
         print(f"\n{'='*60}")
@@ -832,7 +832,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
     effective_dry_run = bool(dry_run or job.get("dry_run", False) or global_opts.get("dry_run", False))
 
     # Run tagging first unless dry run
-    if not effective_dry_run:
+    if not effective_dry_run and not skip_tagging:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
             tag_metadata = media in {"movies", "shows", "cartoons"}
@@ -1184,6 +1184,12 @@ def main():
         action="store_true",
         help="Verbose console output (disables quiet mode)"
     )
+
+    parser.add_argument(
+        "--skip-tagging",
+        action="store_true",
+        help="Skip the pre-sync tagging phase (explicit/genre/metadata)"
+    )
     
     args = parser.parse_args()
     
@@ -1230,6 +1236,9 @@ def main():
     
     quiet = not bool(args.verbose)
 
+    if args.skip_tagging:
+        print("\nSkipping tagging phase for all jobs.")
+
     for job in jobs:
         stats = run_sync_job(
             job,
@@ -1238,6 +1247,7 @@ def main():
             args.dry_run,
             quiet=quiet,
             verbose=args.verbose,
+            skip_tagging=args.skip_tagging,
         )
         job_stats_list.append(stats)
         if stats.get("success"):
