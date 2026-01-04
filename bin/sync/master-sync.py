@@ -19,7 +19,7 @@ from pathlib import Path
 _RSYNC_PROGRESS_RE = re.compile(r"^\s*\d+(?:\.\d+)?[KMG]?\s+\d+%")
 
 
-def _stream_process_output(process, *, quiet=False, label=None):
+def _stream_process_output(process, *, quiet=False, label=None, capture_lines=None):
     """Stream a subprocess' stdout (and optionally filtered stderr) to console.
 
     In quiet mode:
@@ -35,53 +35,180 @@ def _stream_process_output(process, *, quiet=False, label=None):
         if not stripped:
             return False
 
-        # tqdm progress lines are handled separately (single-row updates).
-        if stripped.startswith("Tagging audio files:"):
+        # Suppress rsync's file list chatter in quiet mode.
+        if stripped in {"sending incremental file list", "./"}:
+            return False
+        # Drop directory listing spam (e.g. "Foo/") but keep rsync stats.
+        if stripped.endswith("/") and not stripped.startswith("Number of"):
             return False
 
-        # Suppress high-volume no-op chatter from taggers.
-        if stripped.startswith("Processing:") and "No changes needed" not in stripped:
-            # Allow the tagger to show the file being processed only in non-quiet.
+        # tqdm progress lines are handled separately (single-row updates).
+        if stripped.startswith(("Tagging audio files:", "Tagging genre:")):
             return False
+
+        # Per-item processing lines are handled separately as a single in-place progress row.
+        if stripped.startswith("Processing:"):
+            return False
+
+        # Still drop the very high-volume no-op line.
         if stripped.endswith("No changes needed"):
             return False
+
+        # Quiet-mode: sync-job output is mostly summary noise (we already print a full summary
+        # at the end of master-sync). Keep errors and progress, but suppress routine stats.
+        if label and not str(label).startswith("Tagging "):
+            if stripped.startswith((
+                "Number of files:",
+                "Number of created files:",
+                "Number of deleted files:",
+                "Number of regular files transferred:",
+                "Total file size:",
+                "Total transferred file size:",
+                "Literal data:",
+                "Matched data:",
+                "File list size:",
+                "File list generation time:",
+                "File list transfer time:",
+                "Total bytes sent:",
+                "Total bytes received:",
+                "sent ",
+                "received ",
+                "total size is ",
+                "speedup is",
+                "Scanned files:",
+                "Excluded ",
+                "Overrides matched ",
+                "Tag read errors treated as ",
+                "Exclude file:",
+            )):
+                return False
+
+        # Quiet-mode: keep taggers concise; move detailed stats to verbose.
+        if label == "Tagging genre":
+            if stripped.startswith((
+                "Processed:",
+                "Updating genre metadata for ",
+                "Saved genre cache",
+                "Saved ",
+                "Updated ",
+            )):
+                return False
+
+        if label == "Tagging movie ratings":
+            if stripped.startswith((
+                "Using TMDb API",
+                "Using OMDb API",
+                "No TMDB_API_KEY",
+                "Processing ",
+            )):
+                return False
+
+        if label == "Tagging show metadata":
+            if stripped.startswith("All updates completed"):
+                return False
 
         return True
 
     last_was_progress = False
     suppressed_processing = 0
+    processing_total = 0  # Track total for progress bar
+    
     for line in process.stdout:
-        if quiet and line.strip().startswith("Tagging audio files:"):
-            # Collapse tqdm progress into a single updating row.
-            sys.stdout.write("\r" + line.rstrip("\n"))
+        if capture_lines is not None:
+            capture_lines.append(line)
+        stripped = line.strip()
+
+        if quiet and last_was_progress and not stripped:
+            continue
+        
+        if quiet and stripped.startswith(("Tagging audio files:", "Tagging genre:")):
+            sys.stdout.write("\r\033[K" + stripped)
             sys.stdout.flush()
             last_was_progress = True
             continue
 
-        if quiet and line.strip().startswith("Processing:"):
-            # Many taggers print one line per file. In quiet mode, suppress the spam
-            # but keep a heartbeat so long runs don't look hung.
-            suppressed_processing += 1
-            if suppressed_processing % 50 == 0:
-                sys.stdout.write(f"\rProcessing... {suppressed_processing}")
-                sys.stdout.flush()
-                last_was_progress = True
+        if quiet:
+            match = re.match(r"^Processing\s+(\d+)\s+.*files\.+$", stripped)
+            if match:
+                processing_total = int(match.group(1))
+                suppressed_processing = 0
+                if last_was_progress:
+                    sys.stdout.write("\n")
+                    sys.stdout.flush()
+                    last_was_progress = False
+                # For some taggers we only want the in-place progress bar, not the header line.
+                if label != "Tagging movie ratings":
+                    print("  " + stripped)
+                continue
+
+            # Another common prelude (tag-movie-metadata.py)
+            match = re.match(r"^Found\s+(\d+)\s+.*file\(s\)$", stripped)
+            if match:
+                processing_total = int(match.group(1))
+                suppressed_processing = 0
+                if last_was_progress:
+                    sys.stdout.write("\n")
+                    sys.stdout.flush()
+                    last_was_progress = False
+                # Keep the total internally for the progress bar, but the header line is noisy in quiet mode.
+                if label not in {"Tagging movie metadata", "Tagging movie ratings"}:
+                    print("  " + stripped)
+                continue
+
+        # "Processing:" lines from taggers - convert to single-line progress bar
+        if quiet and stripped.startswith("Processing:"):
+            # Prefer explicit counters if provided (tag-movie-ratings.py)
+            match = re.match(r"^Processing:\s*(\d+)\s*/\s*(\d+)\s*$", stripped)
+            if match:
+                suppressed_processing = int(match.group(1))
+                processing_total = int(match.group(2))
+            else:
+                # Otherwise treat each line as one processed item.
+                suppressed_processing += 1
+
+            progress_label = "Processing"
+            if label:
+                progress_label = str(label)
+
+            prefix = f"  {progress_label}: "
+
+            if processing_total > 0:
+                pct = min(100, int(100 * suppressed_processing / processing_total))
+                bar_width = 30
+                filled = int(bar_width * pct / 100)
+                bar = "█" * filled + "░" * (bar_width - filled)
+                sys.stdout.write(
+                    f"\r\033[K{prefix}{pct:3d}% |{bar}| {suppressed_processing}/{processing_total}"
+                )
+            else:
+                sys.stdout.write(f"\r\033[K{prefix}{suppressed_processing}")
+            sys.stdout.flush()
+            last_was_progress = True
             continue
 
         if quiet and _RSYNC_PROGRESS_RE.match(line):
             # Update in-place (single row) for rsync progress lines.
-            sys.stdout.write("\r" + line.rstrip("\n"))
+            sys.stdout.write("\r\033[K" + stripped)
             sys.stdout.flush()
             last_was_progress = True
             continue
 
-        if last_was_progress:
+        # If we're about to print a normal line, first terminate any in-place progress row.
+        should_print = _should_print(line)
+        if should_print and last_was_progress:
             sys.stdout.write("\n")
             sys.stdout.flush()
             last_was_progress = False
+            # Do NOT reset counters here; some tools interleave progress with suppressed lines.
 
-        if _should_print(line):
-            print(line, end="", flush=True)
+        if should_print:
+            if quiet:
+                if stripped.startswith('=') or not stripped:
+                    print(line, end="", flush=True)
+                else:
+                    print("  " + stripped)
+            else:
+                print(line, end="", flush=True)
 
     if last_was_progress:
         sys.stdout.write("\n")
@@ -361,12 +488,14 @@ def build_sync_command(job, sync_script_path, global_opts):
     return cmd
 
 
-def run_explicit_tagging(source_path, dry_run=False, quiet=False):
+def run_explicit_tagging(source_path, dry_run=False, quiet=False, verbose=False):
     """Run explicit tagging on source path before sync."""
-    if not quiet:
+    if verbose:
         print(f"\n{'='*60}")
         print(f"Running explicit tagging on: {source_path}")
         print(f"{'='*60}")
+    else:
+        print("  Tagging explicit content...")
     
     # Get the directory of this script to find repo root
     # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
@@ -376,7 +505,11 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
     cmd = [
         sys.executable,  # Use current python interpreter
         str(tag_script),
+        source_path,
     ]
+    
+    if verbose:
+        cmd.append("--verbose")
     
     process = None
     try:
@@ -391,7 +524,7 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
             errors='replace',
             bufsize=1,
         )
-        _stream_process_output(process, quiet=quiet)
+        _stream_process_output(process, quiet=quiet, label="Tagging explicit content")
         process.wait()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
@@ -414,8 +547,11 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_genre_tagging(source_path, dry_run=False, quiet=False):
+def run_genre_tagging(source_path, dry_run=False, quiet=False, verbose=False):
     """Run genre tagging on music files."""
+    if not verbose:
+        print("  Updating genre metadata...")
+    
     # Get the directory of this script to find repo root
     # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
     repo_root = Path(__file__).parent.parent.parent
@@ -424,11 +560,14 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False):
         sys.executable,
         str(script_path),
         source_path,
-        "--recursive"
+        "--recursive",
     ]
-    
+
     if dry_run:
         cmd.append("--dry-run")
+    
+    if verbose:
+        cmd.append("--verbose")
     
     process = None
     try:
@@ -447,7 +586,7 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False):
             errors='replace',
             bufsize=1,
         )
-        _stream_process_output(process, quiet=quiet)
+        _stream_process_output(process, quiet=quiet, label="Tagging genre")
         process.wait()
 
         if process.returncode != 0:
@@ -475,12 +614,14 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_movie_rating_tagging(source_path, dry_run=False, quiet=False):
+def run_movie_rating_tagging(source_path, dry_run=False, quiet=False, verbose=False):
     """Run movie rating tagging on source path before sync."""
-    if not quiet:
+    if verbose:
         print(f"\n{'='*60}")
         print(f"Running movie rating tagging on: {source_path}")
         print(f"{'='*60}")
+    else:
+        print("  Tagging movie ratings...")
 
     repo_root = Path(__file__).parent.parent.parent
     tag_script = repo_root / "bin" / "video" / "tag-movie-ratings.py"
@@ -512,7 +653,7 @@ def run_movie_rating_tagging(source_path, dry_run=False, quiet=False):
             errors='replace',
             bufsize=1
         )
-        _stream_process_output(process, quiet=quiet)
+        _stream_process_output(process, quiet=quiet, label="Tagging movie ratings")
         process.wait()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
@@ -535,11 +676,13 @@ def run_movie_rating_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False):
-    if not quiet:
+def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=False):
+    if verbose:
         print(f"\n{'='*60}")
         print(f"Running movie metadata tagging on: {source_path}")
         print(f"{'='*60}")
+    else:
+        print("  Tagging movie metadata...")
 
     repo_root = Path(__file__).parent.parent.parent
     tag_script = repo_root / "bin" / "video" / "tag-movie-metadata.py"
@@ -572,7 +715,7 @@ def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False):
             errors='replace',
             bufsize=1
         )
-        _stream_process_output(process, quiet=quiet)
+        _stream_process_output(process, quiet=quiet, label="Tagging movie metadata")
         process.wait()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
@@ -595,11 +738,13 @@ def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
-    if not quiet:
+def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=False):
+    if verbose:
         print(f"\n{'='*60}")
         print(f"Running show metadata tagging on: {source_path}")
         print(f"{'='*60}")
+    else:
+        print("  Tagging show metadata...")
 
     repo_root = Path(__file__).parent.parent.parent
     tag_script = repo_root / "bin" / "tv" / "tag-show-metadata.py"
@@ -609,10 +754,13 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
         str(tag_script),
         source_path,
         "--recursive",
-        "--dry-run" if dry_run else "",
     ]
 
-    cmd = [arg for arg in cmd if arg]
+    if dry_run:
+        cmd.append("--dry-run")
+    
+    if verbose:
+        cmd.append("--verbose")
 
     if dry_run:
         print("DRY RUN - Would execute show metadata tagging:")
@@ -632,7 +780,7 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
             errors='replace',
             bufsize=1,
         )
-        _stream_process_output(process, quiet=quiet)
+        _stream_process_output(process, quiet=quiet, label="Tagging show metadata")
         process.wait()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
@@ -655,14 +803,16 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False):
         return False
 
 
-def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False):
+def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False, verbose=False):
     """Run a single sync job and return statistics."""
-    if not quiet:
+    if verbose:
         print(f"\n{'='*60}")
         print(f"Running sync job: {job['name']}")
         print(f"Source: {job['src']}")
         print(f"Destination: {job['dest']}")
         print(f"{'='*60}")
+    else:
+        print(f"\n→ {job['name']} ({job.get('media', 'music')})")
     
     media = job.get("media", "music")
     
@@ -689,29 +839,29 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False)
 
         if media == "movies":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
+                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
-            if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet):
+            if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
         elif media == "shows":
             if tag_metadata:
-                if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
+                if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Shows sync - skipping metadata tagging")
         elif media == "cartoons":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet):
+                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Cartoons sync - skipping metadata tagging")
         elif media == "music":
-            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
+            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
-            if not run_genre_tagging(job["src"], dry_run=False, quiet=quiet):
+            if not run_genre_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Genre tagging failed, proceeding with sync anyway")
         else:
-            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet):
+            if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
     
     cmd = build_sync_command(job, sync_script_path, global_opts)
@@ -726,57 +876,23 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False)
     
     process = None
     try:
-        # Stream output in real-time while collecting for stats parsing
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
             errors='replace',
-            bufsize=1  # Line buffered
+            bufsize=1,
         )
-        
+
         stdout_lines = []
-        # Read stdout line by line and print in real-time
-        last_was_progress = False
-        for line in process.stdout:
-            stdout_lines.append(line)
+        _stream_process_output(process, quiet=quiet, label=job.get("name"), capture_lines=stdout_lines)
+        process.wait()
+        if process.returncode != 0:
+            return_code = process.returncode
+            print(f"  Error: sync job '{job['name']}' failed with exit code {return_code}")
 
-            if quiet and _RSYNC_PROGRESS_RE.match(line):
-                sys.stdout.write("\r" + line.rstrip("\n"))
-                sys.stdout.flush()
-                last_was_progress = True
-                continue
-
-            if last_was_progress:
-                sys.stdout.write("\n")
-                sys.stdout.flush()
-                last_was_progress = False
-
-            if quiet:
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                # Keep rsync's summary-ish lines, but drop the verbose file list.
-                if stripped in {"sending incremental file list", "./"}:
-                    continue
-                # Drop directory listing spam (e.g. "Foo/"), keep file transfer stats/progress.
-                if stripped.endswith("/") and not stripped.startswith("Number of"):
-                    continue
-
-            print(line, end='', flush=True)
-
-        if last_was_progress:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-        
-        # Wait for process to complete and get stderr
-        _, stderr = process.communicate()
-        
-        if stderr and process.returncode != 0:
-            print("STDERR:", stderr)
-        
         stdout_text = ''.join(stdout_lines)
         
         # Debug: Log rsync output for parsing issues
@@ -1121,6 +1237,7 @@ def main():
             global_opts,
             args.dry_run,
             quiet=quiet,
+            verbose=args.verbose,
         )
         job_stats_list.append(stats)
         if stats.get("success"):

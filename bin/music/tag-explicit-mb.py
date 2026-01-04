@@ -1176,12 +1176,14 @@ else:
 
 processed_count = stats.get('Yes', 0) + stats.get('No', 0) + stats.get('Unknown', 0)
 print(f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} already tagged)")
-if EXPLICIT_PLAYLIST_FILE:
-    print(f"Explicit playlist: {playlist_count} total EXPLICIT=Yes tracks")
-else:
-    print("Explicit playlist: generation disabled (use --generate-explicit-playlist to enable)")
+if args.verbose:
+    if EXPLICIT_PLAYLIST_FILE:
+        print(f"Explicit playlist: {playlist_count} total EXPLICIT=Yes tracks")
+    else:
+        print("Explicit playlist: generation disabled (use --generate-explicit-playlist to enable)")
 if processed_count > 0:
-    print(f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}")
-    if source_counts:
-        top_sources = sorted(source_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]
-        print("  Sources:", ", ".join(f"{k}={v}" for k, v in top_sources))
+    if args.verbose:
+        print(f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}")
+        if source_counts:
+            top_sources = sorted(source_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]
+            print("  Sources:", ", ".join(f"{k}={v}" for k, v in top_sources))

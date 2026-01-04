@@ -636,8 +636,8 @@ def main():
                     except BrokenPipeError:
                         sys.exit(0)
         
-            # Print rating info
-            if PRINT_RATING_TO_CONSOLE:
+            # Print per-movie details only in verbose mode (otherwise it floods the console).
+            if VERBOSE and PRINT_RATING_TO_CONSOLE:
                 if new_rating in VALID_RATINGS:
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
                         try:
@@ -646,7 +646,7 @@ def main():
                         except BrokenPipeError:
                             # Exit gracefully when output is piped to commands like head
                             sys.exit(0)
-                elif VERBOSE and new_rating == UNKNOWN_VALUE:
+                elif new_rating == UNKNOWN_VALUE:
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
                         try:
                             print(f"UNKNOWN: {_format_display_title(title, year)} ({source})")
