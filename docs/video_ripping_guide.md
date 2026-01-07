@@ -322,6 +322,16 @@ See `docs/media_server_setup.md` for more complete examples and tips.
 
 **Impact**: Auto-burn now works correctly for all DVD/Blu-ray configurations.
 
+### Missing thumbnails in Jellyfin/Plex
+**Issue**: Some video files don't show thumbnail images in media servers.
+
+**Solution**: Use the `embed_thumbnail.py` script to add cover art:
+```bash
+python3 bin/video/embed_thumbnail.py "/path/to/video.mp4" "/path/to/thumbnail.jpg"
+```
+
+This embeds the image as MP4 cover art (`covr` tag) which Jellyfin, Plex, and other media servers recognize for display.
+
 ---
 
 ## Legal

@@ -47,6 +47,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
   - `bin/video/`
     - `rip_video.py` — rip DVD/Blu-ray via MakeMKV + HandBrakeCLI (no interactive prompts)
     - `backfill_subs.py` — mux English soft subs from MKV into existing MP4 (no re-encode)
+    - `embed_thumbnail.py` — embed a thumbnail image as cover art in MP4/M4V files for Jellyfin/media servers
   - `bin/utils/`
     - `clean_playlists.py` — normalize `.m3u` to `.m3u8` and validate track references
   - `bin/sync/`
