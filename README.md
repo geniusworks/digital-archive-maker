@@ -36,9 +36,6 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
 - `_install/`
   - `install_setup_abcde_environment.py` — checks/installs Homebrew deps (abcde, eye-d3, flac, imagemagick, wget, curl) and creates an example cleanup helper.
   - `install_cleanup_abcde_xs.py` — removes an incompatible `DiscID.bundle` in some abcde installs.
-- `_archive/` (kept for reference)
-  - `backup_cover_art.py` — finds `cover.jpg`, logs dimensions, renames non-1000x1000 covers to `_cover.jpg`.
-  - `check_flac_metadata.py` — compares FLAC tags to MusicBrainz; respects a skip list in `check_flac_metadata.skip`.
 - `bin/` — primary scripts directory (organized by domain)
   - `bin/music/`
     - `fix_album.py` — normalize an album folder using MusicBrainz track titles; renames to `NN - Title.flac`; writes `.m3u8`; runs tag + cover fixes

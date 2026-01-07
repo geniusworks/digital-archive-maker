@@ -11,7 +11,7 @@ See also: `docs/workflow_overview.md` for the full end-to-end pipeline (CDs → 
 - Core tools: `abcde`, `flac` (metaflac), `imagemagick` (`convert`/`magick`), `jq`, `curl`, `wget`, `ffmpeg`
 - Python 3 (optional, for helper scripts) with packages from `requirements.txt`
 
-Tip: Use `_install/install_setup_abcde_environment.sh` to verify/install common packages.
+Tip: Use `_install/install_setup_abcde_environment.py` to verify/install common packages.
 
 ---
 

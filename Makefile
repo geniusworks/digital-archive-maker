@@ -31,8 +31,8 @@ help:
 	@echo "  install-test-deps  Install test dependencies"
 
 install-deps:
-	@echo "Installing Homebrew deps via _install/install_setup_abcde_environment.sh..."
-	@bash _install/install_setup_abcde_environment.sh
+	@echo "Installing Homebrew deps via _install/install_setup_abcde_environment.py..."
+	@python3 _install/install_setup_abcde_environment.py
 	@echo "Installing Python deps from requirements.txt..."
 	@python3 -m pip install -r requirements.txt
 
