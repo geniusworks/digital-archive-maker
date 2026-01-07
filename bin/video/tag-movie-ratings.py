@@ -2,7 +2,7 @@
 """
 Movie MPAA Rating Tagger
 
-Tags .mp4 movie files with MPAA ratings using TMDb API and manual overrides.
+Tags .mp4/.m4v movie files with MPAA ratings using TMDb API and manual overrides.
 Similar to tag-explicit-mb.py but for movies.
 
 Usage:
@@ -421,11 +421,11 @@ def get_tmdb_rating(title, year=None):
 
 
 def find_movie_files(root_path):
-    """Find all .mp4 movie files in directory or return single file if it's an MP4"""
+    """Find all .mp4/.m4v movie files in directory or return single file if it's an MP4/M4V"""
     root = Path(root_path)
     
-    # If it's a single MP4 file, return just that file
-    if root.is_file() and root.suffix.lower() == ".mp4":
+    # If it's a single MP4/M4V file, return just that file
+    if root.is_file() and root.suffix.lower() in (".mp4", ".m4v"):
         # Skip sample files and extras
         if "sample" in root.name.lower() or "extra" in root.name.lower():
             return []
@@ -433,19 +433,20 @@ def find_movie_files(root_path):
     
     # Otherwise scan directory recursively
     movie_files = []
-    for file_path in root.rglob("*.mp4"):
-        # Skip sample files and extras
-        if "sample" in file_path.name.lower() or "extra" in file_path.name.lower():
-            continue
-        movie_files.append(file_path)
+    for ext in ["*.mp4", "*.m4v"]:
+        for file_path in root.rglob(ext):
+            # Skip sample files and extras
+            if "sample" in file_path.name.lower() or "extra" in file_path.name.lower():
+                continue
+            movie_files.append(file_path)
     
     return sorted(movie_files)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Tag MP4 movie files with MPAA ratings")
+    parser = argparse.ArgumentParser(description="Tag MP4/M4V movie files with MPAA ratings")
     parser.add_argument("root", nargs="?", default=".", 
-                       help="Root directory to scan for MP4 files")
+                       help="Root directory to scan for MP4/M4V files")
     parser.add_argument(
         "--media",
         choices=["movies", "shows"],
