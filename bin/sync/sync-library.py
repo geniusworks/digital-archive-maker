@@ -328,7 +328,7 @@ def main():
     parser.add_argument("--dest", required=True, help="Destination (path or rsync remote like user@host:/path)")
     parser.add_argument(
         "--media",
-        choices=["music", "movies", "shows"],
+        choices=["music", "movies", "shows", "music_videos"],
         default="music",
         help="Media type to sync (default: music)",
     )
@@ -401,6 +401,9 @@ def main():
             if args.media == "music":
                 if not name.lower().endswith((".flac", ".mp3")):
                     continue
+            elif args.media == "music_videos":
+                if not name.lower().endswith((".mp4",)):
+                    continue
             else:
                 if not name.lower().endswith((".mp4",)):
                     continue
@@ -455,6 +458,8 @@ def main():
                     excluded_mpaa += 1
 
             elif args.media == "shows":
+                pass
+            elif args.media == "music_videos":
                 pass
 
             rel = os.path.relpath(fullpath, src).replace(os.sep, "/")
@@ -619,6 +624,9 @@ def main():
         print(f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
         print(f"Tag read errors treated as Unknown: {errors}")
     elif args.media == "shows":
+        print(f"Scanned files: {total_flacs}")
+        print(f"Tag read errors treated as Unknown: {errors}")
+    elif args.media == "music_videos":
         print(f"Scanned files: {total_flacs}")
         print(f"Tag read errors treated as Unknown: {errors}")
     print(f"Exclude file: {exclude_file} ({len(patterns)} lines)")

@@ -438,7 +438,7 @@ def build_sync_command(job, sync_script_path, global_opts):
     cli_media = media
     if media == "cartoons":
         cli_media = "shows"
-    if cli_media in {"music", "movies", "shows"}:
+    if cli_media in {"music", "movies", "shows", "music_videos"}:
         cmd.extend(["--media", cli_media])
 
     # Add optional flags
@@ -637,7 +637,7 @@ def run_movie_rating_tagging(source_path, dry_run=False, quiet=False, verbose=Fa
 
     if dry_run:
         print("DRY RUN - Would execute movie rating tagging:")
-        print(" ".join(cmd))
+        print(" ".join(f'"{arg}"' for arg in cmd))
         return True
 
     process = None
@@ -699,7 +699,7 @@ def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=
 
     if dry_run:
         print("DRY RUN - Would execute movie metadata tagging:")
-        print(" ".join(cmd))
+        print(" ".join(f'"{arg}"' for arg in cmd))
         return True
 
     process = None
@@ -764,7 +764,7 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=F
 
     if dry_run:
         print("DRY RUN - Would execute show metadata tagging:")
-        print(" ".join(cmd))
+        print(" ".join(f'"{arg}"' for arg in cmd))
         return True
 
     process = None
@@ -803,6 +803,68 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=F
         return False
 
 
+def run_music_video_tagging(source_path, dry_run=False, quiet=False, verbose=False):
+    """Run music video tagging on source path before sync."""
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Running music video tagging on: {source_path}")
+        print(f"{'='*60}")
+    else:
+        print("  Tagging music videos...")
+
+    repo_root = Path(__file__).parent.parent.parent
+    tag_script = repo_root / "bin" / "video" / "fix_music_videos_mapped.py"
+
+    cmd = [
+        sys.executable,
+        str(tag_script),
+        source_path,
+        "--dry-run" if dry_run else "",
+    ]
+
+    cmd = [arg for arg in cmd if arg]
+
+    if dry_run:
+        print("DRY RUN - Would execute music video tagging:")
+        print(" ".join(f'"{arg}"' for arg in cmd))
+        return True
+
+    process = None
+    try:
+        if not quiet:
+            print("Running music video tagging to normalize filenames and metadata...")
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            bufsize=1
+        )
+        _stream_process_output(process, quiet=quiet, label="Tagging music videos")
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, "", "")
+        return True
+    except KeyboardInterrupt:
+        print("\n\nTagging interrupted by user. Cleaning up...")
+        if process:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        print("Tagging aborted.")
+        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running music video tagging on '{source_path}':")
+        print(f"Exit code: {e.returncode}")
+        if e.stderr:
+            print(f"STDERR: {e.stderr}")
+        return False
+
+
 def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False, verbose=False, skip_tagging=False):
     """Run a single sync job and return statistics."""
     if verbose:
@@ -835,7 +897,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
     if not effective_dry_run and not skip_tagging:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
-            tag_metadata = media in {"movies", "shows", "cartoons"}
+            tag_metadata = media in {"movies", "shows", "cartoons", "music_videos"}
 
         if media == "movies":
             if tag_metadata:
@@ -855,6 +917,12 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Cartoons sync - skipping metadata tagging")
+        elif media == "music_videos":
+            if tag_metadata:
+                if not run_music_video_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+                    print("Warning: Music video tagging failed, proceeding with sync anyway")
+            else:
+                print("Music videos sync - skipping metadata tagging")
         elif media == "music":
             if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
@@ -868,7 +936,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
     
     if effective_dry_run:
         print("DRY RUN - Would execute:")
-        print(" ".join(cmd))
+        print(" ".join(f'"{arg}"' for arg in cmd))
         job_stats['end_time'] = time.time()
         job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
         job_stats['success'] = True
@@ -1020,8 +1088,8 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     exclude_unrated = True
                 if exclude_unrated:
                     cmd.append("--exclude-unrated")
-            elif media in {"shows", "cartoons"}:
-                # Shows sync - no special filtering for now
+            elif media in {"shows", "cartoons", "music_videos"}:
+                # Shows/Music videos sync - no special filtering for now
                 pass
 
             if job.get("ssh"):
