@@ -468,6 +468,9 @@ def build_sync_command(job, sync_script_path, global_opts):
         # Shows sync - no special filtering for now
         # Could add TV rating filters here in the future
         pass
+    elif media == "cartoons":
+        # Cartoons sync - explicitly no rating filtering to ensure all cartoons are copied
+        pass
 
     # Note: delete is now handled globally, not per-job
     
@@ -1088,8 +1091,11 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     exclude_unrated = True
                 if exclude_unrated:
                     cmd.append("--exclude-unrated")
-            elif media in {"shows", "cartoons", "music_videos"}:
+            elif media in {"shows", "music_videos"}:
                 # Shows/Music videos sync - no special filtering for now
+                pass
+            elif media == "cartoons":
+                # Cartoons sync - explicitly no rating filtering to ensure all cartoons are copied
                 pass
 
             if job.get("ssh"):

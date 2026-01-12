@@ -22,6 +22,17 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Robust import system** - Uses importlib to handle hyphenated filenames
   - **Real-time validation** - Immediate feedback on genre validity
 
+### 🎵 Music Videos Collection Reorganization (January 2026)
+- **Music videos location update** - Moved from `/Music Videos/` to `/Videos/Music/` for better organization:
+  - **Updated sync configuration** - Modified `sync-config.yaml` to sync entire `/Videos/` directory
+  - **Standardized naming format** - All files now follow `{artist} - {title}.mp4` format
+  - **Filename standardization script** - `bin/video/standardize_music_video_filenames.py` for consistent naming
+  - **Metadata scanning script** - `bin/video/scan_music_video_metadata.py` for missing metadata updates
+  - **Enhanced sync integration** - Music videos now sync to `/mnt/media/Videos` alongside other video content
+  - **Cartoons rating exception** - Added explicit exclusion for cartoons from all rating filtering
+  - **Updated documentation** - README and sync examples reflect new directory structure
+  - **Maintenance workflow** - Documented process for filename standardization and metadata updates
+
 ### 🎵 M3U8 Playlist Processing (January 2026)
 - **M3U8 processing script (`bin/music/update-from-m3u.py`)** - NEW comprehensive playlist processor:
   - **Filename updates** - Renames files to match M3U8 entries with proper track numbering
@@ -83,6 +94,8 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 - `bin/music/compare_music.py` — fast fuzz-based comparison of two libraries; can group by artist/album or emit difference files.
 - `bin/music/tag-explicit-mb.py` — per-track explicit tagging (`EXPLICIT=Yes|No|Unknown`) using manual overrides (`explicit_overrides.csv`) + iTunes + MusicBrainz; supports both FLAC (CD rips) and MP3 (digital purchases); includes incremental mode and track-search fallback, `--verbose` output control, and optional playlist generation. Note: iTunes data is incomplete for older albums—use overrides for known false negatives.
 - `bin/video/tag-movie-metadata.py` — tags MP4 files with rich movie metadata (title/year/plot/genres/director/cast/rating/artwork) via TMDb/OMDb using IMDb ID (and supports title/year search).
+- `bin/video/standardize_music_video_filenames.py` — standardizes music video filenames to `{artist} - {title}.mp4` format with recursive processing and metadata-based naming.
+- `bin/video/scan_music_video_metadata.py` — scans music videos for missing metadata and updates it using filename parsing with dry-run and force modes.
 - `bin/sync/sync-library.py` — rsync-based sync helper that can exclude `EXPLICIT=Yes` and/or `EXPLICIT=Unknown` from a destination library; supports both FLAC and MP3 files; includes automatic cleanup of empty directories, enhanced progress reporting, and playlist fixing for missing tracks.
 - `bin/sync/master-sync.py` — orchestrates multiple sync jobs from YAML config with intelligent global delete mode; automatically runs explicit tagging before each sync to ensure new content is properly flagged; features two-phase sync (sync all jobs, then global cleanup) and target-specific deletion logic.
 - `_install/` — installers to set up core dependencies and fix a known abcde issue on macOS.

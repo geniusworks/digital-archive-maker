@@ -1,16 +1,16 @@
- # Example sync configuration
- #
- # Copy this file to sync-config.yaml and customize paths.
- # The real sync-config.yaml is intended to be gitignored.
- 
- # Global options
- global:
-   delete: false
-   dry_run: false
-   print_command: false
-   max_flacs: null
- 
- sync_jobs:
+# Example sync configuration
+#
+# Copy this file to sync-config.yaml and customize paths.
+# The real sync-config.yaml is intended to be gitignored.
+
+# Global options
+global:
+  delete: false
+  dry_run: false
+  print_command: false
+  max_flacs: null
+
+sync_jobs:
    - name: "main-library"
      # Source music root (contains Artist/Album/...)
      src: "/path/to/your/source/music"
@@ -18,19 +18,19 @@
      dest: "/path/to/your/destination/music"
      exclude_explicit: false
      exclude_unknown: false
- 
+
    - name: "clean-library"
      src: "/path/to/your/source/music"
      dest: "/path/to/your/destination/clean"
      exclude_explicit: true
      exclude_unknown: true
- 
+
    - name: "digital-library"
      src: "/path/to/your/source/digital"
      dest: "/path/to/your/destination/digital"
      exclude_explicit: true
      exclude_unknown: false
- 
+
    - name: "movies-library"
      # Movie root (contains Title (Year)/Title (Year).mp4)
      src: "/path/to/your/source/movies"
@@ -43,18 +43,24 @@
      exclude_unrated: true
      # Optionally exclude Unknown/missing ratings
      exclude_unknown: true
- 
+
    - name: "shows-library"
      src: "/path/to/your/source/shows"
      dest: "/path/to/your/destination/shows"
      media: "shows"
      tag_metadata: true
- 
+
    - name: "cartoons-library"
      src: "/path/to/your/source/cartoons"
      dest: "/path/to/your/destination/cartoons"
      media: "cartoons"
      tag_metadata: true
+
+   - name: "videos-library"
+     src: "/path/to/your/source/videos"
+     dest: "/path/to/your/destination/videos"
+     media: "music_videos"
+     tag_metadata: false  # Usually pre-tagged with fix_music_videos_mapped.py
 
   # Remote sync example
   # - name: "remote-backup"
@@ -73,4 +79,3 @@
   #   exclude_unrated: true
   #   exclude_unknown: true
   #   ssh: "ssh -p 2222"
-

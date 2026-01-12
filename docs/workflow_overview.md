@@ -1,9 +1,10 @@
 # Workflow Overview (Disc → Digital Library)
 
-This repository is organized around two primary workflows:
+This repository is organized around three primary workflows:
 
 - **Audio CDs → FLAC library → tagging → optional sync to a server**
 - **DVD/Blu-ray → MP4 library → subtitles/organization → server-ready layout**
+- **Music Videos → organize → standardize → sync with other video content**
 
 Each step links to the detailed guide or script.
 
@@ -72,3 +73,29 @@ Artifacts:
 - Scripts:
   - `bin/video/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
   - `bin/video/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache
+
+---
+
+## Workflow C: Music Videos → organize → standardize → sync
+
+### C1) Organize music videos into artist folders
+- Scripts:
+  - `bin/video/fix_music_videos_mapped.py` — Primary collection with hardcoded mappings
+  - `bin/video/fix_music_videos_secondary.py` — Secondary collection with separate mappings
+- Output: `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/Videos/Music/Artist/Title.mp4`
+
+### C2) Standardize filenames and metadata (optional)
+- **Filename standardization:** `bin/video/standardize_music_video_filenames.py`
+  - Ensures all files follow `{artist} - {title}.mp4` format
+  - Handles both MP4 and MP3 files
+  - Uses existing metadata or falls back to directory/filename parsing
+- **Metadata scanning:** `bin/video/scan_music_video_metadata.py`
+  - Scans for missing artist/title metadata
+  - Updates files using parsed filename information
+  - Supports dry-run and force update modes
+
+### C3) Sync to server alongside other video content
+- Configuration: `bin/sync/sync-config.yaml`
+- Destination: `/mnt/media/Videos` (syncs entire Videos directory including Music subfolder)
+- No rating filtering applied to music videos
+- Integrated with master sync orchestration

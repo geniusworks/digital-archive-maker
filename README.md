@@ -49,6 +49,8 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
     - `backfill_subs.py` — mux English soft subs from MKV into existing MP4 (no re-encode)
     - `embed_thumbnail.py` — embed a thumbnail image as cover art in MP4/M4V files for Jellyfin/media servers
     - `fix_music_videos.py` — normalize music video filenames and metadata using folder structure as artist name
+    - `standardize_music_video_filenames.py` — standardize all music video filenames to {artist} - {title}.mp4 format
+    - `scan_music_video_metadata.py` — scan and update missing metadata for music videos using filename parsing
   - `bin/utils/`
     - `clean_playlists.py` — normalize `.m3u` to `.m3u8` and validate track references
   - `bin/sync/`
@@ -283,6 +285,51 @@ python3 bin/music/update-from-m3u.py /path/to/album.m3u8 --force
 - Albums with existing M3U8 playlists
 - Various artist compilations
 - Metadata restoration from playlist information
+
+## Music Video Maintenance
+Scripts for maintaining and standardizing music video collections in the Videos/Music directory.
+
+### Filename Standardization
+- Script: `bin/video/standardize_music_video_filenames.py`
+- **Purpose:** Standardize all music video filenames to `{artist} - {title}.mp4` format
+- **Features:** Recursive processing, metadata-based naming, dry-run mode, verbose output
+- **Usage:**
+  ```bash
+  # Dry run to preview changes
+  python3 bin/video/standardize_music_video_filenames.py --dry-run
+  
+  # Apply filename changes
+  python3 bin/video/standardize_music_video_filenames.py
+  
+  # Verbose output
+  python3 bin/video/standardize_music_video_filenames.py --verbose
+  ```
+
+### Metadata Scanning and Updating
+- Script: `bin/video/scan_music_video_metadata.py`
+- **Purpose:** Scan for missing metadata and update it using filename parsing
+- **Features:** Supports MP4/MP3, recursive scanning, dry-run mode, force update
+- **Usage:**
+  ```bash
+  # Scan and show what needs updating
+  python3 bin/video/scan_music_video_metadata.py --dry-run
+  
+  # Update files with missing metadata
+  python3 bin/video/scan_music_video_metadata.py
+  
+  # Force update all files (overwrite existing)
+  python3 bin/video/scan_music_video_metadata.py --force
+  
+  # Quiet mode
+  python3 bin/video/scan_music_video_metadata.py --quiet
+  ```
+
+**Maintenance Workflow:**
+1. **Standardize filenames** first to ensure consistent `{artist} - {title}.mp4` format
+2. **Scan and update metadata** to fill in missing artist/title tags
+3. **Sync to server** using the updated sync configuration
+
+**Target Directory:** `/Volumes/Data/Media/Library/Videos/Music` (configurable via `--directory`)
 
 
 ## MPAA rating tagging (movies and shows)
@@ -672,6 +719,13 @@ sync_jobs:
     max_mpaa: "PG-13"
     exclude_unrated: true
     exclude_unknown: true
+
+  # Videos library
+  - name: "videos-library"
+    src: "${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/Videos"
+    dest: "jellyfin@10.0.4.75:/mnt/media/Videos"
+    media: "music_videos"
+    tag_metadata: false  # Usually pre-tagged with fix_music_videos_mapped.py
 ```
 
 **Features:**
