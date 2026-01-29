@@ -4,6 +4,17 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 
 ## Recent Major Updates (December 2025 - January 2026)
 
+### 🎵 Comprehensive Metadata Fixing System (January 2026)
+- **Metadata fixer (`bin/music/fix_missing_metadata.py`)** - NEW comprehensive metadata repair tool:
+  - **MusicBrainz-first approach** - Uses authoritative MusicBrainz database as primary source
+  - **Multi-format support** - Handles FLAC, MP3, MP4/M4A with unified metadata handling
+  - **Missing metadata detection** - Finds missing titles, artists, albums (no filename pattern obsession)
+  - **Smart fallback system** - Falls back to directory structure when MusicBrainz unavailable
+  - **Cached lookups** - Persists MusicBrainz results to avoid repeated API calls
+  - **Complete metadata population** - Fills artist, album, title, and track number fields
+  - **Dry-run support** - Preview changes before applying them
+  - **Recursive scanning** - Processes entire music libraries efficiently
+
 ### 🎵 Music Genre Tagging System Overhaul
 - **Genre metadata tagging (`bin/music/update-genre-mb.py`)** - Complete rewrite with advanced features:
   - **Christmas content auto-detection** - Automatically tags Christmas-related content as "christmas" genre

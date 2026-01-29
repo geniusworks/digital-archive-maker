@@ -8,6 +8,8 @@ This repository is organized around three primary workflows:
 
 Each step links to the detailed guide or script.
 
+📖 **For the complete music pipeline from ALL sources to Jellyfin, see `docs/music_collection_guide.md`**
+
 ---
 
 ## Workflow A: CDs → FLACs → tagging → sync

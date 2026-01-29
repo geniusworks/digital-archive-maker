@@ -41,6 +41,7 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
     - `fix_album.py` — normalize an album folder using MusicBrainz track titles; renames to `NN - Title.flac`; writes `.m3u8`; runs tag + cover fixes
     - `fix_album_covers.py` — fetch missing `cover.jpg` via Cover Art Archive (via MusicBrainz)
     - `fix_metadata.py` — validates and fixes FLAC tags based on filename pattern
+    - `fix_missing_metadata.py` — comprehensive metadata fixer using MusicBrainz; detects and fixes missing titles/artists/albums
     - `fix_track.py` — organizes a single loose track using AcoustID/MusicBrainz
     - `set_explicit.py` — set `EXPLICIT=Yes|No|Unknown` tags for FLAC files
     - `compare_music.py` — fast fuzzy comparison of two library roots; can group differences by album/artist
@@ -80,9 +81,11 @@ Scripts and configuration for ripping optical media and organizing to a clean, m
     - Or copy `.env.sample` to `.env` and load it via your shell init or a tool like `direnv`.
 
 ## Guides
-- CD ripping: see `docs/cd_ripping_guide.md`.
-- DVD/Blu-ray ripping: see `docs/video_ripping_guide.md`.
-- Media server setup: see `docs/media_server_setup.md`.
+- **Music Collection:** `docs/music_collection_guide.md` - Complete guide from all music sources to Jellyfin
+- CD ripping: `docs/cd_ripping_guide.md`
+- DVD/Blu-ray ripping: `docs/video_ripping_guide.md`
+- Media server setup: `docs/media_server_setup.md`
+- Workflow overview: `docs/workflow_overview.md`
 
 ## Genre metadata tagging (music)
 - Script: `bin/music/update-genre-mb.py`

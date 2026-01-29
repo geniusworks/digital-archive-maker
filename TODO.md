@@ -95,9 +95,9 @@ digital-library/
 ## 📚 Documentation Improvements
 
 ### Missing Documentation
-- [ ] **Getting Started Guide** - Step-by-step setup for new users (partially in README.md)
+- [x] **Getting Started Guide** - Step-by-step setup for new users (partially in README.md)
 - [ ] **Configuration Guide** - How to set up `.env` and config files (scattered across docs)
-- [ ] **Workflow Guides** - End-to-end examples for each media type (exists but fragmented)
+- [x] **Workflow Guides** - End-to-end examples for each media type (exists but fragmented)
 - [ ] **Troubleshooting Guide** - Common issues and solutions (missing)
 - [ ] **API Setup Guide** - MusicBrainz, TMDb, OMDb, Spotify setup (partially in docs)
 
@@ -166,6 +166,7 @@ processing:
 
 ### Current Pipeline Strengths
 ✅ **Music pipeline** - Comprehensive genre tagging with MusicBrainz integration
+✅ **Music metadata fixing** - Complete metadata repair with MusicBrainz-first approach
 ✅ **Video pipeline** - Complete DVD/Blu-ray ripping with HandBrake integration
 ✅ **TV pipeline** - Show metadata with TMDb/IMDb fallback
 ✅ **Explicit content detection** - Automatic tagging with multiple sources
