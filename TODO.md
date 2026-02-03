@@ -1,500 +1,431 @@
-# TODO: Repository Improvements & Pipeline Optimization
+# Open Source Release Strategy & Roadmap
 
-## 📋 Overview
-This document outlines improvements needed to make this repository more organized, better documented, and more efficient for users preparing media files for Jellyfin/media server ingestion.
+> **Purpose:** Transform this repository into a polished, release-ready open source project that serves as both a practical tool and portfolio showpiece.
 
 ---
 
-## 🗂️ Organization & Structure
+## 📊 Executive Summary: Release Readiness Assessment
 
-### Current Structure Analysis
+### Current State (February 2026)
+
+| Area | Score | Status |
+|------|-------|--------|
+| **Functionality** | ⭐⭐⭐⭐⭐ | Excellent - Complete CD/DVD/Blu-ray pipelines working |
+| **Documentation** | ⭐⭐⭐☆☆ | Good content, poor organization and visual appeal |
+| **Code Quality** | ⭐⭐⭐⭐☆ | Solid scripts, needs consistency and type hints |
+| **Legal Clarity** | ⭐⭐☆☆☆ | Minimal - needs LICENSE file, clear disclaimers |
+| **Visual Appeal** | ⭐⭐☆☆☆ | Functional but not portfolio-ready |
+| **Onboarding** | ⭐⭐⭐☆☆ | Steep learning curve, no quick-start |
+
+**Verdict:** *Functional tool, not yet release-ready as showcase project.*
+
+---
+
+## 🎯 The Five Pillars of Release Readiness
+
+### Pillar 1: Open Source Compliance ❌ NOT READY
+
+**Critical Missing Items:**
+- [ ] **LICENSE file** - No license file exists (CRITICAL)
+- [ ] **CONTRIBUTING.md** - No contribution guidelines
+- [ ] **CODE_OF_CONDUCT.md** - No community standards
+- [ ] **SECURITY.md** - No vulnerability reporting process
+- [ ] **Dependency licensing audit** - Verify all deps are compatible
+
+**Recommended License:** MIT or Apache 2.0 (permissive, portfolio-friendly)
+
+**Action Items:**
+```
+Priority: CRITICAL (blocks public release)
+Effort: 1-2 hours
+```
+
+### Pillar 2: Documentation Quality ⚠️ NEEDS WORK
+
+**Current Issues:**
+- README.md is 826 lines (too dense, overwhelming)
+- No visual diagrams of workflows
+- Documentation scattered across 6+ files
+- No quick-start for new users (< 5 min setup)
+- No architecture overview
+
+**Target State:**
+```
+docs/
+├── README.md              # Hero page: What, Why, Quick Start (< 100 lines)
+├── QUICKSTART.md          # 5-minute setup guide
+├── architecture.md        # System diagrams (Mermaid/ASCII)
+├── guides/
+│   ├── cd-ripping.md
+│   ├── video-ripping.md
+│   ├── music-tagging.md
+│   └── server-sync.md
+├── reference/
+│   ├── scripts.md         # All scripts with examples
+│   ├── configuration.md   # All config options
+│   └── api-keys.md        # External service setup
+└── assets/
+    ├── workflow-diagram.svg
+    ├── architecture.svg
+    └── screenshots/
+```
+
+**Visual Documentation Needed:**
+```mermaid
+graph LR
+    A[Physical Media] --> B[Rip]
+    B --> C[Tag/Organize]
+    C --> D[Quality Check]
+    D --> E[Sync to Server]
+    E --> F[Jellyfin/Plex]
+```
+
+### Pillar 3: Code Structure & Modularity ⚠️ NEEDS REFINEMENT
+
+**Current Structure Analysis:**
+```
+bin/
+├── music/    (18 scripts) - Some overlap, inconsistent naming
+├── video/    (12 scripts) - Good organization
+├── tv/       (2 scripts)  - Sparse but functional
+├── sync/     (4 files)    - Well-designed
+└── utils/    (2 scripts)  - Underutilized
+```
+
+**Issues Identified:**
+1. **Naming inconsistency:** `fix_album.py` vs `tag-explicit-mb.py` vs `update-genre-mb.py`
+2. **No shared library:** Each script reimplements common patterns
+3. **Hardcoded paths:** Some scripts assume `/Volumes/Data/Media/...`
+4. **Missing `__init__.py`:** Can't import between modules
+5. **No entry point:** No unified CLI or `main.py`
+
+**Proposed Refactor:**
 ```
 digital-library/
-├── README.md                    # Comprehensive main guide ✅
-├── IMPROVEMENTS.md              # Detailed changelog ✅
-├── TODO.md                      # This file ✅
-├── requirements.txt             # Python dependencies ✅
-├── .env.example                 # Environment template ✅
-├── Makefile                     # Build automation ✅
-├── .abcde.conf*                 # CD ripping config
-├── bin/                         # Main scripts directory ✅
-│   ├── music/                   # Music processing
-│   ├── video/                   # Video ripping + subtitles
-│   ├── metadata/                # Metadata helpers (e.g., EXPLICIT)
-│   ├── sync/                    # Sync + comparison
-│   └── utils/                   # Utilities
-├── docs/                        # Documentation ✅
-│   ├── cd_ripping_guide.md
-│   ├── video_ripping_guide.md
-│   ├── media_server_setup.md
-│   └── workflow_overview.md
-├── log/                         # Logs and cache ✅
-├── _archive/                    # Archived files
-├── _install/                    # Installation files
-├── bin/sync/                    # Sync scripts including master-sync.py
-└── docs/                        # All documentation including disc_ripping_guide.md
-```
-
-### Current Issues
-- **Script organization inconsistency** - Some scripts in `bin/`, others in root
-- **Naming convention conflicts** - Mix of `kebab-case` and `snake_case`
-- **No clear categorization** - Scripts mixed without clear purpose grouping
-- **Redundant functionality** - Multiple scripts doing similar operations
-- **Root-level clutter** - Utility scripts should be organized better
-
-### Proposed Structure
-```
-digital-library/
-├── README.md                    # Main getting started guide
-├── TODO.md                      # This file
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Environment template
-├── Makefile                     # Build automation
-├── config/                      # NEW: Configuration files
-│   ├── media.yml               # Unified configuration
-│   └── genres.yml              # Genre configuration
-├── scripts/                     # RENAMED: All scripts consolidated
+├── mediaflow/              # Python package (new)
+│   ├── __init__.py
+│   ├── cli.py             # Unified CLI entry point
+│   ├── core/
+│   │   ├── config.py      # Centralized configuration
+│   │   ├── logging.py     # Structured logging
+│   │   └── api_clients.py # MusicBrainz, TMDb, etc.
 │   ├── music/
-│   │   ├── update-genre-mb.py
-│   │   ├── tag-manual-genre.py
-│   │   ├── tag-explicit-mb.py
-│   │   ├── check_album_integrity.py
-│   │   └── fix_album.py        # MOVED from root
+│   │   ├── tagger.py
+│   │   ├── ripper.py
+│   │   └── organizer.py
 │   ├── video/
-│   │   ├── rip_video.sh
-│   │   ├── tag-movie-metadata.py
-│   │   ├── tag-movie-ratings.py
-│   │   └── backfill_subs.sh
-│   ├── tv/
-│   │   ├── tag-show-metadata.py
-│   │   └── rename_shows_jellyfin.py
-│   ├── utils/
-│   │   ├── sync-library.py
-│   │   ├── repair-flac-tags.py
-│   │   ├── generate-playlists.py
-│   │   ├── fix_metadata.py     # In bin/music/
-│   │   └── fix_track.py        # In bin/music/
-│   └── legacy/                  # DEPRECATED: Old scripts for reference
-├── docs/                        # Enhanced documentation
-│   ├── getting-started.md       # NEW
-│   ├── configuration.md         # NEW
-│   ├── music-workflow.md        # NEW
-│   ├── video-workflow.md        # ENHANCED
-│   ├── troubleshooting.md        # NEW
-│   ├── cd_ripping_guide.md
-│   ├── video_ripping_guide.md
-│   ├── media_server_setup.md
-│   └── workflow_overview.md
-├── log/                         # Logs and cache
-├── _archive/                    # Archived files
-└── _install/                    # Installation files
+│   │   ├── ripper.py
+│   │   └── metadata.py
+│   └── sync/
+│       └── library.py
+├── bin/                    # Thin wrappers (backward compat)
+├── tests/                  # Expanded test suite
+└── setup.py / pyproject.toml
+```
+
+### Pillar 4: Copyright & Legal Prudence ⚠️ CRITICAL
+
+**Current Legal Statement (README.md line 825-826):**
+> "These scripts are intended for making personal backups of media you own and for local, personal use only."
+
+**This is insufficient for open source release.**
+
+**Required Legal Protections:**
+
+#### A. Clear Disclaimer (DISCLAIMER.md)
+```markdown
+# Legal Disclaimer
+
+This software is provided for **personal backup purposes only**.
+
+## Intended Use
+- Creating personal backups of physical media you legally own
+- Organizing and cataloging your personal media collection
+- Tagging and managing metadata for your own library
+
+## Explicit Non-Endorsement
+This software does NOT:
+- Circumvent copy protection (relies on tools like MakeMKV which users must license separately)
+- Download copyrighted content from the internet
+- Facilitate piracy or copyright infringement in any way
+
+## User Responsibility
+Users are solely responsible for:
+- Ensuring compliance with local copyright laws
+- Obtaining proper licenses for any decryption tools used
+- Using this software only for media they legally own
+
+## No Warranty
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+The authors are not liable for any misuse of this software.
+```
+
+#### B. API Terms Compliance Notice
+```markdown
+## Third-Party Services
+This software interfaces with:
+- **MusicBrainz** - Subject to rate limiting; respect usage policies
+- **TMDb** - Requires free API key; attribution required
+- **OMDb** - API key required; paid tiers for high usage
+- **Spotify** - OAuth credentials required; respect ToS
+- **iTunes/Apple Music** - Public API; subject to ToS
+
+Users must obtain their own API keys and comply with each service's terms.
+```
+
+#### C. Decryption Tool Disclaimer
+```markdown
+## About MakeMKV and Decryption
+This software does NOT include any decryption capabilities.
+It invokes external tools (MakeMKV) which users must:
+1. Download and install separately
+2. License appropriately (MakeMKV is beta-free or requires purchase)
+3. Use in accordance with their jurisdiction's laws
+
+The authors of this software have no affiliation with MakeMKV.
+```
+
+### Pillar 5: Portfolio Presentation ⚠️ NEEDS POLISH
+
+**Current State:** Technical documentation optimized for users, not visitors.
+
+**Target State:** Beautiful, engaging project page that demonstrates:
+- Professional software engineering practices
+- Clear problem-solving ability
+- Attention to detail and user experience
+- Technical depth with accessible presentation
+
+**Portfolio-Ready README Structure:**
+```markdown
+<div align="center">
+  <img src="docs/assets/logo.svg" width="200" alt="MediaFlow Logo">
+  <h1>MediaFlow</h1>
+  <p><strong>Physical Media → Digital Library → Streaming Server</strong></p>
+  
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#documentation">Docs</a> •
+    <a href="#contributing">Contributing</a>
+  </p>
+  
+  <p>
+    <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python">
+    <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+    <img src="https://img.shields.io/badge/platform-macOS-lightgrey.svg" alt="Platform">
+  </p>
+</div>
+
+> 🎵 **Rip CDs to FLAC** with MusicBrainz metadata and cover art  
+> 📀 **Archive DVDs/Blu-rays** with proper subtitles and organization  
+> 🎬 **Tag everything** with TMDb, Spotify, and iTunes metadata  
+> 🔄 **Sync to Jellyfin/Plex** with content filtering (explicit, ratings)
+
+## ✨ Why MediaFlow?
+
+| Problem | Solution |
+|---------|----------|
+| CDs scattered, no organization | One command: rip, tag, organize |
+| DVDs with wrong subtitles | Intelligent language detection and burn-in |
+| Manual metadata entry | Automatic lookups from 5+ sources |
+| Explicit content on family server | Filter by EXPLICIT tag or MPAA rating |
+
+## 🚀 Quick Start (5 minutes)
+
+\`\`\`bash
+# Clone and setup
+git clone https://github.com/yourusername/mediaflow.git
+cd mediaflow
+make install-deps
+
+# Configure
+cp .env.sample .env
+# Edit .env with your API keys (optional but recommended)
+
+# Rip your first CD
+make rip-cd
+\`\`\`
+
+📖 **[Full Documentation →](docs/README.md)**
 ```
 
 ---
 
-## 📚 Documentation Improvements
+## 📋 Release Checklist
 
-### Missing Documentation
-- [x] **Getting Started Guide** - Step-by-step setup for new users (partially in README.md)
-- [ ] **Configuration Guide** - How to set up `.env` and config files (scattered across docs)
-- [x] **Workflow Guides** - End-to-end examples for each media type (exists but fragmented)
-- [ ] **Troubleshooting Guide** - Common issues and solutions (missing)
-- [ ] **API Setup Guide** - MusicBrainz, TMDb, OMDb, Spotify setup (partially in docs)
+### Phase 1: Legal & Compliance (Week 1) 🔴 CRITICAL
+- [ ] Add `LICENSE` file (MIT recommended)
+- [ ] Create `DISCLAIMER.md` with legal protections
+- [ ] Add `CONTRIBUTING.md` with guidelines
+- [ ] Add `CODE_OF_CONDUCT.md` (Contributor Covenant)
+- [ ] Add `SECURITY.md` for vulnerability reporting
+- [ ] Audit all dependencies for license compatibility
+- [ ] Remove any hardcoded personal paths from code
+- [ ] Ensure `.env.sample` has no real credentials
 
-### Current Documentation Assets
-✅ **README.md** - Comprehensive 35KB main guide with all workflows
-✅ **IMPROVEMENTS.md** - Detailed changelog and feature documentation  
-✅ **docs/video_ripping_guide.md** - 16KB comprehensive video guide
-✅ **docs/media_server_setup.md** - Jellyfin/Plex setup instructions
-✅ **docs/cd_ripping_guide.md** - CD ripping workflow
-✅ **docs/workflow_overview.md** - High-level overview
-✅ **requirements.txt** - Dependencies listed
-✅ **.env.sample** - Environment template
+### Phase 2: Documentation Overhaul (Week 1-2) 🟡 HIGH
+- [ ] **Redesign README.md** as portfolio hero page (< 150 lines)
+- [ ] **Create QUICKSTART.md** (5-minute setup)
+- [ ] **Add workflow diagrams** (Mermaid or SVG)
+- [ ] **Create architecture overview** with diagram
+- [ ] Reorganize docs/ into guides/ and reference/
+- [ ] Add screenshots of terminal output
+- [ ] Create logo/branding assets
+- [ ] Add badges (Python version, license, platform)
 
-### Documentation Standards Needed
-- [ ] **Consistent formatting** across all documentation
-- [ ] **Code examples** for every major feature
-- [ ] **Prerequisites** clearly listed for each script
-- [ ] **Migration guides** when making breaking changes
-- [ ] **Index/Navigation** - Better way to find relevant documentation
+### Phase 3: Code Quality (Week 2-3) 🟡 HIGH
+- [ ] **Standardize naming**: Choose `snake_case` or `kebab-case`, apply consistently
+- [ ] **Add type hints** to all Python functions
+- [ ] **Extract shared code** into `mediaflow/core/`
+- [ ] **Add pyproject.toml** for modern Python packaging
+- [ ] **Improve test coverage** to 80%+
+- [ ] **Add pre-commit hooks** (black, isort, flake8)
+- [ ] **Create unified CLI** entry point
+- [ ] Remove/archive deprecated scripts
+
+### Phase 4: Polish & Beauty (Week 3) 🟢 MEDIUM
+- [ ] Design project logo (simple, memorable)
+- [ ] Create hero banner image for README
+- [ ] Add GIF demo of ripping workflow
+- [ ] Add terminal screenshots with output
+- [ ] Create consistent emoji/icon language
+- [ ] Add "Made with ❤️" footer
+- [ ] Test README rendering on GitHub
+
+### Phase 5: Community Readiness (Week 4) 🟢 MEDIUM
+- [ ] Create issue templates (bug, feature, question)
+- [ ] Create PR template
+- [ ] Add GitHub Actions CI (tests, linting)
+- [ ] Set up GitHub Discussions
+- [ ] Write first blog post / announcement
+- [ ] Prepare HackerNews/Reddit launch post
 
 ---
 
-## 🔧 Configuration Management
+## 🏗️ Architecture Overview (To Be Created)
 
-### Current Configuration Assets
-✅ **.env** - Environment variables for API keys and paths
-✅ **.env.sample** - Template for new users
-✅ **.abcde.conf** - CD ripping configuration
-✅ **Makefile** - Build automation and dependency installation
-
-### Current Problems
-- **Environment variables scattered** - Some scripts have hardcoded paths
-- **No unified configuration** - Each script manages its own config
-- **No validation** of configuration on startup
-- **Configuration fragmentation** - Settings spread across multiple files
-
-### Proposed Solution
-```yaml
-# config/media.yml - NEW: Unified configuration
-paths:
-  music_library: "/Volumes/Data/Media/Library"
-  video_library: "/Volumes/Data/Media/Videos"
-  log_dir: "./log"
-
-api_keys:
-  musicbrainz: ""
-  tmdb: ""
-  omdb: ""
-  spotify_client_id: ""
-  spotify_client_secret: ""
-
-genres:
-  whitelist_file: "config/genres.yml"
-  enable_transformers: true
-  enable_christmas_detection: true
-
-processing:
-  parallel_downloads: 4
-  api_timeout: 15
-  max_retries: 4
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        MEDIAFLOW SYSTEM                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐     │
+│  │   CDs    │   │   DVDs   │   │ Blu-rays │   │  Files   │     │
+│  └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘     │
+│       │              │              │              │            │
+│       ▼              ▼              ▼              ▼            │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    INPUT LAYER                           │   │
+│  │  abcde (CD)  │  MakeMKV (Video)  │  File Scanner        │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                  PROCESSING LAYER                        │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │   │
+│  │  │ Encoder │  │ Tagger  │  │Organizer│  │ Checker │    │   │
+│  │  │HandBrake│  │MusicBrnz│  │ Rename  │  │ Quality │    │   │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   METADATA LAYER                         │   │
+│  │  MusicBrainz │ TMDb │ OMDb │ Spotify │ iTunes │ Overrides│  │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    OUTPUT LAYER                          │   │
+│  │  ┌─────────────────┐      ┌─────────────────┐           │   │
+│  │  │  Local Library  │──────│   Sync Engine   │           │   │
+│  │  │  /Media/Library │      │  rsync + filter │           │   │
+│  │  └─────────────────┘      └────────┬────────┘           │   │
+│  │                                    │                     │   │
+│  │                                    ▼                     │   │
+│  │                         ┌─────────────────┐             │   │
+│  │                         │  Media Server   │             │   │
+│  │                         │ Jellyfin/Plex   │             │   │
+│  │                         └─────────────────┘             │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Pipeline Efficiency Improvements
+## 🎨 Branding Direction
 
-### Current Pipeline Strengths
-✅ **Music pipeline** - Comprehensive genre tagging with MusicBrainz integration
-✅ **Music metadata fixing** - Complete metadata repair with MusicBrainz-first approach
-✅ **Video pipeline** - Complete DVD/Blu-ray ripping with HandBrake integration
-✅ **TV pipeline** - Show metadata with TMDb/IMDb fallback
-✅ **Explicit content detection** - Automatic tagging with multiple sources
-✅ **Real-time logging** - Unresolved files and rejected genres tracking
+### Project Name Options
+| Name | Pros | Cons |
+|------|------|------|
+| **MediaFlow** | Clear, professional, implies pipeline | Generic |
+| **DiscVault** | Physical media focus, archival feel | Narrow scope |
+| **RipStation** | Action-oriented, memorable | Sounds amateur |
+| **Archivista** | Sophisticated, library-like | Hard to spell |
+| **PhysicalDigital** | Descriptive | Too long |
 
-### Current Pipeline Issues
-- **Sequential processing** - No parallel operations for large libraries
-- **No resume capability** - Interrupted operations start from scratch
-- **Limited progress tracking** - Basic progress bars, no ETA calculations
-- **No batch operations** - Must run scripts manually for each folder
-- **No health monitoring** - No way to monitor library health over time
+**Recommendation:** `MediaFlow` - professional, memorable, domain-available
 
-### Proposed Improvements
-- [ ] **Parallel processing** - Process multiple albums/movies simultaneously
-- [ ] **Batch operations** - Process entire library in one run
-- [ ] **Progress tracking** - Better progress bars and ETA calculations
-- [ ] **Resume capability** - Resume interrupted processing from last checkpoint
-- [ ] **Smart caching** - Cache artist-level lookups to reduce API calls
-- [ ] **Health monitoring** - Track library quality and completeness over time
+### Visual Identity
+- **Colors:** Deep blue (#1a365d) + warm orange (#ed8936) accent
+- **Logo:** Stylized disc transforming into streaming waves
+- **Font:** Inter or JetBrains Mono (for code)
+- **Tone:** Professional but approachable, technical but accessible
 
 ---
 
-## 🛠️ Technical Improvements
+## 📅 Timeline
 
-### Current Technical Assets
-✅ **Python scripts** - Well-structured with error handling
-✅ **Bash scripts** - Robust video ripping pipeline
-✅ **Signal handling** - Proper Ctrl+C handling in update-genre-mb.py
-✅ **Caching system** - Genre cache and API call optimization
-✅ **Logging system** - Real-time unresolved and rejected genre tracking
+| Week | Focus | Deliverables |
+|------|-------|--------------|
+| 1 | Legal + Docs Start | LICENSE, DISCLAIMER, New README draft |
+| 2 | Docs Complete | QUICKSTART, diagrams, reorganized docs/ |
+| 3 | Code Quality | Naming consistency, type hints, tests |
+| 4 | Polish + Launch | Logo, screenshots, CI, soft launch |
 
-### Technical Debt
-- [ ] **Type hints** - Missing from most Python scripts
-- [ ] **Consistent error handling** - Different patterns across scripts
-- [ ] **Structured logging** - Basic print statements instead of proper logging
-- [ ] **Testing framework** - No unit tests for core functions
-- [ ] **Code linting** - Inconsistent formatting and style
-- [ ] **Async operations** - No asyncio for I/O bound operations
-
-### Performance Optimizations
-- [ ] **Connection pooling** - Reuse HTTP connections for API calls
-- [ ] **Memory optimization** - Better memory usage for large libraries
-- [ ] **Caching layers** - Multiple caching strategies for different data types
-- [ ] **Batch API calls** - Reduce round trips to external APIs
+**Target Release Date:** March 2026 (v1.0.0)
 
 ---
 
-## 🎯 Media Server Readiness
+## ⚠️ Risk Register
 
-### Current Server Integration
-✅ **Jellyfin naming conventions** - Follows proper folder/file naming
-✅ **Metadata standards** - Compatible with Jellyfin/Plex expectations
-✅ **NFO generation potential** - Scripts have metadata needed for NFO files
-✅ **Artwork handling** - Cover art embedding and management
-
-### Missing Server Features
-- [ ] **NFO generation** - Generate NFO files for Jellyfin/Plex
-- [ ] **Artwork optimization** - Optimize cover art for server consumption
-- [ ] **Format validation** - Ensure files meet server requirements
-- [ ] **Quality assurance** - Validate files before server ingestion
-- [ ] **Library health checks** - Ensure server-compatible library structure
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Legal challenge re: decryption | High | Clear disclaimers, no decryption code included |
+| API ToS violation | Medium | Document compliance, use rate limiting |
+| macOS-only limits adoption | Medium | Document Linux/Windows status, accept PRs |
+| Overwhelming scope | High | Focus on core workflows, defer nice-to-haves |
 
 ---
 
-## � Workflow Automation
+## 📈 Success Metrics
 
-### Current Workflow Strengths
-✅ **End-to-end music processing** - From CD ripping to genre tagging
-✅ **Complete video pipeline** - From disc to server-ready files
-✅ **Manual tagging tools** - tag-manual-genre.py for problematic files
-✅ **Real-time feedback** - Unresolved files logged immediately
+### Technical
+- [ ] 80%+ test coverage
+- [ ] Zero linting errors
+- [ ] All scripts work without modification after clone
+- [ ] CI passing on all commits
 
-### Automation Gaps
-- [ ] **One-command ripping** - From disc to server-ready media
-- [ ] **Watched folders** - Automatically process new files
-- [ ] **Scheduled maintenance** - Regular library health checks
-- [ ] **Notification system** - Alert on completion or errors
-- [ ] **CLI wizard** - Guided setup for new users
+### Documentation
+- [ ] New user can rip first CD in < 10 minutes
+- [ ] All workflows have copy-pasteable examples
+- [ ] Architecture is understood from single diagram
 
----
+### Community
+- [ ] 50+ GitHub stars in first month
+- [ ] 5+ external contributors in first year
+- [ ] Featured in "awesome" lists or media server forums
 
-## 📦 Distribution & Deployment
-
-### Current Distribution
-✅ **Makefile** - Dependency installation and setup
-✅ **requirements.txt** - Python dependencies listed
-✅ **Environment template** - .env.sample for configuration
-✅ **Comprehensive documentation** - Multiple guides and references
-
-### Deployment Improvements
-- [ ] **Setup script** - Automated setup for new users
-- [ ] **Docker support** - Containerized deployment option
-- [ ] **Cross-platform compatibility** - Windows/Linux support
-- [ ] **Update mechanism** - Easy way to update scripts
-- [ ] **Backup/restore** - Backup configuration and data
+### Portfolio
+- [ ] README renders beautifully on GitHub
+- [ ] Project demonstrates professional engineering
+- [ ] Can confidently share in job interviews
 
 ---
 
-## 🎨 User Experience & Branding
+*Last Updated: February 3, 2026*
 
-### Current User Experience
-✅ **Comprehensive documentation** - 35KB README with detailed workflows
-✅ **Practical error messages** - Clear feedback in most scripts
-✅ **Real-time progress feedback** - Progress bars and status updates
-✅ **Manual override tools** - tag-manual-genre.py for problematic files
-✅ **Signal handling** - Proper Ctrl+C behavior with graceful shutdown
+*Status: Planning Phase - Legal compliance is blocking release*
 
-### User Experience Gaps
-- **No unified CLI** - Users must know which script to run for each task
-- **Technical naming** - Script names are functional but not user-friendly
-- **No friendly branding** - Generic "digital-library" name
-- **Limited onboarding** - No guided setup for new users
-- **No visual feedback** - Text-only interface, no progress visualization
-
-### Proposed Branding & Identity
-
-#### **Project Name Ideas:**
-- **MediaFlow** - Suggests smooth media processing pipeline
-- **Librarian** - Evokes organization and curation
-- **MediaCurator** - Professional media management
-- **DigitalVault** - Secure, organized media storage
-- **StreamReady** - Focus on server-ready output
-- **MediaForge** - Crafting perfect media libraries
-- **ArchiveCraft** - Artful media archiving
-
-#### **Recommended Name: `MediaFlow`**
-- **Memorable and professional**
-- **Suggests pipeline/flow concept**
-- **Easy to say and type**
-- **Available domain likely**
-- **Evokes efficiency and organization**
-
-### User Experience Enhancements
-
-#### **Friendly CLI Interface**
-```bash
-# Current: Multiple script names
-python3 bin/music/update-genre-mb.py --recursive --force-missing
-python3 bin/music/tag-manual-genre.py --genre "jazz"
-python3 bin/video/rip_video.py
-
-# Proposed: Unified CLI
-mediaflow music tag --recursive --force-missing
-mediaflow music manual --genre "jazz"
-mediaflow video rip
-mediaflow tv metadata
-mediaflow library health
-mediaflow library organize
-```
-
-#### **Interactive Setup Wizard**
-```bash
-$ mediaflow setup
-🎵 Welcome to MediaFlow! Let's set up your media library.
-
-📁 Where is your music library? [/Volumes/Data/Media/Library]: 
-🎬 Where is your video library? [/Volumes/Data/Media/Videos]:
-🔑 Do you have API keys? (MusicBrainz, TMDb) [y/N]: y
-🎯 What's your primary media server? [Jellyfin/Plex/Emby]: Jellyfin
-
-✅ Setup complete! Ready to process your media.
-🚀 Try: mediaflow music scan --help
-```
-
-#### **Friendly Logging & Progress**
-```bash
-$ mediaflow music tag --recursive
-
-🎵 MediaFlow Music Tagger v1.0
-📁 Scanning: /Volumes/Data/Media/Library (6,543 files found)
-⚡ Processing: 1,234/6,543 (18.9%) • ETA: 3m 24s
-🎼 Last processed: The Beatles - Abbey Road • Genre: rock
-📊 Statistics: 1,200 tagged • 34 skipped • 0 errors
-
-🎯 Current file: Pink Floyd - The Dark Side of the Moon
-🔍 Looking up: Pink Floyd → Progressive rock → ✅ rock
-💾 Saved: Pink Floyd - The Dark Side of the Moon (rock)
-```
-
-#### **Visual Progress Indicators**
-- **Progress bars** with percentage and ETA
-- **Real-time statistics** (tagged, skipped, errors)
-- **Current file display** with artist/album info
-- **Genre lookup visualization** showing transformation process
-- **Success/failure indicators** with emojis/colors
-
-#### **Smart Error Handling**
-```bash
-❌ Error processing file:
-📁 File: /path/to/problem.flac
-🎵 Artist: Unknown Artist
-💬 Issue: No metadata found
-💡 Suggestion: Try manual tagging with --force flag
-🔧 Command: mediaflow music manual --genre "genre" /path/to/problem.flac
-```
-
-### Onboarding Experience
-
-#### **Quick Start Guide**
-```bash
-# One-command setup
-curl -sSL https://mediaflow.dev/install | bash
-
-# Interactive configuration
-mediaflow setup
-
-# First scan
-mediaflow music scan --quick
-
-# Health check
-mediaflow library health --report
-```
-
-#### **Contextual Help System**
-```bash
-$ mediaflow --help
-🎵 MediaFlow - Your Digital Library Toolkit
-
-Commands:
-  music    🎼 Organize and tag your music collection
-  video    🎬 Rip and process videos
-  tv       📺 Manage TV show metadata
-  library  📚 Library health and organization
-  setup    ⚙️  Configure MediaFlow
-  doctor   🔍 Diagnose and fix issues
-
-Get help: mediaflow <command> --help
-Docs: https://mediaflow.dev/docs
-```
-
-### Accessibility & Inclusivity
-
-#### **Multi-language Support**
-- **Internationalized error messages**
-- **Unicode genre handling** (already good with guaguancó example)
-- **Cultural genre awareness** (world music, regional genres)
-- **Accessibility features** for screen readers
-
-#### **Skill Level Adaptation**
-```bash
-# Beginner mode
-mediaflow music scan --easy
-
-# Advanced mode
-mediaflow music tag --transformers --cache-bypass --parallel 8
-
-# Expert mode
-mediaflow config --edit raw
-```
-
----
-
-## 🚨 Priority Items
-
-### High Priority (This Week)
-1. **Consolidate root-level scripts** - Move fix_*.py scripts to scripts/utils/
-2. **Create unified configuration system** - config/media.yml
-3. **Add structured logging** - Replace print statements with proper logging
-4. **Script organization cleanup** - Consistent naming and categorization
-5. **🎨 DESIGN BRANDING** - Choose project name and create friendly CLI interface
-
-### Medium Priority (This Month)
-1. **Parallel processing for music pipeline** - Process multiple albums
-2. **Resume capability** - Checkpoint and resume interrupted operations
-3. **Health monitoring system** - Track library quality over time
-4. **NFO generation** - Generate Jellyfin-compatible metadata files
-5. **🎵 M3U8 PROCESSING ENHANCEMENTS** - Add batch M3U8 processing, recursive folder scanning
-5. **🎯 UNIFIED CLI** - Implement mediaflow command with subcommands
-
-### Low Priority (Future)
-1. **Web interface development** - Optional web UI for management
-2. **Docker containerization** - Portable deployment option
-3. **Advanced analytics** - Library statistics and reporting
-4. **Mobile app development** - Remote monitoring and control
-5. **🌟 PREMIUM FEATURES** - Advanced automation and AI-powered suggestions
-
----
-
-## 📝 Implementation Notes
-
-### Immediate Actions Required
-1. **Script consolidation** - Move root-level scripts to appropriate subdirectories
-2. **Configuration unification** - Create config/media.yml and migrate settings
-3. **Documentation reorganization** - Create better navigation in docs/
-4. **Naming standardization** - Choose consistent naming convention
-5. **🎨 BRAND IDENTITY** - Select final name and design logo/color scheme
-
-### User Experience Strategy
-- **Progressive disclosure** - Simple interface that reveals advanced features
-- **Visual feedback** - Progress bars, emojis, and clear status indicators
-- **Contextual help** - Right help at the right time
-- **Error recovery** - Clear paths forward when things go wrong
-- **Success celebration** - Acknowledge completed tasks with positive feedback
-
-### Migration to Unified CLI
-```bash
-# Phase 1: Keep existing scripts, add mediaflow wrapper
-# Phase 2: Deprecate individual scripts with warnings
-# Phase 3: Remove old scripts after transition period
-```
-
----
-
-## 🎯 Success Metrics
-
-### Organization Metrics
-- [ ] Zero scripts in root directory (except README.md, TODO.md)
-- [ ] All scripts follow consistent naming convention
-- [ ] Clear categorization of all scripts by purpose
-- [ ] Unified configuration system for all scripts
-
-### Performance Metrics
-- [ ] Process 1000 tracks in under 10 minutes (with parallel processing)
-- [ ] Resume capability saves 90% of progress on interruption
-- [ ] Library health checks complete in under 5 minutes
-- [ ] 99% successful processing rate with proper error handling
-
-### User Experience Metrics
-- [ ] Setup time under 30 minutes for new users
-- [ ] One-command processing for common workflows
-- [ ] Clear error messages with recovery suggestions
-- [ ] Comprehensive documentation with examples
-- [ ] **🎨 FRIENDLY INTERFACE** - Users describe it as "delightful" and "intuitive"
-- [ ] **🎯 BRAND RECOGNITION** - Users recognize and recommend "MediaFlow"
-
----
-
-*Last updated: December 30, 2025*
-*Current Status: Well-documented but needs organization and performance improvements*
-*Next Steps: Script consolidation, configuration unification, and user experience transformation*
-*🎨 VISION: Transform from technical toolkit to user-friendly "MediaFlow" digital library assistant*
+*Next Action: Create LICENSE and DISCLAIMER.md files*
