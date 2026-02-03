@@ -396,6 +396,73 @@ Scripts that may be deprecated, redundant, or superseded:
 
 ---
 
+## 🚀 Release Plan
+
+### Pre-Release Final Checklist
+- [ ] Complete script audit (above)
+- [ ] Final PII/security scan of all tracked files
+- [ ] Test all documented workflows on clean system
+- [ ] Verify README renders correctly on GitHub
+- [ ] Update version in `pyproject.toml` to `1.0.0`
+
+### Git History Reset (CRITICAL)
+
+> ⚠️ **Why:** The existing git history may contain sensitive information (IP addresses, paths, credentials, personal data) that was later removed or gitignored. A fresh history ensures nothing is recoverable.
+
+**Option A: Fresh Repository (Recommended)**
+```bash
+# 1. Backup current repo
+cp -r digital-library digital-library-backup
+
+# 2. Remove git history
+cd digital-library
+rm -rf .git
+
+# 3. Initialize fresh repo
+git init
+git add .
+git commit -m "Initial release: Physical media to digital library automation"
+
+# 4. Create new GitHub repo (do NOT use existing one)
+# Go to github.com → New repository → "digital-library"
+# Do NOT initialize with README (we have one)
+
+# 5. Push to new remote
+git remote add origin git@github.com:USERNAME/digital-library.git
+git branch -M main
+git push -u origin main
+```
+
+**Option B: Squash All History (Alternative)**
+```bash
+# Creates single commit from all history
+git checkout --orphan fresh-main
+git add .
+git commit -m "Initial release: Physical media to digital library automation"
+git branch -D main
+git branch -m main
+git push -f origin main  # DANGER: Force push
+```
+
+### Pre-Push Verification
+```bash
+# Verify no sensitive data in tracked files
+git ls-files | xargs grep -l "10\.0\.[0-9]" || echo "✓ No IPs found"
+git ls-files | xargs grep -l "@.*\.local" || echo "✓ No local hosts found"
+git ls-files | xargs grep -l "password\|secret\|token" || echo "✓ Check manually"
+
+# Verify gitignore is working
+git status --ignored
+```
+
+### Post-Release
+- [ ] Archive old private repository (if keeping for reference)
+- [ ] Delete old private repository (if not needed)
+- [ ] Announce release (optional)
+- [ ] Monitor issues for first-time user feedback
+
+---
+
 ## 🏗️ Architecture Overview (Reference)
 
 ```
