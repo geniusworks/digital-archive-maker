@@ -12,7 +12,75 @@ Each step links to the detailed guide or script.
 
 ---
 
+## System Overview
+
+```mermaid
+flowchart TB
+    subgraph INPUT["📀 Physical Media"]
+        CD[Audio CD]
+        DVD[DVD]
+        BR[Blu-ray]
+    end
+
+    subgraph PROCESS["⚙️ Processing"]
+        RIP[Rip & Encode]
+        TAG[Tag Metadata]
+        ORG[Organize Files]
+        QA[Quality Check]
+    end
+
+    subgraph METADATA["🏷️ Metadata Sources"]
+        MB[MusicBrainz]
+        TMDB[TMDb]
+        SPOT[Spotify]
+        ITUNES[iTunes]
+    end
+
+    subgraph OUTPUT["📁 Local Library"]
+        MUSIC["/Library/CDs"]
+        MOVIES["/Library/Movies"]
+        SHOWS["/Library/Shows"]
+    end
+
+    subgraph SERVER["🖥️ Media Server"]
+        JELLY[Jellyfin/Plex]
+    end
+
+    CD --> RIP
+    DVD --> RIP
+    BR --> RIP
+    RIP --> TAG
+    TAG --> ORG
+    ORG --> QA
+
+    MB -.-> TAG
+    TMDB -.-> TAG
+    SPOT -.-> TAG
+    ITUNES -.-> TAG
+
+    QA --> MUSIC
+    QA --> MOVIES
+    QA --> SHOWS
+
+    MUSIC -->|rsync + filter| JELLY
+    MOVIES -->|rsync + filter| JELLY
+    SHOWS -->|rsync + filter| JELLY
+```
+
+---
+
 ## Workflow A: CDs → FLACs → tagging → sync
+
+```mermaid
+flowchart LR
+    A[🎵 Audio CD] --> B[abcde + MusicBrainz]
+    B --> C[FLAC + cover.jpg + .m3u8]
+    C --> D[tag-explicit-mb.py]
+    D --> E[EXPLICIT tags]
+    E --> F{Sync?}
+    F -->|exclude explicit| G[🖥️ Family Server]
+    F -->|all content| H[🖥️ Full Server]
+```
 
 ### A1) Rip CD to FLAC (MusicBrainz + cover + playlist)
 - Guide: `docs/cd_ripping_guide.md`
@@ -20,7 +88,7 @@ Each step links to the detailed guide or script.
   - `make rip-cd`
 
 Output (default):
-- `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/CDs/Artist/Album/NN - Title.flac`
+- `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac`
 - `cover.jpg`
 - `Album.m3u8`
 
@@ -54,6 +122,19 @@ Artifacts:
 
 ## Workflow B: DVD/Blu-ray → MP4s → organize/subtitles → server
 
+```mermaid
+flowchart LR
+    A[📀 DVD/Blu-ray] --> B[MakeMKV]
+    B --> C[MKV raw]
+    C --> D[HandBrakeCLI]
+    D --> E[MP4 + subtitles]
+    E --> F[tag-movie-metadata.py]
+    F --> G[Tagged MP4]
+    G --> H{Rating Filter}
+    H -->|≤PG-13| I[🖥️ Family Server]
+    H -->|all ratings| J[🖥️ Full Server]
+```
+
 ### B1) Rip discs to staging (MKV/MP4)
 - Guide: `docs/video_ripping_guide.md`
 - Commands:
@@ -79,6 +160,17 @@ Artifacts:
 ---
 
 ## Workflow C: Music Videos → organize → standardize → sync
+
+```mermaid
+flowchart LR
+    A[🎬 Music Videos] --> B[fix_music_videos.py]
+    B --> C[Artist folders]
+    C --> D[standardize_filenames.py]
+    D --> E["{Artist} - {Title}.mp4"]
+    E --> F[scan_metadata.py]
+    F --> G[Tagged videos]
+    G --> H[🖥️ Media Server]
+```
 
 ### C1) Organize music videos into artist folders
 - Scripts:

@@ -11,25 +11,26 @@
 | Area | Score | Status |
 |------|-------|--------|
 | **Functionality** | ⭐⭐⭐⭐⭐ | Excellent - Complete CD/DVD/Blu-ray pipelines working |
-| **Documentation** | ⭐⭐⭐☆☆ | Good content, poor organization and visual appeal |
+| **Documentation** | ⭐⭐⭐⭐☆ | ✅ README redesigned, QUICKSTART added |
 | **Code Quality** | ⭐⭐⭐⭐☆ | Solid scripts, needs consistency and type hints |
-| **Legal Clarity** | ⭐⭐☆☆☆ | Minimal - needs LICENSE file, clear disclaimers |
-| **Visual Appeal** | ⭐⭐☆☆☆ | Functional but not portfolio-ready |
-| **Onboarding** | ⭐⭐⭐☆☆ | Steep learning curve, no quick-start |
+| **Legal Clarity** | ⭐⭐⭐⭐⭐ | ✅ Complete - LICENSE, DISCLAIMER, CONTRIBUTING, etc. |
+| **Visual Appeal** | ⭐⭐⭐☆☆ | Improved - README hero page, badges added |
+| **Onboarding** | ⭐⭐⭐⭐☆ | ✅ QUICKSTART.md added, README redesigned |
 
-**Verdict:** *Functional tool, not yet release-ready as showcase project.*
+**Verdict:** *Phase 1 complete. Legally releasable. Continuing polish for high-quality release.*
 
 ---
 
 ## 🎯 The Five Pillars of Release Readiness
 
-### Pillar 1: Open Source Compliance ❌ NOT READY
+### Pillar 1: Open Source Compliance ✅ COMPLETE
 
-**Critical Missing Items:**
-- [ ] **LICENSE file** - No license file exists (CRITICAL)
-- [ ] **CONTRIBUTING.md** - No contribution guidelines
-- [ ] **CODE_OF_CONDUCT.md** - No community standards
-- [ ] **SECURITY.md** - No vulnerability reporting process
+**Completed Items (Feb 3, 2026):**
+- [x] **LICENSE file** - MIT license added
+- [x] **CONTRIBUTING.md** - Contribution guidelines with style guide
+- [x] **CODE_OF_CONDUCT.md** - Minimal, practical community standards
+- [x] **SECURITY.md** - Vulnerability reporting process
+- [x] **DISCLAIMER.md** - Comprehensive legal protections
 - [ ] **Dependency licensing audit** - Verify all deps are compatible
 
 **Recommended License:** MIT or Apache 2.0 (permissive, portfolio-friendly)
@@ -253,56 +254,149 @@ make rip-cd
 
 ## 📋 Release Checklist
 
-### Phase 1: Legal & Compliance (Week 1) 🔴 CRITICAL
-- [ ] Add `LICENSE` file (MIT recommended)
-- [ ] Create `DISCLAIMER.md` with legal protections
-- [ ] Add `CONTRIBUTING.md` with guidelines
-- [ ] Add `CODE_OF_CONDUCT.md` (Contributor Covenant)
-- [ ] Add `SECURITY.md` for vulnerability reporting
+### Phase 1: Legal & Compliance ✅ COMPLETE
+- [x] Add `LICENSE` file (MIT)
+- [x] Create `DISCLAIMER.md` with legal protections
+- [x] Add `CONTRIBUTING.md` with guidelines
+- [x] Add `CODE_OF_CONDUCT.md` (Contributor Covenant)
+- [x] Add `SECURITY.md` for vulnerability reporting
+- [x] **Scan for PII** - Completed; sensitive files already gitignored
+- [x] Ensure `.env.sample` has no real credentials - Verified clean
+
+**Remaining (Low Priority):**
 - [ ] Audit all dependencies for license compatibility
-- [ ] Remove any hardcoded personal paths from code
-- [ ] Ensure `.env.sample` has no real credentials
+- [ ] Decision: Genericize `/Volumes/Data/Media` paths in docs (low risk, functional defaults)
 
-### Phase 2: Documentation Overhaul (Week 1-2) 🟡 HIGH
-- [ ] **Redesign README.md** as portfolio hero page (< 150 lines)
-- [ ] **Create QUICKSTART.md** (5-minute setup)
-- [ ] **Add workflow diagrams** (Mermaid or SVG)
-- [ ] **Create architecture overview** with diagram
-- [ ] Reorganize docs/ into guides/ and reference/
-- [ ] Add screenshots of terminal output
+### Phase 2: Documentation Overhaul ✅ MOSTLY COMPLETE
+- [x] **Redesign README.md** as portfolio hero page (141 lines)
+- [x] **Create QUICKSTART.md** (10-minute setup)
+- [x] **Add badges** (Python version, license, platform)
+- [x] **Add workflow diagrams** (Mermaid) - Added to `docs/workflow_overview.md`
+- [x] **Create architecture overview** with diagram - System overview in workflow_overview.md
+
+**Remaining (Nice-to-Have):**
+- [ ] Reorganize docs/ into guides/ and reference/ subdirectories
+- [ ] Add screenshots of terminal output (CD rip, video rip, sync)
 - [ ] Create logo/branding assets
-- [ ] Add badges (Python version, license, platform)
+- [ ] Review all docs for outdated references or broken links
 
-### Phase 3: Code Quality (Week 2-3) 🟡 HIGH
-- [ ] **Standardize naming**: Choose `snake_case` or `kebab-case`, apply consistently
-- [ ] **Add type hints** to all Python functions
-- [ ] **Extract shared code** into `mediaflow/core/`
-- [ ] **Add pyproject.toml** for modern Python packaging
-- [ ] **Improve test coverage** to 80%+
+### Phase 3: Code Quality 🟡 IN PROGRESS
+- [x] **Add pyproject.toml** for modern Python packaging (includes black, isort, mypy config)
+
+**Remaining (Important for Professional Release):**
+- [ ] **Script Audit** - See detailed checklist below
+- [ ] **Standardize naming**: Mixed `snake_case`/`kebab-case` - decide policy for new scripts
+- [ ] **Add type hints** to critical Python functions (start with public APIs)
+- [ ] **Extract shared code** into `mediaflow/core/` (config, logging, API clients)
 - [ ] **Add pre-commit hooks** (black, isort, flake8)
-- [ ] **Create unified CLI** entry point
-- [ ] Remove/archive deprecated scripts
+- [ ] **Create unified CLI** entry point (optional, nice-to-have)
 
-### Phase 4: Polish & Beauty (Week 3) 🟢 MEDIUM
+**Deferred:**
+- [ ] Improve test coverage to 80%+ (current tests work; expand later)
+
+### Phase 4: Polish & Beauty 🟢 NICE-TO-HAVE
 - [ ] Design project logo (simple, memorable)
 - [ ] Create hero banner image for README
 - [ ] Add GIF demo of ripping workflow
 - [ ] Add terminal screenshots with output
+- [ ] Test README rendering on GitHub before release
+
+**Deferred:**
 - [ ] Create consistent emoji/icon language
 - [ ] Add "Made with ❤️" footer
-- [ ] Test README rendering on GitHub
 
-### Phase 5: Community Readiness (Week 4) 🟢 MEDIUM
-- [ ] Create issue templates (bug, feature, question)
-- [ ] Create PR template
-- [ ] Add GitHub Actions CI (tests, linting)
-- [ ] Set up GitHub Discussions
-- [ ] Write first blog post / announcement
-- [ ] Prepare HackerNews/Reddit launch post
+### Phase 5: Community Readiness ✅ COMPLETE
+- [x] Create issue templates (bug, feature, question) - `.github/ISSUE_TEMPLATE/`
+- [x] Create PR template - `.github/pull_request_template.md`
+- [x] Add GitHub Actions CI (tests, linting) - `.github/workflows/ci.yml`
+
+**Deferred (Post-Release):**
+- [ ] Set up GitHub Discussions (if community grows)
+- [ ] Write announcement blog post
+- [ ] HackerNews/Reddit launch post
 
 ---
 
-## 🏗️ Architecture Overview (To Be Created)
+## 🔧 Script Audit Checklist (Pre-Release)
+
+> **Goal:** Ensure all scripts are useful, well-placed, non-redundant, have clear responsibilities, and support chainable workflows.
+
+### Audit Criteria
+- [ ] **Usefulness**: Each script solves a real problem; no "demo" or placeholder scripts
+- [ ] **Placement**: Scripts are in the correct `bin/` subdirectory (music/, video/, sync/, utils/)
+- [ ] **Non-redundancy**: No duplicate functionality across scripts; consolidate if needed
+- [ ] **Clear responsibility**: Each script does ONE thing well (single responsibility)
+- [ ] **Chainability**: Scripts can be composed (stdin/stdout, exit codes, consistent arg patterns)
+- [ ] **Documentation**: Each script has `--help` with clear usage examples
+- [ ] **Error handling**: Scripts fail gracefully with useful error messages
+- [ ] **Dependency checks**: Scripts verify required tools exist before running
+
+### Scripts to Review
+
+#### bin/music/ (18 scripts)
+| Script | Status | Notes |
+|--------|--------|-------|
+| `check_album_integrity.py` | [ ] Review | Core utility - keep |
+| `compare_music.py` | [ ] Review | Useful for library comparison |
+| `fix_album.py` | [ ] Review | Core workflow script |
+| `fix_album_covers.py` | [ ] Review | Overlaps with check_album_integrity --get-covers? |
+| `fix_metadata.py` | [ ] Review | Relationship to fix_album.py? |
+| `fix_track.py` | [ ] Review | Single-track fixer |
+| `fix-missing-metadata.py` | [ ] Review | Overlaps with other fix scripts? |
+| `fix-single-title.py` | [ ] Review | Specialized - keep or archive? |
+| `fix-track-numbers.py` | [ ] Review | Specialized - keep or archive? |
+| `fix-unknown-album.py` | [ ] Review | Specialized - keep or archive? |
+| `generate-playlists.py` | [ ] Review | Useful utility |
+| `repair-flac-tags.py` | [ ] Review | Tag repair from m3u |
+| `set_explicit.py` | [ ] Review | Overlaps with tag-explicit-mb.py? |
+| `tag-explicit-mb.py` | [ ] Review | Core explicit tagger |
+| `tag-manual-genre.py` | [ ] Review | Manual genre assignment |
+| `update-from-m3u.py` | [ ] Review | Updates tags from playlist |
+| `update-genre-mb.py` | [ ] Review | MusicBrainz genre updater |
+
+#### bin/video/ (12 scripts)
+| Script | Status | Notes |
+|--------|--------|-------|
+| `backfill_subs.py` | [ ] Review | Subtitle muxing |
+| `embed_thumbnail.py` | [ ] Review | Thumbnail embedding |
+| `fix_music_videos.py` | [ ] Review | Generic organizer |
+| `fix_music_videos_mapped.py` | [ ] Review | With hardcoded mappings |
+| `fix_music_videos_secondary.py` | [ ] Review | Secondary collection |
+| `rip_video.py` | [ ] Review | Core ripping script |
+| `scan_music_video_metadata.py` | [ ] Review | Metadata scanner |
+| `set-movie-imdb-override.py` | [ ] Review | Override helper |
+| `standardize_music_video_filenames.py` | [ ] Review | Filename standardizer |
+| `tag-movie-metadata.py` | [ ] Review | Movie metadata tagger |
+| `tag-movie-ratings.py` | [ ] Review | MPAA rating tagger |
+| `vobsub_to_srt.py` | [ ] Review | Subtitle converter |
+
+#### bin/sync/ (4 files)
+| Script | Status | Notes |
+|--------|--------|-------|
+| `master-sync.py` | [ ] Review | Orchestration script |
+| `sync-library.py` | [ ] Review | Core sync with filtering |
+| `sync-config.yaml.example` | [ ] Review | Example config |
+
+#### bin/tv/ (2 scripts)
+| Script | Status | Notes |
+|--------|--------|-------|
+| `rename_shows_jellyfin.py` | [ ] Review | Show renamer |
+| `tag-show-metadata.py` | [ ] Review | TV metadata tagger |
+
+#### bin/utils/ (2 scripts)
+| Script | Status | Notes |
+|--------|--------|-------|
+| `convert_playlists.py` | [ ] Review | Playlist format converter |
+| `m3u_to_m3u8.sh` | [ ] Review | Simple m3u converter |
+
+### Archive Candidates (`_archive/`)
+Scripts that may be deprecated, redundant, or superseded:
+- [ ] Review `_archive/` contents for anything worth rescuing
+- [ ] Ensure archived scripts are clearly marked as unsupported
+
+---
+
+## 🏗️ Architecture Overview (Reference)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
