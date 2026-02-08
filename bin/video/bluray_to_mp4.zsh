@@ -7,13 +7,14 @@ set -euo pipefail
 # This script automates the complete Blu-ray to MP4 conversion workflow:
 # 
 # USAGE:
-#   ./bluray_to_mp4.zsh [movie-title] [year]
+#   ./bluray_to_mp4.zsh [movie-title] [year] [output-dir]
 #   
 #   Examples:
-#     ./bluray_to_mp4.zsh "The Matrix" 1999     ← Manual title + year
-#     ./bluray_to_mp4.zsh "The Matrix"          ← Manual title only
-#     ./bluray_to_mp4.zsh 1999                   ← Auto-detect title + manual year
-#     ./bluray_to_mp4.zsh                        ← Auto-detect everything
+#     ./bluray_to_mp4.zsh "The Matrix" 1999 "/Volumes/Data/Media/Library/Movies"  ← Full control
+#     ./bluray_to_mp4.zsh "The Matrix" 1999     ← Manual title + year (default output dir)
+#     ./bluray_to_mp4.zsh "The Matrix"          ← Manual title only (default output dir)
+#     ./bluray_to_mp4.zsh 1999                   ← Auto-detect title + manual year (default output dir)
+#     ./bluray_to_mp4.zsh                        ← Auto-detect everything (default output dir)
 #
 # REQUIREMENTS:
 #   - MakeMKV (for Blu-ray ripping)
@@ -79,11 +80,18 @@ else
 fi
 
 # Parse command line arguments
-# Usage: ./bluray_to_mp4.zsh [movie-title] [year]
-if [[ -n "${2:-}" ]]; then
-  # Both title and year provided
+# Usage: ./bluray_to_mp4.zsh [movie-title] [year] [output-dir]
+if [[ -n "${3:-}" ]]; then
+  # Title, year, and output directory provided
   MOVIE_NAME="${1}"
   MOVIE_YEAR="${2}"
+  OUTPUT_DIR="${3}"
+  MOVIE_BASE="${MOVIE_NAME} (${MOVIE_YEAR})"
+elif [[ -n "${2:-}" ]]; then
+  # Title and year provided
+  MOVIE_NAME="${1}"
+  MOVIE_YEAR="${2}"
+  OUTPUT_DIR="${HOME}/Movies/Rips"
   MOVIE_BASE="${MOVIE_NAME} (${MOVIE_YEAR})"
 elif [[ -n "${1:-}" ]]; then
   # Check if first arg looks like a year (4 digits)
@@ -91,21 +99,25 @@ elif [[ -n "${1:-}" ]]; then
     # Only year provided - auto-detect title
     MOVIE_NAME=$(echo "$DISC_LABEL" | tr '_' ' ')
     MOVIE_YEAR="${1}"
+    OUTPUT_DIR="${HOME}/Movies/Rips"
     MOVIE_BASE="${MOVIE_NAME} (${MOVIE_YEAR})"
   else
     # Only title provided
     MOVIE_NAME="${1}"
+    OUTPUT_DIR="${HOME}/Movies/Rips"
     MOVIE_BASE="${MOVIE_NAME}"
   fi
 else
   # No arguments - auto-detect everything
   MOVIE_NAME=$(echo "$DISC_LABEL" | tr '_' ' ')
+  OUTPUT_DIR="${HOME}/Movies/Rips"
   MOVIE_BASE="${MOVIE_NAME}"
 fi
 
 echo "Disc detected: $MOVIE_BASE"
+echo "Output directory: $OUTPUT_DIR"
 
-BASE="$HOME/Movies/Rips/${MOVIE_BASE}"
+BASE="${OUTPUT_DIR}/${MOVIE_BASE}"
 
 # Handle duplicate folders by appending a timestamp
 if [[ -d "$BASE" ]]; then

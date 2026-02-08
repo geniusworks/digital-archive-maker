@@ -31,8 +31,14 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 For complete Blu-ray processing with automatic subtitle handling and MP4 compliance:
 
 ```bash
-# Use the automated Blu-ray script
+# Use the automated Blu-ray script with custom output directory
+./bin/video/bluray_to_mp4.zsh "Movie Title" 2022 "/Volumes/Data/Media/Library/Movies"
+
+# Use with default output directory (~/Movies/Rips)
 ./bin/video/bluray_to_mp4.zsh "Movie Title" 2022
+
+# Auto-detect title from disc
+./bin/video/bluray_to_mp4.zsh 2022 "/Volumes/Data/Media/Library/Movies"
 ```
 
 This script handles:
@@ -43,6 +49,7 @@ This script handles:
 - MP4 encoding with embedded subtitles (soft, on by default)
 - Streaming compliance optimization and repair
 - Automatic cleanup of intermediate files
+- **Flexible output directory** (provide path or use default)
 
 ### Option 2: Manual Step-by-Step Workflow
 For more control over the process:
