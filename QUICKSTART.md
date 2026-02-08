@@ -49,13 +49,65 @@ Insert a CD, then:
 make rip-cd
 ```
 
+## 4. (Optional) Add Convenience Aliases
+
+For seamless media management, add this function to your `~/.zshrc`:
+
+```bash
+media() {
+    local VENV_PATH="$HOME/venvs/media"
+    local REPO_PATH="$HOME/Herd/digital-library"
+    
+    case "${1:-help}" in
+        "sync"|"master-sync")
+            source "$VENV_PATH/bin/activate"
+            python3 "$REPO_PATH/bin/sync/master-sync.py"
+            ;;
+        "bluray")
+            shift
+            "$REPO_PATH/bin/video/bluray_to_mp4.zsh" "$@"
+            ;;
+        "repair")
+            shift
+            "$REPO_PATH/bin/video/repair_mp4.sh" "$@"
+            ;;
+        "help"|*)
+            echo "Media Management Commands:"
+            echo "  media sync          - Run master sync"
+            echo "  media bluray <args> - Run Blu-ray rip"
+            echo "  media repair <file> - Repair MP4 file"
+            echo "  media help          - Show this help"
+            ;;
+    esac
+}
+```
+
+Then reload your shell:
+
+```bash
+source ~/.zshrc
+```
+
+Now you can use simple commands:
+
+```bash
+# Sync your media library
+media sync
+
+# Rip a Blu-ray with custom output
+media bluray "Movie Title" 2024 "/path/to/output"
+
+# Repair an MP4 file
+media repair "movie.mp4"
+```
+
 This will:
 1. Detect the disc and look up metadata on MusicBrainz
 2. Rip to FLAC with proper tags
 3. Fetch cover art
 4. Organize into your library
 
-## 4. Rip Your First DVD/Blu-ray
+## 5. Rip Your First DVD/Blu-ray
 
 ```bash
 make rip-video

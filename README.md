@@ -48,6 +48,8 @@ make rip-cd
 
 # Rip a DVD/Blu-ray
 make rip-video
+
+# (Optional) Add convenience aliases - see QUICKSTART.md for "media" command
 ```
 
 📖 **[Full Quick Start Guide →](QUICKSTART.md)**
