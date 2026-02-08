@@ -27,6 +27,26 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 
 ## Workflow
 
+### Option 1: Automated Blu-ray Workflow (Recommended)
+For complete Blu-ray processing with automatic subtitle handling and MP4 compliance:
+
+```bash
+# Use the automated Blu-ray script
+./bin/video/bluray_to_mp4.zsh "Movie Title" 2022
+```
+
+This script handles:
+- Automatic disc detection and title extraction
+- Main feature identification (largest file)
+- PGS subtitle extraction and OCR conversion to SRT
+- English audio track detection
+- MP4 encoding with embedded subtitles (soft, on by default)
+- Streaming compliance optimization and repair
+- Automatic cleanup of intermediate files
+
+### Option 2: Manual Step-by-Step Workflow
+For more control over the process:
+
 1. Insert your disc.
 2. Choose a disc type and create an output folder.
 
@@ -216,6 +236,42 @@ Implementation details:
 - English image-based subtitles (VobSub/PGS) are automatically burned into the video during encode with `--subtitle N --subtitle-burned` when conditions are met (non-English audio, no soft subs available). This makes captions permanently visible.
   - **Track numbering**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, not by ffprobe's stream index. The script correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams.
 - **Manual OCR fallback**: If auto-burn is disabled or fails, the script will extract image-based subtitles and provide guidance for manual OCR using tools like Subtitle Edit. Use the `vobsub-to-srt` helper for placeholder SRT creation.
+
+## MP4 Streaming Compliance and Repair
+
+### Automatic Compliance (Built into bluray_to_mp4.zsh)
+The automated Blu-ray script includes built-in compliance checking and repair:
+- **HandBrake optimization** with `--optimize` flag
+- **Post-encoding compliance check** for timestamp issues
+- **Automatic repair** with `-fflags +genpts` and `-movflags +faststart`
+- **Verification** of repaired files before replacement
+
+### Manual MP4 Repair
+For existing MP4 files that may have streaming issues:
+
+```bash
+# Repair a single MP4 file
+./bin/video/repair_mp4.sh "/path/to/movie.mp4"
+
+# The script will:
+# - Check for timestamp and faststart issues
+# - Create backup before repair
+# - Fix missing timestamps and add faststart flag
+# - Verify the repair was successful
+```
+
+### Common Issues Fixed
+- **Missing timestamps** - Regenerates proper PTS/DTS timing
+- **Missing faststart flag** - Moves metadata to file beginning for streaming
+- **Non-monotonic timestamps** - Fixes timing sync issues
+- **Web compatibility** - Ensures proper MP4 container structure
+
+### When to Use Repair
+Use the repair script if you experience:
+- Long loading times before video starts
+- Seeking issues in video players
+- Web streaming problems
+- Audio/video sync issues
 
 ## Backfill English subtitles into existing MP4s
 Use the provided helper to mux English soft subtitles from your archival MKVs into an existing MP4 without re-encoding video/audio.

@@ -204,7 +204,7 @@ if [[ ! -f "$MP4" ]]; then
   
   echo "Using audio track: $AUDIO_TRACK"
   
-  # Build HandBrake command with optional subtitles
+  # Build HandBrake command with streaming-compatible settings
   HANDBRAKE_CMD=(
     -i "$MKV"
     -o "$MP4"
@@ -219,6 +219,7 @@ if [[ ! -f "$MP4" ]]; then
     -E av_aac
     -B 192
     --markers
+    --optimize  # HandBrake's built-in faststart optimization
   )
   
   # Add subtitles if SRT file exists
@@ -233,6 +234,43 @@ if [[ ! -f "$MP4" ]]; then
   fi
 else
   echo "MP4 exists, skipping encode."
+fi
+
+# ===== STEP 3.5: Post-encoding MP4 compliance check and repair =====
+echo "Checking MP4 compliance for streaming..."
+
+# Check if file needs repair (missing timestamps or faststart)
+COMPLIANCE_CHECK=$(ffmpeg -i "$MP4" -v quiet -f null - 2>&1 | grep -E "(non-monotonic|missing timestamps)" || true)
+
+if [[ -n "$COMPLIANCE_CHECK" ]] || [[ ! -f "$MP4.repaired" ]]; then
+  echo "🔧 Repairing MP4 for streaming compatibility..."
+  
+  # Create repaired version with proper timestamps and faststart
+  REPAIRED_MP4="${MP4%.mp4}.repaired.mp4"
+  
+  if ffmpeg -fflags +genpts -i "$MP4" \
+    -map 0 \
+    -c copy \
+    -movflags +faststart \
+    -avoid_negative_ts make_zero \
+    "$REPAIRED_MP4" 2>/dev/null; then
+    
+    echo "✅ MP4 repaired successfully"
+    
+    # Verify the repaired file
+    if ffmpeg -i "$REPAIRED_MP4" -v quiet -f null - 2>&1 | grep -E "(non-monotonic|missing timestamps)" > /dev/null; then
+      echo "⚠️ Repaired file still has issues, keeping original"
+      rm -f "$REPAIRED_MP4"
+    else
+      # Replace original with repaired version
+      mv "$REPAIRED_MP4" "$MP4"
+      echo "✅ Original file replaced with repaired version"
+    fi
+  else
+    echo "⚠️ MP4 repair failed, keeping original"
+  fi
+else
+  echo "✅ MP4 is already streaming compliant"
 fi
 
 # ===== STEP 4: Cleanup =====
