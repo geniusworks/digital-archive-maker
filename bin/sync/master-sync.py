@@ -981,7 +981,7 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
                 print(f"DEBUG: End of rsync output")
         
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text, stderr)
+            raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text)
         
         job_stats.update(parse_rsync_stats(stdout_text))
         job_stats['success'] = True

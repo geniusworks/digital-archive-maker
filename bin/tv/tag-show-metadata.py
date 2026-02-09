@@ -361,7 +361,7 @@ def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verb
         "fetched_at": _utcnow_isoz(),
     }
 
-    if args.verbose:
+    if verbose:
         print(f"  TMDb show match: {best.get('name')} (id={show_id})")
 
     return show_id

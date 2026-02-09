@@ -789,8 +789,6 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
 def update_genres_in_folder(folder_path: Path, recursive: bool = False, 
                            dry_run: bool = False, verbose: bool = False, force: bool = False, force_missing: bool = False) -> int:
     """Update genres for FLAC files in a folder."""
-    global SHUTDOWN_REQUESTED
-    global FORCE_EXIT_REQUESTED
     global ACTIVE_TQDM
     updated_count = 0
     skipped_count = 0
