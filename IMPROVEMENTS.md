@@ -2,7 +2,21 @@
 
 Goal: Build a reliable, mostly automated pipeline to transfer disc-based media you own (for local, personal use) into clean, well-tagged digital files ready for a future media server.
 
-## Recent Major Updates (December 2025 - January 2026)
+## Recent Major Updates (December 2025 - February 2026)
+
+### 🎵 Lyrics Downloader System (February 2026)
+- **Lyrics downloader (`bin/music/download_lyrics.py`)** - NEW comprehensive lyrics fetching system:
+  - **Jellyfin-compatible output** - Saves synchronized .lrc files with timestamps
+  - **Multiple sources** - Genius API (with token) + LyricsWikia fallback
+  - **Smart rate limiting** - Respects Genius API limits (~60/hour, 5/minute)
+  - **Failed lookup tracking** - Logs failed attempts to avoid repeated requests
+  - **Retry logic** - Handles rate limits separately from actual failures
+  - **Clean exit handling** - Graceful CTRL+C with progress preservation
+  - **Consecutive rate limit detection** - Exits when API is consistently unavailable
+  - **Recursive processing** - Handles entire music libraries efficiently
+  - **Cache system** - Avoids re-downloading lyrics for successful lookups
+  - **Metadata extraction** - Reads from FLAC, MP3, MP4/M4A files with filename fallback
+  - **Environment integration** - Uses GENIUS_API_TOKEN from .env file
 
 ### 🎵 Comprehensive Metadata Fixing System (January 2026)
 - **Metadata fixer (`bin/music/fix_missing_metadata.py`)** - NEW comprehensive metadata repair tool:

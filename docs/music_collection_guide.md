@@ -9,6 +9,7 @@ This guide provides the complete end-to-end pipeline for getting music from **al
 - ✅ High-quality audio (FLAC preferred, MP3 supported)
 - ✅ Explicit content tagging for family-safe filtering
 - ✅ Cover art for all albums
+- ✅ **Lyrics files (.lrc) for synchronized display in Jellyfin**
 - ✅ Consistent naming and organization
 
 ---
@@ -39,7 +40,17 @@ python3 bin/music/fix_missing_metadata.py --fix "/Volumes/Data/Media/Library/CDs
 python3 bin/music/tag-explicit-mb.py "/Volumes/Data/Media/Library/CDs"
 ```
 
-#### Step 4: Sync to Jellyfin
+#### Step 4: Download Lyrics (NEW!)
+```bash
+# Download lyrics for entire library (Jellyfin-compatible .lrc files):
+media lyrics "/Volumes/Data/Media/Library/CDs" --recursive
+
+# Or use the script directly:
+python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
+```
+**Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
+
+#### Step 5: Sync to Jellyfin
 ```bash
 python3 bin/sync/sync-library.py \
   --src "/Volumes/Data/Media/Library/CDs" \
@@ -78,7 +89,17 @@ python3 bin/music/fix_album_covers.py "/path/to/music"
 python3 bin/music/tag-explicit-mb.py "/path/to/music"
 ```
 
-#### Step 5: Sync to Jellyfin
+#### Step 5: Download Lyrics (NEW!)
+```bash
+# Download lyrics for entire library:
+media lyrics "/path/to/music" --recursive
+
+# Or use the script directly:
+python3 bin/music/download_lyrics.py "/path/to/music" --recursive
+```
+**Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
+
+#### Step 6: Sync to Jellyfin
 ```bash
 python3 bin/sync/sync-library.py \
   --src "/path/to/music" \

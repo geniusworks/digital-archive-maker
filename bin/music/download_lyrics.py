@@ -27,6 +27,7 @@ import sys
 import re
 import time
 import json
+import signal
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 from urllib.parse import quote
@@ -57,8 +58,11 @@ except ImportError as e:
 # Configuration
 CACHE_FILE = Path.home() / ".digital_library_lyrics_cache.json"
 FAILED_FILE = Path(__file__).parent.parent.parent / "log" / "failed_lyrics_lookups.txt"
-RATE_LIMIT = 2.0  # seconds between requests (increased from 1.0)
+RATE_LIMIT = 2.0  # seconds between requests (conservative)
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
+GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
+GENIUS_REQUESTS_PER_MINUTE = 5  # conservative: 5 requests per minute max
+MAX_CONSECUTIVE_RATE_LIMITS = 5  # exit after this many consecutive rate limits
 USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
 
 class LyricsDownloader:
@@ -68,6 +72,14 @@ class LyricsDownloader:
         self.failed_lookups = self._load_failed_lookups()
         self.genius_token = genius_token
         self.genius = None
+        self.genius_requests_this_hour = 0
+        self.genius_hour_start = time.time()
+        self.consecutive_rate_limits = 0
+        self.shutdown_requested = False
+        
+        # Set up signal handler for clean exit
+        signal.signal(signal.SIGINT, self._signal_handler)
+        
         if genius_token:
             self.genius = lyricsgenius.Genius(genius_token)
             self.genius.verbose = False
@@ -78,6 +90,27 @@ class LyricsDownloader:
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': USER_AGENT})
         self.last_request_time = 0
+    
+    def _signal_handler(self, signum, frame):
+        """Handle CTRL+C gracefully."""
+        if not self.shutdown_requested:
+            # First CTRL+C - graceful shutdown
+            self.shutdown_requested = True
+            print("\n\n🛑 Interrupt received. Finishing current song and saving progress...")
+            print("Use CTRL+C again to force exit immediately.")
+        else:
+            # Second CTRL+C - force exit
+            print("\n⚡ Force exit requested. Terminating immediately...")
+            self._save_cache()  # Try to save cache one last time
+            sys.exit(1)
+    
+    def _check_shutdown(self):
+        """Check if shutdown was requested."""
+        if self.shutdown_requested:
+            print("\n🛑 Graceful shutdown initiated.")
+            self._save_cache()
+            print("✅ Progress saved. Use --force to retry any skipped songs.")
+            sys.exit(0)
     
     def _load_failed_lookups(self) -> set:
         """Load failed lookups from log file."""
@@ -106,6 +139,49 @@ class LyricsDownloader:
             self.failed_lookups.add(f"{artist}|{title}")
         except IOError as e:
             print(f"⚠️  Warning: Could not write failed lookup: {e}")
+    
+    def _check_genius_rate_limit(self) -> bool:
+        """Check if we're within Genius rate limits."""
+        current_time = time.time()
+        
+        # Reset counter if hour has passed
+        if current_time - self.genius_hour_start > 3600:  # 1 hour
+            self.genius_requests_this_hour = 0
+            self.genius_hour_start = current_time
+        
+        # Check hourly limit
+        if self.genius_requests_this_hour >= GENIUS_HOURLY_LIMIT:
+            print(f"    ⚠️  Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Skipping...")
+            return False
+        
+        # Check minute rate (12 seconds between requests = 5/minute)
+        time_since_last = current_time - self.last_request_time
+        min_interval = 60.0 / GENIUS_REQUESTS_PER_MINUTE
+        
+        if time_since_last < min_interval:
+            sleep_time = min_interval - time_since_last
+            print(f"    ⏱️  Rate limiting: waiting {sleep_time:.1f}s...")
+            time.sleep(sleep_time)
+        
+        return True
+    
+    def _check_consecutive_rate_limits(self) -> bool:
+        """Check if we've hit too many consecutive rate limits."""
+        if self.consecutive_rate_limits >= MAX_CONSECUTIVE_RATE_LIMITS:
+            print(f"\n❌ {MAX_CONSECUTIVE_RATE_LIMITS} consecutive rate limits detected.")
+            print("   Genius API appears to be temporarily unavailable.")
+            print("   Try again later when rate limits have reset.")
+            print("   Progress has been saved.")
+            self._save_cache()
+            return True
+        return False
+    
+    def _increment_genius_requests(self):
+        """Track Genius API requests."""
+        self.genius_requests_this_hour += 1
+        self.last_request_time = time.time()
+        # Reset consecutive rate limit counter on successful request
+        self.consecutive_rate_limits = 0
     
     def _is_failed_lookup(self, artist: str, title: str) -> bool:
         """Check if this lookup failed before."""
@@ -218,35 +294,72 @@ class LyricsDownloader:
         
         return None
     
+    def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2) -> Optional[str]:
+        """Search Genius with automatic retry for rate limits."""
+        # Check rate limits before attempting
+        if not self._check_genius_rate_limit():
+            self._save_failed_lookup(artist, title, "Genius hourly limit reached")
+            return None
+        
+        # Check if we've had too many consecutive rate limits
+        if self._check_consecutive_rate_limits():
+            self._save_failed_lookup(artist, title, f"Genius API unavailable ({MAX_CONSECUTIVE_RATE_LIMITS} consecutive rate limits)")
+            return None
+        
+        retry_count = 0  # Only count actual retries, not rate limits
+        
+        while retry_count <= max_retries:
+            try:
+                # Track this request
+                self._increment_genius_requests()
+                
+                song = self.genius.search_song(title, artist)
+                if song and song.lyrics:
+                    lyrics = song.lyrics
+                    lyrics = re.sub(r'\d+Embed$', '', lyrics)
+                    lyrics = re.sub(r'You might also like$', '', lyrics, flags=re.IGNORECASE)
+                    return lyrics.strip()
+                    
+            except Exception as e:
+                if "429" in str(e) or "1015" in str(e) or "rate limit" in str(e).lower():
+                    self.consecutive_rate_limits += 1
+                    print(f"    ⚠️  Genius rate limited ({self.consecutive_rate_limits}/{MAX_CONSECUTIVE_RATE_LIMITS}). Waiting and retrying...")
+                    
+                    # Check if we should exit due to too many consecutive rate limits
+                    if self._check_consecutive_rate_limits():
+                        return None
+                    
+                    # Exponential backoff for rate limits: 10s, 20s, 40s
+                    wait_time = 10 * (2 ** min(self.consecutive_rate_limits - 1, 2))  # Cap at 40s
+                    print(f"    ⏱️  Waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    # Don't increment retry_count for rate limits
+                    continue  # Retry without counting against retry limit
+                else:
+                    print(f"    ⚠️  Genius search failed: {e}")
+                    retry_count += 1  # Only count actual failures
+                    if retry_count <= max_retries:
+                        print(f"    🔄 Retry {retry_count}/{max_retries} for {artist} - {title}")
+                        wait_time = 5 * (2 ** (retry_count - 1))  # 5s, 10s for actual failures
+                        print(f"    ⏱️  Waiting {wait_time} seconds...")
+                        time.sleep(wait_time)
+                    break  # Exit loop after handling retry
+        
+        # If we get here, all retries failed
+        if retry_count > max_retries:
+            print(f"    ⚠️  Max retries reached for {artist} - {title}")
+            self._save_failed_lookup(artist, title, f"Failed after {max_retries} actual retries")
+        else:
+            self._save_failed_lookup(artist, title, "Genius rate limited (retries exhausted)")
+        
+        return None
+
     def _search_genius(self, artist: str, title: str) -> Optional[str]:
         """Search lyrics from Genius API (requires token)."""
         if not self.genius:
             return None
         
-        try:
-            # Longer rate limit for Genius to avoid 429s
-            current_time = time.time()
-            time_since_last = current_time - self.last_request_time
-            if time_since_last < GENIUS_RATE_LIMIT:
-                time.sleep(GENIUS_RATE_LIMIT - time_since_last)
-            self.last_request_time = time.time()
-            
-            song = self.genius.search_song(title, artist)
-            if song and song.lyrics:
-                # Clean up Genius lyrics (remove headers, etc.)
-                lyrics = song.lyrics
-                lyrics = re.sub(r'\d+Embed$', '', lyrics)  # Remove "Embed" at end
-                lyrics = re.sub(r'You might also like$', '', lyrics, flags=re.IGNORECASE)
-                return lyrics.strip()
-                
-        except Exception as e:
-            if "429" in str(e) or "1015" in str(e):
-                print(f"    ⚠️  Genius rate limited. Waiting 60 seconds...")
-                time.sleep(60)  # Wait longer on rate limit
-            else:
-                print(f"    ⚠️  Genius search failed: {e}")
-        
-        return None
+        return self._search_genius_with_retry(artist, title)
     
     def _create_lrc_format(self, lyrics: str) -> str:
         """Convert plain lyrics to LRC format with estimated timestamps."""
@@ -297,6 +410,9 @@ class LyricsDownloader:
     
     def download_lyrics_for_file(self, file_path: Path, force: bool = False) -> bool:
         """Download lyrics for a single audio file."""
+        # Check for shutdown request
+        self._check_shutdown()
+        
         if not force and self._has_lyrics(file_path):
             print(f"⏭️  Skipping {file_path.name} (lyrics already exist)")
             return True
@@ -373,6 +489,9 @@ class LyricsDownloader:
         files_successful = 0
         
         for file_path in directory.glob(pattern):
+            # Check for shutdown request
+            self._check_shutdown()
+            
             if not file_path.is_file() or file_path.suffix.lower() not in audio_extensions:
                 continue
             
