@@ -61,7 +61,8 @@ make rip-video
 - **Cover Art** — Automatic fetch from Cover Art Archive
 - **Explicit Tagging** — Waterfall lookup: Spotify → iTunes → MusicBrainz
 - **Genre Tagging** — Curated whitelist with 100+ genres
-- **Library Comparison** — Fuzzy matching to find duplicates/missing albums
+- `fix_missing_metadata.py` — comprehensive metadata fixer using MusicBrainz; detects and fixes missing titles/artists/albums
+- `download_lyrics.py` — downloads lyrics from Genius/LyricsWikia and saves as .lrc files for Jellyfin
 
 ### 📀 Video Pipeline  
 - **DVD/Blu-ray Ripping** — MakeMKV extraction + HandBrake encoding

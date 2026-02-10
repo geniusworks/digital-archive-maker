@@ -71,11 +71,17 @@ media() {
             shift
             "$REPO_PATH/bin/video/repair_mp4.sh" "$@"
             ;;
+        "lyrics")
+            shift
+            source "$VENV_PATH/bin/activate"
+            python3 "$REPO_PATH/bin/music/download_lyrics.py" "$@"
+            ;;
         "help"|*)
             echo "Media Management Commands:"
             echo "  media sync          - Run master sync"
             echo "  media bluray <args> - Run Blu-ray rip"
             echo "  media repair <file> - Repair MP4 file"
+            echo "  media lyrics <path> - Download lyrics for music"
             echo "  media help          - Show this help"
             ;;
     esac
@@ -99,6 +105,9 @@ media bluray "Movie Title" 2024 "/path/to/output"
 
 # Repair an MP4 file
 media repair "movie.mp4"
+
+# Download lyrics for music library
+media lyrics "/path/to/music" --recursive
 ```
 
 This will:

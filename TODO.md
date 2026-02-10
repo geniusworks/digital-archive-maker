@@ -170,6 +170,7 @@ This software interfaces with:
 - **OMDb** - API key required; paid tiers for high usage
 - **Spotify** - OAuth credentials required; respect ToS
 - **iTunes/Apple Music** - Public API; subject to ToS
+- **Genius** - Requires API token; subject to rate limiting and attribution
 
 Users must obtain their own API keys and comply with each service's terms.
 ```
@@ -265,6 +266,7 @@ make rip-cd
 
 **Remaining (Low Priority):**
 - [ ] Audit all dependencies for license compatibility
+- [ ] Document new `requirements-lyrics.txt` dependencies in README
 - [ ] Decision: Genericize `/Volumes/Data/Media` paths in docs (low risk, functional defaults)
 
 ### Phase 2: Documentation Overhaul ✅ MOSTLY COMPLETE
@@ -333,7 +335,7 @@ make rip-cd
 
 ### Scripts to Review
 
-#### bin/music/ (18 scripts)
+#### bin/music/ (19 scripts)
 | Script | Status | Notes |
 |--------|--------|-------|
 | `check_album_integrity.py` | [ ] Review | Core utility - keep |
@@ -353,6 +355,7 @@ make rip-cd
 | `tag-manual-genre.py` | [ ] Review | Manual genre assignment |
 | `update-from-m3u.py` | [ ] Review | Updates tags from playlist |
 | `update-genre-mb.py` | [ ] Review | MusicBrainz genre updater |
+| `download_lyrics.py` | [x] NEW | Downloads lyrics from Genius/LyricsWikia for Jellyfin |
 
 #### bin/video/ (12 scripts)
 | Script | Status | Notes |
