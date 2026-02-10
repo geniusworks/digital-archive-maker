@@ -277,6 +277,12 @@ class LyricsDownloader:
             search_url = f"https://lyrics.fandom.com/wiki/{quote(artist)}:{quote(title)}"
             
             response = self.session.get(search_url, timeout=10)
+            
+            # Check if LyricsWikia is deprecated (410 Gone)
+            if response.status_code == 410:
+                print(f"    ⚠️  LyricsWikia deprecated (410 Gone)")
+                return None  # Signal unavailable but don't log as failure
+            
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -295,7 +301,11 @@ class LyricsDownloader:
                     return text
                     
         except Exception as e:
-            print(f"    ⚠️  LyricsWikia search failed: {e}")
+            # Don't log 410 errors as failures - it's a known deprecated service
+            if "410" in str(e) or "gone" in str(e).lower():
+                print(f"    ⚠️  LyricsWikia search failed: {e}")
+            else:
+                print(f"    ⚠️  LyricsWikia search failed: {e}")
         
         return None
     
@@ -318,6 +328,7 @@ class LyricsDownloader:
         
         retry_count = 0
         connection_timeout_count = 0
+        api_unavailable = False  # Track if API is completely down
         
         while retry_count <= max_retries and connection_timeout_count <= 1:
             try:
@@ -376,6 +387,12 @@ class LyricsDownloader:
                     time.sleep(wait_time)
                     continue
                 
+                # Handle API authentication errors (401, etc.)
+                elif "401" in str(e) or "invalid_token" in error_msg or "unauthorized" in error_msg:
+                    print(f"    ⚠️  Genius API unavailable (authentication error)")
+                    api_unavailable = True
+                    break
+                
                 # Handle other API errors
                 else:
                     print(f"    ⚠️  Genius search failed: {e}")
@@ -386,14 +403,19 @@ class LyricsDownloader:
                     else:
                         break
         
-        return None
+        return None if api_unavailable else None  # Signal API unavailable vs not found
 
-    def _search_genius(self, artist: str, title: str) -> Optional[str]:
-        """Search lyrics from Genius API (requires token)."""
-        if not self.genius:
-            return None
+    def _search_genius(self, artist: str, title: str) -> Optional[Tuple[str, bool]]:
+        """Search lyrics from Genius API (requires token).
         
-        return self._search_genius_with_retry(artist, title)
+        Returns:
+            Tuple[str, bool] - (lyrics_text, api_unavailable_flag)
+        """
+        if not self.genius:
+            return None, True  # API unavailable
+        
+        result = self._search_genius_with_retry(artist, title)
+        return result, False  # API available, result may be None
     
     def _create_lrc_format(self, lyrics: str) -> str:
         """Convert plain lyrics to LRC format with estimated timestamps."""
@@ -479,26 +501,36 @@ class LyricsDownloader:
         
         # Try different sources
         lyrics = None
-        failure_reason = ""
+        genius_api_unavailable = False
+        lyricswikia_unavailable = False
         
         # Try Genius first (if available)
         if self.genius:
-            lyrics = self._search_genius(artist, title)
-            if not lyrics:
-                failure_reason = "Genius API failed or rate limited"
+            genius_result, genius_api_unavailable = self._search_genius(artist, title)
+            if genius_result:
+                lyrics = genius_result
         
         # Fallback to LyricsWikia
         if not lyrics:
             lyrics = self._search_lyricswikia(artist, title)
             if not lyrics:
-                if failure_reason:
-                    failure_reason += "; LyricsWikia failed"
-                else:
-                    failure_reason = "LyricsWikia failed"
+                # Check if LyricsWikia is also unavailable (410 Gone, etc.)
+                lyricswikia_unavailable = True
         
         if not lyrics:
             print(f"❌ No lyrics found for {artist} - {title}")
-            self._save_failed_lookup(artist, title)
+            
+            # Only log as permanent failure if both APIs are actually available
+            # but the song genuinely doesn't exist
+            if not genius_api_unavailable and not lyricswikia_unavailable:
+                self._save_failed_lookup(artist, title)
+            else:
+                # APIs are unavailable - don't log as permanent failure
+                if genius_api_unavailable:
+                    print(f"    ℹ️  Genius API unavailable - not logging as permanent failure")
+                if lyricswikia_unavailable:
+                    print(f"    ℹ️  LyricsWikia unavailable - not logging as permanent failure")
+            
             return False
         
         # Save lyrics
