@@ -81,7 +81,7 @@ media() {
             echo "  media sync          - Run master sync"
             echo "  media bluray <args> - Run Blu-ray rip"
             echo "  media repair <file> - Repair MP4 file"
-            echo "  media lyrics <path> - Download lyrics for music"
+            echo "  media lyrics <path> - Download lyrics for music (smart processing)"
             echo "  media help          - Show this help"
             ;;
     esac
@@ -106,8 +106,11 @@ media bluray "Movie Title" 2024 "/path/to/output"
 # Repair an MP4 file
 media repair "movie.mp4"
 
-# Download lyrics for music library
+# Download lyrics for music library (smart processing)
 media lyrics "/path/to/music" --recursive
+
+# Clear all failed lookups (retry everything)
+media lyrics "/path/to/music" --recursive --clear-failed
 ```
 
 This will:

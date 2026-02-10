@@ -42,13 +42,21 @@ python3 bin/music/tag-explicit-mb.py "/Volumes/Data/Media/Library/CDs"
 
 #### Step 4: Download Lyrics (NEW!)
 ```bash
-# Download lyrics for entire library (Jellyfin-compatible .lrc files):
+# Smart album-by-album processing (recommended):
 media lyrics "/Volumes/Data/Media/Library/CDs" --recursive
+
+# Clear all failed lookups (retry everything):
+media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --clear-failed
 
 # Or use the script directly:
 python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
 ```
-**Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
+**Features:**
+- **Album-by-album processing** - One album at a time with 60s cooldowns
+- **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
+- **Rate limit protection** - Exits if entire album fails due to rate limits
+- **Progress preservation** - Can resume where left off
+- **Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
 
 #### Step 5: Sync to Jellyfin
 ```bash
@@ -91,13 +99,21 @@ python3 bin/music/tag-explicit-mb.py "/path/to/music"
 
 #### Step 5: Download Lyrics (NEW!)
 ```bash
-# Download lyrics for entire library:
+# Smart album-by-album processing (recommended):
 media lyrics "/path/to/music" --recursive
+
+# Clear all failed lookups (retry everything):
+media lyrics "/path/to/music" --recursive --clear-failed
 
 # Or use the script directly:
 python3 bin/music/download_lyrics.py "/path/to/music" --recursive
 ```
-**Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
+**Features:**
+- **Album-by-album processing** - One album at a time with 60s cooldowns
+- **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
+- **Rate limit protection** - Exits if entire album fails due to rate limits
+- **Progress preservation** - Can resume where left off
+- **Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
 
 #### Step 6: Sync to Jellyfin
 ```bash

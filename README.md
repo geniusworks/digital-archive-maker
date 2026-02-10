@@ -62,7 +62,7 @@ make rip-video
 - **Explicit Tagging** — Waterfall lookup: Spotify → iTunes → MusicBrainz
 - **Genre Tagging** — Curated whitelist with 100+ genres
 - `fix_missing_metadata.py` — comprehensive metadata fixer using MusicBrainz; detects and fixes missing titles/artists/albums
-- `download_lyrics.py` — downloads lyrics from Genius/LyricsWikia and saves as .lrc files for Jellyfin
+- `download_lyrics.py` — smart lyrics downloader with album-by-album processing, rate limit protection, and simple failed lookup tracking
 
 ### 📀 Video Pipeline  
 - **DVD/Blu-ray Ripping** — MakeMKV extraction + HandBrake encoding

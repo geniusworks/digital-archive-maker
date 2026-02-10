@@ -9,14 +9,18 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Jellyfin-compatible output** - Saves synchronized .lrc files with timestamps
   - **Multiple sources** - Genius API (with token) + LyricsWikia fallback
   - **Smart rate limiting** - Respects Genius API limits (~60/hour, 5/minute)
-  - **Failed lookup tracking** - Logs failed attempts to avoid repeated requests
+  - **Album-by-album processing** - Processes one album at a time with 60s cooldowns
+  - **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
+  - **Failed lookup tracking** - Simple log with timestamp and artist|title for permanent skips
   - **Retry logic** - Handles rate limits separately from actual failures
   - **Clean exit handling** - Graceful CTRL+C with progress preservation
-  - **Consecutive rate limit detection** - Exits when API is consistently unavailable
+  - **Rate limit exit** - Stops immediately after 5 rate limit failures in a single run
+  - **Quota-based album exit** - Stops if entire album fails due to rate limits
   - **Recursive processing** - Handles entire music libraries efficiently
   - **Cache system** - Avoids re-downloading lyrics for successful lookups
   - **Metadata extraction** - Reads from FLAC, MP3, MP4/M4A files with filename fallback
   - **Environment integration** - Uses GENIUS_API_TOKEN from .env file
+  - **Simple management** - `--clear-failed` to retry all failed lookups
 
 ### 🎵 Comprehensive Metadata Fixing System (January 2026)
 - **Metadata fixer (`bin/music/fix_missing_metadata.py`)** - NEW comprehensive metadata repair tool:

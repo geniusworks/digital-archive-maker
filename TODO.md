@@ -266,7 +266,7 @@ make rip-cd
 
 **Remaining (Low Priority):**
 - [ ] Audit all dependencies for license compatibility
-- [ ] Document new `requirements-lyrics.txt` dependencies in README
+- [x] Document new `requirements-lyrics.txt` dependencies in README
 - [ ] Decision: Genericize `/Volumes/Data/Media` paths in docs (low risk, functional defaults)
 
 ### Phase 2: Documentation Overhaul ✅ MOSTLY COMPLETE
