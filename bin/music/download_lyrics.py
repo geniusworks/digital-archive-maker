@@ -484,11 +484,19 @@ class LyricsDownloader:
         """Process all audio files in a directory."""
         audio_extensions = {'.flac', '.mp3', '.mp4', '.m4a', '.wav', '.aac'}
         
-        pattern = "**/*" if recursive else "*"
+        if recursive:
+            # Smart album-by-album processing
+            self._process_albums_recursively(directory, force)
+        else:
+            # Single directory processing (original behavior)
+            self._process_single_directory(directory, audio_extensions, force)
+    
+    def _process_single_directory(self, directory: Path, audio_extensions: set, force: bool):
+        """Process a single directory (original behavior)."""
         files_processed = 0
         files_successful = 0
         
-        for file_path in directory.glob(pattern):
+        for file_path in directory.glob("*"):
             # Check for shutdown request
             self._check_shutdown()
             
@@ -503,6 +511,104 @@ class LyricsDownloader:
         print(f"  Files processed: {files_processed}")
         print(f"  Lyrics downloaded: {files_successful}")
         print(f"  Success rate: {files_successful/files_processed*100:.1f}%" if files_processed > 0 else "  No files found")
+    
+    def _process_albums_recursively(self, directory: Path, force: bool):
+        """Process albums one at a time with smart progression."""
+        audio_extensions = {'.flac', '.mp3', '.mp4', '.m4a', '.wav', '.aac'}
+        albums_processed = 0
+        albums_with_changes = 0
+        total_files_processed = 0
+        total_lyrics_downloaded = 0
+        
+        # Find all album directories (directories containing audio files)
+        album_dirs = self._find_album_directories(directory, audio_extensions)
+        
+        if not album_dirs:
+            print("ℹ️  No albums found with audio files")
+            return
+        
+        print(f"📁 Found {len(album_dirs)} albums to process")
+        
+        for album_dir in album_dirs:
+            # Check for shutdown request
+            self._check_shutdown()
+            
+            albums_processed += 1
+            album_name = album_dir.relative_to(directory)
+            print(f"\n🎵 Album {albums_processed}/{len(album_dirs)}: {album_name}")
+            
+            # Check if album already has complete lyrics (skip unless force)
+            if not force and self._album_has_complete_lyrics(album_dir, audio_extensions):
+                print(f"⏭️  Skipping album (already has complete lyrics)")
+                continue
+            
+            # Process this album
+            files_processed, lyrics_downloaded = self._process_album(album_dir, audio_extensions, force)
+            
+            total_files_processed += files_processed
+            total_lyrics_downloaded += lyrics_downloaded
+            
+            # Smart progression logic
+            if lyrics_downloaded > 0:
+                albums_with_changes += 1
+                print(f"✅ Album processed with {lyrics_downloaded} new lyrics")
+                
+                # Exit after first album with changes (smart early exit)
+                if albums_with_changes >= 1:
+                    print(f"\n🎯 Smart exit: Found album with changes, stopping to avoid rate limits")
+                    print(f"   Run again to continue with next albums")
+                    break
+            else:
+                print(f"ℹ️  Album processed with no new lyrics")
+        
+        print(f"\n📊 Final Summary:")
+        print(f"  Albums processed: {albums_processed}/{len(album_dirs)}")
+        print(f"  Albums with changes: {albums_with_changes}")
+        print(f"  Total files processed: {total_files_processed}")
+        print(f"  Total lyrics downloaded: {total_lyrics_downloaded}")
+        
+        if albums_processed < len(album_dirs):
+            remaining = len(album_dirs) - albums_processed
+            print(f"  Albums remaining: {remaining} (run again to continue)")
+    
+    def _find_album_directories(self, directory: Path, audio_extensions: set) -> List[Path]:
+        """Find all directories containing audio files (albums)."""
+        album_dirs = []
+        
+        for item in directory.rglob("*"):
+            if item.is_dir():
+                # Check if this directory contains audio files
+                has_audio = any(
+                    f.is_file() and f.suffix.lower() in audio_extensions 
+                    for f in item.glob("*")
+                )
+                if has_audio:
+                    album_dirs.append(item)
+        
+        return sorted(album_dirs)
+    
+    def _album_has_complete_lyrics(self, album_dir: Path, audio_extensions: set) -> bool:
+        """Check if all audio files in album have corresponding lyrics files."""
+        for file_path in album_dir.glob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in audio_extensions:
+                if not self._has_lyrics(file_path):
+                    return False
+        return True
+    
+    def _process_album(self, album_dir: Path, audio_extensions: set, force: bool) -> Tuple[int, int]:
+        """Process a single album and return (files_processed, lyrics_downloaded)."""
+        files_processed = 0
+        lyrics_downloaded = 0
+        
+        for file_path in album_dir.glob("*"):
+            if not file_path.is_file() or file_path.suffix.lower() not in audio_extensions:
+                continue
+            
+            files_processed += 1
+            if self.download_lyrics_for_file(file_path, force):
+                lyrics_downloaded += 1
+        
+        return files_processed, lyrics_downloaded
 
 def main():
     parser = argparse.ArgumentParser(
