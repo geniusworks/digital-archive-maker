@@ -28,6 +28,7 @@ import re
 import time
 import json
 import signal
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 from urllib.parse import quote
@@ -63,6 +64,7 @@ GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
 GENIUS_REQUESTS_PER_MINUTE = 5  # conservative: 5 requests per minute max
 MAX_CONSECUTIVE_RATE_LIMITS = 5  # exit after this many consecutive rate limits
+GENIUS_SEARCH_TIMEOUT = 30  # hard timeout (seconds) for a single Genius search
 USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
 
 class LyricsDownloader:
@@ -86,6 +88,8 @@ class LyricsDownloader:
             self.genius.remove_section_headers = True
             self.genius.skip_non_songs = True
             self.genius.excluded_terms = ["(Remix)", "(Live)", "(Acoustic)", "(Demo)"]
+            self.genius.timeout = 15  # 15-second timeout for API requests
+            self.genius.retries = 1   # Only 1 internal retry
         
         self.session = requests.Session()
         self.session.headers.update({'User-Agent': USER_AGENT})
@@ -294,6 +298,15 @@ class LyricsDownloader:
         
         return None
     
+    def _search_genius_with_timeout(self, title: str, artist: str) -> Optional[object]:
+        """Run genius.search_song with a hard timeout using a thread."""
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self.genius.search_song, title, artist)
+            try:
+                return future.result(timeout=GENIUS_SEARCH_TIMEOUT)
+            except FuturesTimeoutError:
+                raise TimeoutError(f"Genius search timed out after {GENIUS_SEARCH_TIMEOUT}s")
+    
     def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2) -> Optional[str]:
         """Search Genius with automatic retry for rate limits."""
         # Check rate limits before attempting
@@ -307,50 +320,72 @@ class LyricsDownloader:
             return None
         
         retry_count = 0  # Only count actual retries, not rate limits
+        connection_timeout_count = 0  # Track connection issues separately
         
-        while retry_count <= max_retries:
+        while retry_count <= max_retries and connection_timeout_count <= 1:
             try:
                 # Track this request
                 self._increment_genius_requests()
                 
-                song = self.genius.search_song(title, artist)
+                # Use thread-based hard timeout
+                song = self._search_genius_with_timeout(title, artist)
                 if song and song.lyrics:
                     lyrics = song.lyrics
                     lyrics = re.sub(r'\d+Embed$', '', lyrics)
                     lyrics = re.sub(r'You might also like$', '', lyrics, flags=re.IGNORECASE)
                     return lyrics.strip()
+                else:
+                    break  # No lyrics found, don't retry
+                    
+            except (TimeoutError, OSError) as e:
+                connection_timeout_count += 1
+                print(f"    ⚠️  Connection issue ({connection_timeout_count}/2): {e}")
+                
+                if connection_timeout_count <= 1:
+                    print(f"    🔄 Retrying connection for {artist} - {title}")
+                    time.sleep(5)
+                    continue
+                else:
+                    print(f"    ❌ Connection failed twice. Moving on...")
+                    break
                     
             except Exception as e:
-                if "429" in str(e) or "1015" in str(e) or "rate limit" in str(e).lower():
+                error_msg = str(e).lower()
+                
+                # Handle connection/timeout issues
+                if any(keyword in error_msg for keyword in ['timeout', 'connection', 'aborted', 'remote end closed', 'timed out']):
+                    connection_timeout_count += 1
+                    print(f"    ⚠️  Connection issue ({connection_timeout_count}/2): {e}")
+                    
+                    if connection_timeout_count <= 1:
+                        print(f"    🔄 Retrying connection for {artist} - {title}")
+                        time.sleep(5)
+                        continue
+                    else:
+                        print(f"    ❌ Connection failed twice. Moving on...")
+                        break
+                
+                # Handle rate limits
+                elif "429" in str(e) or "1015" in str(e) or "rate limit" in error_msg:
                     self.consecutive_rate_limits += 1
                     print(f"    ⚠️  Genius rate limited ({self.consecutive_rate_limits}/{MAX_CONSECUTIVE_RATE_LIMITS}). Waiting and retrying...")
                     
-                    # Check if we should exit due to too many consecutive rate limits
                     if self._check_consecutive_rate_limits():
                         return None
                     
-                    # Exponential backoff for rate limits: 10s, 20s, 40s
-                    wait_time = 10 * (2 ** min(self.consecutive_rate_limits - 1, 2))  # Cap at 40s
+                    wait_time = 10 * (2 ** min(self.consecutive_rate_limits - 1, 2))
                     print(f"    ⏱️  Waiting {wait_time} seconds...")
                     time.sleep(wait_time)
-                    # Don't increment retry_count for rate limits
-                    continue  # Retry without counting against retry limit
+                    continue
+                
+                # Handle other API errors
                 else:
                     print(f"    ⚠️  Genius search failed: {e}")
-                    retry_count += 1  # Only count actual failures
+                    retry_count += 1
                     if retry_count <= max_retries:
                         print(f"    🔄 Retry {retry_count}/{max_retries} for {artist} - {title}")
-                        wait_time = 5 * (2 ** (retry_count - 1))  # 5s, 10s for actual failures
-                        print(f"    ⏱️  Waiting {wait_time} seconds...")
-                        time.sleep(wait_time)
-                    break  # Exit loop after handling retry
-        
-        # If we get here, all retries failed
-        if retry_count > max_retries:
-            print(f"    ⚠️  Max retries reached for {artist} - {title}")
-            self._save_failed_lookup(artist, title, f"Failed after {max_retries} actual retries")
-        else:
-            self._save_failed_lookup(artist, title, "Genius rate limited (retries exhausted)")
+                        time.sleep(5)
+                    break
         
         return None
 
