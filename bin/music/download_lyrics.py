@@ -494,7 +494,7 @@ class LyricsDownloader:
             print(f"⏭️  Skipping {file_path.name} (previously failed lookup)")
             return None
         
-        print(f"🔍 Searching lyrics for: {artist} - {title}")
+        print(f"🔍 {artist} - {title}")
         
         # Check cache first
         cache_key = self._get_cache_key(artist, title)

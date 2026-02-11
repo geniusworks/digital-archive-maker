@@ -53,7 +53,7 @@ python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursi
 ```
 **Features:**
 - **Album-by-album processing** - One album at a time with 15s cooldowns
-- **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
+- **Smart failure tracking** - Only logs permanent failures when sources confirm songs don't exist
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
 - **Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
@@ -110,7 +110,7 @@ python3 bin/music/download_lyrics.py "/path/to/music" --recursive
 ```
 **Features:**
 - **Album-by-album processing** - One album at a time with 15s cooldowns
-- **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
+- **Smart failure tracking** - Only logs permanent failures when sources confirm songs don't exist
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
 - **Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display

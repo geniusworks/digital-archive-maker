@@ -21,6 +21,12 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
   - **Metadata extraction** - Reads from FLAC, MP3, MP4/M4A files with filename fallback
   - **Environment integration** - Uses GENIUS_API_TOKEN from .env file
   - **Simple management** - `--clear-failed` to retry all failed lookups
+  - **Intelligent failure logic** - Only logs permanent failures when sources actually confirm songs don't exist:
+    - Primary source succeeds → Success
+    - Primary source fails, fallback succeeds → Success  
+    - Both sources actually search and fail → Log as permanent failure
+    - Primary source unavailable, fallback fails → Don't log (retry later)
+    - Both sources unavailable → Don't log (retry later)
 
 ### 🎵 Comprehensive Metadata Fixing System (January 2026)
 - **Metadata fixer (`bin/music/fix_missing_metadata.py`)** - NEW comprehensive metadata repair tool:
