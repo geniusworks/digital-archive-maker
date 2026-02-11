@@ -525,7 +525,7 @@ class LyricsDownloader:
                 lyrics = ovh_result
         
         if not lyrics:
-            print(f"❌ No lyrics found for {artist} - {title}")
+            print(f"    ❌ No lyrics found for {artist} - {title}")
             
             # Only log as permanent failure if Genius actually searched.
             # lyrics.ovh has limited coverage — a 404 there doesn't confirm
