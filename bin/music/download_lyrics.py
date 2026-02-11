@@ -580,27 +580,26 @@ class LyricsDownloader:
         if not lyrics:
             print(f"{result_indent}❌ No lyrics found for {artist} - {title}")
             
-            if genius_api_unavailable and self.genius:
-                # Genius was tried but failed (rate limit, connection, etc.)
-                # Don't count lyrics.ovh access failures and don't log as permanent
-                if ovh_api_unavailable:
-                    print(f"{result_indent}ℹ️ Genius failed, lyrics.ovh also unavailable — not counting as access failure")
-                else:
-                    print(f"{result_indent}ℹ️ Genius failed, lyrics.ovh couldn't find song — not logging as permanent failure")
-            elif genius_on_cooldown:
-                # Genius is on cooldown — lyrics.ovh is the primary source
-                if ovh_api_unavailable:
-                    # lyrics.ovh had an access failure (timeout, connection error)
-                    self.fallback_access_failures += 1
-                    print(f"{result_indent}ℹ️ lyrics.ovh access failure ({self.fallback_access_failures}/{MAX_FALLBACK_ACCESS_FAILURES})")
-                    if self._check_fallback_access_exit():
-                        return False
-                else:
-                    # lyrics.ovh was reachable — reset access failure counter
-                    self.fallback_access_failures = 0
-                # Don't log as permanent failure when Genius is on cooldown
-            else:
-                # Both sources actually searched and song not found → permanent failure
+            # Re-check cooldown (may have been triggered during Genius call above)
+            genius_on_cooldown = self._is_genius_on_cooldown()
+            
+            # Did Genius actually perform a successful search (even if it found nothing)?
+            genius_actually_searched = (self.genius 
+                                        and not genius_api_unavailable 
+                                        and not genius_on_cooldown)
+            
+            # Track lyrics.ovh access failures when Genius didn't provide results
+            if ovh_api_unavailable and not genius_actually_searched:
+                self.fallback_access_failures += 1
+                print(f"{result_indent}ℹ️ lyrics.ovh access failure ({self.fallback_access_failures}/{MAX_FALLBACK_ACCESS_FAILURES})")
+                if self._check_fallback_access_exit():
+                    return False
+            elif not ovh_api_unavailable:
+                # lyrics.ovh was reachable — reset access failure counter
+                self.fallback_access_failures = 0
+            
+            # Only log permanent failure if all available sources genuinely searched
+            if not ovh_api_unavailable and (genius_actually_searched or not self.genius):
                 self._save_failed_lookup(artist, title)
             
             return False
