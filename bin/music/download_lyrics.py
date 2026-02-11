@@ -72,7 +72,8 @@ RATE_LIMIT = 0.2  # seconds between requests for non-Genius sources (lyrics.ovh)
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
 GENIUS_REQUESTS_PER_MINUTE = 10  # requests per minute (6s intervals)
-MAX_RATE_LIMIT_FAILURES = 5  # exit after this many real 429 failures in a single run
+MAX_RATE_LIMIT_FAILURES = 5  # exit after this many real Genius 429 failures in a single run
+MAX_FALLBACK_ACCESS_FAILURES = 50  # exit after this many consecutive lyrics.ovh access failures
 GENIUS_SEARCH_TIMEOUT = 30  # hard timeout (seconds) for a single Genius search
 ALBUM_COOLDOWN = 15  # seconds to pause between albums with new downloads
 USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
@@ -86,8 +87,9 @@ class LyricsDownloader:
         self.genius = None
         self.genius_requests_this_hour = 0
         self.genius_hour_start = time.time()
-        self.rate_limit_failures = 0  # Count rate limit failures in this run
-        self.both_sources_unavailable_count = 0  # Count consecutive both-unavailable failures
+        self.genius_cooldown_until = 0  # Timestamp when Genius can be retried after hourly limit
+        self.rate_limit_failures = 0  # Count real Genius 429 failures
+        self.fallback_access_failures = 0  # Consecutive lyrics.ovh access failures (timeouts/errors, not 404s)
         self.shutdown_requested = False
         
         # Set up signal handler for clean exit
@@ -171,31 +173,55 @@ class LyricsDownloader:
             return True
         return False
     
-    def _check_both_sources_unavailable_exit(self):
-        """Check if we should exit due to both sources being unavailable."""
-        if self.both_sources_unavailable_count >= 10:  # After 10 consecutive both-unavailable failures
+    def _check_fallback_access_exit(self):
+        """Check if we should exit due to consecutive fallback service access failures.
+        
+        When lyrics.ovh is returning timeouts/connection errors (not 404s),
+        exit after MAX_FALLBACK_ACCESS_FAILURES consecutive access failures.
+        """
+        if self.fallback_access_failures >= MAX_FALLBACK_ACCESS_FAILURES:
             if not self.shutdown_requested:
-                print(f"\n⛔ Both sources unavailable for {self.both_sources_unavailable_count} consecutive songs.")
-                print("   Exiting to avoid wasting time on unavailable services.")
-                print("   Try again later when services are restored.")
+                print(f"\n⛔ {self.fallback_access_failures} consecutive access failures from fallback service.")
+                print("   lyrics.ovh appears to be down or rate-limiting us.")
+                print("   Stopping to avoid wasting time. Try again later.")
                 print("   Progress has been saved.")
                 self._save_cache()
                 self.shutdown_requested = True
             return True
         return False
     
-    def _check_genius_rate_limit(self) -> bool:
+    def _is_genius_on_cooldown(self) -> bool:
+        """Check if Genius is on hourly cooldown."""
+        if self.genius_cooldown_until > 0:
+            remaining = self.genius_cooldown_until - time.time()
+            if remaining > 0:
+                return True
+            # Cooldown expired — reset and re-enable Genius
+            self.genius_cooldown_until = 0
+            self.genius_requests_this_hour = 0
+            self.genius_hour_start = time.time()
+            print(f"    ℹ️ Genius cooldown expired — re-enabling Genius lookups")
+        return False
+    
+    def _check_genius_rate_limit(self, indent: bool = False) -> bool:
         """Check if we're within Genius rate limits."""
         current_time = time.time()
+        indent_str = "        " if indent else "    "
+        
+        # If on cooldown, skip silently
+        if self._is_genius_on_cooldown():
+            return False
         
         # Reset counter if hour has passed
         if current_time - self.genius_hour_start > 3600:  # 1 hour
             self.genius_requests_this_hour = 0
             self.genius_hour_start = current_time
         
-        # Check hourly limit
+        # Check hourly limit — enter 60-min cooldown
         if self.genius_requests_this_hour >= GENIUS_HOURLY_LIMIT:
-            print(f"    ⚠️ Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Skipping...")
+            self.genius_cooldown_until = current_time + 3600
+            mins_remaining = 60
+            print(f"{indent_str}⚠️ Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Pausing Genius for {mins_remaining} min...")
             return False
         
         # Check minute rate (12 seconds between requests = 5/minute)
@@ -204,7 +230,7 @@ class LyricsDownloader:
         
         if time_since_last < min_interval:
             sleep_time = min_interval - time_since_last
-            print(f"    ⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
+            print(f"{indent_str}⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
             time.sleep(sleep_time)
         
         return True
@@ -237,13 +263,14 @@ class LyricsDownloader:
         except IOError as e:
             print(f"⚠️  Warning: Could not save cache: {e}")
     
-    def _rate_limit(self):
+    def _rate_limit(self, indent: bool = False):
         """Apply rate limiting between requests."""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         if time_since_last < RATE_LIMIT:
             sleep_time = RATE_LIMIT - time_since_last
-            print(f"    ⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
+            indent_str = "        " if indent else "    "
+            print(f"{indent_str}⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
             time.sleep(sleep_time)
         self.last_request_time = time.time()
     
@@ -296,15 +323,16 @@ class LyricsDownloader:
         # If no pattern matches, use filename as title
         return "", name
     
-    def _search_lyrics_ovh(self, artist: str, title: str) -> Tuple[Optional[str], bool]:
+    def _search_lyrics_ovh(self, artist: str, title: str, indent: bool = False) -> Tuple[Optional[str], bool]:
         """Search lyrics from lyrics.ovh (free, no API key needed).
         
         Returns:
             Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
             api_unavailable is True for timeouts/server errors (not a real lookup failure).
         """
+        indent_str = "        " if indent else "    "
         try:
-            self._rate_limit()
+            self._rate_limit(indent)
             
             url = f"https://api.lyrics.ovh/v1/{quote(artist)}/{quote(title)}"
             response = self.session.get(url, timeout=15)
@@ -322,10 +350,10 @@ class LyricsDownloader:
             return None, False  # Lyrics empty or too short — genuine failure
                     
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            print(f"    ⚠️ lyrics.ovh search failed: {e}")
+            print(f"{indent_str}⚠️ lyrics.ovh search failed: {e}")
             return None, True  # Server unavailable — not a real lookup failure
         except Exception as e:
-            print(f"    ⚠️ lyrics.ovh search failed: {e}")
+            print(f"{indent_str}⚠️ lyrics.ovh search failed: {e}")
             return None, True  # Treat unexpected errors as unavailable too
 
     
@@ -338,20 +366,21 @@ class LyricsDownloader:
             except FuturesTimeoutError:
                 raise TimeoutError(f"Genius search timed out after {GENIUS_SEARCH_TIMEOUT}s")
     
-    def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2) -> Tuple[Optional[str], bool]:
+    def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2, indent: bool = False) -> Tuple[Optional[str], bool]:
         """Search Genius with automatic retry for rate limits.
         
         Returns:
             Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
         """
         # Check rate limits before attempting
-        if not self._check_genius_rate_limit():
+        if not self._check_genius_rate_limit(indent):
             # Hourly self-limit reached — just skip Genius, let lyrics.ovh handle it
             return None, True
         
         retry_count = 0
         connection_timeout_count = 0
         api_unavailable = False  # Track if API is completely down
+        indent_str = "        " if indent else "    "
         
         while retry_count <= max_retries and connection_timeout_count <= 1:
             try:
@@ -387,10 +416,10 @@ class LyricsDownloader:
                 # Handle connection/timeout issues
                 if any(keyword in error_msg for keyword in ['timeout', 'connection', 'aborted', 'remote end closed', 'timed out']):
                     connection_timeout_count += 1
-                    print(f"    ⚠️ Connection issue ({connection_timeout_count}/2): {e}")
+                    print(f"{indent_str}⚠️ Connection issue ({connection_timeout_count}/2): {e}")
                     
                     if connection_timeout_count <= 1:
-                        print(f"    🔄 Retrying connection for {artist} - {title}")
+                        print(f"{indent_str}🔄 Retrying connection for {artist} - {title}")
                         time.sleep(5)
                         continue
                     else:
@@ -399,36 +428,36 @@ class LyricsDownloader:
                 # Handle rate limits
                 elif "429" in str(e) or "1015" in str(e) or "rate limit" in error_msg:
                     self.rate_limit_failures += 1
-                    print(f"    ⚠️ Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})")
+                    print(f"{indent_str}⚠️ Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})")
                     
                     if self._check_rate_limit_exit():
                         return None, True
                     
                     # Wait and retry
                     wait_time = 10 * (2 ** min(self.rate_limit_failures - 1, 2))
-                    print(f"    ⏱️ Waiting {wait_time} seconds...")
+                    print(f"{indent_str}⏱️ Waiting {wait_time} seconds...")
                     time.sleep(wait_time)
                     continue
                 
                 # Handle API authentication errors (401, etc.)
                 elif "401" in str(e) or "invalid_token" in error_msg or "unauthorized" in error_msg:
-                    print(f"    ⚠️ Genius API unavailable (authentication error)")
+                    print(f"{indent_str}⚠️ Genius API unavailable (authentication error)")
                     api_unavailable = True
                     break
                 
                 # Handle other API errors
                 else:
-                    print(f"    ⚠️ Genius search failed: {e}")
+                    print(f"{indent_str}⚠️ Genius search failed: {e}")
                     retry_count += 1
                     if retry_count <= max_retries:
-                        print(f"    🔄 Retry {retry_count}/{max_retries} for {artist} - {title}")
+                        print(f"{indent_str}🔄 Retry {retry_count}/{max_retries} for {artist} - {title}")
                         time.sleep(5)
                     else:
                         break
         
         return None, api_unavailable
 
-    def _search_genius(self, artist: str, title: str) -> Tuple[Optional[str], bool]:
+    def _search_genius(self, artist: str, title: str, indent: bool = False) -> Tuple[Optional[str], bool]:
         """Search lyrics from Genius API (requires token).
         
         Returns:
@@ -437,7 +466,7 @@ class LyricsDownloader:
         if not self.genius:
             return None, True  # API unavailable (no token)
         
-        return self._search_genius_with_retry(artist, title)
+        return self._search_genius_with_retry(artist, title, indent=indent)
     
     def _create_lrc_format(self, lyrics: str) -> str:
         """Convert plain lyrics to LRC format with estimated timestamps."""
@@ -529,46 +558,46 @@ class LyricsDownloader:
         lyrics = None
         genius_api_unavailable = False
         ovh_api_unavailable = False
+        result_indent = "        " if indent else "    "
+        genius_on_cooldown = self._is_genius_on_cooldown()
         
-        # Try Genius first (if available)
-        if self.genius:
-            genius_result, genius_api_unavailable = self._search_genius(artist, title)
+        # Try Genius first (if available and not on cooldown)
+        if self.genius and not genius_on_cooldown:
+            genius_result, genius_api_unavailable = self._search_genius(artist, title, indent)
             if genius_result:
                 lyrics = genius_result
+        elif self.genius and genius_on_cooldown:
+            genius_api_unavailable = True
         
         # Fallback to lyrics.ovh (free, no API key needed)
         if not lyrics:
-            if genius_api_unavailable:
-                result_indent = "        " if indent else "    "
+            if genius_api_unavailable and not genius_on_cooldown:
                 print(f"{result_indent}🔄 Genius unavailable, trying lyrics.ovh fallback...")
-            ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title)
+            ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title, indent)
             if ovh_result:
                 lyrics = ovh_result
         
         if not lyrics:
-            result_indent = "        " if indent else "    "
             print(f"{result_indent}❌ No lyrics found for {artist} - {title}")
             
-            # Only log as permanent failure if Genius actually searched.
-            # lyrics.ovh has limited coverage — a 404 there doesn't confirm
-            # the song doesn't exist if Genius wasn't tried.
-            if genius_api_unavailable and self.genius:
-                # Genius is configured but temporarily unavailable (hourly limit, auth error)
-                # Don't log — Genius might find it when available again
-                result_indent = "        " if indent else "    "
-                print(f"{result_indent}ℹ️ Genius temporarily unavailable - not logging as permanent failure")
-                # Reset counter - at least one source (lyrics.ovh) was reachable
-                self.both_sources_unavailable_count = 0
-            elif genius_api_unavailable and ovh_api_unavailable:
-                # No Genius token AND lyrics.ovh is down
-                result_indent = "        " if indent else "    "
-                print(f"{result_indent}ℹ️ All sources unavailable - not logging as permanent failure")
-                self.both_sources_unavailable_count += 1
-                if self._check_both_sources_unavailable_exit():
+            if ovh_api_unavailable:
+                # lyrics.ovh had an access failure (timeout, connection error)
+                self.fallback_access_failures += 1
+                print(f"{result_indent}ℹ️ lyrics.ovh access failure ({self.fallback_access_failures}/{MAX_FALLBACK_ACCESS_FAILURES})")
+                if self._check_fallback_access_exit():
                     return False
             else:
-                # Genius actually searched and confirmed song doesn't exist,
-                # or no Genius token and lyrics.ovh confirmed not found
+                # lyrics.ovh was reachable — reset access failure counter
+                self.fallback_access_failures = 0
+            
+            if genius_api_unavailable and self.genius:
+                # Genius on cooldown or unavailable — don't log as permanent failure
+                pass
+            elif genius_api_unavailable and ovh_api_unavailable:
+                # No Genius token AND lyrics.ovh is also down — don't log
+                pass
+            else:
+                # Both sources actually searched and song not found → permanent failure
                 self._save_failed_lookup(artist, title)
             
             return False
@@ -576,11 +605,10 @@ class LyricsDownloader:
         # Save lyrics
         lyrics_file = self._save_lyrics(file_path, lyrics)
         if lyrics_file:
-            result_indent = "        " if indent else "    "
             print(f"{result_indent}✅ Saved lyrics: {lyrics_file.name}")
             
-            # Reset both-unavailable counter on success
-            self.both_sources_unavailable_count = 0
+            # Reset fallback access failure counter on success
+            self.fallback_access_failures = 0
             
             # Cache the result
             self.cache[cache_key] = lyrics
@@ -669,8 +697,8 @@ class LyricsDownloader:
             if self._check_rate_limit_exit():
                 break
             
-            # Check for both sources unavailable exit
-            if self._check_both_sources_unavailable_exit():
+            # Check for fallback service access failures
+            if self._check_fallback_access_exit():
                 break
             
             if lyrics_downloaded > 0:
