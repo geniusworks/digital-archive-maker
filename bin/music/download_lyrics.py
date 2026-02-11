@@ -518,6 +518,8 @@ class LyricsDownloader:
         
         # Fallback to lyrics.ovh (free, no API key needed)
         if not lyrics:
+            if genius_api_unavailable:
+                print(f"    🔄 Genius unavailable, trying lyrics.ovh fallback...")
             ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title)
             if ovh_result:
                 lyrics = ovh_result
@@ -526,11 +528,13 @@ class LyricsDownloader:
             print(f"❌ No lyrics found for {artist} - {title}")
             
             # Only log as permanent failure if at least one source was reachable
-            # and confirmed the song doesn't exist
-            if not genius_api_unavailable or not ovh_api_unavailable:
-                self._save_failed_lookup(artist, title)
-            else:
+            # and confirmed the song doesn't exist (not just unavailable)
+            # Don't log if BOTH sources are unavailable
+            if genius_api_unavailable and ovh_api_unavailable:
                 print(f"    ℹ️  All sources unavailable - not logging as permanent failure")
+            else:
+                # At least one source was reachable and confirmed song doesn't exist
+                self._save_failed_lookup(artist, title)
             
             return False
         
