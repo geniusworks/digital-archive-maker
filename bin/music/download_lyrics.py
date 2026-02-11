@@ -527,13 +527,19 @@ class LyricsDownloader:
         if not lyrics:
             print(f"❌ No lyrics found for {artist} - {title}")
             
-            # Only log as permanent failure if at least one source was reachable
-            # and confirmed the song doesn't exist (not just unavailable)
-            # Don't log if BOTH sources are unavailable
-            if genius_api_unavailable and ovh_api_unavailable:
+            # Only log as permanent failure if Genius actually searched.
+            # lyrics.ovh has limited coverage — a 404 there doesn't confirm
+            # the song doesn't exist if Genius wasn't tried.
+            if genius_api_unavailable and self.genius:
+                # Genius is configured but temporarily unavailable (hourly limit, auth error)
+                # Don't log — Genius might find it when available again
+                print(f"    ℹ️  Genius temporarily unavailable - not logging as permanent failure")
+            elif genius_api_unavailable and ovh_api_unavailable:
+                # No Genius token AND lyrics.ovh is down
                 print(f"    ℹ️  All sources unavailable - not logging as permanent failure")
             else:
-                # At least one source was reachable and confirmed song doesn't exist
+                # Genius actually searched and confirmed song doesn't exist,
+                # or no Genius token and lyrics.ovh confirmed not found
                 self._save_failed_lookup(artist, title)
             
             return False
