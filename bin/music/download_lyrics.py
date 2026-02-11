@@ -463,7 +463,7 @@ class LyricsDownloader:
         """Check if lyrics file already exists."""
         return file_path.with_suffix('.lrc').exists()
     
-    def download_lyrics_for_file(self, file_path: Path, force: bool = False) -> Optional[bool]:
+    def download_lyrics_for_file(self, file_path: Path, force: bool = False, indent: bool = False) -> Optional[bool]:
         """Download lyrics for a single audio file.
         
         Returns:
@@ -475,7 +475,8 @@ class LyricsDownloader:
         self._check_shutdown()
         
         if not force and self._has_lyrics(file_path):
-            print(f"⏭️ Skipping {file_path.name} (lyrics already exist)")
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}⏭️ Skipping {file_path.name} (lyrics already exist)")
             return None
         
         # Extract metadata
@@ -491,7 +492,8 @@ class LyricsDownloader:
         
         # Check if this lookup failed before
         if not force and self._is_failed_lookup(artist, title):
-            print(f"⏭️ Skipping {file_path.name} (previously failed lookup)")
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}⏭️ Skipping {file_path.name} (previously failed lookup)")
             return None
         
         print(f"🔍 {artist} - {title}")
@@ -612,11 +614,11 @@ class LyricsDownloader:
             
             albums_processed += 1
             album_name = album_dir.relative_to(directory)
-            print(f"\n🎵 Album {albums_processed}/{len(album_dirs)}: {album_name}")
+            print(f"\n📀 Album {albums_processed}/{len(album_dirs)}: {album_name}")
             
             # Check if album already has complete lyrics (skip unless force)
             if not force and self._album_has_complete_lyrics(album_dir, audio_extensions):
-                print(f"⏭️  Skipping album (already has complete lyrics)")
+                print(f"    ⏭️ Skipping album (already has complete lyrics)")
                 continue
             
             # Process this album
@@ -711,7 +713,7 @@ class LyricsDownloader:
                 continue
             
             files_processed += 1
-            result = self.download_lyrics_for_file(file_path, force)
+            result = self.download_lyrics_for_file(file_path, force, indent=True)
             if result is True:  # Only count actual new downloads, not skips
                 lyrics_downloaded += 1
             elif result is False:
