@@ -17,7 +17,7 @@ OUTPUT:
     - Respects rate limits and handles errors gracefully
 
 REQUIRES:
-    pip install lyricsgenius requests beautifulsoup4 lxml
+    pip install lyricsgenius requests
 """
 
 import argparse
@@ -33,38 +33,48 @@ from typing import Optional, Dict, List, Tuple
 from urllib.parse import quote
 
 # Load environment variables from .env file
-env_path = Path(__file__).parent.parent.parent / '.env'
-if env_path.exists():
-    with open(env_path, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, value = line.split('=', 1)
-                os.environ[key.strip()] = value.strip()
+def _load_env() -> None:
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if not env_path.exists():
+        return
+
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(env_path)
+    except ImportError:
+        # Fallback: simple .env parsing without overwriting existing env vars
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_env()
 
 try:
     import lyricsgenius
     import requests
-    from bs4 import BeautifulSoup
     from mutagen.flac import FLAC
     from mutagen.mp3 import MP3
     from mutagen.id3 import ID3NoHeaderError
     from mutagen.mp4 import MP4
 except ImportError as e:
     print(f"❌ Missing required package: {e}")
-    print("Install with: pip install lyricsgenius requests beautifulsoup4 lxml")
+    print("Install with: pip install lyricsgenius requests")
     sys.exit(1)
 
 # Configuration
 CACHE_FILE = Path.home() / ".digital_library_lyrics_cache.json"
 FAILED_FILE = Path(__file__).parent.parent.parent / "log" / "failed_lyrics_lookups.txt"
-RATE_LIMIT = 2.0  # seconds between requests (conservative)
+RATE_LIMIT = 1.0  # seconds between requests for non-Genius sources
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
-GENIUS_REQUESTS_PER_MINUTE = 5  # conservative: 5 requests per minute max
-MAX_RATE_LIMIT_FAILURES = 5  # exit after this many rate limit failures in a single run
+GENIUS_REQUESTS_PER_MINUTE = 10  # requests per minute (6s intervals)
+MAX_RATE_LIMIT_FAILURES = 5  # exit after this many real 429 failures in a single run
 GENIUS_SEARCH_TIMEOUT = 30  # hard timeout (seconds) for a single Genius search
-ALBUM_COOLDOWN = 60  # seconds to pause between albums with new downloads
+ALBUM_COOLDOWN = 15  # seconds to pause between albums with new downloads
 USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
 
 class LyricsDownloader:
@@ -150,11 +160,13 @@ class LyricsDownloader:
     def _check_rate_limit_exit(self):
         """Check if we should exit due to too many rate limit failures."""
         if self.rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
-            print(f"\n⛔ {MAX_RATE_LIMIT_FAILURES} rate limit failures reached.")
-            print("   Exiting to avoid further API pressure.")
-            print("   Try again later when rate limits have reset.")
-            print("   Progress has been saved.")
-            self._save_cache()
+            if not self.shutdown_requested:
+                print(f"\n⛔ {MAX_RATE_LIMIT_FAILURES} rate limit failures reached.")
+                print("   Exiting to avoid further API pressure.")
+                print("   Try again later when rate limits have reset.")
+                print("   Progress has been saved.")
+                self._save_cache()
+                self.shutdown_requested = True
             return True
         return False
     
@@ -268,46 +280,38 @@ class LyricsDownloader:
         # If no pattern matches, use filename as title
         return "", name
     
-    def _search_lyricswikia(self, artist: str, title: str) -> Optional[str]:
-        """Search lyrics from lyrics.wikia.com (free, no API key needed)."""
+    def _search_lyrics_ovh(self, artist: str, title: str) -> Tuple[Optional[str], bool]:
+        """Search lyrics from lyrics.ovh (free, no API key needed).
+        
+        Returns:
+            Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
+            api_unavailable is True for timeouts/server errors (not a real lookup failure).
+        """
         try:
             self._rate_limit()
             
-            # Format search URL
-            search_url = f"https://lyrics.fandom.com/wiki/{quote(artist)}:{quote(title)}"
+            url = f"https://api.lyrics.ovh/v1/{quote(artist)}/{quote(title)}"
+            response = self.session.get(url, timeout=15)
             
-            response = self.session.get(search_url, timeout=10)
-            
-            # Check if LyricsWikia is deprecated (410 Gone)
-            if response.status_code == 410:
-                print(f"    ⚠️  LyricsWikia deprecated (410 Gone)")
-                return None  # Signal unavailable but don't log as failure
+            if response.status_code == 404:
+                return None, False  # Song genuinely not found
             
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.content, 'html.parser')
+            data = response.json()
+            lyrics = data.get('lyrics', '')
+            if lyrics and len(lyrics.strip()) > 50:
+                return lyrics.strip(), False
             
-            # Look for lyrics content
-            lyrics_div = soup.find('div', class_='lyrics')
-            if lyrics_div:
-                lyrics = lyrics_div.get_text(strip=True)
-                if lyrics and len(lyrics) > 50:  # Basic quality check
-                    return lyrics
-            
-            # Alternative: look for any div with lyrics content
-            for div in soup.find_all('div'):
-                text = div.get_text(strip=True)
-                if len(text) > 100 and '\n' in text:  # Likely lyrics
-                    return text
+            return None, False  # Lyrics empty or too short — genuine failure
                     
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            print(f"    ⚠️  lyrics.ovh search failed: {e}")
+            return None, True  # Server unavailable — not a real lookup failure
         except Exception as e:
-            # Don't log 410 errors as failures - it's a known deprecated service
-            if "410" in str(e) or "gone" in str(e).lower():
-                print(f"    ⚠️  LyricsWikia search failed: {e}")
-            else:
-                print(f"    ⚠️  LyricsWikia search failed: {e}")
-        
-        return None
+            print(f"    ⚠️  lyrics.ovh search failed: {e}")
+            return None, True  # Treat unexpected errors as unavailable too
+
     
     def _search_genius_with_timeout(self, title: str, artist: str) -> Optional[object]:
         """Run genius.search_song with a hard timeout using a thread."""
@@ -318,13 +322,16 @@ class LyricsDownloader:
             except FuturesTimeoutError:
                 raise TimeoutError(f"Genius search timed out after {GENIUS_SEARCH_TIMEOUT}s")
     
-    def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2) -> Optional[str]:
-        """Search Genius with automatic retry for rate limits."""
+    def _search_genius_with_retry(self, artist: str, title: str, max_retries: int = 2) -> Tuple[Optional[str], bool]:
+        """Search Genius with automatic retry for rate limits.
+        
+        Returns:
+            Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
+        """
         # Check rate limits before attempting
         if not self._check_genius_rate_limit():
-            self.rate_limit_failures += 1
-            if self._check_rate_limit_exit():
-                return None
+            # Hourly self-limit reached — just skip Genius, let lyrics.ovh handle it
+            return None, True
         
         retry_count = 0
         connection_timeout_count = 0
@@ -341,10 +348,10 @@ class LyricsDownloader:
                     lyrics = song.lyrics
                     lyrics = re.sub(r'\d+Embed$', '', lyrics)
                     lyrics = re.sub(r'You might also like$', '', lyrics, flags=re.IGNORECASE)
-                    return lyrics.strip()
+                    return lyrics.strip(), False
                 else:
-                    # Song not found - don't log here, let main function handle it
-                    break
+                    # Song not found — Genius searched, definitively not found
+                    return None, False
                     
             except (TimeoutError, OSError) as e:
                 connection_timeout_count += 1
@@ -379,7 +386,7 @@ class LyricsDownloader:
                     print(f"    ⚠️  Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})")
                     
                     if self._check_rate_limit_exit():
-                        return None
+                        return None, True
                     
                     # Wait and retry
                     wait_time = 10 * (2 ** min(self.rate_limit_failures - 1, 2))
@@ -403,19 +410,18 @@ class LyricsDownloader:
                     else:
                         break
         
-        return None if api_unavailable else None  # Signal API unavailable vs not found
+        return None, api_unavailable
 
-    def _search_genius(self, artist: str, title: str) -> Optional[Tuple[str, bool]]:
+    def _search_genius(self, artist: str, title: str) -> Tuple[Optional[str], bool]:
         """Search lyrics from Genius API (requires token).
         
         Returns:
-            Tuple[str, bool] - (lyrics_text, api_unavailable_flag)
+            Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
         """
         if not self.genius:
-            return None, True  # API unavailable
+            return None, True  # API unavailable (no token)
         
-        result = self._search_genius_with_retry(artist, title)
-        return result, False  # API available, result may be None
+        return self._search_genius_with_retry(artist, title)
     
     def _create_lrc_format(self, lyrics: str) -> str:
         """Convert plain lyrics to LRC format with estimated timestamps."""
@@ -502,7 +508,7 @@ class LyricsDownloader:
         # Try different sources
         lyrics = None
         genius_api_unavailable = False
-        lyricswikia_unavailable = False
+        ovh_api_unavailable = False
         
         # Try Genius first (if available)
         if self.genius:
@@ -510,26 +516,21 @@ class LyricsDownloader:
             if genius_result:
                 lyrics = genius_result
         
-        # Fallback to LyricsWikia
+        # Fallback to lyrics.ovh (free, no API key needed)
         if not lyrics:
-            lyrics = self._search_lyricswikia(artist, title)
-            if not lyrics:
-                # Check if LyricsWikia is also unavailable (410 Gone, etc.)
-                lyricswikia_unavailable = True
+            ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title)
+            if ovh_result:
+                lyrics = ovh_result
         
         if not lyrics:
             print(f"❌ No lyrics found for {artist} - {title}")
             
-            # Only log as permanent failure if both APIs are actually available
-            # but the song genuinely doesn't exist
-            if not genius_api_unavailable and not lyricswikia_unavailable:
+            # Only log as permanent failure if at least one source was reachable
+            # and confirmed the song doesn't exist
+            if not genius_api_unavailable or not ovh_api_unavailable:
                 self._save_failed_lookup(artist, title)
             else:
-                # APIs are unavailable - don't log as permanent failure
-                if genius_api_unavailable:
-                    print(f"    ℹ️  Genius API unavailable - not logging as permanent failure")
-                if lyricswikia_unavailable:
-                    print(f"    ℹ️  LyricsWikia unavailable - not logging as permanent failure")
+                print(f"    ℹ️  All sources unavailable - not logging as permanent failure")
             
             return False
         
@@ -693,6 +694,9 @@ class LyricsDownloader:
         rate_limit_failures = 0
         
         for file_path in album_dir.glob("*"):
+            if self.shutdown_requested:
+                break
+            
             if not file_path.is_file() or file_path.suffix.lower() not in audio_extensions:
                 continue
             

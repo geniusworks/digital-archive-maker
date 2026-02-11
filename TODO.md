@@ -355,7 +355,7 @@ make rip-cd
 | `tag-manual-genre.py` | [ ] Review | Manual genre assignment |
 | `update-from-m3u.py` | [ ] Review | Updates tags from playlist |
 | `update-genre-mb.py` | [ ] Review | MusicBrainz genre updater |
-| `download_lyrics.py` | [x] NEW | Downloads lyrics from Genius/LyricsWikia for Jellyfin |
+| `download_lyrics.py` | [x] NEW | Downloads lyrics from Genius/lyrics.ovh for Jellyfin |
 
 #### bin/video/ (12 scripts)
 | Script | Status | Notes |

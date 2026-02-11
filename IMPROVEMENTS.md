@@ -7,9 +7,9 @@ Goal: Build a reliable, mostly automated pipeline to transfer disc-based media y
 ### 🎵 Lyrics Downloader System (February 2026)
 - **Lyrics downloader (`bin/music/download_lyrics.py`)** - NEW comprehensive lyrics fetching system:
   - **Jellyfin-compatible output** - Saves synchronized .lrc files with timestamps
-  - **Multiple sources** - Genius API (with token) + LyricsWikia fallback
-  - **Smart rate limiting** - Respects Genius API limits (~60/hour, 5/minute)
-  - **Album-by-album processing** - Processes one album at a time with 60s cooldowns
+  - **Multiple sources** - Genius API (with token) + lyrics.ovh fallback (free, no key needed)
+  - **Smart rate limiting** - Respects Genius API limits (~60/hour, 10/minute)
+  - **Album-by-album processing** - Processes one album at a time with 15s cooldowns
   - **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
   - **Failed lookup tracking** - Simple log with timestamp and artist|title for permanent skips
   - **Retry logic** - Handles rate limits separately from actual failures

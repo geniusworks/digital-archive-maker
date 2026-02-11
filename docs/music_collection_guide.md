@@ -52,7 +52,7 @@ media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --clear-failed
 python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
 ```
 **Features:**
-- **Album-by-album processing** - One album at a time with 60s cooldowns
+- **Album-by-album processing** - One album at a time with 15s cooldowns
 - **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
@@ -109,7 +109,7 @@ media lyrics "/path/to/music" --recursive --clear-failed
 python3 bin/music/download_lyrics.py "/path/to/music" --recursive
 ```
 **Features:**
-- **Album-by-album processing** - One album at a time with 60s cooldowns
+- **Album-by-album processing** - One album at a time with 15s cooldowns
 - **Simple failure tracking** - Logs only lyrics not available, rate limits counted and exit after 5
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
