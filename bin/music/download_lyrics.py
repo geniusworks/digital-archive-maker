@@ -647,17 +647,17 @@ class LyricsDownloader:
             
             if lyrics_downloaded > 0:
                 albums_with_changes += 1
-                print(f"✅ Album complete — {lyrics_downloaded} new lyrics downloaded")
+                print(f"    ✅ Album complete — {lyrics_downloaded} new lyrics downloaded")
                 
                 # Cooldown pause before next album to respect API limits
-                print(f"⏳ Cooling down {ALBUM_COOLDOWN}s before next album...")
+                print(f"    ⏳ Cooling down {ALBUM_COOLDOWN}s before next album...")
                 try:
                     time.sleep(ALBUM_COOLDOWN)
                 except KeyboardInterrupt:
                     print(f"\n⏹️  Interrupted during cooldown. Progress saved.")
                     break
             else:
-                print(f"ℹ️  No new lyrics for this album")
+                print(f"    ℹ️ No new lyrics for this album")
         
         print(f"\n📊 Final Summary:")
         print(f"  Albums scanned: {albums_processed}/{len(album_dirs)}")
