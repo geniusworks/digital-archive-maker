@@ -547,7 +547,7 @@ class LyricsDownloader:
         # Save lyrics
         lyrics_file = self._save_lyrics(file_path, lyrics)
         if lyrics_file:
-            print(f"✅ Saved lyrics: {lyrics_file.name}")
+            print(f"    ✅ Saved lyrics: {lyrics_file.name}")
             
             # Cache the result
             self.cache[cache_key] = lyrics
