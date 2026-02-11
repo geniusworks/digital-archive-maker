@@ -496,7 +496,8 @@ class LyricsDownloader:
             print(f"{indent_str}⏭️ Skipping {file_path.name} (previously failed lookup)")
             return None
         
-        print(f"🔍 {artist} - {title}")
+        indent_str = "    " if indent else ""
+        print(f"{indent_str}🔍 {artist} - {title}")
         
         # Check cache first
         cache_key = self._get_cache_key(artist, title)
@@ -504,7 +505,8 @@ class LyricsDownloader:
             cached_lyrics = self.cache[cache_key]
             lyrics_file = self._save_lyrics(file_path, cached_lyrics)
             if lyrics_file:
-                print(f"✅ Loaded from cache: {lyrics_file.name}")
+                result_indent = "        " if indent else ""
+                print(f"{result_indent}✅ Loaded from cache: {lyrics_file.name}")
                 return True
         
         # Try different sources
@@ -521,13 +523,15 @@ class LyricsDownloader:
         # Fallback to lyrics.ovh (free, no API key needed)
         if not lyrics:
             if genius_api_unavailable:
-                print(f"    🔄 Genius unavailable, trying lyrics.ovh fallback...")
+                result_indent = "        " if indent else "    "
+                print(f"{result_indent}🔄 Genius unavailable, trying lyrics.ovh fallback...")
             ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title)
             if ovh_result:
                 lyrics = ovh_result
         
         if not lyrics:
-            print(f"    ❌ No lyrics found for {artist} - {title}")
+            result_indent = "        " if indent else "    "
+            print(f"{result_indent}❌ No lyrics found for {artist} - {title}")
             
             # Only log as permanent failure if Genius actually searched.
             # lyrics.ovh has limited coverage — a 404 there doesn't confirm
@@ -535,10 +539,12 @@ class LyricsDownloader:
             if genius_api_unavailable and self.genius:
                 # Genius is configured but temporarily unavailable (hourly limit, auth error)
                 # Don't log — Genius might find it when available again
-                print(f"    ℹ️  Genius temporarily unavailable - not logging as permanent failure")
+                result_indent = "        " if indent else "    "
+                print(f"{result_indent}ℹ️ Genius temporarily unavailable - not logging as permanent failure")
             elif genius_api_unavailable and ovh_api_unavailable:
                 # No Genius token AND lyrics.ovh is down
-                print(f"    ℹ️  All sources unavailable - not logging as permanent failure")
+                result_indent = "        " if indent else "    "
+                print(f"{result_indent}ℹ️ All sources unavailable - not logging as permanent failure")
             else:
                 # Genius actually searched and confirmed song doesn't exist,
                 # or no Genius token and lyrics.ovh confirmed not found
@@ -549,7 +555,8 @@ class LyricsDownloader:
         # Save lyrics
         lyrics_file = self._save_lyrics(file_path, lyrics)
         if lyrics_file:
-            print(f"    ✅ Saved lyrics: {lyrics_file.name}")
+            result_indent = "        " if indent else "    "
+            print(f"{result_indent}✅ Saved lyrics: {lyrics_file.name}")
             
             # Cache the result
             self.cache[cache_key] = lyrics
