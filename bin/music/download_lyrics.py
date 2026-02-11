@@ -68,7 +68,7 @@ except ImportError as e:
 # Configuration
 CACHE_FILE = Path.home() / ".digital_library_lyrics_cache.json"
 FAILED_FILE = Path(__file__).parent.parent.parent / "log" / "failed_lyrics_lookups.txt"
-RATE_LIMIT = 1.0  # seconds between requests for non-Genius sources
+RATE_LIMIT = 0.2  # seconds between requests for non-Genius sources (lyrics.ovh)
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
 GENIUS_REQUESTS_PER_MINUTE = 10  # requests per minute (6s intervals)
@@ -87,6 +87,7 @@ class LyricsDownloader:
         self.genius_requests_this_hour = 0
         self.genius_hour_start = time.time()
         self.rate_limit_failures = 0  # Count rate limit failures in this run
+        self.both_sources_unavailable_count = 0  # Count consecutive both-unavailable failures
         self.shutdown_requested = False
         
         # Set up signal handler for clean exit
@@ -170,6 +171,19 @@ class LyricsDownloader:
             return True
         return False
     
+    def _check_both_sources_unavailable_exit(self):
+        """Check if we should exit due to both sources being unavailable."""
+        if self.both_sources_unavailable_count >= 10:  # After 10 consecutive both-unavailable failures
+            if not self.shutdown_requested:
+                print(f"\n⛔ Both sources unavailable for {self.both_sources_unavailable_count} consecutive songs.")
+                print("   Exiting to avoid wasting time on unavailable services.")
+                print("   Try again later when services are restored.")
+                print("   Progress has been saved.")
+                self._save_cache()
+                self.shutdown_requested = True
+            return True
+        return False
+    
     def _check_genius_rate_limit(self) -> bool:
         """Check if we're within Genius rate limits."""
         current_time = time.time()
@@ -228,7 +242,9 @@ class LyricsDownloader:
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         if time_since_last < RATE_LIMIT:
-            time.sleep(RATE_LIMIT - time_since_last)
+            sleep_time = RATE_LIMIT - time_since_last
+            print(f"    ⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
+            time.sleep(sleep_time)
         self.last_request_time = time.time()
     
     def _get_cache_key(self, artist: str, title: str) -> str:
@@ -541,10 +557,15 @@ class LyricsDownloader:
                 # Don't log — Genius might find it when available again
                 result_indent = "        " if indent else "    "
                 print(f"{result_indent}ℹ️ Genius temporarily unavailable - not logging as permanent failure")
+                # Reset counter - at least one source (lyrics.ovh) was reachable
+                self.both_sources_unavailable_count = 0
             elif genius_api_unavailable and ovh_api_unavailable:
                 # No Genius token AND lyrics.ovh is down
                 result_indent = "        " if indent else "    "
                 print(f"{result_indent}ℹ️ All sources unavailable - not logging as permanent failure")
+                self.both_sources_unavailable_count += 1
+                if self._check_both_sources_unavailable_exit():
+                    return False
             else:
                 # Genius actually searched and confirmed song doesn't exist,
                 # or no Genius token and lyrics.ovh confirmed not found
@@ -557,6 +578,9 @@ class LyricsDownloader:
         if lyrics_file:
             result_indent = "        " if indent else "    "
             print(f"{result_indent}✅ Saved lyrics: {lyrics_file.name}")
+            
+            # Reset both-unavailable counter on success
+            self.both_sources_unavailable_count = 0
             
             # Cache the result
             self.cache[cache_key] = lyrics
@@ -643,6 +667,10 @@ class LyricsDownloader:
             
             # Check for rate limit exit
             if self._check_rate_limit_exit():
+                break
+            
+            # Check for both sources unavailable exit
+            if self._check_both_sources_unavailable_exit():
                 break
             
             if lyrics_downloaded > 0:
