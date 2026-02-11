@@ -181,7 +181,7 @@ class LyricsDownloader:
         
         # Check hourly limit
         if self.genius_requests_this_hour >= GENIUS_HOURLY_LIMIT:
-            print(f"    ⚠️  Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Skipping...")
+            print(f"    ⚠️ Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Skipping...")
             return False
         
         # Check minute rate (12 seconds between requests = 5/minute)
@@ -190,7 +190,7 @@ class LyricsDownloader:
         
         if time_since_last < min_interval:
             sleep_time = min_interval - time_since_last
-            print(f"    ⏱️  Rate limiting: waiting {sleep_time:.1f}s...")
+            print(f"    ⏱️ Rate limiting: waiting {sleep_time:.1f}s...")
             time.sleep(sleep_time)
         
         return True
@@ -306,10 +306,10 @@ class LyricsDownloader:
             return None, False  # Lyrics empty or too short — genuine failure
                     
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            print(f"    ⚠️  lyrics.ovh search failed: {e}")
+            print(f"    ⚠️ lyrics.ovh search failed: {e}")
             return None, True  # Server unavailable — not a real lookup failure
         except Exception as e:
-            print(f"    ⚠️  lyrics.ovh search failed: {e}")
+            print(f"    ⚠️ lyrics.ovh search failed: {e}")
             return None, True  # Treat unexpected errors as unavailable too
 
     
@@ -355,7 +355,7 @@ class LyricsDownloader:
                     
             except (TimeoutError, OSError) as e:
                 connection_timeout_count += 1
-                print(f"    ⚠️  Connection issue ({connection_timeout_count}/2): {e}")
+                print(f"    ⚠️ Connection issue ({connection_timeout_count}/2): {e}")
                 
                 if connection_timeout_count <= 1:
                     print(f"    🔄 Retrying connection for {artist} - {title}")
@@ -371,7 +371,7 @@ class LyricsDownloader:
                 # Handle connection/timeout issues
                 if any(keyword in error_msg for keyword in ['timeout', 'connection', 'aborted', 'remote end closed', 'timed out']):
                     connection_timeout_count += 1
-                    print(f"    ⚠️  Connection issue ({connection_timeout_count}/2): {e}")
+                    print(f"    ⚠️ Connection issue ({connection_timeout_count}/2): {e}")
                     
                     if connection_timeout_count <= 1:
                         print(f"    🔄 Retrying connection for {artist} - {title}")
@@ -383,26 +383,26 @@ class LyricsDownloader:
                 # Handle rate limits
                 elif "429" in str(e) or "1015" in str(e) or "rate limit" in error_msg:
                     self.rate_limit_failures += 1
-                    print(f"    ⚠️  Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})")
+                    print(f"    ⚠️ Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})")
                     
                     if self._check_rate_limit_exit():
                         return None, True
                     
                     # Wait and retry
                     wait_time = 10 * (2 ** min(self.rate_limit_failures - 1, 2))
-                    print(f"    ⏱️  Waiting {wait_time} seconds...")
+                    print(f"    ⏱️ Waiting {wait_time} seconds...")
                     time.sleep(wait_time)
                     continue
                 
                 # Handle API authentication errors (401, etc.)
                 elif "401" in str(e) or "invalid_token" in error_msg or "unauthorized" in error_msg:
-                    print(f"    ⚠️  Genius API unavailable (authentication error)")
+                    print(f"    ⚠️ Genius API unavailable (authentication error)")
                     api_unavailable = True
                     break
                 
                 # Handle other API errors
                 else:
-                    print(f"    ⚠️  Genius search failed: {e}")
+                    print(f"    ⚠️ Genius search failed: {e}")
                     retry_count += 1
                     if retry_count <= max_retries:
                         print(f"    🔄 Retry {retry_count}/{max_retries} for {artist} - {title}")
@@ -475,7 +475,7 @@ class LyricsDownloader:
         self._check_shutdown()
         
         if not force and self._has_lyrics(file_path):
-            print(f"⏭️  Skipping {file_path.name} (lyrics already exist)")
+            print(f"⏭️ Skipping {file_path.name} (lyrics already exist)")
             return None
         
         # Extract metadata
@@ -491,7 +491,7 @@ class LyricsDownloader:
         
         # Check if this lookup failed before
         if not force and self._is_failed_lookup(artist, title):
-            print(f"⏭️  Skipping {file_path.name} (previously failed lookup)")
+            print(f"⏭️ Skipping {file_path.name} (previously failed lookup)")
             return None
         
         print(f"🔍 {artist} - {title}")
