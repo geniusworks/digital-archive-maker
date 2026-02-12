@@ -170,7 +170,10 @@ class LyricsDownloader:
             existing_count = 0
             for entry in self.failed_lookups:
                 if entry.startswith(f"{lookup_key}:"):
-                    existing_count = int(entry.split(":")[1])
+                    # Split on first colon only to handle titles with colons
+                    parts = entry.split(":", 1)
+                    if len(parts) == 2 and parts[1].strip().isdigit():
+                        existing_count = int(parts[1].strip())
                     break
                 elif entry == lookup_key:
                     existing_count = 1
@@ -313,6 +316,22 @@ class LyricsDownloader:
         """Check if this lookup failed before."""
         lookup_key = f"{artist}|{title}"
         return any(entry.startswith(lookup_key) for entry in self.failed_lookups)
+    
+    def _get_failure_count(self, artist: str, title: str) -> int:
+        """Get the failure count for this lookup."""
+        lookup_key = f"{artist}|{title}"
+        for entry in self.failed_lookups:
+            if entry.startswith(lookup_key):
+                if ":" in entry:
+                    # Split on first colon only to handle titles with colons
+                    parts = entry.split(":", 1)
+                    if len(parts) == 2 and parts[1].strip().isdigit():
+                        return int(parts[1].strip())
+                    else:
+                        return 1  # Malformed count, default to 1
+                else:
+                    return 1  # Old format without count
+        return 0
     
     def _load_cache(self) -> Dict:
         """Load lyrics cache from disk."""
@@ -829,6 +848,11 @@ class LyricsDownloader:
     
     def _process_albums_recursively(self, directory: Path, force: bool):
         """Process albums one at a time with smart progression."""
+        # In retry-failed mode, process globally by failure count instead
+        if self.retry_failed:
+            self._process_failed_tracks_globally(directory, force)
+            return
+        
         audio_extensions = {'.flac', '.mp3', '.mp4', '.m4a', '.wav', '.aac'}
         albums_processed = 0
         albums_with_changes = 0
@@ -961,12 +985,32 @@ class LyricsDownloader:
         lyrics_downloaded = 0
         rate_limit_failures = 0
         
+        # Get all audio files in this album
+        audio_files = []
         for file_path in album_dir.glob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in audio_extensions:
+                audio_files.append(file_path)
+        
+        # In retry mode, sort by failure count (least failures first)
+        if self.retry_failed:
+            def get_failure_count(file_path):
+                try:
+                    artist, album, title = self._extract_metadata(file_path)
+                    if not artist or not title:
+                        artist, title = self._extract_from_filename(file_path)
+                    if artist and title:
+                        return self._get_failure_count(artist, title)
+                except:
+                    pass
+                return 0  # Unknown files get priority 0
+            
+            audio_files.sort(key=get_failure_count)
+            if audio_files and any(get_failure_count(f) > 0 for f in audio_files):
+                print(f"    📊 Prioritizing {len(audio_files)} tracks by failure count (least first)")
+        
+        for file_path in audio_files:
             if self.shutdown_requested:
                 break
-            
-            if not file_path.is_file() or file_path.suffix.lower() not in audio_extensions:
-                continue
             
             files_processed += 1
             result = self.download_lyrics_for_file(file_path, force, indent=True)
@@ -979,6 +1023,66 @@ class LyricsDownloader:
                     rate_limit_failures += 1
         
         return files_processed, lyrics_downloaded, rate_limit_failures
+    
+    def _process_failed_tracks_globally(self, directory: Path, force: bool):
+        """Process failed tracks globally, sorted by failure count (ascending)."""
+        audio_extensions = {'.flac', '.mp3', '.mp4', '.m4a', '.wav', '.aac'}
+        
+        # Collect all failed tracks with their file paths and failure counts
+        failed_tracks = []
+        
+        print("🔍 Scanning for failed tracks...")
+        album_dirs = self._find_album_directories(directory, audio_extensions)
+        
+        for album_dir in album_dirs:
+            for file_path in album_dir.glob("*"):
+                if not file_path.is_file() or file_path.suffix.lower() not in audio_extensions:
+                    continue
+                
+                # Extract metadata
+                artist, album, title = self._extract_metadata(file_path)
+                if not artist or not title:
+                    artist, title = self._extract_from_filename(file_path)
+                
+                if artist and title and self._is_failed_lookup(artist, title):
+                    failure_count = self._get_failure_count(artist, title)
+                    failed_tracks.append((failure_count, file_path, artist, title))
+        
+        if not failed_tracks:
+            print("ℹ️  No failed tracks found to retry")
+            return
+        
+        # Sort by failure count (ascending)
+        failed_tracks.sort(key=lambda x: x[0])
+        
+        print(f"📊 Found {len(failed_tracks)} failed tracks, prioritizing by failure count (least first)")
+        
+        # Process tracks in priority order
+        processed = 0
+        successful = 0
+        
+        for failure_count, file_path, artist, title in failed_tracks:
+            if self.shutdown_requested:
+                break
+            
+            processed += 1
+            album_name = file_path.parent.relative_to(directory)
+            print(f"\n📀 Track {processed}/{len(failed_tracks)}: {album_name}/{file_path.name}")
+            print(f"    📈 Failed {failure_count} time{'s' if failure_count != 1 else ''} previously")
+            
+            result = self.download_lyrics_for_file(file_path, force, indent=True)
+            if result is True:
+                successful += 1
+                print(f"    ✅ Success! ({successful}/{processed} successful so far)")
+            
+            # Brief pause between tracks to respect API limits
+            if processed < len(failed_tracks):
+                time.sleep(2)
+        
+        print(f"\n📊 Retry Summary:")
+        print(f"  Tracks processed: {processed}/{len(failed_tracks)}")
+        print(f"  Lyrics found: {successful}")
+        print(f"  Success rate: {successful/processed*100:.1f}%" if processed > 0 else "  No tracks processed")
 
 def main():
     parser = argparse.ArgumentParser(
