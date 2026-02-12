@@ -48,6 +48,12 @@ media lyrics "/Volumes/Data/Media/Library/CDs" --recursive
 # Clear all failed lookups (retry everything):
 media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --clear-failed
 
+# Retry only previously failed tracks (useful after rate limits reset):
+media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --retry-failed
+
+# Force overwrite existing lyrics:
+media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --force
+
 # Or use the script directly:
 python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
 ```
@@ -56,7 +62,17 @@ python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursi
 - **Smart failure tracking** - Only logs permanent failures when sources confirm songs don't exist
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
+- **Retry failed tracks** - `--retry-failed` focuses only on previously failed tracks
+- **Detailed statistics** - Shows skips vs failures vs successful downloads
+- **Failed track removal** - Successfully retried tracks are automatically removed from failed log
 - **Output:** `.lrc` files alongside each audio file for Jellyfin lyrics display
+
+**Understanding the Output:**
+- **Files skipped (lyrics already exist)** - Already have .lrc files
+- **Files skipped (previously failed)** - In failed log, use `--retry-failed` to retry
+- **Files searched but no lyrics found** - Genuine failures (both sources couldn't find them)
+- **Albums with new lyrics** - Success! New .lrc files created
+- **Albums with no new lyrics** - All tracks either had lyrics or failed
 
 #### Step 5: Sync to Jellyfin
 ```bash

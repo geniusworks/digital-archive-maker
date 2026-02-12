@@ -79,7 +79,7 @@ ALBUM_COOLDOWN = 15  # seconds to pause between albums with new downloads
 USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
 
 class LyricsDownloader:
-    def __init__(self, genius_token: Optional[str] = None):
+    def __init__(self, genius_token: Optional[str] = None, retry_failed: bool = False):
         """Initialize lyrics downloader with optional Genius API token."""
         self.cache = self._load_cache()
         self.failed_lookups = self._load_failed_lookups()
@@ -91,6 +91,20 @@ class LyricsDownloader:
         self.rate_limit_failures = 0  # Count real Genius 429 failures
         self.fallback_access_failures = 0  # Consecutive lyrics.ovh access failures (timeouts/errors, not 404s)
         self.shutdown_requested = False
+        self.retry_failed = retry_failed  # Only process previously failed tracks
+        
+        # Statistics tracking
+        self.stats = {
+            'files_skipped_existing_lyrics': 0,
+            'files_skipped_previously_failed': 0,
+            'files_no_lyrics_found': 0,
+            'albums_skipped_complete': 0,
+            'albums_with_new_lyrics': 0,
+            'albums_no_new_lyrics': 0
+        }
+        
+        # Artist name mapping cache (for split-lookup success)
+        self.artist_mappings = {}  # original_artist -> successful_artist
         
         # Set up signal handler for clean exit
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -160,6 +174,32 @@ class LyricsDownloader:
         except IOError as e:
             print(f"⚠️  Warning: Could not write failed lookup: {e}")
     
+    def _remove_failed_lookup(self, artist: str, title: str):
+        """Remove a failed lookup from log file when lyrics are successfully found."""
+        lookup_key = f"{artist}|{title}"
+        if lookup_key not in self.failed_lookups:
+            return  # Not in failed log, nothing to remove
+        
+        try:
+            # Read all lines except the one to remove
+            FAILED_FILE.parent.mkdir(parents=True, exist_ok=True)
+            lines_to_keep = []
+            if FAILED_FILE.exists():
+                with open(FAILED_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if not line.strip().endswith(f" - {lookup_key}"):
+                            lines_to_keep.append(line)
+            
+            # Write back the filtered lines
+            with open(FAILED_FILE, 'w', encoding='utf-8') as f:
+                f.writelines(lines_to_keep)
+            
+            # Update in-memory set
+            self.failed_lookups.discard(lookup_key)
+            
+        except IOError as e:
+            print(f"⚠️  Warning: Could not remove failed lookup: {e}")
+    
     def _check_rate_limit_exit(self):
         """Check if we should exit due to too many rate limit failures."""
         if self.rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
@@ -196,11 +236,6 @@ class LyricsDownloader:
             remaining = self.genius_cooldown_until - time.time()
             if remaining > 0:
                 return True
-            # Cooldown expired — reset and re-enable Genius
-            self.genius_cooldown_until = 0
-            self.genius_requests_this_hour = 0
-            self.genius_hour_start = time.time()
-            print(f"    ℹ️ Genius cooldown expired — re-enabling Genius lookups")
         return False
     
     def _check_genius_rate_limit(self, indent: bool = False) -> bool:
@@ -508,6 +543,69 @@ class LyricsDownloader:
         """Check if lyrics file already exists."""
         return file_path.with_suffix('.lrc').exists()
     
+    def _get_artist_variations(self, artist: str) -> List[str]:
+        """Generate alternative artist names by splitting compound names.
+        
+        Examples:
+        - "Sting & The Police" → ["Sting", "The Police"]
+        - "The Beatles, Paul McCartney" → ["The Beatles", "Paul McCartney"]
+        - "Artist feat. Guest" → ["Artist", "Guest"]
+        """
+        variations = []
+        
+        # Split patterns to try
+        separators = [' & ', ' and ', ' ft. ', ' feat. ', ' featuring ', ', ', ' x ', ' vs. ']
+        
+        for sep in separators:
+            if sep.lower() in artist.lower():
+                # Use case-sensitive split but find the separator case-insensitively
+                parts = artist.lower().split(sep.lower())
+                if len(parts) == 2:
+                    # Find the actual separator in the original string to preserve case
+                    sep_index = artist.lower().find(sep.lower())
+                    if sep_index != -1:
+                        part1 = artist[:sep_index].strip()
+                        part2 = artist[sep_index + len(sep):].strip()
+                        variations.extend([part1, part2])
+                        break  # Only use the first matching separator
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_variations = []
+        for var in variations:
+            if var and var not in seen and var != artist:
+                seen.add(var)
+                unique_variations.append(var)
+        
+        return unique_variations
+    
+    def _try_artist_variations(self, artist: str, title: str, indent: bool = False) -> Tuple[Optional[str], Optional[str], bool]:
+        """Try alternative artist names if the original fails.
+        
+        Returns:
+            (lyrics, successful_artist, success) - lyrics if found, the artist name that worked, success flag
+        """
+        variations = self._get_artist_variations(artist)
+        
+        for var_artist in variations:
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}🔄 Trying alternative artist: {var_artist}")
+            
+            # Try Genius first
+            if self.genius:
+                lyrics, genius_api_unavailable = self._search_genius(var_artist, title, indent)
+                if lyrics:
+                    print(f"{indent_str}✅ Found lyrics for {var_artist} - {title}")
+                    return lyrics, var_artist, True
+            
+            # Try lyrics.ovh
+            lyrics, ovh_api_unavailable = self._search_lyrics_ovh(var_artist, title, indent)
+            if lyrics:
+                print(f"{indent_str}✅ Found lyrics for {var_artist} - {title}")
+                return lyrics, var_artist, True
+        
+        return None, None, False
+    
     def download_lyrics_for_file(self, file_path: Path, force: bool = False, indent: bool = False) -> Optional[bool]:
         """Download lyrics for a single audio file.
         
@@ -519,9 +617,11 @@ class LyricsDownloader:
         # Check for shutdown request
         self._check_shutdown()
         
-        if not force and self._has_lyrics(file_path):
+        # Skip existing lyrics unless retrying failed tracks or forcing
+        if not force and not self.retry_failed and self._has_lyrics(file_path):
             indent_str = "    " if indent else ""
-            print(f"{indent_str}⏭️ Skipping {file_path.name} (lyrics already exist)")
+            print(f"{indent_str}⏭️ Skipping {file_path.name}")
+            self.stats['files_skipped_existing_lyrics'] += 1
             return None
         
         # Extract metadata
@@ -535,17 +635,30 @@ class LyricsDownloader:
             print(f"❌ Could not identify artist/title for {file_path.name}")
             return False
         
-        # Check if this lookup failed before
-        if not force and self._is_failed_lookup(artist, title):
+        # Check if this lookup failed before (skip unless retrying failed or forcing)
+        if not force and not self.retry_failed and self._is_failed_lookup(artist, title):
             indent_str = "    " if indent else ""
             print(f"{indent_str}⏭️ Skipping {file_path.name} (previously failed lookup)")
+            self.stats['files_skipped_previously_failed'] += 1
+            return None
+        
+        # In retry mode, only process tracks that previously failed
+        if self.retry_failed and not self._is_failed_lookup(artist, title):
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}⏭️ Skipping {file_path.name} (not in failed log)")
             return None
         
         indent_str = "    " if indent else ""
-        print(f"{indent_str}🔍 {artist} - {title}")
         
-        # Check cache first
-        cache_key = self._get_cache_key(artist, title)
+        # Check if we have a successful artist mapping from previous tracks
+        search_artist = self.artist_mappings.get(artist, artist)
+        if search_artist != artist:
+            print(f"{indent_str}🔍 {search_artist} - {title} (mapped from {artist})")
+        else:
+            print(f"{indent_str}🔍 {artist} - {title}")
+        
+        # Check cache first (use mapped artist for cache key)
+        cache_key = self._get_cache_key(search_artist, title)
         if cache_key in self.cache and not force:
             cached_lyrics = self.cache[cache_key]
             lyrics_file = self._save_lyrics(file_path, cached_lyrics)
@@ -563,7 +676,7 @@ class LyricsDownloader:
         
         # Try Genius first (if available and not on cooldown)
         if self.genius and not genius_on_cooldown:
-            genius_result, genius_api_unavailable = self._search_genius(artist, title, indent)
+            genius_result, genius_api_unavailable = self._search_genius(search_artist, title, indent)
             if genius_result:
                 lyrics = genius_result
         elif self.genius and genius_on_cooldown:
@@ -573,9 +686,18 @@ class LyricsDownloader:
         if not lyrics:
             if genius_api_unavailable and not genius_on_cooldown:
                 print(f"{result_indent}🔄 Genius unavailable, trying lyrics.ovh fallback...")
-            ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(artist, title, indent)
+            ovh_result, ovh_api_unavailable = self._search_lyrics_ovh(search_artist, title, indent)
             if ovh_result:
                 lyrics = ovh_result
+        
+        if not lyrics:
+            # Try artist name variations if both sources failed
+            variation_lyrics, successful_artist, variation_success = self._try_artist_variations(artist, title, indent)
+            if variation_success and variation_lyrics and successful_artist:
+                lyrics = variation_lyrics
+                # Cache the successful artist mapping for future tracks in this album
+                self.artist_mappings[artist] = successful_artist
+                print(f"{result_indent}📝 Using artist mapping: {artist} → {successful_artist}")
         
         if not lyrics:
             print(f"{result_indent}❌ No lyrics found for {artist} - {title}")
@@ -600,8 +722,12 @@ class LyricsDownloader:
             
             # Only log permanent failure if all available sources genuinely searched
             if not ovh_api_unavailable and (genius_actually_searched or not self.genius):
-                self._save_failed_lookup(artist, title)
+                # In retry mode, only log if it wasn't already in failed log
+                # (to avoid duplicates when re-checking failed tracks)
+                if not self.retry_failed or not self._is_failed_lookup(artist, title):
+                    self._save_failed_lookup(artist, title)
             
+            self.stats['files_no_lyrics_found'] += 1
             return False
         
         # Save lyrics
@@ -611,6 +737,9 @@ class LyricsDownloader:
             
             # Reset fallback access failure counter on success
             self.fallback_access_failures = 0
+            
+            # Remove from failed lookups if it was there before
+            self._remove_failed_lookup(artist, title)
             
             # Cache the result
             self.cache[cache_key] = lyrics
@@ -677,9 +806,10 @@ class LyricsDownloader:
             album_name = album_dir.relative_to(directory)
             print(f"\n📀 Album {albums_processed}/{len(album_dirs)}: {album_name}")
             
-            # Check if album already has complete lyrics (skip unless force)
-            if not force and self._album_has_complete_lyrics(album_dir, audio_extensions):
+            # Check if album already has complete lyrics (skip unless force or retrying failed)
+            if not force and not self.retry_failed and self._album_has_complete_lyrics(album_dir, audio_extensions):
                 print(f"    ⏭️ Skipping album (already has complete lyrics)")
+                self.stats['albums_skipped_complete'] += 1
                 continue
             
             # Process this album
@@ -705,6 +835,7 @@ class LyricsDownloader:
             
             if lyrics_downloaded > 0:
                 albums_with_changes += 1
+                self.stats['albums_with_new_lyrics'] += 1
                 print(f"    ✅ Album complete — {lyrics_downloaded} new lyrics downloaded")
                 
                 # Cooldown pause before next album to respect API limits
@@ -715,6 +846,7 @@ class LyricsDownloader:
                     print(f"\n⏹️  Interrupted during cooldown. Progress saved.")
                     break
             else:
+                self.stats['albums_no_new_lyrics'] += 1
                 print(f"    ℹ️ No new lyrics for this album")
         
         print(f"\n📊 Final Summary:")
@@ -723,9 +855,22 @@ class LyricsDownloader:
         print(f"  Total files processed: {total_files_processed}")
         print(f"  Total lyrics downloaded: {total_lyrics_downloaded}")
         
+        # Detailed file statistics
+        print(f"\n📋 File Details:")
+        print(f"  Files skipped (lyrics already exist): {self.stats['files_skipped_existing_lyrics']}")
+        print(f"  Files skipped (previously failed): {self.stats['files_skipped_previously_failed']}")
+        print(f"  Files searched but no lyrics found: {self.stats['files_no_lyrics_found']}")
+        
+        # Album details
+        print(f"\n📁 Album Details:")
+        print(f"  Albums with new lyrics: {self.stats['albums_with_new_lyrics']}")
+        print(f"  Albums with no new lyrics: {self.stats['albums_no_new_lyrics']}")
+        if self.stats['albums_skipped_complete'] > 0:
+            print(f"  Albums skipped (already complete): {self.stats['albums_skipped_complete']}")
+        
         remaining = len(album_dirs) - albums_processed
         if remaining > 0:
-            print(f"  Albums remaining: {remaining}")
+            print(f"\n  Albums remaining: {remaining}")
         
         if self.rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
             print(f"\n⚠️  Exited early due to rate limits. Run again later to continue.")
@@ -803,6 +948,8 @@ def main():
                        help="Verbose output")
     parser.add_argument("--clear-failed", action="store_true",
                        help="Clear failed lookups log before running")
+    parser.add_argument("--retry-failed", action="store_true",
+                       help="Only process tracks that previously failed (ignores existing lyrics)")
     
     args = parser.parse_args()
     
@@ -820,7 +967,11 @@ def main():
         print("   Get a free token at: https://genius.com/api-clients")
         print("   Using free sources only (limited coverage).")
     
-    downloader = LyricsDownloader(genius_token)
+    downloader = LyricsDownloader(genius_token, retry_failed=args.retry_failed)
+    
+    if args.retry_failed:
+        print("🔄 Retry mode: Only processing tracks that previously failed")
+        print("   (ignoring existing lyrics, focusing on failed lookups)")
     
     # Clear failed lookups if requested
     if args.clear_failed:
