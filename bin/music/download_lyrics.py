@@ -151,14 +151,11 @@ class LyricsDownloader:
                 with open(FAILED_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#'):
-                            # Parse "timestamp - artist|title" to extract "artist|title"
+                        if line and ' - ' in line:
+                            # Extract the artist|title part (after timestamp)
                             parts = line.split(' - ', 1)
                             if len(parts) == 2:
-                                key = parts[1].strip()
-                                failed.add(key)
-                            else:
-                                failed.add(line)
+                                failed.add(parts[1])
             except IOError as e:
                 print(f"⚠️  Warning: Could not read failed lookups log: {e}")
         return failed
@@ -167,17 +164,46 @@ class LyricsDownloader:
         """Save failed lookup to log file (only for lyrics not available)."""
         try:
             FAILED_FILE.parent.mkdir(parents=True, exist_ok=True)
+            lookup_key = f"{artist}|{title}"
+            
+            # Check if already exists and get current count
+            existing_count = 0
+            for entry in self.failed_lookups:
+                if entry.startswith(f"{lookup_key}:"):
+                    existing_count = int(entry.split(":")[1])
+                    break
+                elif entry == lookup_key:
+                    existing_count = 1
+                    break
+            
+            new_count = existing_count + 1
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Remove old entry if exists
+            self._remove_failed_lookup(artist, title)
+            
+            # Add new entry with incremented count
             with open(FAILED_FILE, 'a', encoding='utf-8') as f:
-                timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-                f.write(f"{timestamp} - {artist}|{title}\n")
-            self.failed_lookups.add(f"{artist}|{title}")
+                f.write(f"{timestamp} - {lookup_key}:{new_count}\n")
+            
+            # Update in-memory set
+            self.failed_lookups.add(f"{lookup_key}:{new_count}")
+            
         except IOError as e:
             print(f"⚠️  Warning: Could not write failed lookup: {e}")
     
     def _remove_failed_lookup(self, artist: str, title: str):
         """Remove a failed lookup from log file when lyrics are successfully found."""
         lookup_key = f"{artist}|{title}"
-        if lookup_key not in self.failed_lookups:
+        
+        # Find the entry to remove (with or without count)
+        entry_to_remove = None
+        for entry in self.failed_lookups:
+            if entry.startswith(f"{lookup_key}:") or entry == lookup_key:
+                entry_to_remove = entry
+                break
+        
+        if not entry_to_remove:
             return  # Not in failed log, nothing to remove
         
         try:
@@ -187,15 +213,23 @@ class LyricsDownloader:
             if FAILED_FILE.exists():
                 with open(FAILED_FILE, 'r', encoding='utf-8') as f:
                     for line in f:
-                        if not line.strip().endswith(f" - {lookup_key}"):
-                            lines_to_keep.append(line)
+                        line_content = line.strip()
+                        # Check if this line matches the entry to remove
+                        if ":" in entry_to_remove:
+                            # Entry has count: "artist|title:3"
+                            if not line_content.endswith(f" - {entry_to_remove}"):
+                                lines_to_keep.append(line)
+                        else:
+                            # Old format without count: "artist|title"
+                            if not line_content.endswith(f" - {lookup_key}"):
+                                lines_to_keep.append(line)
             
             # Write back the filtered lines
             with open(FAILED_FILE, 'w', encoding='utf-8') as f:
                 f.writelines(lines_to_keep)
             
             # Update in-memory set
-            self.failed_lookups.discard(lookup_key)
+            self.failed_lookups.discard(entry_to_remove)
             
         except IOError as e:
             print(f"⚠️  Warning: Could not remove failed lookup: {e}")
@@ -277,7 +311,8 @@ class LyricsDownloader:
     
     def _is_failed_lookup(self, artist: str, title: str) -> bool:
         """Check if this lookup failed before."""
-        return f"{artist}|{title}" in self.failed_lookups
+        lookup_key = f"{artist}|{title}"
+        return any(entry.startswith(lookup_key) for entry in self.failed_lookups)
     
     def _load_cache(self) -> Dict:
         """Load lyrics cache from disk."""
@@ -648,6 +683,17 @@ class LyricsDownloader:
             print(f"{indent_str}⏭️ Skipping {file_path.name} (not in failed log)")
             return None
         
+        # In retry mode, if lyrics already exist, remove from failed log and skip
+        if self.retry_failed and self._has_lyrics(file_path):
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}✅ Lyrics already exist, removing from failed log: {file_path.name}")
+            self._remove_failed_lookup(artist, title)
+            # Also check for mapped artist name
+            search_artist = self.artist_mappings.get(artist, artist)
+            if search_artist != artist:
+                self._remove_failed_lookup(search_artist, title)
+            return None
+        
         indent_str = "    " if indent else ""
         
         # Check if we have a successful artist mapping from previous tracks
@@ -740,6 +786,9 @@ class LyricsDownloader:
             
             # Remove from failed lookups if it was there before
             self._remove_failed_lookup(artist, title)
+            # Also remove the mapped artist name if we used one
+            if search_artist != artist:
+                self._remove_failed_lookup(search_artist, title)
             
             # Cache the result
             self.cache[cache_key] = lyrics
