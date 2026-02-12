@@ -768,10 +768,7 @@ class LyricsDownloader:
             
             # Only log permanent failure if all available sources genuinely searched
             if not ovh_api_unavailable and (genius_actually_searched or not self.genius):
-                # In retry mode, only log if it wasn't already in failed log
-                # (to avoid duplicates when re-checking failed tracks)
-                if not self.retry_failed or not self._is_failed_lookup(artist, title):
-                    self._save_failed_lookup(artist, title)
+                self._save_failed_lookup(artist, title)
             
             self.stats['files_no_lyrics_found'] += 1
             return False
