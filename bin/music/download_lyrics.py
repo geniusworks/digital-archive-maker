@@ -169,14 +169,14 @@ class LyricsDownloader:
             # Check if already exists and get current count
             existing_count = 0
             for entry in self.failed_lookups:
-                if entry.startswith(f"{lookup_key}:"):
-                    # Split on first colon only to handle titles with colons
-                    parts = entry.split(":", 1)
+                if entry == lookup_key:
+                    existing_count = 1
+                    break
+                elif entry.startswith(f"{lookup_key}:"):
+                    # Split on last colon to handle titles with colons
+                    parts = entry.rsplit(":", 1)
                     if len(parts) == 2 and parts[1].strip().isdigit():
                         existing_count = int(parts[1].strip())
-                    break
-                elif entry == lookup_key:
-                    existing_count = 1
                     break
             
             new_count = existing_count + 1
@@ -315,7 +315,13 @@ class LyricsDownloader:
     def _is_failed_lookup(self, artist: str, title: str) -> bool:
         """Check if this lookup failed before."""
         lookup_key = f"{artist}|{title}"
-        return any(entry.startswith(lookup_key) for entry in self.failed_lookups)
+        for entry in self.failed_lookups:
+            # Handle both formats: "artist|title" and "artist|title:count"
+            if entry == lookup_key:
+                return True
+            elif entry.startswith(f"{lookup_key}:"):
+                return True
+        return False
     
     def _get_failure_count(self, artist: str, title: str) -> int:
         """Get the failure count for this lookup."""
@@ -323,8 +329,8 @@ class LyricsDownloader:
         for entry in self.failed_lookups:
             if entry.startswith(lookup_key):
                 if ":" in entry:
-                    # Split on first colon only to handle titles with colons
-                    parts = entry.split(":", 1)
+                    # Split on last colon to handle titles with colons
+                    parts = entry.rsplit(":", 1)
                     if len(parts) == 2 and parts[1].strip().isdigit():
                         return int(parts[1].strip())
                     else:
