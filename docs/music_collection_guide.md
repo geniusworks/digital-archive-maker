@@ -51,6 +51,9 @@ media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --clear-failed
 # Retry only previously failed tracks (useful after rate limits reset):
 media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --retry-failed
 
+# Add a track to permanent skip list (e.g., classical, instrumental):
+media lyrics --add-to-skip "Classical Escape" "Brandenburg concerto No1 in F major"
+
 # Force overwrite existing lyrics:
 media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --force
 
@@ -60,6 +63,7 @@ python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursi
 **Features:**
 - **Album-by-album processing** - One album at a time with 15s cooldowns
 - **Smart failure tracking** - Only logs permanent failures when sources confirm songs don't exist
+- **Permanent skip list** - Skip tracks forever (e.g., classical, instrumental, foreign language)
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
 - **Retry failed tracks** - `--retry-failed` focuses only on previously failed tracks
@@ -69,6 +73,7 @@ python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursi
 
 **Understanding the Output:**
 - **Files skipped (lyrics already exist)** - Already have .lrc files
+- **Files skipped (in skip list)** - Permanent skips (classical, instrumental, etc.)
 - **Files skipped (previously failed)** - In failed log, use `--retry-failed` to retry
 - **Files searched but no lyrics found** - Genuine failures (both sources couldn't find them)
 - **Albums with new lyrics** - Success! New .lrc files created

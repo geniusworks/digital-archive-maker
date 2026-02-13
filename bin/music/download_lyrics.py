@@ -69,6 +69,7 @@ except ImportError as e:
 # Configuration
 CACHE_FILE = Path.home() / ".digital_library_lyrics_cache.json"
 FAILED_FILE = Path(__file__).parent.parent.parent / "log" / "failed_lyrics_lookups.txt"
+SKIP_FILE = Path(__file__).parent.parent.parent / "log" / "skip_lyrics_lookups.txt"
 RATE_LIMIT = 0.2  # seconds between requests for non-Genius sources (lyrics.ovh)
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token
@@ -84,6 +85,7 @@ class LyricsDownloader:
         """Initialize lyrics downloader with optional Genius API token."""
         self.cache = self._load_cache()
         self.failed_lookups = self._load_failed_lookups()
+        self.skip_lookups = self._load_skip_lookups()
         self.genius_token = genius_token
         self.genius = None
         self.genius_requests_this_hour = 0
@@ -160,6 +162,50 @@ class LyricsDownloader:
             except IOError as e:
                 print(f"⚠️  Warning: Could not read failed lookups log: {e}")
         return failed
+    
+    def _load_skip_lookups(self) -> set:
+        """Load skip lookups from skip file."""
+        skip = set()
+        if SKIP_FILE.exists():
+            try:
+                with open(SKIP_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and ' - ' in line:
+                            # Extract the artist|title part (after timestamp)
+                            parts = line.split(' - ', 1)
+                            if len(parts) == 2:
+                                skip.add(parts[1])
+                        elif line and '|' in line:
+                            # Also support plain "artist|title" format without timestamp
+                            skip.add(line)
+            except IOError as e:
+                print(f"⚠️  Warning: Could not read skip lookups file: {e}")
+        return skip
+    
+    def add_to_skip_list(self, artist: str, title: str):
+        """Add a track to the permanent skip list."""
+        try:
+            SKIP_FILE.parent.mkdir(parents=True, exist_ok=True)
+            lookup_key = f"{artist}|{title}"
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Check if already exists
+            for entry in self.skip_lookups:
+                if entry == lookup_key or entry.startswith(f"{lookup_key}:"):
+                    print(f"ℹ️  {artist} - {title} is already in skip list")
+                    return
+            
+            # Add to file
+            with open(SKIP_FILE, 'a', encoding='utf-8') as f:
+                f.write(f"{timestamp} - {lookup_key}:1\n")
+            
+            # Update in-memory set
+            self.skip_lookups.add(f"{lookup_key}:1")
+            print(f"✅ Added to skip list: {artist} - {title}")
+            
+        except IOError as e:
+            print(f"⚠️  Warning: Could not add to skip list: {e}")
     
     def _save_failed_lookup(self, artist: str, title: str):
         """Save failed lookup to log file (only for lyrics not available)."""
@@ -317,6 +363,17 @@ class LyricsDownloader:
         """Check if this lookup failed before."""
         lookup_key = f"{artist}|{title}"
         for entry in self.failed_lookups:
+            # Handle both formats: "artist|title" and "artist|title:count"
+            if entry == lookup_key:
+                return True
+            elif entry.startswith(f"{lookup_key}:"):
+                return True
+        return False
+    
+    def _is_skip_lookup(self, artist: str, title: str) -> bool:
+        """Check if this lookup is in the permanent skip list."""
+        lookup_key = f"{artist}|{title}"
+        for entry in self.skip_lookups:
             # Handle both formats: "artist|title" and "artist|title:count"
             if entry == lookup_key:
                 return True
@@ -705,6 +762,13 @@ class LyricsDownloader:
         if not artist or not title:
             print(f"❌ Could not identify artist/title for {file_path.name}")
             return False
+        
+        # Check skip list first (highest priority)
+        if not force and self._is_skip_lookup(artist, title):
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}⏭️ Skipping {file_path.name} (in skip list)")
+            self.stats['files_skipped_previously_failed'] += 1
+            return None
         
         # Check if this lookup failed before (skip unless retrying failed or forcing)
         if not force and not self.retry_failed and self._is_failed_lookup(artist, title):
@@ -1117,6 +1181,8 @@ def main():
                        help="Clear failed lookups log before running")
     parser.add_argument("--retry-failed", action="store_true",
                        help="Only process tracks that previously failed (ignores existing lyrics)")
+    parser.add_argument("--add-to-skip", nargs=2, metavar=("ARTIST", "TITLE"),
+                       help="Add a track to the permanent skip list")
     
     args = parser.parse_args()
     
@@ -1133,6 +1199,13 @@ def main():
         print("   Add GENIUS_API_TOKEN to your .env file for better lyrics quality")
         print("   Get a free token at: https://genius.com/api-clients")
         print("   Using free sources only (limited coverage).")
+    
+    # Handle add-to-skip option
+    if args.add_to_skip:
+        artist, title = args.add_to_skip
+        downloader = LyricsDownloader(genius_token)
+        downloader.add_to_skip_list(artist, title)
+        return
     
     downloader = LyricsDownloader(genius_token, retry_failed=args.retry_failed)
     
