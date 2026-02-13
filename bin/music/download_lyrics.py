@@ -857,6 +857,25 @@ class LyricsDownloader:
             print(f"❌ Could not identify artist/title for {file_path.name}")
             return False
         
+        # Check if title contains "instrumental" - auto-add to skip list
+        if not force and 'instrumental' in title.lower():
+            indent_str = "    " if indent else ""
+            print(f"{indent_str}🎵 Instrumental detected, adding to skip list: {file_path.name}")
+            
+            # Add to skip list
+            self.add_to_skip_list(artist, title)
+            
+            # Remove from failed list if it exists
+            if self._is_failed_lookup(artist, title):
+                self._remove_failed_lookup(artist, title)
+                # Also check for mapped artist name
+                search_artist = self.artist_mappings.get(artist, artist)
+                if search_artist != artist:
+                    self._remove_failed_lookup(search_artist, title)
+            
+            self.stats['files_skipped_previously_failed'] += 1
+            return None
+        
         # Check skip list first (highest priority)
         if not force and self._is_skip_lookup(artist, title):
             indent_str = "    " if indent else ""

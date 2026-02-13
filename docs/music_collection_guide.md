@@ -60,10 +60,40 @@ media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --force
 # Or use the script directly:
 python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
 ```
+
+### 🧠 Intelligent Artist Variation System
+
+The lyrics downloader includes advanced artist name matching to maximize success rates:
+
+**Artist Alias Mappings** (reversible):
+- **ELO** ↔ `Electric Light Orchestra` ↔ `Jeff Lynne` ↔ `Jeff Lynne's ELO`
+- **John Rutter** ↔ `The Cambridge Singers` ↔ `The Cambridge Singers, John Rutter`
+- **Rupert's Kitchen Orchestra** ↔ `Ruperts Kitchen Orchestra` ↔ `RUPERTS ☆ KITCHEN ☆ ORCHESTRA`
+- **Wendy & Lisa** ↔ `Wendy and Lisa`
+- **The Alan Parsons Project** ↔ `Alan Parsons` ↔ `Alan Parsons Project`
+- **John Cougar Mellencamp** ↔ `John Mellencamp`
+- **Frank Sinatra** ↔ `Frank Sinatra with Billy May and His Orchestra`
+
+**"And" Variant Interchangeability**:
+- `Daryl Hall + John Oates` → tries `Daryl Hall and John Oates`, `Daryl Hall & John Oates`
+- `Simon & Garfunkel` → tries `Simon and Garfunkel`, `Simon + Garfunkel`
+
+**"Various" Album Artist Support**:
+- Extracts real artists from titles like `"Song Title (Artist)"` or `"Song (remix) (Artist)"`
+- Filters out remix/version info to find actual artist names
+- Examples: `"Encore Une Fois (Original Mix) (Sashi)"` → tries `Sashi - Encore Une Fois`
+
+**Automatic Instrumental Detection**:
+- Detects "instrumental" in song titles (case-insensitive)
+- Automatically adds to skip list and removes from failed list
+- Prevents future lookup attempts on instrumental tracks
 **Features:**
 - **Album-by-album processing** - One album at a time with 15s cooldowns
 - **Smart failure tracking** - Only logs permanent failures when sources confirm songs don't exist
 - **Permanent skip list** - Skip tracks forever (e.g., classical, instrumental, foreign language)
+- **Intelligent artist variations** - Handles reversible name mappings and "and" variants (+, &, and)
+- **"Various" album artist support** - Extracts actual artist from track titles like "Song (Artist)"
+- **Automatic instrumental detection** - Detects "instrumental" in titles and auto-skips
 - **Rate limit protection** - Exits if entire album fails due to rate limits
 - **Progress preservation** - Can resume where left off
 - **Retry failed tracks** - `--retry-failed` focuses only on previously failed tracks
@@ -74,6 +104,7 @@ python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursi
 **Understanding the Output:**
 - **Files skipped (lyrics already exist)** - Already have .lrc files
 - **Files skipped (in skip list)** - Permanent skips (classical, instrumental, etc.)
+- **Files skipped (instrumental detected)** - Auto-added to skip list when "instrumental" found in title
 - **Files skipped (previously failed)** - In failed log, use `--retry-failed` to retry
 - **Files searched but no lyrics found** - Genuine failures (both sources couldn't find them)
 - **Albums with new lyrics** - Success! New .lrc files created
