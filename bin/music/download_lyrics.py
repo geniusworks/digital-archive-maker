@@ -25,6 +25,7 @@ import os
 import sys
 import re
 import time
+import unicodedata
 import json
 import signal
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -603,6 +604,11 @@ class LyricsDownloader:
         """Check if lyrics file already exists."""
         return file_path.with_suffix('.lrc').exists()
     
+    def _strip_accents(self, text: str) -> str:
+        """Strip accents/diacritics from text for fallback lookups."""
+        normalized = unicodedata.normalize("NFKD", text)
+        return normalized.encode("ascii", "ignore").decode("ascii")
+
     def _get_artist_variations(self, artist: str) -> List[str]:
         """Generate alternative artist names by splitting compound names.
         
@@ -612,6 +618,11 @@ class LyricsDownloader:
         - "Artist feat. Guest" → ["Artist", "Guest"]
         """
         variations = []
+        
+        # Accent-stripped fallback (e.g., "André" -> "Andre")
+        accentless = self._strip_accents(artist)
+        if accentless and accentless != artist:
+            variations.append(accentless)
         
         # Split patterns to try
         separators = [' & ', ' and ', ' ft. ', ' feat. ', ' featuring ', ', ', ' x ', ' vs. ']
