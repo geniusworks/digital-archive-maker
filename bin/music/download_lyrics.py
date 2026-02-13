@@ -666,23 +666,104 @@ class LyricsDownloader:
         normalized = unicodedata.normalize("NFKD", text)
         return normalized.encode("ascii", "ignore").decode("ascii")
 
-    def _get_artist_variations(self, artist: str) -> List[str]:
+    def _get_artist_variations(self, artist: str, title: str) -> List[Tuple[str, str]]:
         """Generate alternative artist names by splitting compound names.
         
+        Returns:
+            List of (artist, title) tuples to try
+        
         Examples:
-        - "Sting & The Police" → ["Sting", "The Police"]
-        - "The Beatles, Paul McCartney" → ["The Beatles", "Paul McCartney"]
-        - "Artist feat. Guest" → ["Artist", "Guest"]
+        - "Sting & The Police" → [("Sting", "title"), ("The Police", "title")]
+        - "The Beatles, Paul McCartney" → [("The Beatles", "title"), ("Paul McCartney", "title")]
+        - "Artist feat. Guest" → [("Artist", "title"), ("Guest", "title")]
         """
         variations = []
+        
+        # Artist alias mappings for reversible alternative names
+        artist_aliases = {
+            "ELO": ["Electric Light Orchestra", "Jeff Lynne", "Jeff Lynne's ELO"],
+            "Electric Light Orchestra": ["ELO", "Jeff Lynne", "Jeff Lynne's ELO"],
+            "Jeff Lynne": ["ELO", "Electric Light Orchestra", "Jeff Lynne's ELO"],
+            "Jeff Lynne's ELO": ["ELO", "Electric Light Orchestra", "Jeff Lynne"],
+            
+            "John Rutter": ["The Cambridge Singers", "The Cambridge Singers, John Rutter"],
+            "The Cambridge Singers": ["John Rutter", "The Cambridge Singers, John Rutter"],
+            "The Cambridge Singers, John Rutter": ["John Rutter", "The Cambridge Singers"],
+            
+            "Rupert's Kitchen Orchestra": ["Ruperts Kitchen Orchestra", "RUPERTS ☆ KITCHEN ☆ ORCHESTRA"],
+            "Ruperts Kitchen Orchestra": ["Rupert's Kitchen Orchestra", "RUPERTS ☆ KITCHEN ☆ ORCHESTRA"],
+            "RUPERTS ☆ KITCHEN ☆ ORCHESTRA": ["Rupert's Kitchen Orchestra", "Ruperts Kitchen Orchestra"],
+            
+            "Wendy & Lisa": ["Wendy and Lisa"],
+            "Wendy and Lisa": ["Wendy & Lisa"],
+            
+            "The Alan Parsons Project": ["Alan Parsons", "Alan Parsons Project"],
+            "Alan Parsons": ["The Alan Parsons Project", "Alan Parsons Project"],
+            "Alan Parsons Project": ["The Alan Parsons Project", "Alan Parsons"],
+            
+            "Peter Fox & Cold Steel": ["Peter Fox"],
+            "Peter Fox": ["Peter Fox & Cold Steel"],
+            
+            "John Cougar Mellencamp": ["John Mellencamp"],
+            "John Mellencamp": ["John Cougar Mellencamp"],
+            
+            "Frank Sinatra with Billy May and His Orchestra": ["Frank Sinatra"],
+            "Frank Sinatra": ["Frank Sinatra with Billy May and His Orchestra"],
+        }
+        
+        # Check for exact artist alias matches
+        if artist in artist_aliases:
+            for alt_artist in artist_aliases[artist]:
+                variations.append((alt_artist, title))
+        
+        # Check if any alias matches this artist (reverse mapping)
+        for alias, alternatives in artist_aliases.items():
+            if artist in alternatives and artist != alias:
+                variations.append((alias, title))
+                for alt in alternatives:
+                    if alt != artist:
+                        variations.append((alt, title))
         
         # Accent-stripped fallback (e.g., "André" -> "Andre")
         accentless = self._strip_accents(artist)
         if accentless and accentless != artist:
-            variations.append(accentless)
+            variations.append((accentless, title))
+        
+        # Special case for "Various" album artist - extract artist from title
+        clean_title = title
+        if artist.lower() == "various":
+            # Pattern: "Song Title (Artist)" or "Song Title (remix info) (Artist)"
+            # Extract artist from parentheses in title
+            import re
+            
+            # Try to find the last parenthesized group (usually the artist)
+            parenthesized_matches = re.findall(r'\(([^)]+)\)', title)
+            if parenthesized_matches:
+                # The last group is usually the artist, but we need to filter out remix info
+                potential_artists = []
+                for match in parenthesized_matches:
+                    # Skip if it looks like remix/version info
+                    remix_keywords = ['remix', 'mix', 'version', 'edit', 'club', 'extended', 'original', 'rmx', 'dub']
+                    if not any(keyword.lower() in match.lower() for keyword in remix_keywords):
+                        # Skip if it's very short (likely not an artist)
+                        if len(match.strip()) > 2:
+                            potential_artists.append(match.strip())
+                
+                # Use the last valid match as the artist
+                if potential_artists:
+                    extracted_artist = potential_artists[-1]
+                    variations.append((extracted_artist, title))
+                    
+                    # Also try extracting clean song title (before first parenthesis)
+                    clean_title = re.split(r'\s*\(', title, 1)[0].strip()
+                    if clean_title != title:
+                        variations.append((extracted_artist, clean_title))
         
         # Split patterns to try
-        separators = [' & ', ' and ', ' ft. ', ' feat. ', ' featuring ', ', ', ' x ', ' vs. ']
+        separators = [' & ', ' and ', ' ft. ', ' feat. ', ' featuring ', ', ', ' x ', ' vs. ', ' + ']
+        
+        # Generate interchangeable variations for "and", "+", "&"
+        and_variants = [' and ', ' + ', ' & ']
         
         for sep in separators:
             if sep.lower() in artist.lower():
@@ -694,16 +775,26 @@ class LyricsDownloader:
                     if sep_index != -1:
                         part1 = artist[:sep_index].strip()
                         part2 = artist[sep_index + len(sep):].strip()
-                        variations.extend([part1, part2])
+                        variations.append((part1, clean_title))
+                        variations.append((part2, clean_title))
+                        
+                        # If this was an "and" variant, also try the other "and" variants
+                        if sep.lower() in [' and ', ' + ', ' & ']:
+                            for variant in and_variants:
+                                if variant.lower() != sep.lower():
+                                    # Create the alternative artist name with different "and" variant
+                                    alt_artist = f"{part1}{variant}{part2}"
+                                    variations.append((alt_artist, clean_title))
+                        
                         break  # Only use the first matching separator
         
         # Remove duplicates while preserving order
         seen = set()
         unique_variations = []
-        for var in variations:
-            if var and var not in seen and var != artist:
-                seen.add(var)
-                unique_variations.append(var)
+        for var_artist, var_title in variations:
+            if var_artist and (var_artist, var_title) not in seen and (var_artist, var_title) != (artist, title):
+                seen.add((var_artist, var_title))
+                unique_variations.append((var_artist, var_title))
         
         return unique_variations
     
@@ -713,23 +804,26 @@ class LyricsDownloader:
         Returns:
             (lyrics, successful_artist, success) - lyrics if found, the artist name that worked, success flag
         """
-        variations = self._get_artist_variations(artist)
+        variations = self._get_artist_variations(artist, title)
         
-        for var_artist in variations:
+        for var_artist, var_title in variations:
             indent_str = "    " if indent else ""
-            print(f"{indent_str}🔄 Trying alternative artist: {var_artist}")
+            if var_title != title:
+                print(f"{indent_str}🔄 Trying alternative: {var_artist} - {var_title}")
+            else:
+                print(f"{indent_str}🔄 Trying alternative artist: {var_artist}")
             
             # Try Genius first
             if self.genius:
-                lyrics, genius_api_unavailable = self._search_genius(var_artist, title, indent)
+                lyrics, genius_api_unavailable = self._search_genius(var_artist, var_title, indent)
                 if lyrics:
-                    print(f"{indent_str}✅ Found lyrics for {var_artist} - {title}")
+                    print(f"{indent_str}✅ Found lyrics for {var_artist} - {var_title}")
                     return lyrics, var_artist, True
             
             # Try lyrics.ovh
-            lyrics, ovh_api_unavailable = self._search_lyrics_ovh(var_artist, title, indent)
+            lyrics, ovh_api_unavailable = self._search_lyrics_ovh(var_artist, var_title, indent)
             if lyrics:
-                print(f"{indent_str}✅ Found lyrics for {var_artist} - {title}")
+                print(f"{indent_str}✅ Found lyrics for {var_artist} - {var_title}")
                 return lyrics, var_artist, True
         
         return None, None, False
