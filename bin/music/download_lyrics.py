@@ -707,8 +707,20 @@ class LyricsDownloader:
             "John Cougar Mellencamp": ["John Mellencamp"],
             "John Mellencamp": ["John Cougar Mellencamp"],
             
-            "Frank Sinatra with Billy May and His Orchestra": ["Frank Sinatra"],
-            "Frank Sinatra": ["Frank Sinatra with Billy May and His Orchestra"],
+            "Frank Sinatra": ["Frank Sinatra with Billy May and His Orchestra", "The Rat Pack"],
+            "Frank Sinatra with Billy May and His Orchestra": ["Frank Sinatra", "The Rat Pack"],
+            
+            # The Rat Pack group - all members cross-referenced
+            "The Rat Pack": ["Frank Sinatra", "Dean Martin", "Sammy Davis Jr.", "Peter Lawford", "Joey Bishop"],
+            "Dean Martin": ["The Rat Pack", "Frank Sinatra", "Sammy Davis Jr.", "Peter Lawford", "Joey Bishop"],
+            "Sammy Davis Jr.": ["The Rat Pack", "Frank Sinatra", "Dean Martin", "Peter Lawford", "Joey Bishop"],
+            "Peter Lawford": ["The Rat Pack", "Frank Sinatra", "Dean Martin", "Sammy Davis Jr.", "Joey Bishop"],
+            "Joey Bishop": ["The Rat Pack", "Frank Sinatra", "Dean Martin", "Sammy Davis Jr.", "Peter Lawford"],
+            
+            # Björk variations - Icelandic spelling and trio collaboration
+            "Bjork Gudmundsdottir & Trio Gudmundar Ingolfssonar": ["Björk", "Bjork"],
+            "Björk": ["Bjork", "Bjork Gudmundsdottir & Trio Gudmundar Ingolfssonar"],
+            "Bjork": ["Björk", "Bjork Gudmundsdottir & Trio Gudmundar Ingolfssonar"],
         }
         
         # Check for exact artist alias matches
@@ -728,6 +740,12 @@ class LyricsDownloader:
         accentless = self._strip_accents(artist)
         if accentless and accentless != artist:
             variations.append((accentless, title))
+        
+        # Special case for "The" prefix - try without "The" if original fails
+        if artist.lower().startswith("the ") and len(artist) > 4:  # More than just "The"
+            artist_without_the = artist[4:].strip()  # Remove "The " prefix
+            if artist_without_the:
+                variations.append((artist_without_the, title))
         
         # Special case for "Various" album artist - extract artist from title
         clean_title = title
