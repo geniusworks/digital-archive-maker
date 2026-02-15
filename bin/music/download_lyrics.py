@@ -487,6 +487,10 @@ class LyricsDownloader:
         try:
             self._rate_limit(indent)
             
+            # Normalize quotes for consistent searching
+            artist = self._normalize_quotes(artist)
+            title = self._normalize_quotes(title)
+            
             url = f"https://api.lyrics.ovh/v1/{quote(artist)}/{quote(title)}"
             response = self.session.get(url, timeout=15)
             
@@ -525,6 +529,10 @@ class LyricsDownloader:
         Returns:
             Tuple[Optional[str], bool] - (lyrics_text, api_unavailable_flag)
         """
+        # Normalize quotes for consistent searching
+        artist = self._normalize_quotes(artist)
+        title = self._normalize_quotes(title)
+        
         # Check rate limits before attempting
         if not self._check_genius_rate_limit(indent):
             # Hourly self-limit reached — just skip Genius, let lyrics.ovh handle it
@@ -665,6 +673,11 @@ class LyricsDownloader:
         """Strip accents/diacritics from text for fallback lookups."""
         normalized = unicodedata.normalize("NFKD", text)
         return normalized.encode("ascii", "ignore").decode("ascii")
+    
+    def _normalize_quotes(self, text: str) -> str:
+        """Normalize smart quotes and apostrophes to regular quotes."""
+        # Replace various smart quotes with regular quotes
+        return text.replace(''', "'").replace(''', "'").replace('"', '"').replace('"', '"')
 
     def _get_artist_variations(self, artist: str, title: str) -> List[Tuple[str, str]]:
         """Generate alternative artist names by splitting compound names.
@@ -677,6 +690,7 @@ class LyricsDownloader:
         - "The Beatles, Paul McCartney" → [("The Beatles", "title"), ("Paul McCartney", "title")]
         - "Artist feat. Guest" → [("Artist", "title"), ("Guest", "title")]
         """
+        import re
         variations = []
         
         # Artist alias mappings for reversible alternative names
@@ -752,7 +766,6 @@ class LyricsDownloader:
         if artist.lower() == "various":
             # Pattern: "Song Title (Artist)" or "Song Title (remix info) (Artist)"
             # Extract artist from parentheses in title
-            import re
             
             # Try to find the last parenthesized group (usually the artist)
             parenthesized_matches = re.findall(r'\(([^)]+)\)', title)
@@ -776,6 +789,28 @@ class LyricsDownloader:
                     clean_title = re.split(r'\s*\(', title, 1)[0].strip()
                     if clean_title != title:
                         variations.append((extracted_artist, clean_title))
+        
+        # Special case for parenthetical suffixes in title - try without them
+        if '(' in title and ')' in title:
+            # Check if the last parenthesized group looks like a suffix (version info)
+            parenthesized_matches = re.findall(r'\(([^)]+)\)', title)
+            if parenthesized_matches:
+                last_paren = parenthesized_matches[-1].strip()
+                # Common suffix patterns that indicate version/edition info
+                suffix_patterns = [
+                    'single', 'album version', 'radio edit', 'extended mix', 'remix',
+                    'version', 'edit', 'mix', 'demo', 'live', 'acoustic', 'studio',
+                    'u.s.', 'uk', 'european', 'japanese', 'international',
+                    'original', 're-recorded', 'remastered', 'deluxe', 'bonus',
+                    'track', 'explicit', 'clean', 'instrumental', 'karaoke'
+                ]
+                
+                # If the last parenthesized looks like a suffix, try without it
+                if any(pattern.lower() in last_paren.lower() for pattern in suffix_patterns):
+                    # Remove the last parenthesized group
+                    title_without_suffix = re.sub(r'\s*\([^)]*\)$', '', title).strip()
+                    if title_without_suffix != title:
+                        variations.append((artist, title_without_suffix))
         
         # Split patterns to try
         separators = [' & ', ' and ', ' ft. ', ' feat. ', ' featuring ', ', ', ' x ', ' vs. ', ' + ']
@@ -900,6 +935,16 @@ class LyricsDownloader:
             print(f"{indent_str}⏭️ Skipping {file_path.name} (in skip list)")
             self.stats['files_skipped_previously_failed'] += 1
             return None
+        
+        # Check skip list for all artist variations
+        if not force:
+            variations = self._get_artist_variations(artist, title)
+            for var_artist, var_title in variations:
+                if self._is_skip_lookup(var_artist, var_title):
+                    indent_str = "    " if indent else ""
+                    print(f"{indent_str}⏭️ Skipping {file_path.name} (variation {var_artist} - {var_title} in skip list)")
+                    self.stats['files_skipped_previously_failed'] += 1
+                    return None
         
         # Check if this lookup failed before (skip unless retrying failed or forcing)
         if not force and not self.retry_failed and self._is_failed_lookup(artist, title):
