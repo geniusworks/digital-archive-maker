@@ -212,6 +212,32 @@ def mux_text_sub_into_mp4(mp4_path: Path, src_mkv: Path, sub_stream_index: int, 
     tmp_out.replace(mp4_path)
 
 
+def eject_disc() -> None:
+    """Eject the disc from the drive."""
+    try:
+        # Try drutil first (macOS standard)
+        _run(["drutil", "eject"], check=False, capture=False)
+        print("Disc ejected")
+    except Exception:
+        # Fallback to diskutil if drutil fails
+        try:
+            # Find optical disc devices
+            res = _run(["diskutil", "list"], capture=True)
+            lines = res.stdout.split('\n')
+            for line in lines:
+                if 'DVD' in line or 'CD' in line or 'BD' in line:
+                    # Extract device identifier
+                    parts = line.strip().split()
+                    if parts and parts[-1].startswith('/dev/'):
+                        device = parts[-1]
+                        _run(["diskutil", "eject", device], check=False, capture=False)
+                        print(f"Disc ejected from {device}")
+                        return
+            print("No optical disc found to eject")
+        except Exception:
+            print("Could not eject disc")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
     parser.add_argument("type", nargs="?", default="auto", choices=["dvd", "bluray", "auto"])
@@ -355,6 +381,11 @@ def main() -> int:
                 shutil.move(str(largest), str(dest))
 
     print(f"Done: {outdir}")
+    
+    # Eject disc if requested via environment variable
+    if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
+        eject_disc()
+    
     return 0
 
 
