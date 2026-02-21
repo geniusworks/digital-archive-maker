@@ -223,6 +223,11 @@ def main() -> int:
     # Defaults
     library_root = Path(get_env_str("LIBRARY_ROOT", "/Volumes/Data/Media/Library") or "/Volumes/Data/Media/Library")
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
+    
+    # Encoding settings (faster defaults)
+    quality = get_env_str("HB_QUALITY", "28") or "28"  # Higher number = lower quality but faster
+    preset = get_env_str("HB_PRESET", "fast") or "fast"  # Encoding speed preset
+    tune = get_env_str("HB_TUNE", None)  # Optional tuning
 
     # Environment-provided optional metadata
     title_raw = get_env_str("TITLE", None)
@@ -255,13 +260,25 @@ def main() -> int:
 
     outdir.mkdir(parents=True, exist_ok=True)
 
-    # Probe disc access early (best-effort)
-    _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
-
-    # Rip
-    _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
-
+    # Check if MKV files already exist
     mkvs = sorted(outdir.glob("*.mkv"))
+    
+    if not mkvs:
+        # Only rip if no MKV files exist
+        print("No MKV files found, ripping from disc...")
+        # Probe disc access early (best-effort)
+        _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
+
+        # Rip
+        _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+        
+        mkvs = sorted(outdir.glob("*.mkv"))
+        if not mkvs:
+            print(f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
+            return 0
+    else:
+        print(f"Found {len(mkvs)} existing MKV files, skipping disc rip...")
+
     if not mkvs:
         print(f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
         return 0
@@ -308,11 +325,13 @@ def main() -> int:
             "-e",
             "x264",
             "-q",
-            "22",
+            quality,
+            "--preset",
+            preset,
             "-B",
             "160",
             "--optimize",
-        ] + hb_audio_opts + hb_sub_opts
+        ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
 
         _run(hb_cmd)
 

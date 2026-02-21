@@ -31,10 +31,23 @@ help:
 	@echo "  install-test-deps  Install test dependencies"
 
 install-deps:
-	@echo "Installing Homebrew deps via _install/install_setup_abcde_environment.py..."
-	@python3 _install/install_setup_abcde_environment.py
+	@echo "Installing audio/CD ripping tools via Homebrew..."
+	@for p in abcde flac imagemagick jq curl wget ffmpeg; do \
+		if ! brew list $$p >/dev/null 2>&1; then \
+		  echo "brew install $$p"; brew install $$p || true; \
+		else \
+		  echo "Already installed: $$p"; \
+		fi; \
+	  done
 	@echo "Installing Python deps from requirements.txt..."
-	@python3 -m pip install -r requirements.txt
+	@if [ ! -d "venv" ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv venv; \
+	fi
+	@echo "Activating virtual environment and installing packages..."
+	@./venv/bin/python -m pip install --upgrade pip
+	@./venv/bin/python -m pip install -r requirements.txt
+	@echo "Virtual environment ready. Activate with: source venv/bin/activate"
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"

@@ -1,6 +1,11 @@
-# Music Collection Guide: Complete Guide from All Sources to Jellyfin
+# Music Collection Guide
 
-This guide provides the complete end-to-end pipeline for getting music from **all sources** into a **Jellyfin-ready library** with proper metadata, organization, and content filtering.
+Complete guide to processing music from CDs, digital files, and loose tracks into a organized Jellyfin-ready library.
+
+> **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
+> **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
+
+---
 
 ## 🎯 Target Result
 **Jellyfin Music Library** at `/mnt/media/Music` with:
@@ -116,7 +121,7 @@ python3 bin/sync/sync-library.py \
   --src "/Volumes/Data/Media/Library/CDs" \
   --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
-  --exclude-unknown
+  --delete
 ```
 
 ---

@@ -17,8 +17,8 @@ cd digital-library
 # Install system dependencies
 make install-deps
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Activate virtual environment for Python scripts
+source venv/bin/activate
 ```
 
 ## 2. Configure Environment

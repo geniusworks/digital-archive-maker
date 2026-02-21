@@ -1,10 +1,9 @@
-# DVD/Blu-ray Ripping Guide (MakeMKV + HandBrakeCLI)
+# Video Disc Ripping Guide
 
-This guide documents a straightforward, automation-friendly workflow for backing up non-DMCA-protected DVDs and Blu-rays for personal use. It complements the CD workflow described in `docs/cd_ripping_guide.md`.
+Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with proper metadata and organization.
 
-See also: `docs/workflow_overview.md` for the end-to-end procedures (CDs → FLACs → tagging → sync, and DVD/Blu-ray → MP4s → organize → server).
-
-Tip: This repository centralizes output paths via `.env` using `LIBRARY_ROOT` (see `.env.sample`). By default, `LIBRARY_ROOT` is `/Volumes/Data/Media/Library`.
+> **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
+> **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
 
 ---
 

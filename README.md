@@ -37,7 +37,7 @@
 git clone https://github.com/yourusername/digital-library.git
 cd digital-library
 make install-deps
-pip install -r requirements.txt
+source venv/bin/activate
 
 # Configure
 cp .env.sample .env
@@ -108,7 +108,7 @@ digital-library/
 All dependencies install via:
 ```bash
 make install-deps
-pip install -r requirements.txt
+source venv/bin/activate
 ```
 
 ## API Keys (Optional but Recommended)

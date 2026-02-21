@@ -2,6 +2,9 @@
 
 This guide outlines recommended folder structures and filenames so your media server (Plex/Jellyfin/Emby) can automatically match metadata.
 
+> **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
+> **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
+
 ---
 
 ## Library roots

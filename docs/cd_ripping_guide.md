@@ -9,9 +9,13 @@ See also: `docs/workflow_overview.md` for the full end-to-end pipeline (CDs → 
 ## Prerequisites
 - macOS with Homebrew
 - Core tools: `abcde`, `flac` (metaflac), `imagemagick` (`convert`/`magick`), `jq`, `curl`, `wget`, `ffmpeg`
-- Python 3 (optional, for helper scripts) with packages from `requirements.txt`
 
-Tip: Use `_install/install_setup_abcde_environment.py` to verify/install common packages.
+**Setup (one-time):** Follow the [Quick Start Guide](../QUICKSTART.md) to install dependencies and set up your environment.
+
+**Before running any Python scripts:** Activate the virtual environment:
+```bash
+source venv/bin/activate
+```
 
 ---
 
@@ -69,6 +73,8 @@ Note: `~/.abcde.conf` uses `LIBRARY_ROOT` from the environment (defined in `.env
 ---
 
 ## Post-processing helpers (optional)
+> **Note:** Activate virtual environment first: `source venv/bin/activate`
+
 - Normalize/complete an album folder:
   ```bash
   python3 bin/music/fix_album.py "/path/to/Artist/Album"
