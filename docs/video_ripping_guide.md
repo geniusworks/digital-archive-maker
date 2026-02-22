@@ -88,9 +88,10 @@ For more control over the process:
      HandBrakeCLI \
        -i "$file" \
        -o "$OUTDIR/${BASENAME}.mp4" \
-       -e x264 -q 22 -B 160 --optimize
+       -e x264 -q 28 --preset "Fast 1080p30" -B 160 --optimize
    done
    ```
+   *Note: Uses faster encoding settings (quality 28, Fast 1080p30) for better speed.*
 
 5. Optional: keep both MKV (lossless container) and MP4 (space-efficient), or delete MKV after verifying the MP4.
 
@@ -116,13 +117,59 @@ This repository provides a ready-to-use helper and a Makefile target:
 To rip and automatically place the main feature into a Plex/Jellyfin-friendly folder:
 
 ```bash
-make rip-movie TITLE="Movie Name" YEAR=1999    # auto-detects disc type
+make rip-movie TITLE="Movie Name" YEAR=1999    # auto-detects disc type, main feature only
 make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999    # explicit type
 ```
 
+- **Smart track selection**: Automatically focuses on the largest file (main feature) for faster ripping
 - The script picks the largest MP4 as the main feature and moves it to:
   - `${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`
 - Extras/previews remain in the title-named (if Title/Year known) or date-stamped staging folder under `${LIBRARY_ROOT}/DVDs/` or `${LIBRARY_ROOT}/Blurays/`.
+
+### Process All Tracks (Optional)
+If you need to rip ALL tracks instead of just the main feature:
+
+```bash
+make rip-movie-all TITLE="Movie Name" YEAR=1999    # processes all tracks
+# Or set environment variable:
+FORCE_ALL_TRACKS=true make rip-movie TITLE="Movie Name" YEAR=1999
+```
+
+### Encoding Speed Options
+Control encoding speed vs quality with environment variables:
+
+```bash
+# Faster encoding (default, good for most movies)
+HB_QUALITY=28 HB_PRESET="Fast 1080p30" make rip-movie TITLE="Movie" YEAR=2024
+
+# Higher quality (slower)
+HB_QUALITY=22 HB_PRESET="Medium 1080p30" make rip-movie TITLE="Movie" YEAR=2024
+
+# Very fast (lower quality)
+HB_QUALITY=32 HB_PRESET="Very Fast 1080p30" make rip-movie TITLE="Movie" YEAR=2024
+```
+
+### Auto-Eject Disc
+Automatically eject the disc after processing:
+
+```bash
+EJECT_DISC=true make rip-movie TITLE="Movie" YEAR=1999
+```
+
+## Processing Existing MKV Files
+If you already have MKV files ripped and want to convert them to MP4:
+
+```bash
+# The script automatically detects existing MKV files and skips disc ripping
+TITLE="Movie Name" YEAR=1999 python3 bin/video/rip_video.py bluray
+
+# Works with make targets too
+make rip-movie TITLE="Movie Name" YEAR=1999
+```
+
+- **Smart detection**: Automatically finds existing MKV files and skips MakeMKV ripping
+- **Resume capability**: If encoding was interrupted, it will continue from where it left off
+- **Error handling**: Gracefully handles missing files and continues processing remaining tracks
 
 You can adjust the minimum title length MakeMKV considers with `MINLENGTH` (in seconds):
 

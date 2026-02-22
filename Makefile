@@ -8,7 +8,7 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all
+.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie rip-movie-all fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all
 
 help:
 	@echo "Available targets:"
@@ -17,6 +17,7 @@ help:
 	@echo "  rip-cd              Rip an audio CD using abcde"
 	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/video/rip_video.py"
 	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
+	@echo "  rip-movie-all [TYPE=...] TITLE=... YEAR=...  Same as rip-movie but processes ALL tracks (not just main feature)"
 	@echo "  fix-album DIR=...   Normalize and complete an album folder"
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
 	@echo "  fix-track FILE=... TARGET=...  Organize a single loose track"
@@ -82,6 +83,12 @@ rip-movie:
 	  echo "Usage: make rip-movie [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
 	fi
 	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
+
+rip-movie-all:
+	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
+	  echo "Usage: make rip-movie-all [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
+	fi
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
 
 fix-album:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make fix-album DIR=\"/path/to/Artist/Album\"" >&2; exit 1; fi

@@ -241,6 +241,8 @@ def eject_disc() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
     parser.add_argument("type", nargs="?", default="auto", choices=["dvd", "bluray", "auto"])
+    parser.add_argument("--force-all-tracks", action="store_true", 
+                       help="Encode all tracks instead of just the main feature (largest file)")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -254,6 +256,9 @@ def main() -> int:
     quality = get_env_str("HB_QUALITY", "28") or "28"  # Higher number = lower quality but faster
     preset = get_env_str("HB_PRESET", "fast") or "fast"  # Encoding speed preset
     tune = get_env_str("HB_TUNE", None)  # Optional tuning
+
+    # Track selection settings
+    force_all_tracks = args.force_all_tracks or get_env_str("FORCE_ALL_TRACKS", "false").lower() in ("true", "1", "yes")
 
     # Environment-provided optional metadata
     title_raw = get_env_str("TITLE", None)
@@ -305,9 +310,14 @@ def main() -> int:
     else:
         print(f"Found {len(mkvs)} existing MKV files, skipping disc rip...")
 
-    if not mkvs:
-        print(f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
-        return 0
+    # Filter for main feature only (largest file) unless forcing all tracks
+    if not force_all_tracks and len(mkvs) > 1:
+        # Find the largest file (main feature)
+        largest_mkv = max(mkvs, key=lambda p: p.stat().st_size)
+        mkvs = [largest_mkv]
+        print(f"Focusing on main feature: {largest_mkv.name} ({largest_mkv.stat().st_size / (1024**3):.1f}GB)")
+    elif force_all_tracks:
+        print(f"Processing all {len(mkvs)} tracks (forced)")
 
     for mkv in mkvs:
         # Check if file still exists (might have been deleted/moved)
