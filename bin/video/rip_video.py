@@ -312,6 +312,13 @@ def main() -> int:
     for mkv in mkvs:
         name = mkv.stem
         mp4_path = outdir / f"{name}.mp4"
+        
+        print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
+
+        # Skip if MP4 already exists and is reasonably sized
+        if mp4_path.exists() and mp4_path.stat().st_size > 1000000:  # > 1MB
+            print(f"  ✓ Already encoded: {mp4_path.name}")
+            continue
 
         audio_streams = ffprobe_streams(mkv, "a")
         subs_streams = ffprobe_streams(mkv, "s")
@@ -359,7 +366,13 @@ def main() -> int:
             "--optimize",
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
 
-        _run(hb_cmd)
+        print(f"  → Encoding to MP4...")
+        try:
+            _run(hb_cmd)
+            print(f"  ✓ Encoding complete: {mp4_path.name}")
+        except subprocess.CalledProcessError as e:
+            print(f"  ✗ Encoding failed for {mkv.name}: {e}")
+            continue
 
         # Post-mux English text subs into MP4 (if available)
         if eng_text_idx != -1:
