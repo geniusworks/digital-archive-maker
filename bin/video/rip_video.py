@@ -300,8 +300,52 @@ def main() -> int:
         # Probe disc access early (best-effort)
         _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
 
-        # Rip
-        _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+        # Smart ripping: main feature only vs all tracks
+        if not force_all_tracks:
+            print("Scanning for main feature (longest track)...")
+            try:
+                # Get disc info to find all titles
+                info_res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], capture=True)
+                
+                # Parse titles from MakeMKV info output
+                # Look for lines like: TINFO:0,8,0,"23:58:12"
+                titles = []
+                lines = info_res.stdout.split('\n')
+                for line in lines:
+                    if line.startswith('TINFO:') and ',23:' in line:  # Look for duration info
+                        parts = line.split(',')
+                        if len(parts) >= 4:
+                            title_id = parts[0].split(':')[1]
+                            duration = parts[3].strip('"')  # Format: "HH:MM:SS"
+                            try:
+                                # Convert duration to seconds for comparison
+                                h, m, s = map(int, duration.split(':'))
+                                total_seconds = h * 3600 + m * 60 + s
+                                if total_seconds >= minlength:  # Only consider titles longer than minlength
+                                    titles.append((int(title_id), total_seconds, duration))
+                            except ValueError:
+                                continue
+                
+                if titles:
+                    # Sort by duration (longest first) and pick the main feature
+                    titles.sort(key=lambda x: x[1], reverse=True)
+                    main_title_id, main_duration, main_duration_str = titles[0]
+                    
+                    print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
+                    print(f"Skipping {len(titles)-1} shorter tracks")
+                    
+                    # Rip only the main feature
+                    _run(["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)])
+                else:
+                    print("Could not determine main feature, ripping all tracks...")
+                    _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                    
+            except Exception as e:
+                print(f"Could not determine main feature ({e}), ripping all tracks...")
+                _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+        else:
+            print("Ripping all tracks (forced)...")
+            _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
         
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
