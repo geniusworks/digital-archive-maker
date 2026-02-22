@@ -310,6 +310,11 @@ def main() -> int:
         return 0
 
     for mkv in mkvs:
+        # Check if file still exists (might have been deleted/moved)
+        if not mkv.exists():
+            print(f"Skipping missing file: {mkv.name}")
+            continue
+            
         name = mkv.stem
         mp4_path = outdir / f"{name}.mp4"
         
