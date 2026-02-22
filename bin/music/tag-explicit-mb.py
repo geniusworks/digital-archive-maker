@@ -36,15 +36,18 @@ SPOTIFY_ENABLED = bool(SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET)
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(REPO_ROOT, "log")
-LOG_FILE = os.path.join(LOG_DIR, "explicit_tagging.log")
-CACHE_FILE = os.path.join(LOG_DIR, "explicit_tagging_cache.json")
+EXPLICIT_DIR = os.path.join(LOG_DIR, "explicit")
+os.makedirs(EXPLICIT_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_processed.log")
+CACHE_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_cache.json")
 LEGACY_CACHE_FILE = os.path.join(REPO_ROOT, "explicit_tagging_cache.json")
-ERROR_LOG_FILE = os.path.join(LOG_DIR, "explicit_tagging_errors.log")
-# EXPLICIT_PLAYLIST_FILE will be set after argument parsing
+ERROR_LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_errors.log")
+EXPLICIT_PLAYLIST_FILE = os.path.join(EXPLICIT_DIR, "explicit_tracks_current.csv")
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-OVERRIDES_FILE = os.path.join(LOG_DIR, "explicit_overrides.csv")
+OVERRIDES_FILE = os.path.join(EXPLICIT_DIR, "explicit_overrides.csv")
 AGGRESSIVE_ALBUM_EXPLICIT = True
 ITUNES_CLEANED_COUNTS_AS_EXPLICIT = True
 PRINT_EXPLICIT_TO_CONSOLE = True
@@ -1138,49 +1141,67 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
 
         writer.writerow([audio_path, artist, album, title, tag_value, source])
 
-# Build playlist from ALL files with EXPLICIT=Yes tag (not just processed ones) - only if flag enabled
-if EXPLICIT_PLAYLIST_FILE:
-    explicit_playlist_entries = set()
-    for root, _dirs, files in os.walk(ROOT):
-        for name in files:
-            if not name.lower().endswith((".flac", ".mp3")):
-                continue
-            fullpath = os.path.join(root, name)
-            try:
-                if name.lower().endswith(".flac"):
-                    audio = FLAC(fullpath)
-                    tag_val = _first_tag(audio, EXPLICIT_TAG)
-                else:  # MP3
-                    audio = MP3(fullpath)
-                    # For MP3, check TXXX:EXPLICIT tag
-                    tag_val = None
-                    if getattr(audio, "tags", None):
-                        frame = audio.tags.get("TXXX:" + EXPLICIT_TAG)
-                        if frame is not None:
-                            if hasattr(frame, "text") and frame.text:
-                                tag_val = str(frame.text[0]).strip()
-                            else:
-                                tag_val = str(frame).strip()
-                if tag_val == "Yes":
-                    explicit_playlist_entries.add(os.path.relpath(fullpath, ROOT))
-            except Exception:
-                pass
+# Build definitive list of ALL files with EXPLICIT=Yes tag (not just processed ones)
+explicit_tracks = []
+for root, _dirs, files in os.walk(ROOT):
+    for name in files:
+        if not name.lower().endswith((".flac", ".mp3")):
+            continue
+        fullpath = os.path.join(root, name)
+        try:
+            if name.lower().endswith(".flac"):
+                audio = FLAC(fullpath)
+                tag_val = _first_tag(audio, EXPLICIT_TAG)
+            else:  # MP3
+                audio = MP3(fullpath)
+                # For MP3, check TXXX:EXPLICIT tag
+                tag_val = None
+                if getattr(audio, "tags", None):
+                    frame = audio.tags.get("TXXX:" + EXPLICIT_TAG)
+                    if frame is not None:
+                        if hasattr(frame, "text") and frame.text:
+                            tag_val = str(frame.text[0]).strip()
+                        else:
+                            tag_val = str(frame).strip()
+            if tag_val == "Yes":
+                # Extract metadata for CSV
+                artist = _first_tag(audio, "ARTIST") or "Unknown Artist"
+                album = _first_tag(audio, "ALBUM") or "Unknown Album"
+                title = _first_tag(audio, "TITLE") or os.path.splitext(name)[0]
+                source = "File Tag"
+                
+                explicit_tracks.append([fullpath, artist, album, title, "Yes", source])
+        except Exception:
+            pass
 
-    with open(EXPLICIT_PLAYLIST_FILE, "w", encoding="utf-8", newline="\n") as f:
+# Write definitive explicit tracks list
+with open(EXPLICIT_PLAYLIST_FILE, "w", encoding="utf-8", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
+    for track in sorted(explicit_tracks):
+        writer.writerow(track)
+
+print(f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to {EXPLICIT_PLAYLIST_FILE}")
+
+# Build M3U playlist if enabled (legacy functionality)
+if args.generate_explicit_playlist:
+    playlist_file = os.path.join(EXPLICIT_DIR, "Explicit.m3u8")
+    with open(playlist_file, "w", encoding="utf-8", newline="\n") as f:
         f.write("#EXTM3U\n")
-        for relpath in sorted(explicit_playlist_entries):
-            f.write(f"{relpath}\n")
-    playlist_count = len(explicit_playlist_entries)
+        for track in sorted(explicit_tracks):
+            f.write(os.path.relpath(track[0], ROOT) + "\n")
+    playlist_count = len(explicit_tracks)
 else:
     playlist_count = 0
 
 processed_count = stats.get('Yes', 0) + stats.get('No', 0) + stats.get('Unknown', 0)
 print(f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} already tagged)")
 if args.verbose:
-    if EXPLICIT_PLAYLIST_FILE:
-        print(f"Explicit playlist: {playlist_count} total EXPLICIT=Yes tracks")
+    print(f"Definitive explicit tracks: {len(explicit_tracks)} total EXPLICIT=Yes tracks")
+    if args.generate_explicit_playlist:
+        print(f"M3U playlist: {playlist_count} tracks written to Explicit.m3u8")
     else:
-        print("Explicit playlist: generation disabled (use --generate-explicit-playlist to enable)")
+        print("M3U playlist: generation disabled (use --generate-explicit-playlist to enable)")
 if processed_count > 0:
     if args.verbose:
         print(f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}")

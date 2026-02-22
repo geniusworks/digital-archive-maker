@@ -39,7 +39,7 @@ def _override_field_matches(rule_val, actual_val):
 
 
 def _load_explicit_overrides(repo_root):
-    overrides_file = os.path.join(repo_root, "log", "explicit_overrides.csv")
+    overrides_file = os.path.join(repo_root, "log", "explicit", "explicit_overrides.csv")
     overrides = []
     if not os.path.exists(overrides_file):
         return overrides
@@ -466,6 +466,14 @@ def main():
             if exclude:
                 patterns.append("/" + _escape_rsync_pattern(rel))
                 excluded_files.add(rel)
+                
+                # Also exclude associated .lrc files for explicit music tracks
+                if args.media == "music" and fullpath.lower().endswith(('.flac', '.mp3', '.m4a')):
+                    lrc_path = fullpath.rsplit('.', 1)[0] + '.lrc'
+                    if os.path.exists(lrc_path):
+                        lrc_rel = os.path.relpath(lrc_path, src).replace(os.sep, "/")
+                        patterns.append("/" + _escape_rsync_pattern(lrc_rel))
+                        excluded_files.add(lrc_rel)
             else:
                 dirs_with_included_files.add(root)
 
