@@ -894,6 +894,10 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
             or _first_tag(audio, "artist")
             or os.path.basename(os.path.dirname(os.path.dirname(audio_path)))
         )
+        
+        # Handle case where artist directory contains tracks directly (no album subdirectory)
+        if artist == "Music" and os.path.basename(os.path.dirname(audio_path)) != "Music":
+            artist = os.path.basename(os.path.dirname(audio_path))
         title = _first_tag(audio, "title")
         if not title:
             title = os.path.basename(audio_path).rsplit(".", 1)[0]
