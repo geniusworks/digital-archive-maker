@@ -228,7 +228,7 @@ def _load_overrides():
                     continue
 
                 artist_norm = artist if artist == "*" else _normalize_override_pattern(artist)
-                album_norm = album if album == "*" else _normalize_override_pattern(_normalize_album_for_search(album))
+                album_norm = album if album == "*" else _normalize_override_pattern(album)  # Don't strip years/discs for cache compatibility
                 title_norm = title if title == "*" else _normalize_override_pattern(title)
 
                 val = explicit_val.strip().lower()
