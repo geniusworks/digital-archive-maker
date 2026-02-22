@@ -39,11 +39,12 @@ LOG_DIR = os.path.join(REPO_ROOT, "log")
 EXPLICIT_DIR = os.path.join(LOG_DIR, "explicit")
 os.makedirs(EXPLICIT_DIR, exist_ok=True)
 
-LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_processed.log")
+LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_run.log")  # What was processed this run
 CACHE_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_cache.json")
 LEGACY_CACHE_FILE = os.path.join(REPO_ROOT, "explicit_tagging_cache.json")
 ERROR_LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_errors.log")
 EXPLICIT_PLAYLIST_FILE = os.path.join(EXPLICIT_DIR, "explicit_tracks_current.csv")
+M3U_PLAYLIST_FILE = None  # Set conditionally below
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -749,7 +750,7 @@ parser.add_argument("--verbose", action="store_true",
 args = parser.parse_args()
 
 ROOT = args.root
-EXPLICIT_PLAYLIST_FILE = os.path.join(ROOT, "Explicit.m3u8") if args.generate_explicit_playlist else None
+M3U_PLAYLIST_FILE = os.path.join(ROOT, "Explicit.m3u8") if args.generate_explicit_playlist else None
 if args.max_tracks > 0:
     MAX_TRACKS = args.max_tracks
 if args.dry_run:
@@ -859,27 +860,16 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
             if override_val is not None:
                 # Override exists — check if tag already matches
                 if override_val == prev_explicit_tag:
-                    # Print verbose output for already-tagged tracks before skipping
-                    if args.verbose and prev_explicit_tag == "Yes":
-                        if PRINT_EXPLICIT_TO_CONSOLE and explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
-                            tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} (cached)")
-                            explicit_console_lines += 1
                     continue
                 # Override doesn't match current tag — need to re-tag
             else:
                 # No override — skip if already tagged Yes/No, but NOT Unknown (need to check Unknown against overrides)
                 if prev_explicit_tag in {"Yes", "No"}:
-                    # Print verbose output for already-tagged tracks before skipping
-                    if args.verbose and prev_explicit_tag == "Yes":
-                        if PRINT_EXPLICIT_TO_CONSOLE and explicit_console_lines < MAX_EXPLICIT_CONSOLE_LINES:
-                            tqdm.write(f"EXPLICIT=Yes: {artist} - {album} - {title} (cached)")
-                            explicit_console_lines += 1
                     continue
                 # For Unknown tags, only process if overrides file changed since last cache write
                 if prev_explicit_tag == UNKNOWN_VALUE:
                     cache_mtime = cache.get("cache_mtime", 0)
                     if overrides_mtime and cache_mtime and overrides_mtime <= cache_mtime:
-                        # Overrides unchanged since cache, skip processing Unknown tracks
                         continue
                 # Check if we have cached data for this track (Spotify/iTunes track-level) - only skip if not Unknown
                 if prev_explicit_tag != UNKNOWN_VALUE:
@@ -1184,9 +1174,8 @@ with open(EXPLICIT_PLAYLIST_FILE, "w", encoding="utf-8", newline="") as f:
 print(f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to {EXPLICIT_PLAYLIST_FILE}")
 
 # Build M3U playlist if enabled (legacy functionality)
-if args.generate_explicit_playlist:
-    playlist_file = os.path.join(EXPLICIT_DIR, "Explicit.m3u8")
-    with open(playlist_file, "w", encoding="utf-8", newline="\n") as f:
+if M3U_PLAYLIST_FILE:
+    with open(M3U_PLAYLIST_FILE, "w", encoding="utf-8", newline="\n") as f:
         f.write("#EXTM3U\n")
         for track in sorted(explicit_tracks):
             f.write(os.path.relpath(track[0], ROOT) + "\n")
