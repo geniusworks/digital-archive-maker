@@ -73,6 +73,56 @@ _handler = logging.FileHandler(ERROR_LOG_FILE, mode="w", encoding="utf-8")
 _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger.addHandler(_handler)
 
+def _load_explicit_overrides(repo_root):
+    """Load explicit overrides from CSV file - copied from sync-library.py"""
+    overrides_file = os.path.join(repo_root, "log", "explicit", "explicit_overrides.csv")
+    overrides = []
+    if not os.path.exists(overrides_file):
+        return overrides
+
+    try:
+        with open(overrides_file, "r", encoding="utf-8", newline="") as f:
+            reader = csv.reader(f)
+            order = 0
+            for row in reader:
+                if not row:
+                    continue
+                if row[0].strip().startswith("#"):
+                    continue
+                if row[0].strip().lower() in {"artist", "#artist"}:
+                    continue
+                if len(row) < 4:
+                    continue
+
+                artist, album, title, explicit_val = (x.strip() for x in row[:4])
+                if not artist or not album or not title or not explicit_val:
+                    continue
+
+                val = explicit_val.strip().lower()
+                if val in {"yes", "y", "true", "1", "explicit"}:
+                    val_out = "Yes"
+                elif val in {"no", "n", "false", "0", "clean", "notexplicit"}:
+                    val_out = "No"
+                else:
+                    val_out = UNKNOWN_VALUE
+
+                artist_norm = artist if artist == "*" else _normalize_override_pattern(artist)
+                album_norm = album if album == "*" else _normalize_override_pattern(album)
+                title_norm = title if title == "*" else _normalize_override_pattern(title)
+
+                overrides.append({
+                    "artist": artist_norm,
+                    "album": album_norm,
+                    "title": title_norm,
+                    "value": val_out,
+                    "order": order,
+                })
+                order += 1
+    except Exception:
+        return []
+    
+    return overrides
+
 
 def _load_cache():
     try:
@@ -1133,6 +1183,8 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
 
 # Build definitive list of ALL files with EXPLICIT=Yes tag (not just processed ones)
 explicit_tracks = []
+overrides = _load_explicit_overrides(REPO_ROOT)
+
 for root, _dirs, files in os.walk(ROOT):
     for name in files:
         if not name.lower().endswith((".flac", ".mp3")):
@@ -1153,13 +1205,29 @@ for root, _dirs, files in os.walk(ROOT):
                             tag_val = str(frame.text[0]).strip()
                         else:
                             tag_val = str(frame).strip()
+            
+            # Extract metadata for override matching
+            artist = _first_tag(audio, "ARTIST") or "Unknown Artist"
+            album = _first_tag(audio, "ALBUM") or "Unknown Album"
+            title = _first_tag(audio, "TITLE") or os.path.splitext(name)[0]
+            
+            # Check if this track should be explicit (either from tag or override)
+            is_explicit = False
+            source = "File Tag"
+            
             if tag_val == "Yes":
-                # Extract metadata for CSV
-                artist = _first_tag(audio, "ARTIST") or "Unknown Artist"
-                album = _first_tag(audio, "ALBUM") or "Unknown Album"
-                title = _first_tag(audio, "TITLE") or os.path.splitext(name)[0]
+                is_explicit = True
                 source = "File Tag"
-                
+            else:
+                # Check overrides
+                album_search = _normalize_album_for_search(album)
+                title_norm = _normalize_title(title)
+                override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
+                if override_val == "Yes":
+                    is_explicit = True
+                    source = "Override"
+            
+            if is_explicit:
                 explicit_tracks.append([fullpath, artist, album, title, "Yes", source])
         except Exception:
             pass
