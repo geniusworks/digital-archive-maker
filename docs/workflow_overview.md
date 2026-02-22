@@ -107,10 +107,11 @@ Debug options:
 - `EXPLICIT_MAX_TRACKS=500` (limit scanning)
 
 Artifacts:
-- `./log/explicit_tagging.log`
-- `./log/explicit_tagging_errors.log`
-- `./log/explicit_tagging_cache.json`
-- `.../CDs/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`)
+- `./log/explicit/explicit_tagging_run.log` - Tracks processed during this run
+- `./log/explicit/explicit_tracks_current.csv` - **Definitive list of ALL EXPLICIT=Yes tracks**
+- `./log/explicit/explicit_tagging_cache.json` - Performance cache
+- `./log/explicit/explicit_tagging_errors.log` - API errors only
+- `./log/explicit/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`, if enabled)
 
 ### A4) Sync to a destination server while excluding explicit/unknown (optional)
 - Script: `bin/sync/sync-library.py`

@@ -57,14 +57,16 @@ If optional API credentials are not configured (e.g., Spotify), the script will 
   4. **Spotify** track search (requires `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `.env`)
   5. **MusicBrainz** — only `adult_content=True` treated as explicit
 
-**Limitation:** Both iTunes and Spotify have incomplete data for older albums (e.g., Prince's "Controversy" shows `notExplicit` for all tracks). Use `log/explicit_overrides.csv` for known false negatives.
+**Limitation:** Both iTunes and Spotify have incomplete data for older albums (e.g., Prince's "Controversy" shows `notExplicit` for all tracks). Use `log/explicit/explicit_overrides.csv` for known false negatives.
 
-- Output files (repo-local):
-  - `./log/explicit_tagging.log`
-  - `./log/explicit_tagging_errors.log`
-  - `./log/explicit_tagging_cache.json`
-- Playlist of explicit tracks at music library root:
-  - `/Volumes/Data/Media/Library/CDs/Explicit.m3u8`
+- Output files (organized in `log/explicit/`):
+  - `explicit_tagging_run.log` - Tracks processed during this run
+  - `explicit_tracks_current.csv` - **Definitive list of ALL EXPLICIT=Yes tracks**
+  - `explicit_tagging_cache.json` - Performance cache
+  - `explicit_tagging_errors.log` - API errors only
+  - `explicit_overrides.csv` - Manual override rules
+- Playlist of explicit tracks (if enabled):
+  - `log/explicit/Explicit.m3u8`
 
 Environment variables:
 - `EXPLICIT_DRY_RUN=1` — preview without writing tags
@@ -126,6 +128,12 @@ python3 bin/sync/sync-library.py \
 
 #### Multi-library orchestration (recommended)
 The `bin/sync/` directory provides advanced sync orchestration:
+
+**Features:**
+- **Explicit content filtering** - Excludes tracks with `EXPLICIT=Yes` tags
+- **Associated lyrics exclusion** - Automatically excludes `.lrc` files for explicit tracks
+- **Override support** - Uses `log/explicit/explicit_overrides.csv` for manual rules
+- **Cache-aware** - Only processes Unknown tracks when overrides change
 
 **Configuration (sync-config.yaml):**
 ```yaml

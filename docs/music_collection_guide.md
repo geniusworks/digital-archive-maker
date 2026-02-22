@@ -45,6 +45,8 @@ python3 bin/music/fix_missing_metadata.py --fix "/Volumes/Data/Media/Library/CDs
 python3 bin/music/tag-explicit-mb.py "/Volumes/Data/Media/Library/CDs"
 ```
 
+**Output:** Creates definitive list of all explicit tracks in `log/explicit/explicit_tracks_current.csv`
+
 #### Step 4: Download Lyrics (NEW!)
 ```bash
 # Smart album-by-album processing (recommended):
@@ -153,6 +155,8 @@ python3 bin/music/fix_album_covers.py "/path/to/music"
 ```bash
 python3 bin/music/tag-explicit-mb.py "/path/to/music"
 ```
+
+**Output:** Creates definitive list of all explicit tracks in `log/explicit/explicit_tracks_current.csv`
 
 #### Step 5: Download Lyrics (NEW!)
 ```bash
