@@ -1219,17 +1219,18 @@ for root, _dirs, files in os.walk(ROOT):
             is_explicit = False
             source = "File Tag"
             
+            # Check metadata tag first
             if tag_val == "Yes":
                 is_explicit = True
                 source = "File Tag"
-            else:
-                # Check overrides
-                album_search = _normalize_album_for_search(album)
-                title_norm = _normalize_title(title)
-                override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
-                if override_val == "Yes":
-                    is_explicit = True
-                    source = "Override"
+            
+            # Also check overrides (independent of metadata tag)
+            album_search = _normalize_album_for_search(album)
+            title_norm = _normalize_title(title)
+            override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
+            if override_val == "Yes":
+                is_explicit = True
+                source = "Override"
             
             if is_explicit:
                 explicit_tracks.append([fullpath, artist, album, title, "Yes", source])
