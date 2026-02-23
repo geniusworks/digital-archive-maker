@@ -434,7 +434,7 @@ def main() -> int:
         if streaming_optimize:
             hb_cmd.extend([
                 "--encoder-preset", "fast",
-                "--encoder-profile", "main",
+                "--encoder-profile", "high",  # High profile for better compatibility
                 "--encoder-level", "4.0",
                 "--keyframe", "auto",
                 "--bframes", "2",
@@ -464,7 +464,7 @@ def main() -> int:
                     "ffmpeg",
                     "-i", str(mp4_path),
                     "-c", "copy",  # Copy streams without re-encoding
-                    "-movflags", "+faststart+frag_keyframe+empty_moov",  # Streaming optimization
+                    "-movflags", "+faststart",  # Standard web optimization
                     "-f", "mp4",
                     str(temp_path)
                 ]

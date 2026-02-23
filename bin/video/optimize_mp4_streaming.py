@@ -33,7 +33,7 @@ def optimize_mp4_for_streaming(mp4_path: Path, dry_run: bool = False) -> bool:
             "ffmpeg",
             "-i", str(mp4_path),
             "-c", "copy",  # Copy streams without re-encoding
-            "-movflags", "+faststart+frag_keyframe+empty_moov",  # Streaming optimization
+            "-movflags", "+faststart",  # Standard web optimization (removes fragmentation if present)
             "-f", "mp4",
             str(temp_path)
         ]
