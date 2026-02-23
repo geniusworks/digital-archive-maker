@@ -14,7 +14,8 @@ from datetime import datetime
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
-_CACHE_FILE = _LOG_DIR / "movie_metadata_cache.json"
+_CACHE_DIR = _REPO_ROOT / "cache"
+_CACHE_FILE = _CACHE_DIR / "movie_metadata_cache.json"
 
 
 def _load_env():
