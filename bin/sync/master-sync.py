@@ -1312,6 +1312,16 @@ def main():
 
     if args.skip_tagging:
         print("\nSkipping tagging phase for all jobs.")
+    else:
+        # Clear explicit tracks file at start of run so multiple jobs can append their results
+        repo_root = Path(__file__).parent.parent.parent
+        explicit_tracks_file = repo_root / "log" / "explicit" / "explicit_tracks_current.csv"
+        try:
+            if explicit_tracks_file.exists():
+                explicit_tracks_file.unlink()
+                print(f"  Cleared explicit tracks file for fresh run: {explicit_tracks_file}")
+        except Exception:
+            pass
 
     for job in jobs:
         stats = run_sync_job(
