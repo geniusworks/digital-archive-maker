@@ -23,6 +23,9 @@ Icon*
 # Python caches
 __pycache__/
 .venv/
+.coverage
+htmlcov/
+.pytest_cache/
 
 # Ignore text files
 albums.txt
