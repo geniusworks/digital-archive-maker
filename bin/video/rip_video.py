@@ -259,6 +259,9 @@ def main() -> int:
 
     # Track selection settings
     force_all_tracks = args.force_all_tracks or get_env_str("FORCE_ALL_TRACKS", "false").lower() in ("true", "1", "yes")
+    
+    # Streaming optimization settings
+    streaming_optimize = get_env_str("STREAMING_OPTIMIZE", "true").lower() in ("true", "1", "yes")
 
     # Environment-provided optional metadata
     title_raw = get_env_str("TITLE", None)
@@ -423,7 +426,19 @@ def main() -> int:
             "-B",
             "160",
             "--optimize",
+            "--align-audio",
+            "--no-markers",
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
+
+        # Add streaming optimization flags if enabled
+        if streaming_optimize:
+            hb_cmd.extend([
+                "--encoder-preset", "fast",
+                "--encoder-profile", "main",
+                "--encoder-level", "4.0",
+                "--keyframe", "auto",
+                "--bframes", "2",
+            ])
 
         print(f"  → Encoding to MP4...")
         try:
@@ -439,6 +454,26 @@ def main() -> int:
         elif has_en_subs and eng_image_codec:
             # Image subtitles exist but can't be muxed into mp4.
             pass
+
+        # Additional streaming optimization if enabled
+        if streaming_optimize:
+            try:
+                # Ensure proper MP4 atom layout for streaming
+                temp_path = mp4_path.with_suffix(".temp.mp4")
+                cmd = [
+                    "ffmpeg",
+                    "-i", str(mp4_path),
+                    "-c", "copy",  # Copy streams without re-encoding
+                    "-movflags", "+faststart+frag_keyframe+empty_moov",  # Streaming optimization
+                    "-f", "mp4",
+                    str(temp_path)
+                ]
+                _run(cmd, capture=False)
+                temp_path.replace(mp4_path)
+                print(f"  ✓ Streaming optimization applied")
+            except Exception as e:
+                print(f"  ⚠ Streaming optimization failed: {e}")
+                # Continue without optimization - file should still be usable
 
     # Auto-organize main feature only if TITLE and YEAR were provided.
     if safe_title and safe_year:

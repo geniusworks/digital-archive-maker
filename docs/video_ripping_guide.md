@@ -167,6 +167,29 @@ HB_QUALITY=22 HB_PRESET="Medium 1080p30" make rip-movie TITLE="Movie" YEAR=2024
 HB_QUALITY=32 HB_PRESET="Very Fast 1080p30" make rip-movie TITLE="Movie" YEAR=2024
 ```
 
+### Streaming Optimization (Jellyfin/Plex)
+For better performance with media servers, enable streaming optimizations:
+
+```bash
+# Enable streaming optimization (default)
+STREAMING_OPTIMIZE=true make rip-movie TITLE="Movie" YEAR=2024
+
+# Disable if you have issues (faster encoding, slower loading)
+STREAMING_OPTIMIZE=false make rip-movie TITLE="Movie" YEAR=2024
+```
+
+**What streaming optimization does:**
+- **Fast start**: Moves MP4 moov atom to beginning for instant playback
+- **Keyframe alignment**: Ensures proper keyframe spacing for seeking
+- **Fragmented MP4**: Better for adaptive streaming
+- **Audio alignment**: Syncs audio/video frames properly
+
+**Benefits:**
+- ⚡ Faster video startup in Jellyfin/Plex
+- 🎯 Better seeking and scrubbing
+- 📱 Improved mobile device compatibility
+- 🔄 Better transcoding performance
+
 ### Auto-Eject Disc
 Automatically eject the disc after processing:
 
