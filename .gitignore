@@ -1,10 +1,16 @@
-# Ignore local directories
+# Ignore local directories (but keep .gitkeep files)
 _archive/
 _install/
 venv/
-log/
-config/
-cache/
+log/*
+cache/*
+config/*
+
+# Exception: allow .gitkeep files to track empty directories
+!log/.gitkeep
+!log/explicit/.gitkeep
+!cache/.gitkeep
+!config/.gitkeep
 
 # Ignore specific file (legacy path, kept for compatibility)
 # prince-lovesexy/Lovesexy.flac

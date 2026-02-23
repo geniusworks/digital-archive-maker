@@ -1,0 +1,2 @@
+# This file ensures the log directory is tracked by git
+# The log directory contains runtime logs and output files that are gitignored
