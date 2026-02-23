@@ -66,7 +66,7 @@ def list_imdb_ids(directory):
 
 def main():
     parser = argparse.ArgumentParser(description="Manage IMDb ID-based rating overrides")
-    parser.add_argument("--overrides", default="log/movie_rating_overrides.json",
+    parser.add_argument("--overrides", default="config/movie_rating_overrides.json",
                        help="Path to overrides file")
     parser.add_argument("--list", action="store_true", help="List movies with IMDb IDs")
     parser.add_argument("--add", help="Add override for this movie file")

@@ -2,19 +2,19 @@
 """Remove movie rating overrides that are redundant.
 
 Compares:
-- log/movie_rating_overrides.json (manual overrides)
-- log/movie_rating_cache.json (cached ratings)
+- config/movie_rating_overrides.json (manual overrides)
+- cache/movie_rating_cache.json (cached ratings)
 
 If an override has the same title and rating as the cache, it is removed from the
-overrides file.
+overrides file (since it's redundant).
 """
 
 import argparse
 import json
 from pathlib import Path
 
-OVERRIDES_FILE = Path("log/movie_rating_overrides.json")
-CACHE_FILE = Path("log/movie_rating_cache.json")
+OVERRIDES_FILE = Path("config/movie_rating_overrides.json")
+CACHE_FILE = Path("cache/movie_rating_cache.json")
 
 def main():
     parser = argparse.ArgumentParser(
