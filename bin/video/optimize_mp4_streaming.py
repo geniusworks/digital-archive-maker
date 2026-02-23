@@ -7,6 +7,20 @@ import sys
 from pathlib import Path
 
 
+def check_virtual_environment() -> None:
+    """Check if we're running in the virtual environment and exit gracefully if not."""
+    # Check if VIRTUAL_ENV environment variable is set
+    if not os.getenv("VIRTUAL_ENV"):
+        print("❌ Virtual environment not detected!")
+        print()
+        print("🔧 To activate the virtual environment, run:")
+        print("   source venv/bin/activate")
+        print()
+        print("Then try again:")
+        print(f"   {' '.join(sys.argv)}")
+        sys.exit(1)
+
+
 def run_cmd(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     """Run a command and return the result."""
     return subprocess.run(cmd, check=check, capture_output=True, text=True)
@@ -67,6 +81,9 @@ def find_mp4_files(directory: Path, recursive: bool = True) -> list[Path]:
 
 
 def main() -> int:
+    # Check virtual environment first
+    check_virtual_environment()
+    
     parser = argparse.ArgumentParser(
         description="Optimize MP4 files for streaming (Jellyfin/Plex compatibility)"
     )

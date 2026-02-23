@@ -11,6 +11,20 @@ from datetime import datetime
 from pathlib import Path
 
 
+def check_virtual_environment() -> None:
+    """Check if we're running in the virtual environment and exit gracefully if not."""
+    # Check if VIRTUAL_ENV environment variable is set
+    if not os.getenv("VIRTUAL_ENV"):
+        print("❌ Virtual environment not detected!")
+        print()
+        print("🔧 To activate the virtual environment, run:")
+        print("   source venv/bin/activate")
+        print()
+        print("Then try again:")
+        print(f"   {' '.join(sys.argv)}")
+        sys.exit(1)
+
+
 def _run(cmd: list[str], *, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess:
     kwargs = {}
     if capture:
@@ -239,6 +253,9 @@ def eject_disc() -> None:
 
 
 def main() -> int:
+    # Check virtual environment first
+    check_virtual_environment()
+    
     parser = argparse.ArgumentParser(description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
     parser.add_argument("type", nargs="?", default="auto", choices=["dvd", "bluray", "auto"])
     parser.add_argument("--force-all-tracks", action="store_true", 
