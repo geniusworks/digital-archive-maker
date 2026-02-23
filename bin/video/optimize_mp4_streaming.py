@@ -16,8 +16,17 @@ def check_virtual_environment() -> None:
         print("🔧 To activate the virtual environment, run:")
         print("   source venv/bin/activate")
         print()
-        print("Then try again:")
-        print(f"   {' '.join(sys.argv)}")
+        
+        # Check if this was called from make and show the appropriate retry command
+        if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
+            # This looks like a directory argument, likely from make optimize-mp4
+            print("Then try again:")
+            print(f"   make optimize-mp4 DIR=\"{sys.argv[1]}\"")
+        else:
+            # Direct script call
+            print("Then try again:")
+            print(f"   {' '.join(sys.argv)}")
+        
         sys.exit(1)
 
 

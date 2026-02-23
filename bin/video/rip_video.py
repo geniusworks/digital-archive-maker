@@ -20,8 +20,18 @@ def check_virtual_environment() -> None:
         print("🔧 To activate the virtual environment, run:")
         print("   source venv/bin/activate")
         print()
-        print("Then try again:")
-        print(f"   {' '.join(sys.argv)}")
+        
+        # Check if this was called from make and show the appropriate retry command
+        if os.getenv("TITLE") and os.getenv("YEAR"):
+            # This was called from make rip-movie
+            cmd_type = os.getenv("TYPE", "auto")
+            print("Then try again:")
+            print(f"   make rip-movie TYPE={cmd_type} TITLE=\"{os.getenv('TITLE')}\" YEAR={os.getenv('YEAR')}")
+        else:
+            # Direct script call
+            print("Then try again:")
+            print(f"   {' '.join(sys.argv)}")
+        
         sys.exit(1)
 
 
