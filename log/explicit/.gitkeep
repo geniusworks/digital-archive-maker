@@ -1,0 +1,2 @@
+# This file ensures the explicit log subdirectory is tracked by git
+# The explicit directory contains explicit content logs and output files that are gitignored
