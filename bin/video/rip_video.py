@@ -338,11 +338,11 @@ def main() -> int:
                 info_res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], capture=True)
                 
                 # Parse titles from MakeMKV info output
-                # Look for lines like: TINFO:0,8,0,"23:58:12"
+                # Look for lines like: TINFO:0,9,0,"2:09:20" (duration is field 9)
                 titles = []
                 lines = info_res.stdout.split('\n')
                 for line in lines:
-                    if line.startswith('TINFO:') and ',23:' in line:  # Look for duration info
+                    if line.startswith('TINFO:') and ',9,' in line:  # Look for duration info (field 9)
                         parts = line.split(',')
                         if len(parts) >= 4:
                             title_id = parts[0].split(':')[1]
