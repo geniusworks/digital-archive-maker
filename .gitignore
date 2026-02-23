@@ -2,13 +2,13 @@
 _archive/
 _install/
 venv/
-log/*
-cache/*
-config/*
+log/**
+cache/**
+config/**
 
 # Exception: allow .gitkeep files to track empty directories
 !log/.gitkeep
-!log/explicit/.gitkeep
+!log/**/.gitkeep
 !cache/.gitkeep
 !config/.gitkeep
 
