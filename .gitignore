@@ -3,6 +3,8 @@ _archive/
 _install/
 venv/
 log/
+config/
+cache/
 
 # Ignore specific file (legacy path, kept for compatibility)
 # prince-lovesexy/Lovesexy.flac

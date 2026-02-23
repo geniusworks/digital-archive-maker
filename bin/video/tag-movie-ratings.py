@@ -30,11 +30,13 @@ from pathlib import Path
 RATING_TAG = "©rat"  # Copyright Rating field for MPAA ratings
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
-MOVIE_CACHE_FILE = _LOG_DIR / "movie_rating_cache.json"
-MOVIE_OVERRIDES_FILE = _LOG_DIR / "movie_rating_overrides.json"
-MOVIE_OVERRIDES_FILE_CSV = _LOG_DIR / "movie_rating_overrides.csv"
-SHOWS_CACHE_FILE = _LOG_DIR / "shows_rating_cache.json"
-SHOWS_OVERRIDES_FILE = _LOG_DIR / "shows_rating_overrides.csv"
+_CONFIG_DIR = _REPO_ROOT / "config"
+_CACHE_DIR = _REPO_ROOT / "cache"
+MOVIE_CACHE_FILE = _CACHE_DIR / "movie_rating_cache.json"
+MOVIE_OVERRIDES_FILE = _CONFIG_DIR / "movie_rating_overrides.json"
+MOVIE_OVERRIDES_FILE_CSV = _CONFIG_DIR / "movie_rating_overrides.csv"
+SHOWS_CACHE_FILE = _CACHE_DIR / "shows_rating_cache.json"
+SHOWS_OVERRIDES_FILE = _CONFIG_DIR / "shows_rating_overrides.csv"
 UNKNOWN_VALUE = "Unknown"
 VALID_RATINGS = {"G", "PG", "PG-13", "R", "NC-17", "NR", "Unrated"}
 

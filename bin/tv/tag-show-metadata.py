@@ -17,7 +17,8 @@ except ImportError:
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
-_CACHE_FILE = _LOG_DIR / "show_metadata_cache.json"
+_CACHE_DIR = _REPO_ROOT / "cache"
+_CACHE_FILE = _CACHE_DIR / "show_metadata_cache.json"
 
 
 def _utcnow_isoz():
@@ -34,7 +35,7 @@ def _load_env():
 
 def _load_show_overrides():
     """Load manual show overrides from JSON file."""
-    overrides_file = _LOG_DIR / "show_tmdb_overrides.json"
+    overrides_file = _REPO_ROOT / "config" / "show_tmdb_overrides.json"
     if not overrides_file.exists():
         return {}
     

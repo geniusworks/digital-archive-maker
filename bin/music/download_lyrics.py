@@ -69,7 +69,7 @@ except ImportError as e:
 # Configuration
 CACHE_FILE = Path.home() / ".digital_library_lyrics_cache.json"
 FAILED_FILE = Path(__file__).parent.parent.parent / "log" / "failed_lyrics_lookups.txt"
-SKIP_FILE = Path(__file__).parent.parent.parent / "log" / "skip_lyrics_lookups.txt"
+SKIP_FILE = Path(__file__).parent.parent.parent / "config" / "skip_lyrics_lookups.txt"
 RATE_LIMIT = 0.2  # seconds between requests for non-Genius sources (lyrics.ovh)
 GENIUS_RATE_LIMIT = 3.0  # longer delay for Genius to avoid 429s
 GENIUS_HOURLY_LIMIT = 60  # estimated hourly limit per token

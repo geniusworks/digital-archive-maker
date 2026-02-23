@@ -56,7 +56,7 @@ GENRE_CACHE: Dict[str, str] = {}
 CACHE_FILE = Path.home() / ".cache" / "genre_cache.json"
 
 # Track rejected genres for review
-REJECTED_GENRES_FILE = Path(__file__).parent.parent.parent / "log" / "rejected_genres.txt"
+REJECTED_GENRES_FILE = Path(__file__).parent.parent.parent / "config" / "rejected_genres.txt"
 REJECTED_GENRES: set = set()
 
 # Track unresolved files for manual review

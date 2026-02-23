@@ -74,7 +74,8 @@ ACOUSTID_API_KEY = ""
 
 # Log file for skipped files
 LOG_DIR = Path(__file__).parent.parent.parent / "log"
-SKIPPED_LOG = LOG_DIR / "music_videos_skipped.csv"
+CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
+SKIPPED_LOG = CONFIG_DIR / "music_videos_skipped.csv"
 
 
 def log_skipped_file(artist: str, file_path: Path, extracted_title: str, reason: str) -> None:

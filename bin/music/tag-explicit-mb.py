@@ -40,7 +40,7 @@ EXPLICIT_DIR = os.path.join(LOG_DIR, "explicit")
 os.makedirs(EXPLICIT_DIR, exist_ok=True)
 
 LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_run.log")  # What was processed this run
-CACHE_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_cache.json")
+CACHE_FILE = os.path.join(REPO_ROOT, "cache", "explicit_tagging_cache.json")
 LEGACY_CACHE_FILE = os.path.join(REPO_ROOT, "explicit_tagging_cache.json")
 ERROR_LOG_FILE = os.path.join(EXPLICIT_DIR, "explicit_tagging_errors.log")
 EXPLICIT_PLAYLIST_FILE = os.path.join(EXPLICIT_DIR, "explicit_tracks_current.csv")
@@ -48,7 +48,7 @@ M3U_PLAYLIST_FILE = None  # Set conditionally below
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-OVERRIDES_FILE = os.path.join(EXPLICIT_DIR, "explicit_overrides.csv")
+OVERRIDES_FILE = os.path.join(REPO_ROOT, "config", "explicit_overrides.csv")
 AGGRESSIVE_ALBUM_EXPLICIT = True
 ITUNES_CLEANED_COUNTS_AS_EXPLICIT = True
 PRINT_EXPLICIT_TO_CONSOLE = True
@@ -75,7 +75,7 @@ logger.addHandler(_handler)
 
 def _load_explicit_overrides(repo_root):
     """Load explicit overrides from CSV file - copied from sync-library.py"""
-    overrides_file = os.path.join(repo_root, "log", "explicit", "explicit_overrides.csv")
+    overrides_file = os.path.join(repo_root, "config", "explicit_overrides.csv")
     overrides = []
     if not os.path.exists(overrides_file):
         return overrides
@@ -1237,10 +1237,12 @@ for root, _dirs, files in os.walk(ROOT):
         except Exception:
             pass
 
-# Write definitive explicit tracks list
-with open(EXPLICIT_PLAYLIST_FILE, "w", encoding="utf-8", newline="") as f:
+# Write definitive explicit tracks list (append mode to support multiple source directories)
+with open(EXPLICIT_PLAYLIST_FILE, "a", encoding="utf-8", newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
+    # Only write header if file is empty
+    if os.path.getsize(EXPLICIT_PLAYLIST_FILE) == 0:
+        writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
     for track in sorted(explicit_tracks):
         writer.writerow(track)
 
