@@ -455,26 +455,6 @@ def main() -> int:
             # Image subtitles exist but can't be muxed into mp4.
             pass
 
-        # Additional streaming optimization if enabled
-        if streaming_optimize:
-            try:
-                # Ensure proper MP4 atom layout for streaming
-                temp_path = mp4_path.with_suffix(".temp.mp4")
-                cmd = [
-                    "ffmpeg",
-                    "-i", str(mp4_path),
-                    "-c", "copy",  # Copy streams without re-encoding
-                    "-movflags", "+faststart",  # Standard web optimization
-                    "-f", "mp4",
-                    str(temp_path)
-                ]
-                _run(cmd, capture=False)
-                temp_path.replace(mp4_path)
-                print(f"  ✓ Streaming optimization applied")
-            except Exception as e:
-                print(f"  ⚠ Streaming optimization failed: {e}")
-                # Continue without optimization - file should still be usable
-
     # Auto-organize main feature only if TITLE and YEAR were provided.
     if safe_title and safe_year:
         target_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
@@ -486,6 +466,26 @@ def main() -> int:
             dest = target_dir / f"{safe_title} ({safe_year}).mp4"
             if not dest.exists():
                 shutil.move(str(largest), str(dest))
+                
+            # Apply streaming optimization to the final organized file
+            if streaming_optimize:
+                try:
+                    print(f"  → Applying streaming optimization to final file...")
+                    temp_path = dest.with_suffix(".temp.mp4")
+                    cmd = [
+                        "ffmpeg",
+                        "-i", str(dest),
+                        "-c", "copy",  # Copy streams without re-encoding
+                        "-movflags", "+faststart",  # Standard web optimization
+                        "-f", "mp4",
+                        str(temp_path)
+                    ]
+                    _run(cmd, capture=False)
+                    temp_path.replace(dest)
+                    print(f"  ✓ Streaming optimization applied to {dest.name}")
+                except Exception as e:
+                    print(f"  ⚠ Streaming optimization failed: {e}")
+                    # Continue without optimization - file should still be usable
 
     print(f"Done: {outdir}")
     
