@@ -426,7 +426,6 @@ def main() -> int:
             "-B",
             "160",
             "--optimize",
-            "--align-audio",
             "--no-markers",
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
 
@@ -436,8 +435,6 @@ def main() -> int:
                 "--encoder-preset", "fast",
                 "--encoder-profile", "high",  # High profile for better compatibility
                 "--encoder-level", "4.0",
-                "--keyframe", "auto",
-                "--bframes", "2",
             ])
 
         print(f"  → Encoding to MP4...")
