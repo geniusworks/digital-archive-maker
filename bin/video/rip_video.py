@@ -366,10 +366,19 @@ def main() -> int:
                     
                     # Rip only the main feature
                     try:
-                        _run(["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)])
-                        print(f"✓ Successfully ripped title {main_title_id}")
+                        cmd = ["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)]
+                        print(f"  → Running: {' '.join(cmd)}")
+                        result = _run(cmd, capture=True)
+                        print(f"  ✓ MakeMKV output: {result.stdout.strip()}")
+                        if result.stderr:
+                            print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
+                        print(f"  ✓ Successfully ripped title {main_title_id}")
                     except subprocess.CalledProcessError as e:
-                        print(f"✗ MakeMKV failed to rip title {main_title_id}: {e}")
+                        print(f"  ✗ MakeMKV failed to rip title {main_title_id}: {e}")
+                        if hasattr(e, 'stdout') and e.stdout:
+                            print(f"    stdout: {e.stdout.strip()}")
+                        if hasattr(e, 'stderr') and e.stderr:
+                            print(f"    stderr: {e.stderr.strip()}")
                         raise
                 else:
                     print("Could not determine main feature, ripping all tracks...")
@@ -401,6 +410,19 @@ def main() -> int:
         if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
             print("Disc rip complete, ejecting...")
             eject_disc()
+        
+        # Debug: Check what files exist after rip
+        print(f"  → Checking files in {outdir}:")
+        try:
+            files = list(outdir.glob("*"))
+            if files:
+                for f in files:
+                    size_mb = f.stat().st_size / (1024*1024)
+                    print(f"     {f.name} ({size_mb:.1f}MB)")
+            else:
+                print(f"     No files found!")
+        except Exception as e:
+            print(f"     Error listing files: {e}")
         
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
