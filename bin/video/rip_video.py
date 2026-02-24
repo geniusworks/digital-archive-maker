@@ -365,17 +365,37 @@ def main() -> int:
                     print(f"Skipping {len(titles)-1} shorter tracks")
                     
                     # Rip only the main feature
-                    _run(["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)])
+                    try:
+                        _run(["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)])
+                        print(f"✓ Successfully ripped title {main_title_id}")
+                    except subprocess.CalledProcessError as e:
+                        print(f"✗ MakeMKV failed to rip title {main_title_id}: {e}")
+                        raise
                 else:
                     print("Could not determine main feature, ripping all tracks...")
-                    _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                    try:
+                        _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                        print(f"✓ Successfully ripped all tracks")
+                    except subprocess.CalledProcessError as e:
+                        print(f"✗ MakeMKV failed to rip all tracks: {e}")
+                        raise
                     
             except Exception as e:
                 print(f"Could not determine main feature ({e}), ripping all tracks...")
-                _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                try:
+                    _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                    print(f"✓ Successfully ripped all tracks (fallback)")
+                except subprocess.CalledProcessError as e2:
+                    print(f"✗ MakeMKV failed to rip all tracks (fallback): {e2}")
+                    raise
         else:
             print("Ripping all tracks (forced)...")
-            _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+            try:
+                _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                print(f"✓ Successfully ripped all tracks (forced)")
+            except subprocess.CalledProcessError as e:
+                print(f"✗ MakeMKV failed to rip all tracks (forced): {e}")
+                raise
         
         # Eject disc if requested (only after successful rip from disc)
         if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
