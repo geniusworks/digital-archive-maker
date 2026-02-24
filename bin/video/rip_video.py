@@ -366,12 +366,32 @@ def main() -> int:
                     
                     # Rip only the main feature
                     try:
+                        # For DVDs, try backup first if direct rip fails
                         cmd = ["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)]
                         print(f"  → Running: {' '.join(cmd)}")
                         result = _run(cmd, capture=True)
                         print(f"  ✓ MakeMKV output: {result.stdout.strip()}")
                         if result.stderr:
                             print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
+                        
+                        # Check if file was actually created
+                        expected_file = outdir / f"title_t{main_title_id:02d}.mkv"
+                        if not expected_file.exists():
+                            print(f"  ✗ File not created: {expected_file}")
+                            print(f"  → Trying backup method for DVD...")
+                            
+                            # Try backup method for problematic DVDs
+                            backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
+                            print(f"  → Running backup: {' '.join(backup_cmd)}")
+                            backup_result = _run(backup_cmd, capture=True)
+                            print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
+                            
+                            # Now try to rip from the backup
+                            backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", str(main_title_id), str(outdir)]
+                            print(f"  → Running rip from backup: {' '.join(backup_mkv_cmd)}")
+                            backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                            print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                        
                         print(f"  ✓ Successfully ripped title {main_title_id}")
                     except subprocess.CalledProcessError as e:
                         print(f"  ✗ MakeMKV failed to rip title {main_title_id}: {e}")
