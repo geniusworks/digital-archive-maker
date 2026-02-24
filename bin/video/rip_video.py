@@ -377,6 +377,11 @@ def main() -> int:
             print("Ripping all tracks (forced)...")
             _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
         
+        # Eject disc if requested (only after successful rip from disc)
+        if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
+            print("Disc rip complete, ejecting...")
+            eject_disc()
+        
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
             print(f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
@@ -512,10 +517,6 @@ def main() -> int:
                     # Continue without optimization - file should still be usable
 
     print(f"Done: {outdir}")
-    
-    # Eject disc if requested via environment variable
-    if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
-        eject_disc()
     
     return 0
 
