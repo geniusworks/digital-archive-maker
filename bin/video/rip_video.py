@@ -386,11 +386,13 @@ def main() -> int:
                             backup_result = _run(backup_cmd, capture=True)
                             print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
                             
-                            # Now try to rip from the backup
-                            backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", str(main_title_id), str(outdir)]
-                            print(f"  → Running rip from backup: {' '.join(backup_mkv_cmd)}")
+                            # Now rip ALL titles from backup (don't rely on title ID mapping)
+                            backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
+                            print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
                             backup_rip_result = _run(backup_mkv_cmd, capture=True)
                             print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                            
+                            # After backup rip, we'll let the existing largest file logic pick the right one
                         
                         print(f"  ✓ Successfully ripped title {main_title_id}")
                     except subprocess.CalledProcessError as e:
