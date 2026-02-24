@@ -6,27 +6,38 @@ This document outlines the roadmap to transform this project from a collection o
 *Goal: Replace scattered scripts with a single, intuitive entry point that guides the user step-by-step based on their goals.*
 
 - [ ] **Create a Unified Entry Point (`dl` or `digitize` command)**
-  - Implement a modern CLI (using `click` or `typer` or `rich`) with clear subcommands: `dl rip`, `dl tag`, `dl sync`, `dl config`.
+  - Implement a modern CLI (using `click`, `typer`, or `rich`) with clear subcommands: `dl rip`, `dl tag`, `dl sync`, `dl config`.
 - [ ] **Goal-Oriented "A La Carte" Processing**
   - Allow users to specify exactly what they want to achieve.
   - E.g., `dl tag --music --lyrics --covers` vs `dl tag --music --basic-only`.
   - Introduce interactive prompts if run without flags: "What would you like to refine today? [ ] Basic Tags [ ] Lyrics [ ] High-Res Covers [ ] Explicit Ratings"
-- [ ] **Smart Resumption & Idempotency**
-  - If a user cancels a long process (like lyric fetching), the CLI should know exactly where it left off on the next run without requiring complex flags.
+- [ ] **Feature-Driven API Onboarding**
+  - Instead of demanding all API keys upfront, prompt for them *only* when a user requests a feature that requires them.
+  - E.g., If they select "Lyrics", prompt: *"To fetch lyrics, you need a free Genius API key. Go to [URL] to get one, and paste it here: "*
+  - Save provided keys securely to the central configuration.
 
-## 2. Workflow Optimization (The "Just Work" Philosophy)
+## 2. Non-Destructive Idempotency & Workflow Safety
+*Goal: Users should feel safe experimenting. The system should never destroy existing work unless explicitly instructed.*
+
+- [ ] **Safe Resumption & Additive Processing**
+  - If a user re-runs a command with new requirements (e.g., adding lyrics to an already-tagged library), the system must *add* the new data without disturbing or deleting the existing metadata.
+- [ ] **Explicit Deletion Confirmation**
+  - Require a double-confirmation (e.g., typing out the folder name or adding a `--force-overwrite` flag) before replacing, overwriting, or deleting existing files or high-quality artwork.
+- [ ] **Smart Sync Dry-Run**
+  - Make `dl sync --dry-run` the default behavior if no flags are provided, showing exactly what will be copied, deleted, or skipped.
+  - Require a `--confirm` or `-y` flag to actually execute the sync, preventing accidental deletions.
+
+## 3. Workflow Optimization (The "Just Work" Philosophy)
 *Goal: Minimize the number of decisions a user has to make to get a perfect result.*
 
 - [ ] **Zero-Configuration Defaults**
   - Provide sensible defaults for ripping (e.g., standard FLAC for audio, high-quality Handbrake presets for video) that don't require tweaking.
 - [ ] **Auto-Detection of Media**
   - `dl rip` should automatically detect if a CD, DVD, or Blu-ray is inserted and launch the correct underlying pipeline.
-- [ ] **Seamless Pipeline Execution**
-  - Allow a single command like `dl auto` that rips the inserted disc, fetches all metadata/lyrics/art, and syncs it to the Jellyfin directory in one smooth workflow.
 - [ ] **Automated Path Management**
   - Abstract away the need to define exact source and destination paths for every command. Use a central `dl config` wizard to ask for the "Media Library folder" once.
 
-## 3. User-Friendly Prompting & Interactive Conflict Resolution
+## 4. User-Friendly Prompting & Interactive Conflict Resolution
 *Goal: Never fail silently, and never make a destructive guess without asking.*
 
 - [ ] **Interactive Disambiguation**
@@ -40,7 +51,7 @@ This document outlines the roadmap to transform this project from a collection o
   - Read disc contents and ask in plain English: *"Found 1 Main Feature (1h 45m) and 3 Extras. Rip all, or just the Main Feature?"*
   - Ask about subtitles simply: *"This is a foreign language film. Do you want English subtitles burned in? (Y/n)"*
 
-## 4. Transparent Retry Logic & Smart Caching
+## 5. Transparent Retry Logic & Smart Caching
 *Goal: Network errors and API limits shouldn't crash the program or confuse the user.*
 
 - [ ] **Transparent Exponential Backoff**
@@ -50,31 +61,23 @@ This document outlines the roadmap to transform this project from a collection o
 - [ ] **Graceful Degradation**
   - If a specific non-critical API is down (e.g., lyrics.ovh), note it cleanly in the summary rather than failing the whole tagging run: *"Skipped lyrics for 5 tracks (API currently unreachable)."*
 
-## 5. Robust Error Handling & Actionable Advice
-*Goal: Eliminate stack traces for expected user errors (like missing dependencies or API keys).*
+## 6. Repository Cleanup: Solidifying the Core
+*Goal: Scour the repo to consolidate permanent features and remove or deprecate transitory "fixer" scripts that complicate the codebase.*
 
-- [ ] **Pre-Flight Dependency Checks**
-  - Run a quick check before a command starts to ensure `ffmpeg`, `HandBrakeCLI`, `abcde`, etc., are installed. If missing, provide the exact command to install them (e.g., *"Please run `brew install handbrake`"*).
-- [ ] **Actionable API Key Errors**
-  - If TMDB lookup fails due to authentication, print: *"❌ TMDB API Key is missing or invalid. Please get an API key from TMDB and run `dl config` to set it."*
-- [ ] **Beautiful Progress & Output Formatting**
-  - Use `rich` for Python terminal output to provide clean tables, progress bars, and color-coded success/warning/error messages.
-
-## 6. Code Simplification & Modularization
-*Goal: Make the codebase welcoming for open-source contributors.*
-
-- [ ] **Consolidate Duplicate Logic**
-  - Move shared logic (like API rate limiting, cache loading/saving, and override parsing) into a central `dl_core/` Python package.
-- [ ] **Standardize Configuration**
-  - Move away from mixed `.env` variables and hardcoded paths toward a single `config.toml` or `config.yaml` managed via the CLI.
-- [ ] **Decouple Shell and Python**
-  - Where possible, rewrite complex bash scripts (like `rip_video.sh`) in Python using `subprocess`, enabling better cross-platform compatibility and richer interactive prompts.
+- [ ] **Consolidate the `music` Pipeline**
+  - **Core Features to Keep:** `tag-explicit-mb.py` (explicit tagging), `download_lyrics.py` (lyrics fetching), `update-genre-mb.py` (genre tagging), `generate-playlists.py` (M3U generation), `check_album_integrity.py` (validation).
+  - **Transitory/Fixer Scripts to Deprecate or Move to `utils/`:** `fix-missing-metadata.py`, `fix-single-title.py`, `fix-track-numbers.py`, `fix-unknown-album.py`, `fix_album.py`, `fix_album_covers.py`, `fix_metadata.py`, `fix_track.py`, `repair-flac-tags.py`, `set_explicit.py`. These were likely written to fix specific historical library issues and confuse new users.
+- [ ] **Consolidate the `video` Pipeline**
+  - **Core Features to Keep:** `rip_video.py` / `bluray_to_mp4.zsh` (ripping), `tag-movie-metadata.py` (metadata), `tag-movie-ratings.py` (ratings), `vobsub_to_srt.py` / `backfill_subs.py` (subtitles).
+  - **Transitory/Fixer Scripts to Deprecate or Move to `utils/`:** `repair_mp4.sh`, `optimize_mp4_streaming.py`, `embed_thumbnail.py`, `fix_music_videos_mapped.py`, `fix_music_videos_secondary.py`.
+- [ ] **Consolidate the `tv` Pipeline**
+  - **Core Features to Keep:** `tag-show-metadata.py`, `rename_shows_jellyfin.py`.
+- [ ] **Consolidate the `sync` Pipeline**
+  - **Core Features to Keep:** `master-sync.py`, `sync-library.py`, `sync-config.yaml`.
 
 ## 7. Documentation & Onboarding
 *Goal: A user should feel confident and excited after reading the README.*
 
-- [ ] **Interactive Setup Wizard (`setup.py`)**
-  - A friendly script that runs on first clone to initialize directories, check dependencies, and set up API keys.
 - [ ] **"Zero to Jellyfin" Visual Guide**
   - Step-by-step Markdown guide with terminal screenshots and Jellyfin UI screenshots showing the exact workflow from inserting a physical disc to watching it.
 - [ ] **Architecture Map**
