@@ -281,7 +281,7 @@ def main() -> int:
     
     # Encoding settings (faster defaults)
     quality = get_env_str("HB_QUALITY", "28") or "28"  # Higher number = lower quality but faster
-    preset = get_env_str("HB_PRESET", "fast") or "fast"  # Encoding speed preset
+    preset = get_env_str("HB_PRESET", "Fast 1080p30") or "Fast 1080p30"  # Encoding speed preset
     tune = get_env_str("HB_TUNE", None)  # Optional tuning
 
     # Track selection settings
