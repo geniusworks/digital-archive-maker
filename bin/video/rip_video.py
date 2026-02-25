@@ -400,22 +400,31 @@ def main() -> int:
                             print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
                         
                         # Check if file was actually created
-                        expected_file = outdir / f"title_t{main_title_id:02d}.mkv"
-                        if not expected_file.exists():
-                            print(f"  ✗ File not created: {expected_file}")
-                            print(f"  → Trying backup method for DVD...")
-                            
-                            # Try backup method for problematic DVDs
-                            backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
-                            print(f"  → Running backup: {' '.join(backup_cmd)}")
-                            backup_result = _run(backup_cmd, capture=True)
-                            print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
-                            
-                            # Now rip ALL titles from backup (don't rely on title ID mapping)
-                            backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
-                            print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                            backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                            print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                        # MakeMKV uses different naming: DVDs use "title_t00.mkv", Blu-rays use "MovieName_t00.mkv"
+                        # Look for any file with the correct title ID
+                        mkv_files = list(outdir.glob(f"*_t{main_title_id:02d}.mkv"))
+                        if not mkv_files:
+                            print(f"  ✗ No MKV file found for title {main_title_id}")
+                            print(f"  → Looking for any MKV files in {outdir}...")
+                            existing_files = list(outdir.glob("*.mkv"))
+                            if existing_files:
+                                print(f"  → Found existing MKV files: {[f.name for f in existing_files]}")
+                                print(f"  → Using largest file as main feature")
+                                # Continue with existing files - skip backup
+                            else:
+                                print(f"  → Trying backup method for problematic disc...")
+                                
+                                # Try backup method for problematic DVDs
+                                backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
+                                print(f"  → Running backup: {' '.join(backup_cmd)}")
+                                backup_result = _run(backup_cmd, capture=True)
+                                print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
+                                
+                                # Now rip ALL titles from backup (don't rely on title ID mapping)
+                                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
+                                print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                                backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                                print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
                             
                             # After backup rip, we'll let the existing largest file logic pick the right one
                         
