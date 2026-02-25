@@ -643,6 +643,7 @@ def main() -> int:
             "160",
             "--optimize",
             "--no-markers",
+            "--format", "mp4" if disc_type == "dvd" else "mkv"  # Force encoding, not stream copy
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
 
         # Add streaming optimization flags if enabled
