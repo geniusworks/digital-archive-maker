@@ -364,6 +364,15 @@ def main() -> int:
     if not mkvs:
         # Only rip if no MKV files exist
         print("No MKV files found, ripping from disc...")
+        
+        # Check if disc is actually present using existing detection
+        detected_type = detect_disc_type()
+        if detected_type == "auto":
+            print("  ❌ No Blu-ray/DVD disc found in drive")
+            print("  💡 Please insert a disc and try again")
+            return 1
+        
+        print(f"  ✓ Detected {detected_type.upper()} disc")
         # Probe disc access early (best-effort)
         _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
 
@@ -507,9 +516,15 @@ def main() -> int:
                     # Now rip ALL titles from backup (don't rely on title ID mapping)
                     backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
                     print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                    backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                    print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
-                    print(f"  ✓ Successfully ripped using backup method")
+                    try:
+                        backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                        print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                        print(f"  ✓ Successfully ripped using backup method")
+                    except subprocess.CalledProcessError as e3:
+                        print(f"  ✗ Backup rip also failed: {e3}")
+                        print(f"  ❌ This disc appears to be unreadable or heavily protected")
+                        print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
+                        return 1  # Exit gracefully
         else:
             print("Ripping all tracks (forced)...")
             try:
@@ -528,9 +543,15 @@ def main() -> int:
                 # Now rip ALL titles from backup (don't rely on title ID mapping)
                 backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
                 print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
-                print(f"  ✓ Successfully ripped using backup method")
+                try:
+                    backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                    print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                    print(f"  ✓ Successfully ripped using backup method")
+                except subprocess.CalledProcessError as e3:
+                    print(f"  ✗ Backup rip also failed: {e3}")
+                    print(f"  ❌ This disc appears to be unreadable or heavily protected")
+                    print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
+                    return 1  # Exit gracefully
         
         # Eject disc if requested (only after successful rip from disc)
         if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
