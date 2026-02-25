@@ -358,8 +358,17 @@ def main() -> int:
 
     outdir.mkdir(parents=True, exist_ok=True)
 
-    # Check if MKV files already exist
-    mkvs = sorted(outdir.glob("*.mkv"))
+    # Check if MKV files already exist in either source or destination
+    source_mkvs = sorted(outdir.glob("*.mkv"))
+    
+    # Also check destination folder for existing compressed files
+    dest_mkvs = []
+    if safe_title and safe_year:
+        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+        if dest_dir.exists():
+            dest_mkvs = sorted(dest_dir.glob("*.mkv"))
+    
+    mkvs = source_mkvs or dest_mkvs  # Use source files first, then check destination
     
     if not mkvs:
         # Only rip if no MKV files exist
@@ -605,10 +614,16 @@ def main() -> int:
         
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
-        # Skip if MP4 already exists and is reasonably sized
+        # Skip if MP4 already exists and is reasonably sized (compressed)
         if mp4_path.exists() and mp4_path.stat().st_size > 1000000:  # > 1MB
-            print(f"  ✓ Already encoded: {mp4_path.name}")
-            continue
+            # Additional check: ensure file is actually compressed (not original MakeMKV rip)
+            file_size_gb = mp4_path.stat().st_size / (1024**3)
+            if file_size_gb < 10:  # If file is less than 10GB, assume it's compressed
+                print(f"  ✓ Already encoded: {mp4_path.name} ({file_size_gb:.1f}GB)")
+                continue
+            else:
+                print(f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
+                # Continue with encoding to compress the large file
 
         audio_streams = ffprobe_streams(mkv, "a")
         subs_streams = ffprobe_streams(mkv, "s")
