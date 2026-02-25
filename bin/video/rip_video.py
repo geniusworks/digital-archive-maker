@@ -643,6 +643,9 @@ def main() -> int:
             else:
                 print(f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
                 # Continue with encoding to compress the large file
+                # Use a different output filename to avoid overwriting input
+                mp4_path = outdir / f"{name}_compressed.mkv" if disc_type == "bluray" else outdir / f"{name}_compressed.mp4"
+                print(f"  → Using temporary output: {mp4_path.name}")
 
         audio_streams = ffprobe_streams(mkv, "a")
         subs_streams = ffprobe_streams(mkv, "s")
@@ -741,6 +744,10 @@ def main() -> int:
 
         container = "MKV" if disc_type == "bluray" else "MP4"
         print(f"  → Encoding to {container}...")
+        print(f"  → Input: {mkv}")
+        print(f"  → Output: {mp4_path}")
+        print(f"  → Input exists: {mkv.exists()}")
+        print(f"  → Output exists: {mp4_path.exists()}")
         try:
             _run(hb_cmd)
             print(f"  ✓ Encoding complete: {mp4_path.name}")
