@@ -362,7 +362,7 @@ def main() -> int:
     # Also check destination folder for existing compressed files
     dest_mkvs = []
     if safe_title and safe_year:
-        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year)}"
+        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
         if dest_dir.exists():
             dest_mkvs = sorted(dest_dir.glob("*.mkv"))
     
