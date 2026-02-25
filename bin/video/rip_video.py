@@ -520,6 +520,10 @@ def main() -> int:
         hb_sub_opts: list[str] = []
         mark_default_sub = False
 
+        # Prefer English audio if available
+        if has_en_audio:
+            hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
+        
         # Auto-burn: non-English audio + no text subs + English image subs
         if needs_lang_action and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
             hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
@@ -531,6 +535,16 @@ def main() -> int:
                 mark_default_sub = True
             elif policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
                 hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+
+        # Always add soft subs if available and not burning
+        if not hb_sub_opts and eng_text_idx >= 0:
+            hb_sub_opts = ["--subtitle", str(eng_text_idx + 1)]  # HandBrake uses 1-based indexing
+            if mark_default_sub:
+                hb_sub_opts.append("--subtitle-default")
+        elif not hb_sub_opts and eng_image_idx >= 0:
+            hb_sub_opts = ["--subtitle", str(eng_image_hb_track)]
+            if mark_default_sub:
+                hb_sub_opts.append("--subtitle-default")
 
         hb_cmd = [
             "HandBrakeCLI",
