@@ -693,6 +693,7 @@ def main() -> int:
                         "ffmpeg",
                         "-i", str(dest),
                         "-c", "copy",  # Copy streams without re-encoding
+                        "-fflags", "+genpts",  # Generate proper timestamps (fixes warning)
                         "-movflags", "+faststart",  # Standard web optimization
                         "-f", "mp4" if disc_type == "dvd" else "matroska",
                         str(temp_path)
