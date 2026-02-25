@@ -496,7 +496,20 @@ def main() -> int:
                     print(f"✓ Successfully ripped all tracks (fallback)")
                 except subprocess.CalledProcessError as e2:
                     print(f"✗ MakeMKV failed to rip all tracks (fallback): {e2}")
-                    raise
+                    print(f"  → Trying backup method for problematic disc...")
+                    
+                    # Try backup method for problematic discs
+                    backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
+                    print(f"  → Running backup: {' '.join(backup_cmd)}")
+                    backup_result = _run(backup_cmd, capture=True)
+                    print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
+                    
+                    # Now rip ALL titles from backup (don't rely on title ID mapping)
+                    backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
+                    print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                    backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                    print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                    print(f"  ✓ Successfully ripped using backup method")
         else:
             print("Ripping all tracks (forced)...")
             try:
@@ -504,7 +517,20 @@ def main() -> int:
                 print(f"✓ Successfully ripped all tracks (forced)")
             except subprocess.CalledProcessError as e:
                 print(f"✗ MakeMKV failed to rip all tracks (forced): {e}")
-                raise
+                print(f"  → Trying backup method for problematic disc...")
+                
+                # Try backup method for problematic discs
+                backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
+                print(f"  → Running backup: {' '.join(backup_cmd)}")
+                backup_result = _run(backup_cmd, capture=True)
+                print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
+                
+                # Now rip ALL titles from backup (don't rely on title ID mapping)
+                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
+                print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                backup_rip_result = _run(backup_mkv_cmd, capture=True)
+                print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                print(f"  ✓ Successfully ripped using backup method")
         
         # Eject disc if requested (only after successful rip from disc)
         if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
