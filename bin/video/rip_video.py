@@ -693,6 +693,10 @@ def main() -> int:
             "--format", "mp4" if disc_type == "dvd" else "mkv"  # Force encoding, not stream copy
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
 
+        # Add timestamp fix for MKV to prevent warnings
+        if disc_type == "bluray":
+            hb_cmd.extend(["--no-compat"])  # Fixes timestamp warnings for MKV
+
         # Add streaming optimization flags if enabled
         if streaming_optimize:
             hb_cmd.extend([
