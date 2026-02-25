@@ -153,7 +153,7 @@ def detect_disc_type() -> str:
     if re.search(r"\bDVD\b", out, re.IGNORECASE):
         return "dvd"
 
-    return "dvd"
+    return "auto"  # No disc detected
 
 
 def ffprobe_streams(path: Path, selector: str) -> list[dict]:
