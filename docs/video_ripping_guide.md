@@ -2,8 +2,28 @@
 
 Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with proper metadata and organization.
 
+> **📚 See Also:** [Video Workflows](video_workflows.md) for detailed scenario diagrams and decision trees  
 > **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
 > **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
+
+---
+
+## 🎬 Quick Start
+
+**For all video processing, use the unified command:**
+
+```bash
+# English films (DVD or Blu-ray)
+make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
+
+# Foreign films with subtitle burning
+BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
+
+# Process existing MKV files
+make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
+```
+
+**📖 For detailed workflows, scenarios, and diagrams, see [Video Workflows](video_workflows.md)**
 
 ---
 
@@ -24,30 +44,111 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 
 ---
 
-## Workflow
+## 🎯 Key Features
 
-### Option 1: Automated Blu-ray Workflow (Recommended)
-For complete Blu-ray processing with automatic subtitle handling and MP4 compliance:
+### ✅ Universal MP4 Output
+- **DVD and Blu-ray:** Both output to MP4 format
+- **External SRT subtitles:** Jellyfin-compatible
+- **Foreign film support:** Optional subtitle burning
+- **Streaming optimization:** Web-ready files
 
-```bash
-# Use the automated Blu-ray script with custom output directory
-./bin/video/bluray_to_mp4.zsh "Movie Title" 2022 "/Volumes/Data/Media/Library/Movies"
+### ✅ Intelligent Processing
+- **Smart compression:** Only re-encode when needed (>10GB)
+- **Existing file handling:** Works with already-ripped MKV files
+- **Error resilience:** Graceful handling of missing discs
+- **Automatic organization:** Proper folder structure
 
-# Use with default output directory (~/Movies/Rips)
-./bin/video/bluray_to_mp4.zsh "Movie Title" 2022
+### ✅ Subtitle Management
+- **English films:** External SRT files (toggleable)
+- **Foreign films:** Burned-in subtitles + external SRT
+- **Automatic extraction:** No manual subtitle handling
+- **Jellyfin ready:** Auto-detected subtitle files
 
-# Auto-detect title from disc
-./bin/video/bluray_to_mp4.zsh 2022 "/Volumes/Data/Media/Library/Movies"
+---
+
+## 🎛️ Control Variables
+
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `TYPE` | `dvd` | `bluray` | Disc type detection |
+| `BURN_SUBTITLES` | `true` | `false` (default) | Burn subs for foreign films |
+| `FORCE_ALL_TRACKS` | `true` | `false` (default) | Rip all titles vs main feature |
+| `STREAMING_OPTIMIZE` | `true` (default) | `false` | Apply web optimization |
+
+---
+
+## 📁 File Organization
+
+**Success Pattern:**
+```
+/Users/martin/Movies/Rips/
+├── Blurays/Movie Title (Year)/          # Source files
+│   └── Movie Title (Year).mkv           # Original rip
+└── Movies/Movie Title (Year)/           # Final destination
+    ├── Movie Title (Year).mp4           # Compressed video
+    └── Movie Title (Year).en.srt        # External subtitles
 ```
 
-This script handles:
-- Automatic disc detection and title extraction
-- Main feature identification (largest file)
-- PGS subtitle extraction and OCR conversion to SRT
-- English audio track detection
-- MP4 encoding with embedded subtitles (soft, on by default)
-- Streaming compliance optimization and repair
-- Automatic cleanup of intermediate files
+---
+
+## 🚨 Common Scenarios
+
+### English Film (DVD or Blu-ray)
+```bash
+make rip-movie TITLE="The Goonies" YEAR=1985 TYPE=bluray
+```
+**Result:** MP4 + external SRT subtitles
+
+### Foreign Film with English Subtitles
+```bash
+BURN_SUBTITLES=true make rip-movie TITLE="Amélie" YEAR=2001 TYPE=bluray
+```
+**Result:** MP4 with burned subtitles + external SRT
+
+### Existing Large MKV File
+```bash
+make rip-movie TITLE="Silent Running" YEAR=1972 TYPE=bluray
+```
+**Result:** Compressed MP4 + external SRT (if >10GB)
+
+---
+
+## 🔧 Advanced Options
+
+### Process All Tracks (Special Features)
+```bash
+FORCE_ALL_TRACKS=true make rip-movie TITLE="Special Film" YEAR=2023 TYPE=dvd
+```
+
+### Disable Streaming Optimization
+```bash
+STREAMING_OPTIMIZE=false make rip-movie TITLE="Film" YEAR=2023 TYPE=bluray
+```
+
+---
+
+## 📞 Troubleshooting
+
+### Common Issues
+- **"No disc found"** - Insert disc or check MKV files in correct location
+- **"Silent HandBrake failure"** - Check file permissions and disk space
+- **"No subtitles extracted"** - Source may not have English subtitle tracks
+- **"File too large"** - Script will automatically re-compress files >10GB
+
+### Getting Help
+- **Detailed workflows:** See [Video Workflows](video_workflows.md)
+- **Log output:** Check console messages for specific errors
+- **Prerequisites:** Ensure `make install-video-deps` was run
+- **MakeMKV:** Verify installation in `/Applications/`
+
+---
+
+## 📚 Related Documentation
+
+- **[Video Workflows](video_workflows.md)** - Detailed scenarios and decision trees
+- **[Workflow Overview](workflow_overview.md)** - General system workflows
+- **[Media Server Setup](media_server_setup.md)** - Jellyfin configuration
+- **[Quick Start Guide](../QUICKSTART.md)** - Initial setup instructions
 - **Flexible output directory** (provide path or use default)
 
 ### Option 2: Manual Step-by-Step Workflow
@@ -453,7 +554,7 @@ If automatic subtitle burn-in fails or subtitles don't appear in the output:
   /Volumes/Data/Media/Library/TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
   ```
 
-See `docs/media_server_setup.md` for more complete examples and tips.
+See **[Media Server Setup](media_server_setup.md)** for more complete examples and tips.
 
 ---
 
@@ -465,8 +566,8 @@ See `docs/media_server_setup.md` for more complete examples and tips.
 **Root cause**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, NOT based on ffprobe's stream index values. For example:
 - ffprobe shows: stream index 4 (Chinese), stream index 5 (English)
 - HandBrake shows: track 1 (Chinese), track 2 (English)
-- Old script calculated: 5 + 1 = track 6 ❌
-- Correct calculation: track 2 ✓
+- Old script calculated: 5 + 1 = track 6 
+- Correct calculation: track 2 
 
 **Fix**: The script now uses `ENG_IMAGE_HB_TRACK` which correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams (1-indexed).
 
