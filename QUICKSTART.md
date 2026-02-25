@@ -41,6 +41,13 @@ SPOTIFY_CLIENT_ID="your_spotify_client_id"
 SPOTIFY_CLIENT_SECRET="your_spotify_client_secret"
 ```
 
+### MakeMKV Configuration (Important for Subtitles)
+The `rip_video.py` script will automatically configure MakeMKV to extract all subtitles (including Blu-ray PGS subtitles) by adding this to `~/.MakeMKV/settings.conf`:
+```
+app_DefaultSelectionString="+sel:all,-sel:(core)"
+```
+This ensures both DVD and Blu-ray rips contain the necessary subtitle streams.
+
 ## 3. Rip Your First CD
 
 Insert a CD, then:

@@ -35,6 +35,28 @@ def check_virtual_environment() -> None:
         sys.exit(1)
 
 
+def configure_makemkv() -> None:
+    """Ensure MakeMKV is configured to extract all tracks including subtitles."""
+    makemkv_dir = Path.home() / ".MakeMKV"
+    makemkv_dir.mkdir(parents=True, exist_ok=True)
+    settings_file = makemkv_dir / "settings.conf"
+    
+    # Select all tracks, but deselect the lossy core of HD audio formats
+    desired_setting = 'app_DefaultSelectionString="+sel:all,-sel:(core)"'
+    
+    try:
+        if settings_file.exists():
+            content = settings_file.read_text()
+            if "app_DefaultSelectionString" not in content:
+                settings_file.write_text(content.rstrip() + f"\n{desired_setting}\n")
+                print("  ✓ Configured MakeMKV to extract all subtitles")
+        else:
+            settings_file.write_text(f"{desired_setting}\n")
+            print("  ✓ Created MakeMKV configuration for subtitle extraction")
+    except Exception as e:
+        print(f"  ⚠ Could not configure MakeMKV settings: {e}")
+
+
 def _run(cmd: list[str], *, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess:
     kwargs = {}
     if capture:
@@ -265,6 +287,9 @@ def eject_disc() -> None:
 def main() -> int:
     # Check virtual environment first
     check_virtual_environment()
+    
+    # Configure MakeMKV to extract subtitles
+    configure_makemkv()
     
     parser = argparse.ArgumentParser(description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
     parser.add_argument("type", nargs="?", default="auto", choices=["dvd", "bluray", "auto"])
