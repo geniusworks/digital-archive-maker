@@ -815,21 +815,6 @@ def main() -> int:
             else:
                 hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
 
-        # NEVER burn subtitles unless explicitly flagged via environment
-        # variable
-        burn_subs = get_env_str(
-            "BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
-
-        if burn_subs and needs_lang_action and eng_text_idx == - \
-                1 and has_en_subs and eng_image_hb_track > 0:
-            hb_sub_opts = ["--subtitle",
-                           str(eng_image_hb_track), "--subtitle-burned"]
-            print("  ⚠️  BURNING subtitles (explicitly requested)")
-        elif burn_subs and policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
-            hb_sub_opts = ["--subtitle",
-                           str(eng_image_hb_track), "--subtitle-burned"]
-            print("  ⚠️  BURNING subtitles (policy=prefer-burned + explicit flag)")
-
         if needs_lang_action and policy:
             if policy == "prefer-audio" and has_en_audio:
                 # For multiple English tracks, prefer the one with most
@@ -849,8 +834,22 @@ def main() -> int:
             elif policy == "prefer-subs" and has_en_subs:
                 mark_default_sub = True
 
-        # For MP4 + external SRT, we don't embed subtitles in the video
-        hb_sub_opts = []  # No subtitle embedding for MP4
+        # For MP4 + external SRT, we don't embed subtitles by default
+        # But allow burning if explicitly requested for foreign films
+        hb_sub_opts = []
+        
+        # Check if we need to burn subtitles (foreign language films)
+        burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
+        
+        if burn_subs and needs_lang_action and has_en_subs:
+            if eng_text_idx >= 0:
+                hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
+                print(f"  ⚠️  BURNING English text subtitles (foreign language audio)")
+            elif eng_image_idx >= 0:
+                hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+                print(f"  ⚠️  BURNING English image subtitles (foreign language audio)")
+            else:
+                print("  ⚠️  No English subtitles available for burning")
 
         hb_cmd = [
             "HandBrakeCLI",
