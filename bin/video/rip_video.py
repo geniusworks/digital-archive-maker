@@ -368,6 +368,23 @@ def main() -> int:
     
     mkvs = source_mkvs or dest_mkvs  # Use source files first, then check destination
     
+    # If we found destination files, we need to check if they're compressed
+    if dest_mkvs and not source_mkvs:
+        # We have destination files but no source files
+        # Check if the destination file is actually compressed
+        largest_dest = max(dest_mkvs, key=lambda p: p.stat().st_size)
+        dest_size_gb = largest_dest.stat().st_size / (1024**3)
+        if dest_size_gb < 10:  # Already compressed
+            print(f"  ✓ Found compressed file in destination: {largest_dest.name} ({dest_size_gb:.1f}GB)")
+            print("  ✓ Skipping encoding - file already compressed")
+            return 0  # Exit early, no processing needed
+        else:
+            print(f"  ⚠️  Found uncompressed file in destination ({dest_size_gb:.1f}GB) - re-encoding...")
+            # We need to encode this file, so move it to source for processing
+            source_file = outdir / largest_dest.name
+            shutil.move(str(largest_dest), str(source_file))
+            mkvs = [source_file]  # Process the moved file
+    
     if not mkvs:
         # Only rip if no MKV files exist
         print("No MKV files found, ripping from disc...")
