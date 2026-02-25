@@ -356,15 +356,13 @@ def main() -> int:
         stamp = datetime.now().strftime("%Y-%m-%d")
         outdir = library_root / disc_dir / stamp
 
-    outdir.mkdir(parents=True, exist_ok=True)
-
     # Check if MKV files already exist in either source or destination
-    source_mkvs = sorted(outdir.glob("*.mkv"))
+    source_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
     
     # Also check destination folder for existing compressed files
     dest_mkvs = []
     if safe_title and safe_year:
-        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year)}"
         if dest_dir.exists():
             dest_mkvs = sorted(dest_dir.glob("*.mkv"))
     
@@ -385,6 +383,10 @@ def main() -> int:
         # Probe disc access early (best-effort)
         _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
 
+    # NOW create the output directory (only after we know we have a disc or files)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    if not mkvs:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
             print("Scanning for main feature (longest track)...")
