@@ -547,7 +547,14 @@ def main() -> int:
             continue
             
         name = mkv.stem
-        mp4_path = outdir / f"{name}.mp4"
+        
+        # Use MKV for Blu-ray (better subtitle support), MP4 for DVD
+        if disc_type == "bluray":
+            mp4_path = outdir / f"{name}.mkv"
+            print(f"  → Using MKV container for Blu-ray (soft subtitle support)")
+        else:
+            mp4_path = outdir / f"{name}.mp4"
+            print(f"  → Using MP4 container for DVD")
         
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
@@ -646,7 +653,8 @@ def main() -> int:
                 "--encoder-level", "4.0",
             ])
 
-        print(f"  → Encoding to MP4...")
+        container = "MKV" if disc_type == "bluray" else "MP4"
+        print(f"  → Encoding to {container}...")
         try:
             _run(hb_cmd)
             print(f"  ✓ Encoding complete: {mp4_path.name}")
@@ -666,10 +674,13 @@ def main() -> int:
         target_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        mp4s = list(outdir.glob("*.mp4"))
-        if mp4s:
-            largest = max(mp4s, key=lambda p: p.stat().st_size)
-            dest = target_dir / f"{safe_title} ({safe_year}).mp4"
+        # Look for both MP4 and MKV files
+        video_files = list(outdir.glob("*.mp4")) + list(outdir.glob("*.mkv"))
+        if video_files:
+            largest = max(video_files, key=lambda p: p.stat().st_size)
+            # Use appropriate extension for final file
+            ext = ".mkv" if disc_type == "bluray" else ".mp4"
+            dest = target_dir / f"{safe_title} ({safe_year}){ext}"
             if not dest.exists():
                 shutil.move(str(largest), str(dest))
                 
@@ -677,13 +688,13 @@ def main() -> int:
             if streaming_optimize:
                 try:
                     print(f"  → Applying streaming optimization to final file...")
-                    temp_path = dest.with_suffix(".temp.mp4")
+                    temp_path = dest.with_suffix(f".temp{dest.suffix}")
                     cmd = [
                         "ffmpeg",
                         "-i", str(dest),
                         "-c", "copy",  # Copy streams without re-encoding
                         "-movflags", "+faststart",  # Standard web optimization
-                        "-f", "mp4",
+                        "-f", "mp4" if disc_type == "dvd" else "matroska",
                         str(temp_path)
                     ]
                     _run(cmd, capture=False)
