@@ -184,10 +184,22 @@ def ffprobe_streams(path: Path, selector: str) -> list[dict]:
 def pick_default_audio_lang(audio_streams: list[dict]) -> str:
     if not audio_streams:
         return ""
+    
+    # First, look for a track marked as default
     for s in audio_streams:
         disp = s.get("disposition") or {}
         if disp.get("default") == 1:
-            return ((s.get("tags") or {}).get("language") or "").lower()
+            lang = ((s.get("tags") or {}).get("language") or "").lower()
+            if lang:
+                return lang
+    
+    # If no default track, prefer English tracks
+    for s in audio_streams:
+        lang = ((s.get("tags") or {}).get("language") or "").lower()
+        if lang.startswith("en"):
+            return lang
+    
+    # Fall back to first track
     return ((audio_streams[0].get("tags") or {}).get("language") or "").lower()
 
 
