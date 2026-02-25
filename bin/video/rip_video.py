@@ -575,7 +575,16 @@ def main() -> int:
 
         # Prefer English audio if available
         if has_en_audio:
-            hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
+            hb_audio_opts = ["--audio-lang-list", "eng"]
+            # For multiple English tracks, prefer the one with most channels (main movie over commentary)
+            eng_tracks = [s for s in audio_streams if ((s.get("tags") or {}).get("language") or "").lower().startswith("en")]
+            if len(eng_tracks) > 1:
+                # Find the English track with the most channels
+                best_track = max(eng_tracks, key=lambda s: s.get("channels", 0))
+                best_idx = audio_streams.index(best_track) + 1  # HandBrake uses 1-based indexing
+                hb_audio_opts.extend(["--audio", str(best_idx)])
+            else:
+                hb_audio_opts.append("--first-audio")
         
         # Auto-burn: non-English audio + no text subs + English image subs
         if needs_lang_action and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
@@ -583,7 +592,16 @@ def main() -> int:
 
         if needs_lang_action and policy:
             if policy == "prefer-audio" and has_en_audio:
-                hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
+                hb_audio_opts = ["--audio-lang-list", "eng"]
+                # For multiple English tracks, prefer the one with most channels (main movie over commentary)
+                eng_tracks = [s for s in audio_streams if ((s.get("tags") or {}).get("language") or "").lower().startswith("en")]
+                if len(eng_tracks) > 1:
+                    # Find the English track with the most channels
+                    best_track = max(eng_tracks, key=lambda s: s.get("channels", 0))
+                    best_idx = audio_streams.index(best_track) + 1  # HandBrake uses 1-based indexing
+                    hb_audio_opts.extend(["--audio", str(best_idx)])
+                else:
+                    hb_audio_opts.append("--first-audio")
             elif policy == "prefer-subs" and has_en_subs:
                 mark_default_sub = True
             elif policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
