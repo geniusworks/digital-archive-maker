@@ -20,18 +20,20 @@ def check_virtual_environment() -> None:
         print("🔧 To activate the virtual environment, run:")
         print("   source venv/bin/activate")
         print()
-        
-        # Check if this was called from make and show the appropriate retry command
+
+        # Check if this was called from make and show the appropriate retry
+        # command
         if os.getenv("TITLE") and os.getenv("YEAR"):
             # This was called from make rip-movie
             cmd_type = os.getenv("TYPE", "auto")
             print("Then try again:")
-            print(f"   make rip-movie TYPE={cmd_type} TITLE=\"{os.getenv('TITLE')}\" YEAR={os.getenv('YEAR')}")
+            print(
+                f"   make rip-movie TYPE={cmd_type} TITLE=\"{os.getenv('TITLE')}\" YEAR={os.getenv('YEAR')}")
         else:
             # Direct script call
             print("Then try again:")
             print(f"   {' '.join(sys.argv)}")
-        
+
         sys.exit(1)
 
 
@@ -40,15 +42,16 @@ def configure_makemkv() -> None:
     makemkv_dir = Path.home() / ".MakeMKV"
     makemkv_dir.mkdir(parents=True, exist_ok=True)
     settings_file = makemkv_dir / "settings.conf"
-    
+
     # Select all tracks, but deselect the lossy core of HD audio formats
     desired_setting = 'app_DefaultSelectionString="+sel:all,-sel:(core)"'
-    
+
     try:
         if settings_file.exists():
             content = settings_file.read_text()
             if "app_DefaultSelectionString" not in content:
-                settings_file.write_text(content.rstrip() + f"\n{desired_setting}\n")
+                settings_file.write_text(
+                    content.rstrip() + f"\n{desired_setting}\n")
                 print("  ✓ Configured MakeMKV to extract all subtitles")
         else:
             settings_file.write_text(f"{desired_setting}\n")
@@ -57,7 +60,8 @@ def configure_makemkv() -> None:
         print(f"  ⚠ Could not configure MakeMKV settings: {e}")
 
 
-def _run(cmd: list[str], *, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], *, check: bool = True,
+         capture: bool = True) -> subprocess.CompletedProcess:
     kwargs = {}
     if capture:
         kwargs.update({"capture_output": True, "text": True})
@@ -93,8 +97,10 @@ def get_env_str(name: str, default: str | None = None) -> str | None:
 
 
 def sanitize_title(raw: str) -> str:
-    # Preserve acronyms, title-case words, lowercase small stop-words except first/last.
-    stop = {"a", "an", "and", "as", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "per", "the", "to", "vs", "via"}
+    # Preserve acronyms, title-case words, lowercase small stop-words except
+    # first/last.
+    stop = {"a", "an", "and", "as", "at", "but", "by", "for", "in",
+            "nor", "of", "on", "or", "per", "the", "to", "vs", "via"}
 
     def cap(word: str) -> str:
         return word[:1].upper() + word[1:].lower() if word else word
@@ -146,7 +152,8 @@ def detect_disc_type() -> str:
         pass
 
     # Fallback to makemkvcon info.
-    res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
+    res = _run(["makemkvcon", "-r", "--cache=1",
+               "info", "disc:0"], check=False)
     out = res.stdout or ""
     if re.search(r"\bBlu-?ray\b", out, re.IGNORECASE):
         return "bluray"
@@ -159,35 +166,35 @@ def detect_disc_type() -> str:
 def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
     """Extract English subtitles from MKV to SRT files for Jellyfin compatibility"""
     srt_files = []
-    
+
     try:
         # Get subtitle streams info
         res = _run([
-            "ffprobe", "-v", "error", "-select_streams", "s", 
-            "-show_entries", "stream=index,codec_name:stream_tags=language", 
+            "ffprobe", "-v", "error", "-select_streams", "s",
+            "-show_entries", "stream=index,codec_name:stream_tags=language",
             "-of", "csv=p=0", str(mkv_path)
         ], capture=True)
-        
+
         subtitle_streams = res.stdout.strip().split('\n') if res.stdout else []
-        
+
         for stream_info in subtitle_streams:
             if not stream_info.strip():
                 continue
-                
+
             parts = stream_info.split(',')
             if len(parts) < 2:
                 continue
-                
+
             stream_index = parts[0]
-            codec = parts[1]
+            # codec = parts[1]  # Unused variable
             lang = parts[2] if len(parts) > 2 else "und"
-            
+
             # Extract English subtitles
             if lang.lower().startswith("en"):
                 srt_path = output_dir / f"{mkv_path.stem}.en.srt"
-                
+
                 print(f"  → Extracting English subtitles to {srt_path.name}")
-                
+
                 # Extract subtitle to SRT
                 extract_cmd = [
                     "ffmpeg", "-i", str(mkv_path),
@@ -196,14 +203,14 @@ def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
                     str(srt_path),
                     "-y"
                 ]
-                
+
                 _run(extract_cmd)
                 srt_files.append(srt_path)
                 print(f"  ✓ Subtitle extracted: {srt_path.name}")
-                
+
     except subprocess.CalledProcessError as e:
         print(f"  ⚠️  Could not extract subtitles: {e}")
-    
+
     return srt_files
 
 
@@ -235,7 +242,7 @@ def ffprobe_streams(path: Path, selector: str) -> list[dict]:
 def pick_default_audio_lang(audio_streams: list[dict]) -> str:
     if not audio_streams:
         return ""
-    
+
     # First, look for a track marked as default
     for s in audio_streams:
         disp = s.get("disposition") or {}
@@ -243,13 +250,13 @@ def pick_default_audio_lang(audio_streams: list[dict]) -> str:
             lang = ((s.get("tags") or {}).get("language") or "").lower()
             if lang:
                 return lang
-    
+
     # If no default track, prefer English tracks
     for s in audio_streams:
         lang = ((s.get("tags") or {}).get("language") or "").lower()
         if lang.startswith("en"):
             return lang
-    
+
     # Fall back to first track
     return ((audio_streams[0].get("tags") or {}).get("language") or "").lower()
 
@@ -293,7 +300,8 @@ def hb_track_for_sub_stream(subs: list[dict], stream_index: int) -> int:
     return pos + 1
 
 
-def mux_text_sub_into_mp4(mp4_path: Path, src_mkv: Path, sub_stream_index: int, mark_default: bool) -> None:
+def mux_text_sub_into_mp4(mp4_path: Path, src_mkv: Path,
+                          sub_stream_index: int, mark_default: bool) -> None:
     tmp_out = mp4_path.with_suffix(".tmp.mp4")
     cmd = [
         "ffmpeg",
@@ -339,7 +347,8 @@ def eject_disc() -> None:
                     parts = line.strip().split()
                     if parts and parts[-1].startswith('/dev/'):
                         device = parts[-1]
-                        _run(["diskutil", "eject", device], check=False, capture=False)
+                        _run(["diskutil", "eject", device],
+                             check=False, capture=False)
                         print(f"Disc ejected from {device}")
                         return
             print("No optical disc found to eject")
@@ -350,33 +359,41 @@ def eject_disc() -> None:
 def main() -> int:
     # Check virtual environment first
     check_virtual_environment()
-    
+
     # Configure MakeMKV to extract subtitles
     configure_makemkv()
-    
-    parser = argparse.ArgumentParser(description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
-    parser.add_argument("type", nargs="?", default="auto", choices=["dvd", "bluray", "auto"])
-    parser.add_argument("--force-all-tracks", action="store_true", 
-                       help="Encode all tracks instead of just the main feature (largest file)")
+
+    parser = argparse.ArgumentParser(
+        description="Rip DVD/Blu-ray discs to your LIBRARY_ROOT using MakeMKV + HandBrake")
+    parser.add_argument("type", nargs="?", default="auto",
+                        choices=["dvd", "bluray", "auto"])
+    parser.add_argument("--force-all-tracks", action="store_true",
+                        help="Encode all tracks instead of just the main feature (largest file)")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[2]
     load_dotenv(repo_root)
 
     # Defaults
-    library_root = Path(get_env_str("LIBRARY_ROOT", "/Volumes/Data/Media/Library") or "/Volumes/Data/Media/Library")
+    library_root = Path(get_env_str(
+        "LIBRARY_ROOT", "/Volumes/Data/Media/Library") or "/Volumes/Data/Media/Library")
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
-    
+
     # Encoding settings (faster defaults)
-    quality = get_env_str("HB_QUALITY", "28") or "28"  # Higher number = lower quality but faster
-    preset = get_env_str("HB_PRESET", "Apple 1080p30 Surround") or "Apple 1080p30 Surround"  # Encoding speed preset
+    # Higher number = lower quality but faster
+    quality = get_env_str("HB_QUALITY", "28") or "28"
+    # Encoding speed preset
+    preset = get_env_str(
+        "HB_PRESET", "Apple 1080p30 Surround") or "Apple 1080p30 Surround"
     tune = get_env_str("HB_TUNE", None)  # Optional tuning
 
     # Track selection settings
-    force_all_tracks = args.force_all_tracks or get_env_str("FORCE_ALL_TRACKS", "false").lower() in ("true", "1", "yes")
-    
+    force_all_tracks = args.force_all_tracks or get_env_str(
+        "FORCE_ALL_TRACKS", "false").lower() in ("true", "1", "yes")
+
     # Streaming optimization settings
-    streaming_optimize = get_env_str("STREAMING_OPTIMIZE", "true").lower() in ("true", "1", "yes")
+    streaming_optimize = get_env_str(
+        "STREAMING_OPTIMIZE", "true").lower() in ("true", "1", "yes")
 
     # Environment-provided optional metadata
     title_raw = get_env_str("TITLE", None)
@@ -409,16 +426,16 @@ def main() -> int:
 
     # Check if MKV files already exist in either source or destination
     source_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
-    
+
     # Also check destination folder for existing compressed files
     dest_mkvs = []
     if safe_title and safe_year:
         dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
         if dest_dir.exists():
             dest_mkvs = sorted(dest_dir.glob("*.mkv"))
-    
+
     mkvs = source_mkvs or dest_mkvs  # Use source files first, then check destination
-    
+
     # If we found destination files, we need to check if they're compressed
     if dest_mkvs and not source_mkvs:
         # We have destination files but no source files
@@ -426,32 +443,35 @@ def main() -> int:
         largest_dest = max(dest_mkvs, key=lambda p: p.stat().st_size)
         dest_size_gb = largest_dest.stat().st_size / (1024**3)
         if dest_size_gb < 10:  # Already compressed
-            print(f"  ✓ Found compressed file in destination: {largest_dest.name} ({dest_size_gb:.1f}GB)")
+            print(
+                f"  ✓ Found compressed file in destination: {largest_dest.name} ({dest_size_gb:.1f}GB)")
             print("  ✓ Skipping encoding - file already compressed")
             return 0  # Exit early, no processing needed
         else:
-            print(f"  ⚠️  Found uncompressed file in destination ({dest_size_gb:.1f}GB) - re-encoding...")
+            print(
+                f"  ⚠️  Found uncompressed file in destination ({dest_size_gb:.1f}GB) - re-encoding...")
             # We need to encode this file, so move it to source for processing
             source_file = outdir / largest_dest.name
             shutil.move(str(largest_dest), str(source_file))
             mkvs = [source_file]  # Process the moved file
-    
+
     if not mkvs:
         # Only rip if no MKV files exist
         print("No MKV files found, ripping from disc...")
-        
+
         # Check if disc is actually present using existing detection
         detected_type = detect_disc_type()
         if detected_type == "auto":
             print("  ❌ No Blu-ray/DVD disc found in drive")
             print("  💡 Please insert a disc and try again")
             return 1
-        
+
         print(f"  ✓ Detected {detected_type.upper()} disc")
         # Probe disc access early (best-effort)
         _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
 
-    # NOW create the output directory (only after we know we have a disc or files)
+    # NOW create the output directory (only after we know we have a disc or
+    # files)
     outdir.mkdir(parents=True, exist_ok=True)
 
     if not mkvs:
@@ -460,109 +480,146 @@ def main() -> int:
             print("Scanning for main feature (longest track)...")
             try:
                 # Get disc info to find all titles
-                info_res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], capture=True)
-                
+                info_res = _run(["makemkvcon", "-r", "--cache=1",
+                                "info", "disc:0"], capture=True)
+
                 # Parse titles from MakeMKV info output
-                # Look for lines like: TINFO:0,9,0,"2:09:20" (duration is field 9)
+                # Look for lines like: TINFO:0,9,0,"2:09:20" (duration is field
+                # 9)
                 titles = []
                 lines = info_res.stdout.split('\n')
                 for line in lines:
-                    if line.startswith('TINFO:') and ',9,' in line:  # Look for duration info (field 9)
+                    # Look for duration info (field 9)
+                    if line.startswith('TINFO:') and ',9,' in line:
                         parts = line.split(',')
                         if len(parts) >= 4:
                             title_id = parts[0].split(':')[1]
-                            duration = parts[3].strip('"')  # Format: "HH:MM:SS"
+                            duration = parts[3].strip(
+                                '"')  # Format: "HH:MM:SS"
                             try:
                                 # Convert duration to seconds for comparison
                                 h, m, s = map(int, duration.split(':'))
                                 total_seconds = h * 3600 + m * 60 + s
                                 if total_seconds >= minlength:  # Only consider titles longer than minlength
-                                    titles.append((int(title_id), total_seconds, duration))
+                                    titles.append(
+                                        (int(title_id), total_seconds, duration))
                             except ValueError:
                                 continue
-                
+
                 if titles:
-                    # Sort by duration (longest first) and pick the main feature
+                    # Sort by duration (longest first) and pick the main
+                    # feature
                     titles.sort(key=lambda x: x[1], reverse=True)
-                    
-                    # If multiple titles have same duration (within 1 minute), pick the larger one
+
+                    # If multiple titles have same duration (within 1 minute),
+                    # pick the larger one
                     if len(titles) > 1:
                         longest_duration = titles[0][1]
-                        same_duration_titles = [t for t in titles if abs(t[1] - longest_duration) <= 60]
-                        
+                        same_duration_titles = [t for t in titles if abs(
+                            t[1] - longest_duration) <= 60]
+
                         if len(same_duration_titles) > 1:
-                            print(f"Found {len(same_duration_titles)} titles with similar duration, checking sizes...")
+                            print(
+                                f"Found {len(same_duration_titles)} titles with similar duration, checking sizes...")
                             # Get file sizes for titles with same duration
                             title_sizes = []
                             for title_id, _, _ in same_duration_titles:
-                                size_line = next((line for line in info_res.stdout.split('\n') 
+                                size_line = next((line for line in info_res.stdout.split('\n')
                                                  if f"TINFO:{title_id},10," in line), None)
                                 if size_line:
-                                    size_str = size_line.split(',')[3].strip('"')
-                                    # Parse size string like "19.0 GB" or "23.8 GB"
+                                    size_str = size_line.split(
+                                        ',')[3].strip('"')
+                                    # Parse size string like "19.0 GB" or "23.8
+                                    # GB"
                                     if 'GB' in size_str:
-                                        size_gb = float(size_str.replace(' GB', ''))
+                                        size_gb = float(
+                                            size_str.replace(' GB', ''))
                                         title_sizes.append((title_id, size_gb))
-                            
+
                             if title_sizes:
-                                # Sort by size (largest first) and pick the biggest
-                                title_sizes.sort(key=lambda x: x[1], reverse=True)
+                                # Sort by size (largest first) and pick the
+                                # biggest
+                                title_sizes.sort(
+                                    key=lambda x: x[1], reverse=True)
                                 main_title_id = title_sizes[0][0]
-                                main_duration = next(t[1] for t in titles if t[0] == main_title_id)
-                                main_duration_str = next(t[2] for t in titles if t[0] == main_title_id)
-                                print(f"Selected largest title: {main_title_id} ({title_sizes[0][1]} GB)")
+                                main_duration = next(
+                                    t[1] for t in titles if t[0] == main_title_id)
+                                main_duration_str = next(
+                                    t[2] for t in titles if t[0] == main_title_id)
+                                print(
+                                    f"Selected largest title: {main_title_id} ({title_sizes[0][1]} GB)")
                             else:
                                 main_title_id, main_duration, main_duration_str = titles[0]
                         else:
                             main_title_id, main_duration, main_duration_str = titles[0]
                     else:
                         main_title_id, main_duration, main_duration_str = titles[0]
-                    
-                    print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
-                    print(f"Skipping {len(titles)-1} shorter tracks")
-                    
+
+                    print(
+                        f"Found main feature: Title {main_title_id} ({main_duration_str})")
+                    print(f"Skipping {len(titles) - 1} shorter tracks")
+
                     # Rip only the main feature
                     try:
                         # For DVDs, try backup first if direct rip fails
-                        cmd = ["makemkvcon", "mkv", "disc:0", str(main_title_id), str(outdir)]
+                        cmd = ["makemkvcon", "mkv", "disc:0",
+                               str(main_title_id), str(outdir)]
                         print(f"  → Running: {' '.join(cmd)}")
                         result = _run(cmd, capture=True)
                         print(f"  ✓ MakeMKV output: {result.stdout.strip()}")
                         if result.stderr:
-                            print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
-                        
+                            print(
+                                f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
+
                         # Check if file was actually created
                         # MakeMKV uses different naming: DVDs use "title_t00.mkv", Blu-rays use "MovieName_t00.mkv"
                         # Look for any file with the correct title ID
-                        mkv_files = list(outdir.glob(f"*_t{main_title_id:02d}.mkv"))
+                        mkv_files = list(outdir.glob(
+                            f"*_t{main_title_id:02d}.mkv"))
                         if not mkv_files:
-                            print(f"  ✗ No MKV file found for title {main_title_id}")
-                            print(f"  → Looking for any MKV files in {outdir}...")
+                            print(
+                                f"  ✗ No MKV file found for title {main_title_id}")
+                            print(
+                                f"  → Looking for any MKV files in {outdir}...")
                             existing_files = list(outdir.glob("*.mkv"))
                             if existing_files:
-                                print(f"  → Found existing MKV files: {[f.name for f in existing_files]}")
-                                print(f"  → Using largest file as main feature")
+                                print(
+                                    f"  → Found existing MKV files: {[f.name for f in existing_files]}")
+                                print(
+                                    f"  → Using largest file as main feature")
                                 # Continue with existing files - skip backup
                             else:
-                                print(f"  → Trying backup method for problematic disc...")
-                                
+                                print(
+                                    f"  → Trying backup method for problematic disc...")
+
                                 # Try backup method for problematic DVDs
-                                backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
-                                print(f"  → Running backup: {' '.join(backup_cmd)}")
+                                backup_cmd = ["makemkvcon",
+                                              "backup", "disc:0", str(outdir)]
+                                print(
+                                    f"  → Running backup: {' '.join(backup_cmd)}")
                                 backup_result = _run(backup_cmd, capture=True)
-                                print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
-                                
-                                # Now rip ALL titles from backup (don't rely on title ID mapping)
-                                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
-                                print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                                backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                                print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
-                            
-                            # After backup rip, we'll let the existing largest file logic pick the right one
-                        
+                                # Last 200 chars
+                                print(
+                                    f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+
+                                # Now rip ALL titles from backup (don't rely on
+                                # title ID mapping)
+                                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(
+                                    outdir), f"--minlength={minlength}"]
+                                print(
+                                    f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                                backup_rip_result = _run(
+                                    backup_mkv_cmd, capture=True)
+                                print(
+                                    f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+
+                            # After backup rip, we'll let the existing largest
+                            # file logic pick the right one
+
                         print(f"  ✓ Successfully ripped title {main_title_id}")
                     except subprocess.CalledProcessError as e:
-                        print(f"  ✗ MakeMKV failed to rip title {main_title_id}: {e}")
+                        print(
+                            f"  ✗ MakeMKV failed to rip title {main_title_id}: {e}")
                         if hasattr(e, 'stdout') and e.stdout:
                             print(f"    stdout: {e.stdout.strip()}")
                         if hasattr(e, 'stderr') and e.stderr:
@@ -571,88 +628,111 @@ def main() -> int:
                 else:
                     print("Could not determine main feature, ripping all tracks...")
                     try:
-                        _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                        _run(["makemkvcon", "mkv", "disc:0", "all",
+                             str(outdir), f"--minlength={minlength}"])
                         print(f"✓ Successfully ripped all tracks")
                     except subprocess.CalledProcessError as e:
                         print(f"✗ MakeMKV failed to rip all tracks: {e}")
                         raise
-                    
+
             except Exception as e:
-                print(f"Could not determine main feature ({e}), ripping all tracks...")
+                print(
+                    f"Could not determine main feature ({e}), ripping all tracks...")
                 try:
-                    _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                    _run(["makemkvcon", "mkv", "disc:0", "all",
+                         str(outdir), f"--minlength={minlength}"])
                     print(f"✓ Successfully ripped all tracks (fallback)")
                 except subprocess.CalledProcessError as e2:
-                    print(f"✗ MakeMKV failed to rip all tracks (fallback): {e2}")
+                    print(
+                        f"✗ MakeMKV failed to rip all tracks (fallback): {e2}")
                     print(f"  → Trying backup method for problematic disc...")
-                    
+
                     # Try backup method for problematic discs
-                    backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
+                    backup_cmd = ["makemkvcon",
+                                  "backup", "disc:0", str(outdir)]
                     print(f"  → Running backup: {' '.join(backup_cmd)}")
                     backup_result = _run(backup_cmd, capture=True)
-                    print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
-                    
-                    # Now rip ALL titles from backup (don't rely on title ID mapping)
-                    backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
-                    print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                    # Last 200 chars
+                    print(
+                        f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+
+                    # Now rip ALL titles from backup (don't rely on title ID
+                    # mapping)
+                    backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(
+                        outdir), f"--minlength={minlength}"]
+                    print(
+                        f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
                     try:
                         backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                        print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                        print(
+                            f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
                         print(f"  ✓ Successfully ripped using backup method")
                     except subprocess.CalledProcessError as e3:
                         print(f"  ✗ Backup rip also failed: {e3}")
-                        print(f"  ❌ This disc appears to be unreadable or heavily protected")
-                        print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
+                        print(
+                            f"  ❌ This disc appears to be unreadable or heavily protected")
+                        print(
+                            f"  💡 Try cleaning the disc or using a different Blu-ray drive")
                         return 1  # Exit gracefully
         else:
             print("Ripping all tracks (forced)...")
             try:
-                _run(["makemkvcon", "mkv", "disc:0", "all", str(outdir), f"--minlength={minlength}"])
+                _run(["makemkvcon", "mkv", "disc:0", "all",
+                     str(outdir), f"--minlength={minlength}"])
                 print(f"✓ Successfully ripped all tracks (forced)")
             except subprocess.CalledProcessError as e:
                 print(f"✗ MakeMKV failed to rip all tracks (forced): {e}")
                 print(f"  → Trying backup method for problematic disc...")
-                
+
                 # Try backup method for problematic discs
                 backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
                 print(f"  → Running backup: {' '.join(backup_cmd)}")
                 backup_result = _run(backup_cmd, capture=True)
-                print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")  # Last 200 chars
-                
-                # Now rip ALL titles from backup (don't rely on title ID mapping)
-                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(outdir), f"--minlength={minlength}"]
-                print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                # Last 200 chars
+                print(
+                    f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+
+                # Now rip ALL titles from backup (don't rely on title ID
+                # mapping)
+                backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(
+                    outdir), f"--minlength={minlength}"]
+                print(
+                    f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
                 try:
                     backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                    print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                    print(
+                        f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
                     print(f"  ✓ Successfully ripped using backup method")
                 except subprocess.CalledProcessError as e3:
                     print(f"  ✗ Backup rip also failed: {e3}")
-                    print(f"  ❌ This disc appears to be unreadable or heavily protected")
-                    print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
+                    print(
+                        f"  ❌ This disc appears to be unreadable or heavily protected")
+                    print(
+                        f"  💡 Try cleaning the disc or using a different Blu-ray drive")
                     return 1  # Exit gracefully
-        
+
         # Eject disc if requested (only after successful rip from disc)
         if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
             print("Disc rip complete, ejecting...")
             eject_disc()
-        
+
         # Debug: Check what files exist after rip
         print(f"  → Checking files in {outdir}:")
         try:
             files = list(outdir.glob("*"))
             if files:
                 for f in files:
-                    size_mb = f.stat().st_size / (1024*1024)
+                    size_mb = f.stat().st_size / (1024 * 1024)
                     print(f"     {f.name} ({size_mb:.1f}MB)")
             else:
                 print(f"     No files found!")
         except Exception as e:
             print(f"     Error listing files: {e}")
-        
+
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
-            print(f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
+            print(
+                f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
             return 0
     else:
         print(f"Found {len(mkvs)} existing MKV files, skipping disc rip...")
@@ -662,7 +742,8 @@ def main() -> int:
         # Find the largest file (main feature)
         largest_mkv = max(mkvs, key=lambda p: p.stat().st_size)
         mkvs = [largest_mkv]
-        print(f"Focusing on main feature: {largest_mkv.name} ({largest_mkv.stat().st_size / (1024**3):.1f}GB)")
+        print(
+            f"Focusing on main feature: {largest_mkv.name} ({largest_mkv.stat().st_size / (1024**3):.1f}GB)")
     elif force_all_tracks:
         print(f"Processing all {len(mkvs)} tracks (forced)")
 
@@ -671,24 +752,28 @@ def main() -> int:
         if not mkv.exists():
             print(f"Skipping missing file: {mkv.name}")
             continue
-            
+
         name = mkv.stem
-        
+
         # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
         mp4_path = outdir / f"{name}.mp4"
         print(f"  → Using MP4 container (Jellyfin compatible)")
-        
-        print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
+
+        print(
+            f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
         # Skip if MP4 already exists and is reasonably sized (compressed)
         if mp4_path.exists() and mp4_path.stat().st_size > 1000000:  # > 1MB
-            # Additional check: ensure file is actually compressed (not original MakeMKV rip)
+            # Additional check: ensure file is actually compressed (not
+            # original MakeMKV rip)
             file_size_gb = mp4_path.stat().st_size / (1024**3)
             if file_size_gb < 10:  # If file is less than 10GB, assume it's compressed
-                print(f"  ✓ Already encoded: {mp4_path.name} ({file_size_gb:.1f}GB)")
+                print(
+                    f"  ✓ Already encoded: {mp4_path.name} ({file_size_gb:.1f}GB)")
                 continue
             else:
-                print(f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
+                print(
+                    f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
                 # Continue with encoding to compress the large file
                 # Use a different output filename to avoid overwriting input
                 mp4_path = outdir / f"{name}_compressed.mp4"
@@ -698,14 +783,17 @@ def main() -> int:
         subs_streams = ffprobe_streams(mkv, "s")
 
         default_audio_lang = pick_default_audio_lang(audio_streams)
-        needs_lang_action = not default_audio_lang.startswith("en") if default_audio_lang else False
+        needs_lang_action = not default_audio_lang.startswith(
+            "en") if default_audio_lang else False
 
         has_en_audio = has_lang(audio_streams, "en")
         has_en_subs = has_lang(subs_streams, "en")
 
         eng_text_idx = first_eng_text_sub_index(subs_streams)
-        eng_image_idx, eng_image_codec = first_eng_image_sub_index(subs_streams)
-        eng_image_hb_track = hb_track_for_sub_stream(subs_streams, eng_image_idx)
+        eng_image_idx, eng_image_codec = first_eng_image_sub_index(
+            subs_streams)
+        eng_image_hb_track = hb_track_for_sub_stream(
+            subs_streams, eng_image_idx)
 
         hb_audio_opts: list[str] = []
         hb_sub_opts: list[str] = []
@@ -713,37 +801,51 @@ def main() -> int:
 
         # Prefer English audio if available
         if has_en_audio:
-            # For multiple English tracks, prefer the one with most channels (main movie over commentary)
-            eng_tracks = [s for s in audio_streams if ((s.get("tags") or {}).get("language") or "").lower().startswith("en")]
+            # For multiple English tracks, prefer the one with most channels
+            # (main movie over commentary)
+            eng_tracks = [s for s in audio_streams if (
+                (s.get("tags") or {}).get("language") or "").lower().startswith("en")]
             if len(eng_tracks) > 1:
                 # Find the English track with the most channels
-                best_track = max(eng_tracks, key=lambda s: s.get("channels", 0))
-                best_idx = audio_streams.index(best_track) + 1  # HandBrake uses 1-based indexing
+                best_track = max(
+                    eng_tracks, key=lambda s: s.get("channels", 0))
+                # HandBrake uses 1-based indexing
+                best_idx = audio_streams.index(best_track) + 1
                 hb_audio_opts = ["--audio", str(best_idx)]
             else:
                 hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
-        
-        # NEVER burn subtitles unless explicitly flagged via environment variable
-        burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
-        
-        if burn_subs and needs_lang_action and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
-            hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+
+        # NEVER burn subtitles unless explicitly flagged via environment
+        # variable
+        burn_subs = get_env_str(
+            "BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
+
+        if burn_subs and needs_lang_action and eng_text_idx == - \
+                1 and has_en_subs and eng_image_hb_track > 0:
+            hb_sub_opts = ["--subtitle",
+                           str(eng_image_hb_track), "--subtitle-burned"]
             print("  ⚠️  BURNING subtitles (explicitly requested)")
         elif burn_subs and policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
-            hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+            hb_sub_opts = ["--subtitle",
+                           str(eng_image_hb_track), "--subtitle-burned"]
             print("  ⚠️  BURNING subtitles (policy=prefer-burned + explicit flag)")
 
         if needs_lang_action and policy:
             if policy == "prefer-audio" and has_en_audio:
-                # For multiple English tracks, prefer the one with most channels (main movie over commentary)
-                eng_tracks = [s for s in audio_streams if ((s.get("tags") or {}).get("language") or "").lower().startswith("en")]
+                # For multiple English tracks, prefer the one with most
+                # channels (main movie over commentary)
+                eng_tracks = [s for s in audio_streams if (
+                    (s.get("tags") or {}).get("language") or "").lower().startswith("en")]
                 if len(eng_tracks) > 1:
                     # Find the English track with the most channels
-                    best_track = max(eng_tracks, key=lambda s: s.get("channels", 0))
-                    best_idx = audio_streams.index(best_track) + 1  # HandBrake uses 1-based indexing
+                    best_track = max(
+                        eng_tracks, key=lambda s: s.get("channels", 0))
+                    # HandBrake uses 1-based indexing
+                    best_idx = audio_streams.index(best_track) + 1
                     hb_audio_opts = ["--audio", str(best_idx)]
                 else:
-                    hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
+                    hb_audio_opts = ["--audio-lang-list",
+                                     "eng", "--first-audio"]
             elif policy == "prefer-subs" and has_en_subs:
                 mark_default_sub = True
 
@@ -786,7 +888,7 @@ def main() -> int:
         try:
             _run(hb_cmd)
             print(f"  ✓ Encoding complete: {mp4_path.name}")
-            
+
             # Extract subtitles to SRT files for Jellyfin compatibility
             if has_en_subs:
                 srt_files = extract_subtitles_to_srt(mkv, outdir)
@@ -796,21 +898,23 @@ def main() -> int:
                     print("  ⚠️  No subtitles extracted")
             else:
                 print("  ⚠️  No English subtitles found in source")
-                
+
         except subprocess.CalledProcessError as e:
             print(f"  ✗ Encoding failed for {mkv.name}: {e}")
             continue
 
         # Post-mux English text subs into MP4 (if available)
         if eng_text_idx != -1:
-            mux_text_sub_into_mp4(mp4_path, mkv, eng_text_idx, mark_default_sub)
+            mux_text_sub_into_mp4(
+                mp4_path, mkv, eng_text_idx, mark_default_sub)
         elif has_en_subs and eng_image_codec:
             # Image subtitles exist but can't be muxed into mp4.
             pass
 
     # Auto-organize main feature only if TITLE and YEAR were provided.
     if safe_title and safe_year:
-        target_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+        target_dir = library_root / dest_category / \
+            f"{safe_title} ({safe_year})"
         target_dir.mkdir(parents=True, exist_ok=True)
 
         # Look for both MP4 and MKV files
@@ -822,7 +926,7 @@ def main() -> int:
             dest = target_dir / f"{safe_title} ({safe_year}){ext}"
             if not dest.exists():
                 shutil.move(str(largest), str(dest))
-                
+
             # Move subtitle files too
             srt_files = list(outdir.glob("*.en.srt"))
             for srt_file in srt_files:
@@ -830,17 +934,19 @@ def main() -> int:
                 if not srt_dest.exists():
                     shutil.move(str(srt_file), str(srt_dest))
                     print(f"  ✓ Moved subtitle: {srt_dest.name}")
-                
+
             # Apply streaming optimization to the final organized file
             if streaming_optimize:
                 try:
-                    print(f"  → Applying streaming optimization to final file...")
+                    print(
+                        f"  → Applying streaming optimization to final file...")
                     temp_path = dest.with_suffix(f".temp{dest.suffix}")
                     cmd = [
                         "ffmpeg",
                         "-i", str(dest),
                         "-c", "copy",  # Copy streams without re-encoding
-                        "-fflags", "+genpts",  # Generate proper timestamps (fixes warning)
+                        # Generate proper timestamps (fixes warning)
+                        "-fflags", "+genpts",
                         "-movflags", "+faststart",  # Standard web optimization
                         "-f", "mp4" if disc_type == "dvd" else "matroska",
                         str(temp_path)
@@ -850,10 +956,11 @@ def main() -> int:
                     print(f"  ✓ Streaming optimization applied to {dest.name}")
                 except Exception as e:
                     print(f"  ⚠ Streaming optimization failed: {e}")
-                    # Continue without optimization - file should still be usable
+                    # Continue without optimization - file should still be
+                    # usable
 
     print(f"Done: {outdir}")
-    
+
     return 0
 
 
