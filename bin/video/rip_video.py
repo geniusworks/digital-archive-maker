@@ -585,9 +585,15 @@ def main() -> int:
             else:
                 hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
         
-        # Auto-burn: non-English audio + no text subs + English image subs
-        if needs_lang_action and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
+        # NEVER burn subtitles unless explicitly flagged via environment variable
+        burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
+        
+        if burn_subs and needs_lang_action and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
             hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+            print("  ⚠️  BURNING subtitles (explicitly requested)")
+        elif burn_subs and policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
+            hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+            print("  ⚠️  BURNING subtitles (policy=prefer-burned + explicit flag)")
 
         if needs_lang_action and policy:
             if policy == "prefer-audio" and has_en_audio:
@@ -602,18 +608,17 @@ def main() -> int:
                     hb_audio_opts = ["--audio-lang-list", "eng", "--first-audio"]
             elif policy == "prefer-subs" and has_en_subs:
                 mark_default_sub = True
-            elif policy == "prefer-burned" and eng_text_idx == -1 and has_en_subs and eng_image_hb_track > 0:
-                hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
 
-        # Always add soft subs if available and not burning
-        if not hb_sub_opts and eng_text_idx >= 0:
-            hb_sub_opts = ["--subtitle", str(eng_text_idx + 1)]  # HandBrake uses 1-based indexing
-            if mark_default_sub:
-                hb_sub_opts.append("--subtitle-default")
-        elif not hb_sub_opts and eng_image_idx >= 0:
-            hb_sub_opts = ["--subtitle", str(eng_image_hb_track)]
-            if mark_default_sub:
-                hb_sub_opts.append("--subtitle-default")
+        # ALWAYS add soft English subtitles as default (unless burning)
+        if not hb_sub_opts:
+            if eng_text_idx >= 0:
+                hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-default"]  # HandBrake uses 1-based indexing
+                print(f"  ✓ Adding English text subtitles as default")
+            elif eng_image_idx >= 0:
+                hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-default"]
+                print(f"  ✓ Adding English image subtitles as default")
+            else:
+                print("  ⚠️  No English subtitles found")
 
         hb_cmd = [
             "HandBrakeCLI",
