@@ -842,14 +842,17 @@ def main() -> int:
         burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
         
         if burn_subs and needs_lang_action and has_en_subs:
+            # Foreign audio + English subtitles available + burning requested
             if eng_text_idx >= 0:
                 hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
                 print(f"  ⚠️  BURNING English text subtitles (foreign language audio)")
             elif eng_image_idx >= 0:
                 hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
                 print(f"  ⚠️  BURNING English image subtitles (foreign language audio)")
-            else:
-                print("  ⚠️  No English subtitles available for burning")
+        elif burn_subs and needs_lang_action and not has_en_subs:
+            # Foreign audio but no English subtitles - can't burn!
+            print("  ⚠️  Foreign language audio detected but no English subtitles available")
+            print("  ⚠️  Cannot burn subtitles - will extract external subs if found")
 
         hb_cmd = [
             "HandBrakeCLI",
