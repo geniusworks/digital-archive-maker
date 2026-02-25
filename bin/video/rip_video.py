@@ -156,6 +156,57 @@ def detect_disc_type() -> str:
     return "auto"  # No disc detected
 
 
+def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
+    """Extract English subtitles from MKV to SRT files for Jellyfin compatibility"""
+    srt_files = []
+    
+    try:
+        # Get subtitle streams info
+        res = _run([
+            "ffprobe", "-v", "error", "-select_streams", "s", 
+            "-show_entries", "stream=index,codec_name:stream_tags=language", 
+            "-of", "csv=p=0", str(mkv_path)
+        ], capture=True)
+        
+        subtitle_streams = res.stdout.strip().split('\n') if res.stdout else []
+        
+        for stream_info in subtitle_streams:
+            if not stream_info.strip():
+                continue
+                
+            parts = stream_info.split(',')
+            if len(parts) < 2:
+                continue
+                
+            stream_index = parts[0]
+            codec = parts[1]
+            lang = parts[2] if len(parts) > 2 else "und"
+            
+            # Extract English subtitles
+            if lang.lower().startswith("en"):
+                srt_path = output_dir / f"{mkv_path.stem}.en.srt"
+                
+                print(f"  → Extracting English subtitles to {srt_path.name}")
+                
+                # Extract subtitle to SRT
+                extract_cmd = [
+                    "ffmpeg", "-i", str(mkv_path),
+                    "-map", f"0:{stream_index}",
+                    "-c:s", "srt",
+                    str(srt_path),
+                    "-y"
+                ]
+                
+                _run(extract_cmd)
+                srt_files.append(srt_path)
+                print(f"  ✓ Subtitle extracted: {srt_path.name}")
+                
+    except subprocess.CalledProcessError as e:
+        print(f"  ⚠️  Could not extract subtitles: {e}")
+    
+    return srt_files
+
+
 def ffprobe_streams(path: Path, selector: str) -> list[dict]:
     res = _run(
         [
@@ -623,13 +674,9 @@ def main() -> int:
             
         name = mkv.stem
         
-        # Use MKV for Blu-ray (better subtitle support), MP4 for DVD
-        if disc_type == "bluray":
-            mp4_path = outdir / f"{name}.mkv"
-            print(f"  → Using MKV container for Blu-ray (soft subtitle support)")
-        else:
-            mp4_path = outdir / f"{name}.mp4"
-            print(f"  → Using MP4 container for DVD")
+        # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
+        mp4_path = outdir / f"{name}.mp4"
+        print(f"  → Using MP4 container (Jellyfin compatible)")
         
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
@@ -644,7 +691,7 @@ def main() -> int:
                 print(f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
                 # Continue with encoding to compress the large file
                 # Use a different output filename to avoid overwriting input
-                mp4_path = outdir / f"{name}_compressed.mkv" if disc_type == "bluray" else outdir / f"{name}_compressed.mp4"
+                mp4_path = outdir / f"{name}_compressed.mp4"
                 print(f"  → Using temporary output: {mp4_path.name}")
 
         audio_streams = ffprobe_streams(mkv, "a")
@@ -700,16 +747,8 @@ def main() -> int:
             elif policy == "prefer-subs" and has_en_subs:
                 mark_default_sub = True
 
-        # ALWAYS add soft English subtitles as default (unless burning)
-        if not hb_sub_opts:
-            if eng_text_idx >= 0:
-                hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-default"]  # HandBrake uses 1-based indexing
-                print(f"  ✓ Adding English text subtitles as default")
-            elif eng_image_idx >= 0:
-                hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-default"]
-                print(f"  ✓ Adding English image subtitles as default")
-            else:
-                print("  ⚠️  No English subtitles found")
+        # For MP4 + external SRT, we don't embed subtitles in the video
+        hb_sub_opts = []  # No subtitle embedding for MP4
 
         hb_cmd = [
             "HandBrakeCLI",
@@ -727,12 +766,8 @@ def main() -> int:
             "160",
             "--optimize",
             "--no-markers",
-            "--format", "mp4" if disc_type == "dvd" else "mkv"  # Force encoding, not stream copy
+            "--format", "mp4"  # Always use MP4 now
         ] + (["--tune", tune] if tune else []) + hb_audio_opts + hb_sub_opts
-
-        # Add timestamp fix for MKV to prevent warnings
-        if disc_type == "bluray":
-            hb_cmd.extend(["--no-compat"])  # Fixes timestamp warnings for MKV
 
         # Add streaming optimization flags if enabled
         if streaming_optimize:
@@ -742,7 +777,7 @@ def main() -> int:
                 "--encoder-level", "4.0",
             ])
 
-        container = "MKV" if disc_type == "bluray" else "MP4"
+        container = "MP4"  # Always MP4 now
         print(f"  → Encoding to {container}...")
         print(f"  → Input: {mkv}")
         print(f"  → Output: {mp4_path}")
@@ -751,6 +786,17 @@ def main() -> int:
         try:
             _run(hb_cmd)
             print(f"  ✓ Encoding complete: {mp4_path.name}")
+            
+            # Extract subtitles to SRT files for Jellyfin compatibility
+            if has_en_subs:
+                srt_files = extract_subtitles_to_srt(mkv, outdir)
+                if srt_files:
+                    print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
+                else:
+                    print("  ⚠️  No subtitles extracted")
+            else:
+                print("  ⚠️  No English subtitles found in source")
+                
         except subprocess.CalledProcessError as e:
             print(f"  ✗ Encoding failed for {mkv.name}: {e}")
             continue
@@ -771,11 +817,19 @@ def main() -> int:
         video_files = list(outdir.glob("*.mp4")) + list(outdir.glob("*.mkv"))
         if video_files:
             largest = max(video_files, key=lambda p: p.stat().st_size)
-            # Use appropriate extension for final file
-            ext = ".mkv" if disc_type == "bluray" else ".mp4"
+            # Always use MP4 now
+            ext = ".mp4"
             dest = target_dir / f"{safe_title} ({safe_year}){ext}"
             if not dest.exists():
                 shutil.move(str(largest), str(dest))
+                
+            # Move subtitle files too
+            srt_files = list(outdir.glob("*.en.srt"))
+            for srt_file in srt_files:
+                srt_dest = target_dir / f"{safe_title} ({safe_year}).en.srt"
+                if not srt_dest.exists():
+                    shutil.move(str(srt_file), str(srt_dest))
+                    print(f"  ✓ Moved subtitle: {srt_dest.name}")
                 
             # Apply streaming optimization to the final organized file
             if streaming_optimize:
