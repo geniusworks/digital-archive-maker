@@ -384,7 +384,39 @@ def main() -> int:
                 if titles:
                     # Sort by duration (longest first) and pick the main feature
                     titles.sort(key=lambda x: x[1], reverse=True)
-                    main_title_id, main_duration, main_duration_str = titles[0]
+                    
+                    # If multiple titles have same duration (within 1 minute), pick the larger one
+                    if len(titles) > 1:
+                        longest_duration = titles[0][1]
+                        same_duration_titles = [t for t in titles if abs(t[1] - longest_duration) <= 60]
+                        
+                        if len(same_duration_titles) > 1:
+                            print(f"Found {len(same_duration_titles)} titles with similar duration, checking sizes...")
+                            # Get file sizes for titles with same duration
+                            title_sizes = []
+                            for title_id, _, _ in same_duration_titles:
+                                size_line = next((line for line in info_res.stdout.split('\n') 
+                                                 if f"TINFO:{title_id},10," in line), None)
+                                if size_line:
+                                    size_str = size_line.split(',')[3].strip('"')
+                                    # Parse size string like "19.0 GB" or "23.8 GB"
+                                    if 'GB' in size_str:
+                                        size_gb = float(size_str.replace(' GB', ''))
+                                        title_sizes.append((title_id, size_gb))
+                            
+                            if title_sizes:
+                                # Sort by size (largest first) and pick the biggest
+                                title_sizes.sort(key=lambda x: x[1], reverse=True)
+                                main_title_id = title_sizes[0][0]
+                                main_duration = next(t[1] for t in titles if t[0] == main_title_id)
+                                main_duration_str = next(t[2] for t in titles if t[0] == main_title_id)
+                                print(f"Selected largest title: {main_title_id} ({title_sizes[0][1]} GB)")
+                            else:
+                                main_title_id, main_duration, main_duration_str = titles[0]
+                        else:
+                            main_title_id, main_duration, main_duration_str = titles[0]
+                    else:
+                        main_title_id, main_duration, main_duration_str = titles[0]
                     
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles)-1} shorter tracks")
