@@ -205,15 +205,26 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     print(f"\n🎯 Recommended Action: {default_action}")
     print("=" * 50)
     
-    # Present options
-    options = [
-        ("1", "standard_mp4", "Standard MP4 (no subtitle processing)"),
-        ("2", "extract_srt", "Extract English text subtitles to SRT"),
-        ("3", "burn_subs", "Burn English text subtitles into video"),
-        ("4", "burn_pgs_subs", "Burn English PGS subtitles into video"),
-        ("5", "extract_pgs_ocr", "Extract PGS subtitles with OCR to SRT (future feature)"),
-        ("6", "no_subs", "Skip all subtitle processing")
-    ]
+    # Present options based on what's actually available
+    options = []
+    
+    # Always available
+    options.append(("1", "standard_mp4", "Standard MP4 (no subtitle processing)"))
+    
+    # Only show text subtitle options if text subtitles exist
+    if eng_text_subs:
+        options.append(("2", "extract_srt", "Extract English text subtitles to SRT"))
+        if has_foreign_audio:
+            options.append(("3", "burn_subs", "Burn English text subtitles into video"))
+    
+    # Only show PGS subtitle options if PGS subtitles exist
+    if eng_pgs_subs:
+        if has_foreign_audio:
+            options.append(("4", "burn_pgs_subs", "Burn English PGS subtitles into video"))
+        options.append(("5", "extract_pgs_ocr", "Extract PGS subtitles with OCR to SRT (future feature)"))
+    
+    # Always available as fallback
+    options.append(("6", "no_subs", "Skip all subtitle processing"))
     
     print("Available Options:")
     for key, action, description in options:
@@ -223,7 +234,7 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     # Get user choice
     while True:
         try:
-            choice = input(f"\nSelect option [1-6, default={default_action}]: ").strip()
+            choice = input(f"\nSelect option [1-{len(options)}, default={default_action}]: ").strip()
             if not choice:
                 choice = next(key for key, action, _ in options if action == default_action)
             
@@ -231,7 +242,7 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
                 selected_action = next(opt[1] for opt in options if opt[0] == choice)
                 break
             else:
-                print("Invalid choice. Please select 1-6.")
+                print(f"Invalid choice. Please select 1-{len(options)}.")
         except KeyboardInterrupt:
             print("\nOperation cancelled.")
             sys.exit(1)
