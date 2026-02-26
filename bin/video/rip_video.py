@@ -852,10 +852,10 @@ def main() -> int:
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
             print(
-                f"No MKV files found in {outdir} - skipping transcode.", file=sys.stderr)
-            return 0
-    else:
-        print(f"Found {len(mkvs)} existing MKV files, skipping disc rip...")
+                f"  ❌ No MKV files created after ripping - something went wrong")
+            return 1
+
+        print(f"  ✓ Found {len(mkvs)} MKV file(s) after ripping")
 
     # Filter for main feature only (largest file) unless forcing all tracks
     if not force_all_tracks and len(mkvs) > 1:
