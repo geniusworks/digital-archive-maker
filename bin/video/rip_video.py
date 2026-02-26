@@ -167,64 +167,54 @@ def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
     """Parse MakeMKV disc info to extract audio and subtitle stream info"""
     audio_streams = []
     subtitle_streams = []
+    streams = {}
     
     lines = info_output.split('\n')
     
     for line in lines:
-        # Parse SINFO lines for stream info
-        # Format: SINFO:title_id,track_id,?,type_id,"TypeName"
-        # Audio: SINFO:2,0,1,6202,"Audio"
-        # Subtitle: SINFO:2,5,1,6203,"Subtitles"
-        
         if not line.startswith('SINFO:'):
             continue
             
-        parts = line.split(',')
-        if len(parts) < 6:
+        parts = line.split(',', 4)
+        if len(parts) < 5:
             continue
             
-        # Extract title ID from SINFO line
         try:
             title_id = parts[0].split(':')[1]
+            stream_id = parts[1]
+            attr_id = parts[2]
+            value = parts[4].strip('"').strip()
         except:
             continue
             
-        track_id = parts[1]
-        type_id = parts[3]
-        
-        # Get language from corresponding TINFO line
-        # TINFO:title_id,28,0,"eng" is the language field
-        lang = 'und'
-        stream_index = parts[2]  # Stream index within the title
-        
-        # Look for language info in TINFO lines
-        lang_line = next((l for l in info_output.split('\n') 
-                         if f"TINFO:{title_id},28," in l and f",{stream_index}," in l), None)
-        if lang_line:
-            lang_parts = lang_line.split(',')
-            if len(lang_parts) >= 4:
-                lang = lang_parts[3].strip('"')
-        
-        # Get codec info
-        codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
-        
-        # Audio streams have type_id 6202
-        if type_id == '6202':
-            audio_streams.append({
-                'title': title_id,
-                'track': track_id,
-                'language': lang,
-                'codec': codec
-            })
-        
-        # Subtitle streams have type_id 6203
-        elif type_id == '6203':
-            subtitle_streams.append({
-                'title': title_id,
-                'track': track_id,
-                'language': lang,
-                'codec': codec
-            })
+        key = (title_id, stream_id)
+        if key not in streams:
+            streams[key] = {'title': title_id, 'track': stream_id, 'type': 'unknown', 'language': 'und', 'codec': 'unknown'}
+            
+        if attr_id == '1':
+            streams[key]['type'] = parts[3]
+        elif attr_id == '3':
+            # Language code is usually 3 chars
+            streams[key]['language'] = value[:3] if len(value) >= 3 else value
+        elif attr_id == '5':
+            # Standardize codec names
+            codec = value.lower()
+            if 'pgs' in codec:
+                streams[key]['codec'] = 'hdmv_pgs_subtitle'
+            elif 'ac3' in codec:
+                streams[key]['codec'] = 'ac3'
+            elif 'dts' in codec:
+                streams[key]['codec'] = 'dts'
+            elif 'subrip' in codec or 'srt' in codec:
+                streams[key]['codec'] = 'subrip'
+            else:
+                streams[key]['codec'] = codec
+    
+    for key, stream in sorted(streams.items(), key=lambda x: (int(x[0][0]), int(x[0][1]))):
+        if stream['type'] == '6202':
+            audio_streams.append(stream)
+        elif stream['type'] == '6203':
+            subtitle_streams.append(stream)
     
     return audio_streams, subtitle_streams
 
