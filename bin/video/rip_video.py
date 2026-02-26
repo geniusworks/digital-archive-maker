@@ -919,15 +919,17 @@ def main() -> int:
             f"{safe_title} ({safe_year})"
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        # Look for both MP4 and MKV files
-        video_files = list(outdir.glob("*.mp4")) + list(outdir.glob("*.mkv"))
-        if video_files:
-            largest = max(video_files, key=lambda p: p.stat().st_size)
+        # Look for the final compressed MP4 file (prefer _compressed if exists)
+        mp4_files = list(outdir.glob("*.mp4"))
+        if mp4_files:
+            # Prefer _compressed.mp4 files (these are the re-encoded ones)
+            compressed_files = [f for f in mp4_files if "_compressed" in f.name]
+            target_file = compressed_files[0] if compressed_files else max(mp4_files, key=lambda p: p.stat().st_size)
+            
             # Always use MP4 now
-            ext = ".mp4"
-            dest = target_dir / f"{safe_title} ({safe_year}){ext}"
+            dest = target_dir / f"{safe_title} ({safe_year}).mp4"
             if not dest.exists():
-                shutil.move(str(largest), str(dest))
+                shutil.move(str(target_file), str(dest))
 
             # Move subtitle files too
             srt_files = list(outdir.glob("*.en.srt"))
@@ -950,7 +952,7 @@ def main() -> int:
                         # Generate proper timestamps (fixes warning)
                         "-fflags", "+genpts",
                         "-movflags", "+faststart",  # Standard web optimization
-                        "-f", "mp4" if disc_type == "dvd" else "matroska",
+                        "-f", "mp4",  # Always use MP4 now
                         str(temp_path)
                     ]
                     _run(cmd, capture=False)
