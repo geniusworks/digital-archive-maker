@@ -38,15 +38,15 @@ Complete guide to all video processing scenarios and workflows in the digital li
 graph TD
     A[Start: make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
     B -->|Yes| C[Process existing MKV]
-    B -->|No| D[Rip from disc]
-    D --> E[Create MKV files]
-    E --> C
-    C --> F[Analyze streams]
-    F --> G{English audio + English soft subs?}
-    G -->|Yes| H[Auto-extract SRT - no prompt]
-    G -->|No| I[Interactive prompt]
-    H --> J[HandBrake Encode]
-    I --> J
+    B -->|No| D[Scan disc for main feature]
+    D --> E[Analyze streams from disc]
+    E --> F{English audio + English soft subs?}
+    F -->|Yes| G[Auto-extract SRT - no prompt]
+    F -->|No| H[Interactive prompt before rip]
+    G --> I[Rip main feature to MKV]
+    H --> I
+    I --> J[HandBrake Encode]
+    C --> J
     J --> K[MP4 File ~2-3GB]
     K --> L[Organize to Movies/]
     L --> M[Movies/Title (Year)/]
@@ -63,27 +63,29 @@ make rip-movie TITLE="The Goonies" YEAR=1985 TYPE=bluray
 ```
 No MKV files found, ripping from disc...
   ✓ Detected BLURAY disc
-  ✓ Found 1 MKV file(s) after ripping
+Scanning for main feature (longest track)...
+Found 4 titles with similar duration, checking sizes...
+Selected largest title: 1 (23.8 GB)
+Found main feature: Title 1 (1:53:55)
+Skipping 8 shorter tracks
 
 🎬 Detected: English movie with English audio and soft subtitles
   → Will automatically extract English soft subtitles to .srt file
 ==================================================
-→ Using MP4 container (Jellyfin compatible)
-Processing: The Goonies (1985).mkv (23.8GB)
-→ Encoding to MP4...
-✓ Encoding complete: The Goonies (1985).mp4
-✓ Extracted 1 subtitle file(s)
-✓ Streaming optimization applied
-Done: /Users/martin/Movies/Rips/Movies/The Goonies (1985)
+  → Running: makemkvcon mkv disc:0 1 /Users/martin/Movies/Rips/Blurays/The Goonies (1985)
 ```
 
 **Expected Output (Complex case - shows prompt):**
 ```
 No MKV files found, ripping from disc...
   ✓ Detected BLURAY disc
-  ✓ Found 1 MKV file(s) after ripping
+Scanning for main feature (longest track)...
+Found 4 titles with similar duration, checking sizes...
+Selected largest title: 1 (23.8 GB)
+Found main feature: Title 1 (1:53:55)
+Skipping 8 shorter tracks
 
-🎬 Analyzing main feature: The Goonies (1985).mkv
+🎬 Disc Analysis (Main Feature)
 ==================================================
 🎵 Audio Tracks: 3
    Track 0: ENG (dts)
@@ -98,11 +100,11 @@ No MKV files found, ripping from disc...
 ==================================================
 Available Options:
 👉 1) Standard MP4 (no subtitle processing)
-  4) Burn image subtitles into video (hard subtitles)
-  5) Convert image subtitles to text file with OCR (future feature)
-  6) Skip all subtitle processing
+   2) Burn image subtitles into video (hard subtitles)
+   3) Convert image subtitles to text file with OCR (future feature)
+   4) Skip all subtitle processing
 
-Select option [1-4, default=standard_mp4]:
+Select option [1-4, default=standard_mp4]: 
 ```
 
 **Final Organization:**
@@ -119,50 +121,55 @@ Select option [1-4, default=standard_mp4]:
 
 ```mermaid
 graph TD
-    A[Start: BURN_SUBTITLES=true make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
+    A[Start: make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
     B -->|Yes| C[Process existing MKV]
-    B -->|No| D[Rip from disc]
-    D --> E[Create MKV files]
-    E --> C
-    C --> F{Foreign audio detected?}
-    F -->|No| G[Standard MP4 encoding]
-    F -->|Yes| H{English subtitles available?}
-    H -->|Yes| I[HandBrake + Burn Subs]
-    H -->|No| J[Standard MP4 + warning]
-    I --> K[MP4 with burned subs]
-    J --> L[MP4 no burned subs]
-    G --> M[Extract SRT if available]
-    K --> M
-    L --> M
-    M --> N[Organize to Movies/]
-    N --> O[Movies/Title (Year)/]
-    O --> P[Title (Year).mp4]
-    O --> Q[Title (Year).en.srt if available]
+    B -->|No| D[Scan disc for main feature]
+    D --> E[Analyze streams from disc]
+    E --> F{English audio present?}
+    F -->|No| G[Suggest burn_pgs_subs / burn_subs]
+    F -->|Yes| H[Suggest standard_mp4]
+    G --> I[Interactive prompt before rip]
+    H --> I
+    I --> J[Rip main feature to MKV]
+    J --> K[HandBrake + Apply Subtitle Choice]
+    C --> K
+    K --> L[Organize to Movies/]
+    L --> M[Movies/Title (Year)/]
+    M --> N[Title (Year).mp4]
+    M --> O[Title (Year).en.srt if extracted]
 ```
 
 **Command:**
 ```bash
-BURN_SUBTITLES=true make rip-movie TITLE="Amélie" YEAR=2001 TYPE=bluray
+make rip-movie TITLE="Amélie" YEAR=2001 TYPE=bluray
 ```
 
-**Expected Output (with English subs):**
+**Expected Output (No English audio - suggests burn):**
 ```
-⚠️  BURNING English text subtitles (foreign language audio)
-→ Encoding to MP4...
-✓ Encoding complete: Amélie (2001).mp4
-✓ Extracted 1 subtitle file(s)
-✓ Streaming optimization applied
-Done: /Users/martin/Movies/Rips/Movies/Amélie (2001)
-```
+No MKV files found, ripping from disc...
+  ✓ Detected BLURAY disc
+Scanning for main feature (longest track)...
 
-**Expected Output (no English subs):**
-```
-⚠️  Foreign language audio detected but no English subtitles available
-⚠️  Cannot burn subtitles - will extract external subs if found
-→ Encoding to MP4...
-✓ Encoding complete: Foreign Film (2023).mp4
-✓ Streaming optimization applied
-Done: /Users/martin/Movies/Rips/Movies/Foreign Film (2023)
+🎬 Disc Analysis (Main Feature)
+==================================================
+🎵 Audio Tracks: 1
+   Track 0: FRE (ac3)
+
+📝 Subtitle Tracks: 1
+   Track 0: ENG (hdmv_pgs_subtitle)
+
+🎯 Recommended Action: burn_pgs_subs
+==================================================
+Available Options:
+   1) Standard MP4 (no subtitle processing)
+👉 2) Burn image subtitles into video (hard subtitles)
+   3) Convert image subtitles to text file with OCR (future feature)
+   4) Skip all subtitle processing
+
+Select option [1-4, default=burn_pgs_subs]: 2
+✓ Selected action: burn_pgs_subs
+==================================================
+  → Running: makemkvcon mkv disc:0 1 /Users/martin/Movies/Rips/Blurays/Amélie (2001)
 ```
 
 ### 3. Existing File Processing
