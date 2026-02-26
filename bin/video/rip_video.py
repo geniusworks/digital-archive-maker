@@ -293,7 +293,7 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     
     print("Available Options:\n")
     for key, action, description in options:
-        marker = "👉" if action == default_action else "   "
+        marker = " 👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
     # Get user choice
