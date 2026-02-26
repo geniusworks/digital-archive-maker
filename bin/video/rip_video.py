@@ -237,7 +237,7 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
                       and s.get('language', '').startswith('en')
                       for s in main_subs)
     
-    print(f"\n🎬 Disc Analysis (Main Feature)")
+    print(f"\n🎬 Disc Analysis (Main Feature)\n")
     print("=" * 50)
     
     # Audio analysis
@@ -260,9 +260,11 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
             default_action = "burn_subs"
         elif eng_pgs_subs:
             default_action = "burn_pgs_subs"
+    elif has_english_audio and eng_pgs_subs and not eng_text_subs:
+        # English audio + PGS subs (no soft subs) → extract PGS for future OCR
+        default_action = "extract_pgs_ocr"
     
-    print(f"\n🎯 Recommended Action: {default_action}")
-    print("=" * 50)
+    print("\n" + "=" * 50 + "\n")
     
     # Present options based on what's available
     available_actions = []
@@ -280,7 +282,7 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     if eng_pgs_subs:
         if has_foreign_audio:
             available_actions.append(("burn_pgs_subs", "Burn image subtitles into video (hard subtitles)"))
-        available_actions.append(("extract_pgs_ocr", "Convert image subtitles to text file with OCR (future feature)"))
+        available_actions.append(("extract_pgs_ocr", "Standard MP4 + Convert image subtitles"))
     
     # Always available as fallback
     available_actions.append(("no_subs", "Skip all subtitle processing"))
@@ -291,13 +293,13 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     
     print("Available Options:")
     for key, action, description in options:
-        marker = "👉" if action == default_action else "  "
+        marker = "👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
     # Get user choice
     while True:
         try:
-            choice = input(f"\nSelect option [1-{len(options)}, default={default_action}]: ").strip()
+            choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
             if not choice:
                 choice = next(key for key, action, _ in options if action == default_action)
             
@@ -365,50 +367,46 @@ def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list]:
         return [], []
 
 
-def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
-    """Extract English subtitles from MKV to SRT files for Jellyfin compatibility"""
+def extract_pgs_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
+    """Extract English PGS subtitles to .sup files for later OCR processing"""
+    extracted_files = []
+    
     try:
-        # Get audio streams
-        audio_res = _run([
-            "ffprobe", "-v", "error", "-select_streams", "a",
-            "-show_entries", "stream=index,codec_name:stream_tags=language",
-            "-of", "csv=p=0", str(mkv_path)
-        ], capture=True)
-        
-        audio_streams = []
-        for line in audio_res.stdout.strip().split('\n'):
-            if line.strip():
-                parts = line.split(',')
-                if len(parts) >= 3:
-                    audio_streams.append({
-                        'index': parts[0],
-                        'codec': parts[1],
-                        'language': parts[2] if parts[2] else 'und'
-                    })
-        
-        # Get subtitle streams
         sub_res = _run([
             "ffprobe", "-v", "error", "-select_streams", "s",
             "-show_entries", "stream=index,codec_name:stream_tags=language",
             "-of", "csv=p=0", str(mkv_path)
         ], capture=True)
         
-        subtitle_streams = []
+        pgs_streams = []
         for line in sub_res.stdout.strip().split('\n'):
             if line.strip():
                 parts = line.split(',')
-                if len(parts) >= 3:
-                    subtitle_streams.append({
+                if len(parts) >= 3 and 'pgs' in parts[1].lower():
+                    pgs_streams.append({
                         'index': parts[0],
                         'codec': parts[1],
                         'language': parts[2] if parts[2] else 'und'
                     })
         
-        return audio_streams, subtitle_streams
-        
-    except Exception as e:
-        print(f"  ⚠️  Error analyzing streams: {e}")
-        return [], []
+        for stream in pgs_streams:
+            if stream['language'].lower().startswith('en'):
+                sup_path = output_dir / f"{mkv_path.stem}.en.sup"
+                print(f"  → Extracting English PGS subtitles to {sup_path.name}")
+                
+                extract_cmd = [
+                    "ffmpeg", "-i", str(mkv_path),
+                    "-map", f"0:{stream['index']}",
+                    "-c", "copy", str(sup_path), "-y"
+                ]
+                _run(extract_cmd)
+                extracted_files.append(sup_path)
+                print(f"  ✓ PGS extracted: {sup_path.name}")
+                
+    except subprocess.CalledProcessError as e:
+        print(f"  ⚠️  Could not extract PGS subtitles: {e}")
+    
+    return extracted_files
 
 
 def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
@@ -822,7 +820,7 @@ def main() -> int:
                     else:
                         # Show interactive prompt
                         subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
-                        print(f"✓ Selected action: {subtitle_config['action']}")
+                        print(f"✓ Selected action: {subtitle_config['action']}\n")
                     
                     print("=" * 50)
 
@@ -1039,7 +1037,7 @@ def main() -> int:
             # Show interactive prompt for complex cases
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
             subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
-            print(f"✓ Selected action: {subtitle_config['action']}")
+            print(f"✓ Selected action: {subtitle_config['action']}\n")
         
         print("=" * 50)
 
@@ -1150,7 +1148,12 @@ def main() -> int:
                 # Extract text subtitles to SRT
                 print(f"  → Extracting English text subtitles to SRT (user choice)")
             elif action == "extract_pgs_ocr":
-                print(f"  ⚠️  PGS OCR extraction not yet implemented (future feature)")
+                # Extract PGS for later OCR
+                pgs_files = extract_pgs_subtitles(mkv, outdir)
+                if pgs_files:
+                    print(f"  ✓ Extracted {len(pgs_files)} PGS file(s) for future OCR")
+                else:
+                    print(f"  ⚠️  No PGS files extracted")
             elif action == "no_subs":
                 print(f"  → Skipping all subtitle processing (user choice)")
             else:
@@ -1224,7 +1227,7 @@ def main() -> int:
                     # Already handled in HandBrake options
                     print(f"  ✓ Subtitles burned into video")
                 elif action == "extract_pgs_ocr":
-                    print(f"  ⚠️  PGS OCR extraction not yet implemented")
+                    print(f"  ✓ PGS extraction completed (OCR not yet implemented)")
                 else:
                     print(f"  → No subtitle extraction (user choice)")
             else:
