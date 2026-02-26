@@ -59,9 +59,10 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 - **Automatic organization:** Proper folder structure
 
 ### ✅ Subtitle Management
-- **English films:** External SRT files (toggleable)
-- **Foreign films:** Burned-in subtitles + external SRT
-- **Automatic extraction:** No manual subtitle handling
+- **Interactive prompt:** Choose subtitle processing before ripping starts
+- **English films:** External SRT files (auto-extracted for soft subs)
+- **Foreign films:** Option to burn subtitles or extract externally
+- **PGS subtitles:** Option to burn or convert with OCR (future feature)
 - **Jellyfin ready:** Auto-detected subtitle files
 
 ---
@@ -71,9 +72,51 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 | Variable | Values | Effect |
 |----------|--------|--------|
 | `TYPE` | `dvd` | `bluray` | Disc type detection |
-| `BURN_SUBTITLES` | `true` | `false` (default) | Burn subs for foreign films |
 | `FORCE_ALL_TRACKS` | `true` | `false` (default) | Rip all titles vs main feature |
 | `STREAMING_OPTIMIZE` | `true` (default) | `false` | Apply web optimization |
+
+---
+
+## 🎬 Interactive Subtitle Processing
+
+When you run a rip, the script will analyze the disc and present you with subtitle options **before** ripping starts:
+
+### Auto-Skip (Simple Case)
+If the disc has English audio + English soft subtitles, the script automatically proceeds:
+```
+🎬 Detected: English movie with English audio and soft subtitles
+  → Will automatically extract English soft subtitles to .srt file
+```
+
+### Interactive Prompt (Complex Cases)
+For foreign audio, PGS subtitles, or other complex cases:
+```
+🎬 Disc Analysis (Main Feature)
+==================================================
+🎵 Audio Tracks: 3
+   Track 0: ENG (dts)
+   Track 1: ENG (ac3)
+   Track 2: FRE (ac3)
+
+📝 Subtitle Tracks: 2
+   Track 0: ENG (hdmv_pgs_subtitle)
+   Track 1: FRE (hdmv_pgs_subtitle)
+
+🎯 Recommended Action: standard_mp4
+==================================================
+Available Options:
+👉 1) Standard MP4 (no subtitle processing)
+  4) Burn image subtitles into video (hard subtitles)
+  5) Convert image subtitles to text file with OCR (future feature)
+  6) Skip all subtitle processing
+
+Select option [1-4, default=standard_mp4]:
+```
+
+### Options Explained
+- **Soft subtitles:** External .srt files that can be toggled on/off in players
+- **Hard subtitles:** Burned into video permanently, always visible
+- **PGS:** Image-based subtitles (common on Blu-rays)
 
 ---
 
