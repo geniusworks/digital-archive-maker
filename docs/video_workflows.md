@@ -99,12 +99,10 @@ Skipping 8 shorter tracks
 ==================================================
 
 Available Options:
-   1) Standard MP4 (no subtitle processing)
-   2) Burn image subtitles into video (hard subtitles)
-   3) Standard MP4 + Convert image subtitles
-   4) Skip all subtitle processing
+👉 1) MP4 + Convert image subtitles
+   2) MP4 (no subtitles)
 
-Select option [1-4, default=1]: 
+Select option [1-2, default=1]: 
 ```
 
 **Final Organization:**
@@ -161,12 +159,10 @@ Scanning for main feature (longest track)...
 ==================================================
 
 Available Options:
-   1) Standard MP4 (no subtitle processing)
-👉 2) Burn image subtitles into video (hard subtitles)
-   3) Standard MP4 + Convert image subtitles
-   4) Skip all subtitle processing
+   1) MP4 + Convert image subtitles
+👉 2) MP4 + Burn image subtitles
 
-Select option [1-4, default=2]: 2
+Select option [1-2, default=2]: 2
 ✓ Selected action: burn_pgs_subs
 ==================================================
   → Running: makemkvcon mkv disc:0 1 /Users/martin/Movies/Rips/Blurays/Amélie (2001)

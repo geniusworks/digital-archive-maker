@@ -105,12 +105,11 @@ For foreign audio, PGS subtitles, or other complex cases:
 ==================================================
 
 Available Options:
-   1) Standard MP4 (no subtitle processing)
-   2) Burn image subtitles into video (hard subtitles)
-   3) Standard MP4 + Convert image subtitles
-   4) Skip all subtitle processing
+👉 1) MP4 + Create .srt file
+   2) MP4 + Convert image subtitles
+   3) MP4 (no subtitles)
 
-Select option [1-4, default=1]:
+Select option [1-3, default=1]:
 ```
 
 ### Options Explained
