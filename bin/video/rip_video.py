@@ -1355,6 +1355,14 @@ def main() -> int:
                 if not srt_dest.exists():
                     shutil.move(str(srt_file), str(srt_dest))
                     print(f"  ✓ Moved subtitle: {srt_dest.name}")
+            
+            # Move PGS subtitle files too
+            sup_files = list(outdir.glob("*.en.sup"))
+            for sup_file in sup_files:
+                sup_dest = target_dir / f"{safe_title} ({safe_year}).en.sup"
+                if not sup_dest.exists():
+                    shutil.move(str(sup_file), str(sup_dest))
+                    print(f"  ✓ Moved PGS subtitle: {sup_dest.name}")
 
             # Apply streaming optimization to the final organized file
             if streaming_optimize:
