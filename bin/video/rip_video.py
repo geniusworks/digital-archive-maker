@@ -424,36 +424,28 @@ def main() -> int:
         stamp = datetime.now().strftime("%Y-%m-%d")
         outdir = library_root / disc_dir / stamp
 
-    # Check if MKV files already exist in either source or destination
+    # Check if MKV files already exist in source folder only
+    # MKV files should NEVER be in Movies folder - only in Blurays/DVDs folders
     source_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
 
-    # Also check destination folder for existing compressed files
-    dest_mkvs = []
+    # Check destination folder for existing MP4 files (not MKV!)
+    dest_mp4s = []
     if safe_title and safe_year:
         dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
         if dest_dir.exists():
-            dest_mkvs = sorted(dest_dir.glob("*.mkv"))
+            dest_mp4s = sorted(dest_dir.glob("*.mp4"))
 
-    mkvs = source_mkvs or dest_mkvs  # Use source files first, then check destination
+    mkvs = source_mkvs  # Only use source MKV files
 
-    # If we found destination files, we need to check if they're compressed
-    if dest_mkvs and not source_mkvs:
-        # We have destination files but no source files
-        # Check if the destination file is actually compressed
-        largest_dest = max(dest_mkvs, key=lambda p: p.stat().st_size)
+    # If we have destination MP4 files, check if we're already done
+    if dest_mp4s and not source_mkvs:
+        # We have final MP4 files but no source MKV files
+        largest_dest = max(dest_mp4s, key=lambda p: p.stat().st_size)
         dest_size_gb = largest_dest.stat().st_size / (1024**3)
         if dest_size_gb < 10:  # Already compressed
             print(
-                f"  ✓ Found compressed file in destination: {largest_dest.name} ({dest_size_gb:.1f}GB)")
-            print("  ✓ Skipping encoding - file already compressed")
-            return 0  # Exit early, no processing needed
-        else:
-            print(
-                f"  ⚠️  Found uncompressed file in destination ({dest_size_gb:.1f}GB) - re-encoding...")
-            # We need to encode this file, so move it to source for processing
-            source_file = outdir / largest_dest.name
-            shutil.move(str(largest_dest), str(source_file))
-            mkvs = [source_file]  # Process the moved file
+                f"  ✓ Already processed: {largest_dest.name} ({dest_size_gb:.1f}GB)")
+            return
 
     if not mkvs:
         # Only rip if no MKV files exist
