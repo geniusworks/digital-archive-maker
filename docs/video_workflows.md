@@ -264,14 +264,6 @@ graph TD
     └── Amélie (2001).en.srt             # External subs backup
 ```
 
-### ❌ Incorrect Pattern (Never Should Happen)
-```
-/Users/martin/Movies/Rips/
-└── Movies/Title (Year)/                 # Should NEVER contain MKV files
-    ├── Title (Year).mkv                  # ❌ WRONG - MKV in Movies folder
-    └── Title (Year).mp4                  # ❌ CONFUSING - Mixed file types
-```
-
 ### ✅ Error Pattern: No Disc
 ```
 /Users/martin/Movies/Rips/
@@ -295,11 +287,11 @@ graph TD
 - **Location:** `/Movies/Title (Year)/`
 - **Size:** Compressed MP4 (1-3GB) + small SRT files
 
-### 🚫 **Strict Rules:**
-- **NEVER** put MKV files in Movies folder
-- **NEVER** put MP4 files in Blurays/DVDs folders
-- **ALWAYS** keep original MKV in source folder
-- **ALWAYS** create final MP4 in destination folder
+### � **Folder Guidelines:**
+- **Source folders:** Store only MKV files from disc rips
+- **Destination folders:** Store only MP4 and SRT files for final media
+- **Keep original files:** Preserve MKV files in source folders
+- **Final output:** Create MP4 files in destination folders
 
 ### 🔄 **Workflow:**
 ```
