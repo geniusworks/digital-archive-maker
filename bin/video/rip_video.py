@@ -894,10 +894,12 @@ def main() -> int:
                         print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
                         print(f"  → Will automatically extract English soft subtitles to .srt file")
                         subtitle_config = {'action': 'extract_srt', 'eng_text_subs': True}
+                        pre_rip_choice = True
                     else:
                         # Show interactive prompt
                         subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
                         print(f"✓ Selected action: {subtitle_config['action']}\n")
+                        pre_rip_choice = True
                     
                     print("=" * 50)
 
@@ -1092,6 +1094,7 @@ def main() -> int:
     # Check if we can skip the prompt for simple English content
     # Skip prompt if: English movie + English audio + English SOFT subtitles
     skip_prompt = False
+    pre_rip_choice = False  # Track if we already got user's choice
     if not force_all_tracks and mkvs:
         main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
         
@@ -1104,7 +1107,11 @@ def main() -> int:
                            and s.get('language', '').startswith('en')
                            for s in subtitle_streams)
         
-        if all_english_audio and eng_soft_subs:
+        # If we already made a choice during disc ripping, use it
+        if 'subtitle_config' in locals():
+            pre_rip_choice = True
+            skip_prompt = True
+        elif all_english_audio and eng_soft_subs:
             # Simple case - skip prompt, just proceed with extraction
             skip_prompt = True
             print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
