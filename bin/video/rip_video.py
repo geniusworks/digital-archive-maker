@@ -878,18 +878,32 @@ def main() -> int:
     elif force_all_tracks:
         print(f"Processing all {len(mkvs)} tracks (forced)")
 
-    # Always show interactive prompt so user can choose subtitle processing
-    # (even if no special handling needed, user should know their options)
+    # Check if we can skip the prompt for simple English content
+    # Skip prompt if: English movie + English audio + English SOFT subtitles
+    skip_prompt = False
     if not force_all_tracks and mkvs:
         main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
-        print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
         
         # Analyze streams
         audio_streams, subtitle_streams = analyze_mkv_streams(main_mkv)
         
-        # Always show prompt - user should always have choice
-        subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
-        print(f"✓ Selected action: {subtitle_config['action']}")
+        # Check if all English (movie + audio + soft subs)
+        all_english_audio = all(s.get('language', '').startswith('en') for s in audio_streams)
+        eng_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                           and s.get('language', '').startswith('en')
+                           for s in subtitle_streams)
+        
+        if all_english_audio and eng_soft_subs:
+            # Simple case - skip prompt, just proceed with extraction
+            skip_prompt = True
+            print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
+            print(f"  → Will automatically extract English soft subtitles to .srt file")
+            subtitle_config = {'action': 'extract_srt', 'eng_text_subs': True}
+        elif not force_all_tracks and mkvs:
+            # Show interactive prompt for complex cases
+            print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
+            subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
+            print(f"✓ Selected action: {subtitle_config['action']}")
         
         print("=" * 50)
 
