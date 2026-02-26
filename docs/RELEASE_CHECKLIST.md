@@ -70,6 +70,8 @@ This document outlines the roadmap to transform this project from a collection o
 - [ ] **Consolidate the `video` Pipeline**
   - **Core Features to Keep:** `rip_video.py` / `bluray_to_mp4.zsh` (ripping), `tag-movie-metadata.py` (metadata), `tag-movie-ratings.py` (ratings), `vobsub_to_srt.py` / `backfill_subs.py` (subtitles).
   - **Transitory/Fixer Scripts to Deprecate or Move to `utils/`:** `repair_mp4.sh`, `optimize_mp4_streaming.py`, `embed_thumbnail.py`, `fix_music_videos_mapped.py`, `fix_music_videos_secondary.py`.
+  - **Optional Enhancements to Add:**
+    - **PGS to SRT OCR Conversion:** Add support for converting Blu-ray PGS (image-based) subtitles to SRT text files using Tesseract OCR. This would extract subtitles from discs like "Silent Running" that only have image-based subtitles, improving subtitle coverage across more Blu-ray releases.
 - [ ] **Consolidate the `tv` Pipeline**
   - **Core Features to Keep:** `tag-show-metadata.py`, `rename_shows_jellyfin.py`.
 - [ ] **Consolidate the `sync` Pipeline**
