@@ -253,39 +253,39 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
         codec = stream.get('codec', 'unknown')
         print(f"   Track {i}: {lang.upper()} ({codec})")
     
-    # Determine default action
+    # Determine default action (most useful option)
     default_action = "standard_mp4"
     if not has_english_audio and has_foreign_audio:
         if eng_text_subs:
             default_action = "burn_subs"
         elif eng_pgs_subs:
             default_action = "burn_pgs_subs"
+    elif has_english_audio and eng_text_subs:
+        # English audio + soft subs → extract SRT (preferred)
+        default_action = "extract_srt"
     elif has_english_audio and eng_pgs_subs and not eng_text_subs:
-        # English audio + PGS subs (no soft subs) → extract PGS for future OCR
+        # English audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
     
     print("\n" + "=" * 50 + "\n")
     
-    # Present options based on what's available
+    # Present options based on what's available (preferred first)
     available_actions = []
     
-    # Always available
-    available_actions.append(("standard_mp4", "Standard MP4 (no subtitle processing)"))
-    
-    # Only show text subtitle options if text subtitles exist
+    # Text subtitles (preferred - soft, toggleable)
     if eng_text_subs:
-        available_actions.append(("extract_srt", "Create soft subtitle file (.srt) for external use"))
+        available_actions.append(("extract_srt", "MP4 + Create .srt file"))
         if has_foreign_audio:
-            available_actions.append(("burn_subs", "Burn text subtitles into video (hard subtitles)"))
+            available_actions.append(("burn_subs", "MP4 + Burn text subtitles"))
     
-    # Only show PGS subtitle options if PGS subtitles exist
+    # PGS subtitles (image-based, good for OCR extraction)
     if eng_pgs_subs:
+        available_actions.append(("extract_pgs_ocr", "MP4 + Convert image subtitles"))
         if has_foreign_audio:
-            available_actions.append(("burn_pgs_subs", "Burn image subtitles into video (hard subtitles)"))
-        available_actions.append(("extract_pgs_ocr", "Standard MP4 + Convert image subtitles"))
+            available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
     
     # Always available as fallback
-    available_actions.append(("no_subs", "Skip all subtitle processing"))
+    available_actions.append(("standard_mp4", "MP4 (no subtitles)"))
     
     options = []
     for i, (action, description) in enumerate(available_actions, 1):
@@ -347,26 +347,23 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     
     print("\n" + "=" * 50 + "\n")
     
-    # Present options based on what's available
+    # Present options based on what's available (preferred first)
     available_actions = []
     
-    # Always available
-    available_actions.append(("standard_mp4", "Standard MP4 (no subtitle processing)"))
-    
-    # Only show text subtitle options if text subtitles exist
+    # Text subtitles (preferred - soft, toggleable)
     if eng_text_subs:
-        available_actions.append(("extract_srt", "Create soft subtitle file (.srt) for external use"))
+        available_actions.append(("extract_srt", "MP4 + Create .srt file"))
         if has_foreign_audio:
-            available_actions.append(("burn_subs", "Burn text subtitles into video (hard subtitles)"))
+            available_actions.append(("burn_subs", "MP4 + Burn text subtitles"))
     
-    # Only show PGS subtitle options if PGS subtitles exist
+    # PGS subtitles (image-based, good for OCR extraction)
     if eng_pgs_subs:
+        available_actions.append(("extract_pgs_ocr", "MP4 + Convert image subtitles"))
         if has_foreign_audio:
-            available_actions.append(("burn_pgs_subs", "Burn image subtitles into video (hard subtitles)"))
-        available_actions.append(("extract_pgs_ocr", "Standard MP4 + Convert image subtitles"))
+            available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
     
     # Always available as fallback
-    available_actions.append(("no_subs", "Skip all subtitle processing"))
+    available_actions.append(("standard_mp4", "MP4 (no subtitles)"))
     
     options = []
     for i, (action, description) in enumerate(available_actions, 1):
