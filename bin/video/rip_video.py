@@ -169,45 +169,62 @@ def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
     subtitle_streams = []
     
     lines = info_output.split('\n')
-    current_title = None
     
     for line in lines:
-        # Track the current title being processed
-        if line.startswith('TINFO:') and ',2,0,' in line:
-            # This is the title name field - extract title ID
-            parts = line.split(',')
-            if len(parts) >= 2:
-                current_title = parts[0].split(':')[1]
+        # Parse SINFO lines for stream info
+        # Format: SINFO:title_id,track_id,?,type_id,"TypeName"
+        # Audio: SINFO:2,0,1,6202,"Audio"
+        # Subtitle: SINFO:2,5,1,6203,"Subtitles"
         
-        # Audio streams: SINFO:title,track,1,6202,"Audio"
-        if line.startswith('SINFO:') and ',6202,"Audio"' in line:
-            parts = line.split(',')
-            if len(parts) >= 30 and current_title:
-                title_id = parts[0].split(':')[1]
-                track_id = parts[1]
-                lang = parts[28].strip('"') if len(parts) > 28 else 'und'
-                codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
-                audio_streams.append({
-                    'title': title_id,
-                    'track': track_id,
-                    'language': lang,
-                    'codec': codec
-                })
+        if not line.startswith('SINFO:'):
+            continue
+            
+        parts = line.split(',')
+        if len(parts) < 6:
+            continue
+            
+        # Extract title ID from SINFO line
+        try:
+            title_id = parts[0].split(':')[1]
+        except:
+            continue
+            
+        track_id = parts[1]
+        type_id = parts[3]
         
-        # Subtitle streams: SINFO:title,track,1,6203,"Subtitles"
-        if line.startswith('SINFO:') and ',6203,"Subtitles"' in line:
-            parts = line.split(',')
-            if len(parts) >= 30 and current_title:
-                title_id = parts[0].split(':')[1]
-                track_id = parts[1]
-                lang = parts[28].strip('"') if len(parts) > 28 else 'und'
-                codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
-                subtitle_streams.append({
-                    'title': title_id,
-                    'track': track_id,
-                    'language': lang,
-                    'codec': codec
-                })
+        # Get language from corresponding TINFO line
+        # TINFO:title_id,28,0,"eng" is the language field
+        lang = 'und'
+        stream_index = parts[2]  # Stream index within the title
+        
+        # Look for language info in TINFO lines
+        lang_line = next((l for l in info_output.split('\n') 
+                         if f"TINFO:{title_id},28," in l and f",{stream_index}," in l), None)
+        if lang_line:
+            lang_parts = lang_line.split(',')
+            if len(lang_parts) >= 4:
+                lang = lang_parts[3].strip('"')
+        
+        # Get codec info
+        codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
+        
+        # Audio streams have type_id 6202
+        if type_id == '6202':
+            audio_streams.append({
+                'title': title_id,
+                'track': track_id,
+                'language': lang,
+                'codec': codec
+            })
+        
+        # Subtitle streams have type_id 6203
+        elif type_id == '6203':
+            subtitle_streams.append({
+                'title': title_id,
+                'track': track_id,
+                'language': lang,
+                'codec': codec
+            })
     
     return audio_streams, subtitle_streams
 
