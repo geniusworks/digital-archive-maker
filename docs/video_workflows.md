@@ -41,16 +41,17 @@ graph TD
     B -->|No| D[Rip from disc]
     D --> E[Create MKV files]
     E --> C
-    C --> F[HandBrake Encode]
-    F --> G[MP4 File ~2-3GB]
-    G --> H{English subtitles available?}
-    H -->|Yes| I[Extract SRT Subtitles]
-    H -->|No| J[No subtitle extraction]
-    I --> K[Organize to Movies/]
-    J --> K
-    K --> L[Movies/Title (Year)/]
-    L --> M[Title (Year).mp4]
-    L --> N[Title (Year).en.srt if available]
+    C --> F[Analyze streams]
+    F --> G{English audio + English soft subs?}
+    G -->|Yes| H[Auto-extract SRT - no prompt]
+    G -->|No| I[Interactive prompt]
+    H --> J[HandBrake Encode]
+    I --> J
+    J --> K[MP4 File ~2-3GB]
+    K --> L[Organize to Movies/]
+    L --> M[Movies/Title (Year)/]
+    M --> N[Title (Year).mp4]
+    M --> O[Title (Year).en.srt if available]
 ```
 
 **Command:**
@@ -58,16 +59,50 @@ graph TD
 make rip-movie TITLE="The Goonies" YEAR=1985 TYPE=bluray
 ```
 
-**Expected Output:**
+**Expected Output (Simple case - auto-skip prompt):**
 ```
-Found 1 existing MKV files, skipping disc rip...
+No MKV files found, ripping from disc...
+  ✓ Detected BLURAY disc
+  ✓ Found 1 MKV file(s) after ripping
+
+🎬 Detected: English movie with English audio and soft subtitles
+  → Will automatically extract English soft subtitles to .srt file
+==================================================
 → Using MP4 container (Jellyfin compatible)
-Processing: The Goonies (1985).mkv (18.4GB)
+Processing: The Goonies (1985).mkv (23.8GB)
 → Encoding to MP4...
 ✓ Encoding complete: The Goonies (1985).mp4
 ✓ Extracted 1 subtitle file(s)
 ✓ Streaming optimization applied
 Done: /Users/martin/Movies/Rips/Movies/The Goonies (1985)
+```
+
+**Expected Output (Complex case - shows prompt):**
+```
+No MKV files found, ripping from disc...
+  ✓ Detected BLURAY disc
+  ✓ Found 1 MKV file(s) after ripping
+
+🎬 Analyzing main feature: The Goonies (1985).mkv
+==================================================
+🎵 Audio Tracks: 3
+   Track 0: ENG (dts)
+   Track 1: ENG (ac3)
+   Track 2: FRE (ac3)
+
+📝 Subtitle Tracks: 2
+   Track 0: ENG (hdmv_pgs_subtitle)
+   Track 1: FRE (hdmv_pgs_subtitle)
+
+🎯 Recommended Action: standard_mp4
+==================================================
+Available Options:
+👉 1) Standard MP4 (no subtitle processing)
+  4) Burn image subtitles into video (hard subtitles)
+  5) Convert image subtitles to text file with OCR (future feature)
+  6) Skip all subtitle processing
+
+Select option [1-4, default=standard_mp4]:
 ```
 
 **Final Organization:**

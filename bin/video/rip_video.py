@@ -163,39 +163,89 @@ def detect_disc_type() -> str:
     return "auto"  # No disc detected
 
 
-def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
-    """Interactive prompt for subtitle processing options"""
+def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
+    """Parse MakeMKV disc info to extract audio and subtitle stream info"""
+    audio_streams = []
+    subtitle_streams = []
+    
+    lines = info_output.split('\n')
+    current_title = None
+    
+    for line in lines:
+        # Track the current title being processed
+        if line.startswith('TINFO:') and ',2,0,' in line:
+            # This is the title name field - extract title ID
+            parts = line.split(',')
+            if len(parts) >= 2:
+                current_title = parts[0].split(':')[1]
+        
+        # Audio streams: SINFO:title,track,1,6202,"Audio"
+        if line.startswith('SINFO:') and ',6202,"Audio"' in line:
+            parts = line.split(',')
+            if len(parts) >= 30 and current_title:
+                title_id = parts[0].split(':')[1]
+                track_id = parts[1]
+                lang = parts[28].strip('"') if len(parts) > 28 else 'und'
+                codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
+                audio_streams.append({
+                    'title': title_id,
+                    'track': track_id,
+                    'language': lang,
+                    'codec': codec
+                })
+        
+        # Subtitle streams: SINFO:title,track,1,6203,"Subtitles"
+        if line.startswith('SINFO:') and ',6203,"Subtitles"' in line:
+            parts = line.split(',')
+            if len(parts) >= 30 and current_title:
+                title_id = parts[0].split(':')[1]
+                track_id = parts[1]
+                lang = parts[28].strip('"') if len(parts) > 28 else 'und'
+                codec = parts[5].strip('"') if len(parts) > 5 else 'unknown'
+                subtitle_streams.append({
+                    'title': title_id,
+                    'track': track_id,
+                    'language': lang,
+                    'codec': codec
+                })
+    
+    return audio_streams, subtitle_streams
+
+
+def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams: list, main_title_id: str) -> dict:
+    """Interactive prompt for subtitle processing using disc info (before rip)"""
     import sys
     
-    # Analyze audio and subtitle situation
-    has_foreign_audio = any(not stream.get('language', '').startswith('en') 
-                           for stream in audio_streams)
+    # Filter streams for the main title
+    main_audio = [s for s in audio_streams if s.get('title') == main_title_id]
+    main_subs = [s for s in subtitle_streams if s.get('title') == main_title_id]
     
-    eng_text_subs = any(stream.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                        and stream.get('language', '').startswith('en')
-                        for stream in subtitle_streams)
+    # Analyze content
+    has_foreign_audio = any(not s.get('language', '').startswith('en') for s in main_audio)
+    eng_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                       and s.get('language', '').startswith('en')
+                       for s in main_subs)
+    eng_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
+                      and s.get('language', '').startswith('en')
+                      for s in main_subs)
     
-    eng_pgs_subs = any(stream.get('codec') == 'hdmv_pgs_subtitle'
-                      and stream.get('language', '').startswith('en')
-                      for stream in subtitle_streams)
-    
-    print(f"\n🎬 Disc Analysis: {mkv_path.name}")
+    print(f"\n🎬 Disc Analysis (Main Feature)")
     print("=" * 50)
     
     # Audio analysis
-    print(f"🎵 Audio Tracks: {len(audio_streams)}")
-    for i, stream in enumerate(audio_streams):
+    print(f"🎵 Audio Tracks: {len(main_audio)}")
+    for i, stream in enumerate(main_audio):
         lang = stream.get('language', 'und')
         codec = stream.get('codec', 'unknown')
         print(f"   Track {i}: {lang.upper()} ({codec})")
     
-    print(f"\n📝 Subtitle Tracks: {len(subtitle_streams)}")
-    for i, stream in enumerate(subtitle_streams):
+    print(f"\n📝 Subtitle Tracks: {len(main_subs)}")
+    for i, stream in enumerate(main_subs):
         lang = stream.get('language', 'und')
         codec = stream.get('codec', 'unknown')
         print(f"   Track {i}: {lang.upper()} ({codec})")
     
-    # Determine default behavior
+    # Determine default action
     default_action = "standard_mp4"
     if has_foreign_audio and eng_text_subs:
         default_action = "burn_subs"
@@ -205,7 +255,7 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     print(f"\n🎯 Recommended Action: {default_action}")
     print("=" * 50)
     
-    # Present options based on what's actually available
+    # Present options based on what's available
     options = []
     
     # Always available
@@ -252,12 +302,58 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
         'has_foreign_audio': has_foreign_audio,
         'eng_text_subs': eng_text_subs,
         'eng_pgs_subs': eng_pgs_subs,
-        'subtitle_streams': subtitle_streams
+        'subtitle_streams': main_subs
     }
 
 
 def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list]:
     """Analyze MKV file and return audio and subtitle stream information"""
+    try:
+        # Get audio streams
+        audio_res = _run([
+            "ffprobe", "-v", "error", "-select_streams", "a",
+            "-show_entries", "stream=index,codec_name:stream_tags=language",
+            "-of", "csv=p=0", str(mkv_path)
+        ], capture=True)
+        
+        audio_streams = []
+        for line in audio_res.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split(',')
+                if len(parts) >= 3:
+                    audio_streams.append({
+                        'index': parts[0],
+                        'codec': parts[1],
+                        'language': parts[2] if parts[2] else 'und'
+                    })
+        
+        # Get subtitle streams
+        sub_res = _run([
+            "ffprobe", "-v", "error", "-select_streams", "s",
+            "-show_entries", "stream=index,codec_name:stream_tags=language",
+            "-of", "csv=p=0", str(mkv_path)
+        ], capture=True)
+        
+        subtitle_streams = []
+        for line in sub_res.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split(',')
+                if len(parts) >= 3:
+                    subtitle_streams.append({
+                        'index': parts[0],
+                        'codec': parts[1],
+                        'language': parts[2] if parts[2] else 'und'
+                    })
+        
+        return audio_streams, subtitle_streams
+        
+    except Exception as e:
+        print(f"  ⚠️  Error analyzing streams: {e}")
+        return [], []
+
+
+def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
+    """Extract English subtitles from MKV to SRT files for Jellyfin compatibility"""
     try:
         # Get audio streams
         audio_res = _run([
@@ -689,6 +785,33 @@ def main() -> int:
                     print(
                         f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
+
+                    # Show interactive prompt BEFORE ripping starts
+                    # First, get full disc info to analyze streams
+                    info_res = _run(["makemkvcon", "-r", "--cache=1",
+                                    "info", "disc:0"], capture=True)
+                    audio_streams, subtitle_streams = parse_disc_stream_info(info_res.stdout)
+                    
+                    # Check if we can skip the prompt for simple English content
+                    main_audio = [s for s in audio_streams if s.get('title') == str(main_title_id)]
+                    main_subs = [s for s in subtitle_streams if s.get('title') == str(main_title_id)]
+                    
+                    all_english_audio = all(s.get('language', '').startswith('en') for s in main_audio)
+                    eng_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                                       and s.get('language', '').startswith('en')
+                                       for s in main_subs)
+                    
+                    if all_english_audio and eng_soft_subs:
+                        # Simple case - skip prompt, just proceed with extraction
+                        print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
+                        print(f"  → Will automatically extract English soft subtitles to .srt file")
+                        subtitle_config = {'action': 'extract_srt', 'eng_text_subs': True}
+                    else:
+                        # Show interactive prompt
+                        subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
+                        print(f"✓ Selected action: {subtitle_config['action']}")
+                    
+                    print("=" * 50)
 
                     # Rip only the main feature
                     try:
