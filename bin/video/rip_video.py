@@ -898,7 +898,6 @@ def main() -> int:
                     else:
                         # Show interactive prompt
                         subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
-                        print(f"✓ Selected action: {subtitle_config['action']}\n")
                         pre_rip_choice = True
                     
                     print("=" * 50)
@@ -1121,7 +1120,6 @@ def main() -> int:
             # Show interactive prompt for complex cases
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
             subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
-            print(f"✓ Selected action: {subtitle_config['action']}\n")
         
         print("=" * 50)
 
