@@ -878,7 +878,8 @@ def main() -> int:
     elif force_all_tracks:
         print(f"Processing all {len(mkvs)} tracks (forced)")
 
-    # Interactive subtitle processing prompt for main feature
+    # Always show interactive prompt so user can choose subtitle processing
+    # (even if no special handling needed, user should know their options)
     if not force_all_tracks and mkvs:
         main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
         print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
@@ -886,12 +887,9 @@ def main() -> int:
         # Analyze streams
         audio_streams, subtitle_streams = analyze_mkv_streams(main_mkv)
         
-        if subtitle_streams or any(not s.get('language', '').startswith('en') for s in audio_streams):
-            # Get user preference for subtitle processing
-            subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
-            print(f"✓ Selected action: {subtitle_config['action']}")
-        else:
-            subtitle_config = {'action': 'standard_mp4'}
+        # Always show prompt - user should always have choice
+        subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
+        print(f"✓ Selected action: {subtitle_config['action']}")
         
         print("=" * 50)
 
