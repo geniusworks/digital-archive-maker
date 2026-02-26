@@ -96,15 +96,15 @@ Skipping 8 shorter tracks
    Track 0: ENG (hdmv_pgs_subtitle)
    Track 1: FRE (hdmv_pgs_subtitle)
 
-🎯 Recommended Action: standard_mp4
 ==================================================
+
 Available Options:
-👉 1) Standard MP4 (no subtitle processing)
+   1) Standard MP4 (no subtitle processing)
    2) Burn image subtitles into video (hard subtitles)
-   3) Convert image subtitles to text file with OCR (future feature)
+   3) Standard MP4 + Convert image subtitles
    4) Skip all subtitle processing
 
-Select option [1-4, default=standard_mp4]: 
+Select option [1-4, default=1]: 
 ```
 
 **Final Organization:**
@@ -158,15 +158,15 @@ Scanning for main feature (longest track)...
 📝 Subtitle Tracks: 1
    Track 0: ENG (hdmv_pgs_subtitle)
 
-🎯 Recommended Action: burn_pgs_subs
 ==================================================
+
 Available Options:
    1) Standard MP4 (no subtitle processing)
 👉 2) Burn image subtitles into video (hard subtitles)
-   3) Convert image subtitles to text file with OCR (future feature)
+   3) Standard MP4 + Convert image subtitles
    4) Skip all subtitle processing
 
-Select option [1-4, default=burn_pgs_subs]: 2
+Select option [1-4, default=2]: 2
 ✓ Selected action: burn_pgs_subs
 ==================================================
   → Running: makemkvcon mkv disc:0 1 /Users/martin/Movies/Rips/Blurays/Amélie (2001)

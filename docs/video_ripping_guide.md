@@ -62,7 +62,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 - **Interactive prompt:** Choose subtitle processing before ripping starts
 - **English films:** External SRT files (auto-extracted for soft subs)
 - **Foreign films:** Option to burn subtitles or extract externally
-- **PGS subtitles:** Option to burn or convert with OCR (future feature)
+- **PGS subtitles:** Option to burn or extract for OCR
 - **Jellyfin ready:** Auto-detected subtitle files
 
 ---
@@ -102,15 +102,15 @@ For foreign audio, PGS subtitles, or other complex cases:
    Track 0: ENG (hdmv_pgs_subtitle)
    Track 1: FRE (hdmv_pgs_subtitle)
 
-🎯 Recommended Action: standard_mp4
 ==================================================
+
 Available Options:
-👉 1) Standard MP4 (no subtitle processing)
+   1) Standard MP4 (no subtitle processing)
    2) Burn image subtitles into video (hard subtitles)
-   3) Convert image subtitles to text file with OCR (future feature)
+   3) Standard MP4 + Convert image subtitles
    4) Skip all subtitle processing
 
-Select option [1-4, default=standard_mp4]:
+Select option [1-4, default=1]:
 ```
 
 ### Options Explained
