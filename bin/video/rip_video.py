@@ -163,6 +163,134 @@ def detect_disc_type() -> str:
     return "auto"  # No disc detected
 
 
+def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
+    """Interactive prompt for subtitle processing options"""
+    import sys
+    
+    # Analyze audio and subtitle situation
+    has_foreign_audio = any(not stream.get('language', '').startswith('en') 
+                           for stream in audio_streams)
+    
+    eng_text_subs = any(stream.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                        and stream.get('language', '').startswith('en')
+                        for stream in subtitle_streams)
+    
+    eng_pgs_subs = any(stream.get('codec') == 'hdmv_pgs_subtitle'
+                      and stream.get('language', '').startswith('en')
+                      for stream in subtitle_streams)
+    
+    print(f"\n🎬 Disc Analysis: {mkv_path.name}")
+    print("=" * 50)
+    
+    # Audio analysis
+    print(f"🎵 Audio Tracks: {len(audio_streams)}")
+    for i, stream in enumerate(audio_streams):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        print(f"   Track {i}: {lang.upper()} ({codec})")
+    
+    print(f"\n📝 Subtitle Tracks: {len(subtitle_streams)}")
+    for i, stream in enumerate(subtitle_streams):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        print(f"   Track {i}: {lang.upper()} ({codec})")
+    
+    # Determine default behavior
+    default_action = "standard_mp4"
+    if has_foreign_audio and eng_text_subs:
+        default_action = "burn_subs"
+    elif has_foreign_audio and eng_pgs_subs:
+        default_action = "burn_pgs_subs"
+    
+    print(f"\n🎯 Recommended Action: {default_action}")
+    print("=" * 50)
+    
+    # Present options
+    options = [
+        ("1", "standard_mp4", "Standard MP4 (no subtitle processing)"),
+        ("2", "extract_srt", "Extract English text subtitles to SRT"),
+        ("3", "burn_subs", "Burn English text subtitles into video"),
+        ("4", "burn_pgs_subs", "Burn English PGS subtitles into video"),
+        ("5", "extract_pgs_ocr", "Extract PGS subtitles with OCR to SRT (future feature)"),
+        ("6", "no_subs", "Skip all subtitle processing")
+    ]
+    
+    print("Available Options:")
+    for key, action, description in options:
+        marker = "👉" if action == default_action else "  "
+        print(f"{marker} {key}) {description}")
+    
+    # Get user choice
+    while True:
+        try:
+            choice = input(f"\nSelect option [1-6, default={default_action}]: ").strip()
+            if not choice:
+                choice = next(key for key, action, _ in options if action == default_action)
+            
+            if choice in [opt[0] for opt in options]:
+                selected_action = next(opt[1] for opt in options if opt[0] == choice)
+                break
+            else:
+                print("Invalid choice. Please select 1-6.")
+        except KeyboardInterrupt:
+            print("\nOperation cancelled.")
+            sys.exit(1)
+    
+    return {
+        'action': selected_action,
+        'has_foreign_audio': has_foreign_audio,
+        'eng_text_subs': eng_text_subs,
+        'eng_pgs_subs': eng_pgs_subs,
+        'subtitle_streams': subtitle_streams
+    }
+
+
+def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list]:
+    """Analyze MKV file and return audio and subtitle stream information"""
+    try:
+        # Get audio streams
+        audio_res = _run([
+            "ffprobe", "-v", "error", "-select_streams", "a",
+            "-show_entries", "stream=index,codec_name:stream_tags=language",
+            "-of", "csv=p=0", str(mkv_path)
+        ], capture=True)
+        
+        audio_streams = []
+        for line in audio_res.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split(',')
+                if len(parts) >= 3:
+                    audio_streams.append({
+                        'index': parts[0],
+                        'codec': parts[1],
+                        'language': parts[2] if parts[2] else 'und'
+                    })
+        
+        # Get subtitle streams
+        sub_res = _run([
+            "ffprobe", "-v", "error", "-select_streams", "s",
+            "-show_entries", "stream=index,codec_name:stream_tags=language",
+            "-of", "csv=p=0", str(mkv_path)
+        ], capture=True)
+        
+        subtitle_streams = []
+        for line in sub_res.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split(',')
+                if len(parts) >= 3:
+                    subtitle_streams.append({
+                        'index': parts[0],
+                        'codec': parts[1],
+                        'language': parts[2] if parts[2] else 'und'
+                    })
+        
+        return audio_streams, subtitle_streams
+        
+    except Exception as e:
+        print(f"  ⚠️  Error analyzing streams: {e}")
+        return [], []
+
+
 def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
     """Extract English subtitles from MKV to SRT files for Jellyfin compatibility"""
     srt_files = []
@@ -739,6 +867,23 @@ def main() -> int:
     elif force_all_tracks:
         print(f"Processing all {len(mkvs)} tracks (forced)")
 
+    # Interactive subtitle processing prompt for main feature
+    if not force_all_tracks and mkvs:
+        main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
+        print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
+        
+        # Analyze streams
+        audio_streams, subtitle_streams = analyze_mkv_streams(main_mkv)
+        
+        if subtitle_streams or any(not s.get('language', '').startswith('en') for s in audio_streams):
+            # Get user preference for subtitle processing
+            subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
+            print(f"✓ Selected action: {subtitle_config['action']}")
+        else:
+            subtitle_config = {'action': 'standard_mp4'}
+        
+        print("=" * 50)
+
     for mkv in mkvs:
         # Check if file still exists (might have been deleted/moved)
         if not mkv.exists():
@@ -827,24 +972,46 @@ def main() -> int:
                 mark_default_sub = True
 
         # For MP4 + external SRT, we don't embed subtitles by default
-        # But allow burning if explicitly requested for foreign films
-        hb_sub_opts = []
-        
-        # Check if we need to burn subtitles (foreign language films)
-        burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
-        
-        if burn_subs and needs_lang_action and has_en_subs:
-            # Foreign audio + English subtitles available + burning requested
-            if eng_text_idx >= 0:
-                hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
-                print(f"  ⚠️  BURNING English text subtitles (foreign language audio)")
-            elif eng_image_idx >= 0:
-                hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
-                print(f"  ⚠️  BURNING English image subtitles (foreign language audio)")
-        elif burn_subs and needs_lang_action and not has_en_subs:
-            # Foreign audio but no English subtitles - can't burn!
-            print("  ⚠️  Foreign language audio detected but no English subtitles available")
-            print("  ⚠️  Cannot burn subtitles - will extract external subs if found")
+        # Use interactive subtitle configuration or default behavior
+        if 'subtitle_config' in locals() and subtitle_config:
+            # User made interactive choice
+            action = subtitle_config['action']
+            
+            if action == "burn_subs" and subtitle_config['eng_text_subs']:
+                # Burn English text subtitles
+                if eng_text_idx >= 0:
+                    hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
+                    print(f"  ⚠️  BURNING English text subtitles (user choice)")
+            elif action == "burn_pgs_subs" and subtitle_config['eng_pgs_subs']:
+                # Burn English PGS subtitles
+                if eng_image_idx >= 0:
+                    hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+                    print(f"  ⚠️  BURNING English PGS subtitles (user choice)")
+            elif action == "extract_srt" and subtitle_config['eng_text_subs']:
+                # Extract text subtitles to SRT
+                print(f"  → Extracting English text subtitles to SRT (user choice)")
+            elif action == "extract_pgs_ocr":
+                print(f"  ⚠️  PGS OCR extraction not yet implemented (future feature)")
+            elif action == "no_subs":
+                print(f"  → Skipping all subtitle processing (user choice)")
+            else:
+                print(f"  → Standard MP4 processing (user choice)")
+        else:
+            # Default automatic behavior (existing logic)
+            burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in ("true", "1", "yes")
+            
+            if burn_subs and needs_lang_action and has_en_subs:
+                # Foreign audio + English subtitles available + burning requested
+                if eng_text_idx >= 0:
+                    hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
+                    print(f"  ⚠️  BURNING English text subtitles (foreign language audio)")
+                elif eng_image_idx >= 0:
+                    hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
+                    print(f"  ⚠️  BURNING English image subtitles (foreign language audio)")
+            elif burn_subs and needs_lang_action and not has_en_subs:
+                # Foreign audio but no English subtitles - can't burn!
+                print("  ⚠️  Foreign language audio detected but no English subtitles available")
+                print("  ⚠️  Cannot burn subtitles - will extract external subs if found")
 
         hb_cmd = [
             "HandBrakeCLI",
@@ -883,15 +1050,34 @@ def main() -> int:
             _run(hb_cmd)
             print(f"  ✓ Encoding complete: {mp4_path.name}")
 
-            # Extract subtitles to SRT files for Jellyfin compatibility
-            if has_en_subs:
-                srt_files = extract_subtitles_to_srt(mkv, outdir)
-                if srt_files:
-                    print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
+            # Extract subtitles based on user choice
+            if 'subtitle_config' in locals() and subtitle_config:
+                action = subtitle_config['action']
+                
+                if action == "extract_srt" and subtitle_config['eng_text_subs']:
+                    # Extract text subtitles to SRT
+                    srt_files = extract_subtitles_to_srt(mkv, outdir)
+                    if srt_files:
+                        print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
+                    else:
+                        print("  ⚠️  No text subtitles extracted")
+                elif action in ["burn_subs", "burn_pgs_subs"]:
+                    # Already handled in HandBrake options
+                    print(f"  ✓ Subtitles burned into video")
+                elif action == "extract_pgs_ocr":
+                    print(f"  ⚠️  PGS OCR extraction not yet implemented")
                 else:
-                    print("  ⚠️  No subtitles extracted")
+                    print(f"  → No subtitle extraction (user choice)")
             else:
-                print("  ⚠️  No English subtitles found in source")
+                # Default behavior - extract if English subtitles exist
+                if has_en_subs:
+                    srt_files = extract_subtitles_to_srt(mkv, outdir)
+                    if srt_files:
+                        print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
+                    else:
+                        print("  ⚠️  No subtitles extracted")
+                else:
+                    print("  ⚠️  No English subtitles found in source")
 
         except subprocess.CalledProcessError as e:
             print(f"  ✗ Encoding failed for {mkv.name}: {e}")
