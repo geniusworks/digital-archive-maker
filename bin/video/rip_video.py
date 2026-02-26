@@ -213,15 +213,15 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     
     # Only show text subtitle options if text subtitles exist
     if eng_text_subs:
-        options.append(("2", "extract_srt", "Extract English text subtitles to SRT"))
+        options.append(("2", "extract_srt", "Create soft subtitle file (.srt) for external use"))
         if has_foreign_audio:
-            options.append(("3", "burn_subs", "Burn English text subtitles into video"))
+            options.append(("3", "burn_subs", "Burn text subtitles into video (hard subtitles)"))
     
     # Only show PGS subtitle options if PGS subtitles exist
     if eng_pgs_subs:
         if has_foreign_audio:
-            options.append(("4", "burn_pgs_subs", "Burn English PGS subtitles into video"))
-        options.append(("5", "extract_pgs_ocr", "Extract PGS subtitles with OCR to SRT (future feature)"))
+            options.append(("4", "burn_pgs_subs", "Burn image subtitles into video (hard subtitles)"))
+        options.append(("5", "extract_pgs_ocr", "Convert image subtitles to text file with OCR (future feature)"))
     
     # Always available as fallback
     options.append(("6", "no_subs", "Skip all subtitle processing"))
