@@ -321,6 +321,86 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     }
 
 
+def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
+    """Interactive prompt for subtitle processing using MKV file info"""
+    import sys
+    
+    # Analyze content
+    has_english_audio = any(s.get('language', '').startswith('en') for s in audio_streams)
+    has_foreign_audio = any(not s.get('language', '').startswith('en') for s in audio_streams)
+    eng_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                       and s.get('language', '').startswith('en')
+                       for s in subtitle_streams)
+    eng_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
+                      and s.get('language', '').startswith('en')
+                      for s in subtitle_streams)
+    
+    # Determine default action
+    default_action = "standard_mp4"
+    if not has_english_audio and has_foreign_audio:
+        if eng_text_subs:
+            default_action = "burn_subs"
+        elif eng_pgs_subs:
+            default_action = "burn_pgs_subs"
+    elif has_english_audio and eng_pgs_subs and not eng_text_subs:
+        default_action = "extract_pgs_ocr"
+    
+    print("\n" + "=" * 50 + "\n")
+    
+    # Present options based on what's available
+    available_actions = []
+    
+    # Always available
+    available_actions.append(("standard_mp4", "Standard MP4 (no subtitle processing)"))
+    
+    # Only show text subtitle options if text subtitles exist
+    if eng_text_subs:
+        available_actions.append(("extract_srt", "Create soft subtitle file (.srt) for external use"))
+        if has_foreign_audio:
+            available_actions.append(("burn_subs", "Burn text subtitles into video (hard subtitles)"))
+    
+    # Only show PGS subtitle options if PGS subtitles exist
+    if eng_pgs_subs:
+        if has_foreign_audio:
+            available_actions.append(("burn_pgs_subs", "Burn image subtitles into video (hard subtitles)"))
+        available_actions.append(("extract_pgs_ocr", "Standard MP4 + Convert image subtitles"))
+    
+    # Always available as fallback
+    available_actions.append(("no_subs", "Skip all subtitle processing"))
+    
+    options = []
+    for i, (action, description) in enumerate(available_actions, 1):
+        options.append((str(i), action, description))
+    
+    print("Available Options:")
+    for key, action, description in options:
+        marker = "👉" if action == default_action else "   "
+        print(f"{marker} {key}) {description}")
+    
+    # Get user choice
+    while True:
+        try:
+            choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
+            if not choice:
+                choice = next(key for key, action, _ in options if action == default_action)
+            
+            if choice in [opt[0] for opt in options]:
+                selected_action = next(opt[1] for opt in options if opt[0] == choice)
+                break
+            else:
+                print(f"Invalid choice. Please select 1-{len(options)}.")
+        except KeyboardInterrupt:
+            print("\nOperation cancelled.")
+            sys.exit(1)
+    
+    return {
+        'action': selected_action,
+        'has_foreign_audio': has_foreign_audio,
+        'eng_text_subs': eng_text_subs,
+        'eng_pgs_subs': eng_pgs_subs
+    }
+
+
 def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list]:
     """Analyze MKV file and return audio and subtitle stream information"""
     try:
