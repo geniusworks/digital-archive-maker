@@ -1053,8 +1053,8 @@ def main() -> int:
                         f"  💡 Try cleaning the disc or using a different Blu-ray drive")
                     return 1  # Exit gracefully
 
-        # Eject disc if requested (only after successful rip from disc)
-        if get_env_str("EJECT_DISC", "false").lower() in ("true", "1", "yes"):
+        # Eject disc if requested (default: true for disc rips)
+        if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
             print("Disc rip complete, ejecting...")
             eject_disc()
 
