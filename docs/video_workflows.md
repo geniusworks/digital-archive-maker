@@ -36,16 +36,21 @@ Complete guide to all video processing scenarios and workflows in the digital li
 
 ```mermaid
 graph TD
-    A[English DVD/Blu-ray Disc] --> B[MakeMKV Rip]
-    B --> C[MKV File ~20GB]
-    C --> D[HandBrake Encode]
-    D --> E[MP4 File ~2-3GB]
-    E --> F[Extract SRT Subtitles]
-    F --> G[Organize to Movies/]
-    
-    G --> H[Movies/Title (Year)/]
-    H --> I[Title (Year).mp4]
-    H --> J[Title (Year).en.srt]
+    A[Start: make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
+    B -->|Yes| C[Process existing MKV]
+    B -->|No| D[Rip from disc]
+    D --> E[Create MKV files]
+    E --> C
+    C --> F[HandBrake Encode]
+    F --> G[MP4 File ~2-3GB]
+    G --> H{English subtitles available?}
+    H -->|Yes| I[Extract SRT Subtitles]
+    H -->|No| J[No subtitle extraction]
+    I --> K[Organize to Movies/]
+    J --> K
+    K --> L[Movies/Title (Year)/]
+    L --> M[Title (Year).mp4]
+    L --> N[Title (Year).en.srt if available]
 ```
 
 **Command:**
@@ -68,27 +73,36 @@ Done: /Users/martin/Movies/Rips/Movies/The Goonies (1985)
 **Final Organization:**
 ```
 /Users/martin/Movies/Rips/
-├── Blurays/The Goonies (1985)/          # Source
+├── Blurays/The Goonies (1985)/          # Source folder
 │   └── The Goonies (1985).mkv           # Original (18.4GB)
-└── Movies/The Goonies (1985)/           # Destination
+└── Movies/The Goonies (1985)/           # Destination folder
     ├── The Goonies (1985).mp4           # Compressed (2.3GB)
-    └── The Goonies (1985).en.srt        # External subs
+    └── The Goonies (1985).en.srt        # External subs (if available)
 ```
 
 ### 2. Foreign Film Processing
 
 ```mermaid
 graph TD
-    A[Foreign DVD/Blu-ray Disc] --> B[MakeMKV Rip]
-    B --> C[MKV File ~15GB]
-    C --> D{English Subtitles Available?}
-    D -->|Yes| E[HandBrake + Burn Subs]
-    D -->|No| F[HandBrake Only]
-    E --> G[MP4 with Burned Subs]
-    F --> H[MP4 No Subs]
-    G --> I[Extract External SRT]
-    H --> I
-    I --> J[Organize to Movies/]
+    A[Start: BURN_SUBTITLES=true make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
+    B -->|Yes| C[Process existing MKV]
+    B -->|No| D[Rip from disc]
+    D --> E[Create MKV files]
+    E --> C
+    C --> F{Foreign audio detected?}
+    F -->|No| G[Standard MP4 encoding]
+    F -->|Yes| H{English subtitles available?}
+    H -->|Yes| I[HandBrake + Burn Subs]
+    H -->|No| J[Standard MP4 + warning]
+    I --> K[MP4 with burned subs]
+    J --> L[MP4 no burned subs]
+    G --> M[Extract SRT if available]
+    K --> M
+    L --> M
+    M --> N[Organize to Movies/]
+    N --> O[Movies/Title (Year)/]
+    O --> P[Title (Year).mp4]
+    O --> Q[Title (Year).en.srt if available]
 ```
 
 **Command:**
@@ -120,14 +134,21 @@ Done: /Users/martin/Movies/Rips/Movies/Foreign Film (2023)
 
 ```mermaid
 graph TD
-    A[Existing MKV File] --> B{File Size Check}
-    B -->|< 10GB| C[Already Compressed - Skip]
-    B -->|> 10GB| D[Re-encode Needed]
-    D --> E[HandBrake Encode]
-    E --> F[Compressed MP4]
-    C --> G[Extract SRT]
-    F --> G
-    G --> H[Organize to Movies/]
+    A[Start: make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
+    B -->|Yes| C{File Size Check}
+    B -->|No| D[Rip from disc]
+    D --> E[Create MKV files]
+    E --> C
+    C -->|< 10GB| F[Already Compressed - Skip]
+    C -->|> 10GB| G[Re-encode Needed]
+    G --> H[HandBrake Encode]
+    H --> I[Compressed MP4]
+    F --> J[Extract SRT if available]
+    I --> J
+    J --> K[Organize to Movies/]
+    K --> L[Movies/Title (Year)/]
+    L --> M[Title (Year).mp4]
+    L --> N[Title (Year).en.srt if available]
 ```
 
 **Command:**
@@ -153,7 +174,7 @@ Done: /Users/martin/Movies/Rips/Movies/Silent Running (1972)
 
 ```mermaid
 graph TD
-    A[Start: make rip-movie] --> B{MKV files exist?}
+    A[Start: make rip-movie] --> B{MKV files exist in Blurays/DVDs folder?}
     B -->|Yes| C{Files compressed?}
     B -->|No| D{Disc present?}
     
@@ -165,7 +186,7 @@ graph TD
     
     F --> I[HandBrake encode]
     H --> I
-    E --> J[Extract SRT]
+    E --> J[Extract SRT if available]
     I --> J
     
     J --> K{Foreign audio?}
@@ -223,31 +244,67 @@ graph TD
 
 ## 📁 File Organization Patterns
 
-### Success: English Film
+### ✅ Correct Success Pattern: English Film
 ```
 /Users/martin/Movies/Rips/
-├── Blurays/The Goonies (1985)/          # Source
-│   └── The Goonies (1985).mkv           # Original (20GB)
-└── Movies/The Goonies (1985)/           # Destination
+├── Blurays/The Goonies (1985)/          # Source folder (MKV only)
+│   └── The Goonies (1985).mkv           # Original rip (20GB)
+└── Movies/The Goonies (1985)/           # Destination folder (MP4 + SRT only)
     ├── The Goonies (1985).mp4           # Compressed (2GB)
-    └── The Goonies (1985).en.srt        # External subs
+    └── The Goonies (1985).en.srt        # External subs (if available)
 ```
 
-### Success: Foreign Film
+### ✅ Correct Success Pattern: Foreign Film
 ```
 /Users/martin/Movies/Rips/
-├── Blurays/Amélie (2001)/               # Source
-│   └── Amélie (2001).mkv                # Original (15GB)
-└── Movies/Amélie (2001)/                # Destination
+├── Blurays/Amélie (2001)/               # Source folder (MKV only)
+│   └── Amélie (2001).mkv                # Original rip (15GB)
+└── Movies/Amélie (2001)/                # Destination folder (MP4 + SRT only)
     ├── Amélie (2001).mp4                # Compressed + burned subs (2GB)
     └── Amélie (2001).en.srt             # External subs backup
 ```
 
-### Error: No Disc
+### ❌ Incorrect Pattern (Never Should Happen)
+```
+/Users/martin/Movies/Rips/
+└── Movies/Title (Year)/                 # Should NEVER contain MKV files
+    ├── Title (Year).mkv                  # ❌ WRONG - MKV in Movies folder
+    └── Title (Year).mp4                  # ❌ CONFUSING - Mixed file types
+```
+
+### ✅ Error Pattern: No Disc
 ```
 /Users/martin/Movies/Rips/
 ├── Blurays/                             # No empty folders created
 └── Movies/                              # No empty folders created
+```
+
+---
+
+## 📂 Folder Structure Rules
+
+### 🎯 **Source Folders (Blurays/DVDs)**
+- **Purpose:** Store original MKV rips from discs
+- **Files:** Only `.mkv` files
+- **Location:** `/Blurays/Title (Year)/` or `/DVDs/Title (Year)/`
+- **Size:** Large uncompressed files (10-50GB)
+
+### 🎯 **Destination Folders (Movies)**
+- **Purpose:** Store final processed media
+- **Files:** Only `.mp4` and `.en.srt` files
+- **Location:** `/Movies/Title (Year)/`
+- **Size:** Compressed MP4 (1-3GB) + small SRT files
+
+### 🚫 **Strict Rules:**
+- **NEVER** put MKV files in Movies folder
+- **NEVER** put MP4 files in Blurays/DVDs folders
+- **ALWAYS** keep original MKV in source folder
+- **ALWAYS** create final MP4 in destination folder
+
+### 🔄 **Workflow:**
+```
+Blurays/DVDs (Source) → Processing → Movies (Destination)
+     MKV files                           MP4 + SRT files
 ```
 
 ---
