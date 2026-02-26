@@ -125,15 +125,16 @@ Artifacts:
 
 ```mermaid
 flowchart LR
-    A[📀 DVD/Blu-ray] --> B[MakeMKV]
-    B --> C[MKV raw]
-    C --> D[HandBrakeCLI]
-    D --> E[MP4 + subtitles]
-    E --> F[tag-movie-metadata.py]
-    F --> G[Tagged MP4]
-    G --> H{Rating Filter}
-    H -->|≤PG-13| I[🖥️ Family Server]
-    H -->|all ratings| J[🖥️ Full Server]
+    A[📀 DVD/Blu-ray] --> B[MakeMKV Scan]
+    B --> C[Interactive Prompt]
+    C --> D[Rip MKV]
+    D --> E[HandBrakeCLI]
+    E --> F[MP4 + subtitles]
+    F --> G[tag-movie-metadata.py]
+    G --> H[Tagged MP4]
+    H --> I{Rating Filter}
+    I -->|≤PG-13| J[🖥️ Family Server]
+    I -->|all ratings| K[🖥️ Full Server]
 ```
 
 ### B1) Rip discs to staging (MKV/MP4)
@@ -141,6 +142,7 @@ flowchart LR
 - Commands:
   - `make rip-video` (staging)
   - `make rip-movie TITLE="Movie Name" YEAR=1999` (organize main feature)
+- Features: Automatic disc scanning, interactive subtitle processing prompt before ripping, automatic compression for large MKVs.
 
 ### B2) Organize into a server-friendly layout
 - Guide: `docs/media_server_setup.md`
