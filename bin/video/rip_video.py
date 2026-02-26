@@ -291,7 +291,7 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     for i, (action, description) in enumerate(available_actions, 1):
         options.append((str(i), action, description))
     
-    print("Available Options:")
+    print("Available Options:\n")
     for key, action, description in options:
         marker = "👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
@@ -369,7 +369,7 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     for i, (action, description) in enumerate(available_actions, 1):
         options.append((str(i), action, description))
     
-    print("Available Options:")
+    print("Available Options:\n")
     for key, action, description in options:
         marker = "👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
