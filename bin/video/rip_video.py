@@ -1393,7 +1393,7 @@ def main() -> int:
                     # Continue without optimization - file should still be
                     # usable
 
-    print(f"Done: {outdir}")
+    print(f"\nDone: {outdir}\n")
 
     return 0
 
