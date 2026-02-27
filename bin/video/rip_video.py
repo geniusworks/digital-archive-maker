@@ -375,31 +375,39 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
         print(f"{marker} {key}) {description}")
     
     # Get user choice
-    import threading
+    import select
+    import sys
+    import tty
+    import termios
     
-    timeout_seconds = 30
-    user_input = [None]  # Use list to allow modification in nested function
+    timeout_seconds = 20
     
-    def get_input():
-        try:
-            user_input[0] = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
-        except:
-            pass
+    # Get terminal settings for restore later
+    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
     
-    # Start input thread
-    input_thread = threading.Thread(target=get_input)
-    input_thread.daemon = True
-    input_thread.start()
+    try:
+        # Set terminal to raw mode for timeout detection
+        if sys.stdin.isatty():
+            tty.setcbreak(sys.stdin.fileno())
+        
+        # Print prompt
+        print(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ", end='', flush=True)
+        
+        # Wait for input with timeout using select
+        ready, _, _ = select.select([sys.stdin], [], [], timeout_seconds)
+        
+        if ready:
+            # Input received
+            choice = sys.stdin.readline().strip()
+        else:
+            # Timeout
+            print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
+            choice = next(key for key, action, _ in options if action == default_action)
     
-    # Wait for input or timeout
-    input_thread.join(timeout_seconds)
-    
-    if input_thread.is_alive():
-        # Timeout occurred
-        print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
-        choice = next(key for key, action, _ in options if action == default_action)
-    else:
-        choice = user_input[0]
+    finally:
+        # Restore terminal settings
+        if old_settings:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
     
     # Process choice
     while True:
