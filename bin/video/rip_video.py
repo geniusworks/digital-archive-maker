@@ -374,40 +374,22 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
         marker = "👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
-    # Get user choice
-    import select
+    # Get user choice with countdown
     import sys
-    import tty
-    import termios
+    import time
     
     timeout_seconds = 20
+    default_key = next(k for k, a, _ in options if a == default_action)
     
-    # Get terminal settings for restore later
-    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
+    print(f"\nContinuing with default in {timeout_seconds}s... (press any key to choose)")
     
-    try:
-        # Set terminal to raw mode for timeout detection
-        if sys.stdin.isatty():
-            tty.setcbreak(sys.stdin.fileno())
-        
-        # Print prompt
-        print(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ", end='', flush=True)
-        
-        # Wait for input with timeout using select
-        ready, _, _ = select.select([sys.stdin], [], [], timeout_seconds)
-        
-        if ready:
-            # Input received
-            choice = sys.stdin.readline().strip()
-        else:
-            # Timeout
-            print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
-            choice = next(key for key, action, _ in options if action == default_action)
+    # Use a simple countdown approach
+    for remaining in range(timeout_seconds, 0, -1):
+        print(f"\rContinuing in {remaining}s... ", end='', flush=True)
+        time.sleep(1)
     
-    finally:
-        # Restore terminal settings
-        if old_settings:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    print(f"\rUsing default option {default_key}...")
+    choice = default_key
     
     # Process choice
     while True:
