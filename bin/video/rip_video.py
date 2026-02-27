@@ -375,42 +375,47 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
         print(f"{marker} {key}) {description}")
     
     # Get user choice
-    import signal
+    import threading
     
-    class InputTimeout(Exception):
-        pass
-    
-    def timeout_handler(signum, frame):
-        raise InputTimeout
-    
-    # Set up timeout
     timeout_seconds = 30
+    user_input = [None]  # Use list to allow modification in nested function
     
-    while True:
+    def get_input():
         try:
-            # Set alarm for timeout
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout_seconds)
-            
+            user_input[0] = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
+        except:
+            pass
+    
+    # Start input thread
+    input_thread = threading.Thread(target=get_input)
+    input_thread.daemon = True
+    input_thread.start()
+    
+    # Wait for input or timeout
+    input_thread.join(timeout_seconds)
+    
+    if input_thread.is_alive():
+        # Timeout occurred
+        print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
+        choice = next(key for key, action, _ in options if action == default_action)
+    else:
+        choice = user_input[0]
+    
+    # Process choice
+    while True:
+        if not choice:
+            choice = next(key for key, action, _ in options if action == default_action)
+        
+        if choice in [opt[0] for opt in options]:
+            selected_action = next(opt[1] for opt in options if opt[0] == choice)
+            break
+        else:
+            print(f"Invalid choice. Please select 1-{len(options)}.")
             try:
-                choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
-                signal.alarm(0)  # Cancel alarm
-            except InputTimeout:
-                print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
-                choice = next(key for key, action, _ in options if action == default_action)
-                signal.alarm(0)  # Cancel alarm
-            
-            if not choice:
-                choice = next(key for key, action, _ in options if action == default_action)
-            
-            if choice in [opt[0] for opt in options]:
-                selected_action = next(opt[1] for opt in options if opt[0] == choice)
-                break
-            else:
-                print(f"Invalid choice. Please select 1-{len(options)}.")
-        except KeyboardInterrupt:
-            print("\nOperation cancelled.")
-            sys.exit(1)
+                choice = input(f"Select option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
+            except KeyboardInterrupt:
+                print("\nOperation cancelled.")
+                sys.exit(1)
     
     return {
         'action': selected_action,
