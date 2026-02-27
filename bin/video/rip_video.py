@@ -393,7 +393,7 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
             signal.alarm(timeout_seconds)
             
             try:
-                choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}] (timeout {timeout_seconds}s): ").strip()
+                choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
                 signal.alarm(0)  # Cancel alarm
             except TimeoutError:
                 print(f"\n⏰ Timeout ({timeout_seconds}s) - using default option")
