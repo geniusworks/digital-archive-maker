@@ -238,7 +238,7 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
                       for s in main_subs)
     
     print(f"\n🎬 Disc Analysis (Main Feature)\n")
-    print("=" * 50)
+    print("=" * 50 + "\n")
     
     # Audio analysis
     print(f"🎵 Audio Tracks: {len(main_audio)}")
@@ -296,21 +296,62 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
         marker = " 👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
-    # Get user choice
-    while True:
-        try:
-            choice = input(f"\nSelect option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
-            if not choice:
-                choice = next(key for key, action, _ in options if action == default_action)
+    # Get user choice with countdown
+    import sys
+    import time
+    import select
+    import tty
+    import termios
+    
+    timeout_seconds = 31
+    default_key = next(k for k, a, _ in options if a == default_action)
+    choice = None
+    
+    print(f"\nPress 1-{len(options)} to select (default: {default_key})")
+    print()  # Empty line for countdown
+    
+    # Save terminal settings
+    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
+    
+    try:
+        # Set terminal to raw mode for non-blocking input
+        if sys.stdin.isatty():
+            tty.setcbreak(sys.stdin.fileno())
+        
+        # Countdown loop
+        for remaining in range(timeout_seconds, 0, -1):
+            sys.stdout.write(f"\rContinuing with default in {remaining}s...")
+            sys.stdout.flush()
             
-            if choice in [opt[0] for opt in options]:
-                selected_action = next(opt[1] for opt in options if opt[0] == choice)
+            # Check for keypress (non-blocking)
+            if sys.stdin.isatty():
+                try:
+                    dr, dw, de = select.select([sys.stdin], [], [], 1)
+                    if dr:
+                        key = sys.stdin.read(1)
+                        if key in [opt[0] for opt in options]:
+                            choice = key
+                            print(f"\nSelected option {choice}")
+                            break
+                except KeyboardInterrupt:
+                    print("\nOperation cancelled.")
+                    sys.exit(0)
+            
+            # Check if we already have a choice
+            if choice:
                 break
-            else:
-                print(f"Invalid choice. Please select 1-{len(options)}.")
-        except KeyboardInterrupt:
-            print("\nOperation cancelled.")
-            sys.exit(1)
+    finally:
+        # Restore terminal settings
+        if old_settings:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    
+    # Use default if no choice made
+    if not choice:
+        print(f"\rUsing default option {default_key}...          \n")
+        choice = default_key
+    
+    # Convert choice to action
+    selected_action = next(opt[1] for opt in options if opt[0] == choice)
     
     return {
         'action': selected_action,
@@ -377,19 +418,56 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     # Get user choice with countdown
     import sys
     import time
+    import select
+    import tty
+    import termios
     
-    timeout_seconds = 20
+    timeout_seconds = 31
     default_key = next(k for k, a, _ in options if a == default_action)
+    choice = None
     
-    print(f"\nContinuing with default in {timeout_seconds}s... (press any key to choose)")
+    print(f"\nPress 1-{len(options)} to select (default: {default_key})")
+    print()  # Empty line for countdown
     
-    # Use a simple countdown approach
-    for remaining in range(timeout_seconds, 0, -1):
-        print(f"\rContinuing in {remaining}s... ", end='', flush=True)
-        time.sleep(1)
+    # Save terminal settings
+    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
     
-    print(f"\rUsing default option {default_key}...")
-    choice = default_key
+    try:
+        # Set terminal to raw mode for non-blocking input
+        if sys.stdin.isatty():
+            tty.setcbreak(sys.stdin.fileno())
+        
+        # Countdown loop
+        for remaining in range(timeout_seconds, 0, -1):
+            sys.stdout.write(f"\rContinuing with default in {remaining}s...")
+            sys.stdout.flush()
+            
+            # Check for keypress (non-blocking)
+            if sys.stdin.isatty():
+                try:
+                    dr, dw, de = select.select([sys.stdin], [], [], 1)
+                    if dr:
+                        key = sys.stdin.read(1)
+                        if key in [opt[0] for opt in options]:
+                            choice = key
+                            print(f"\nSelected option {choice}")
+                            break
+                except KeyboardInterrupt:
+                    print("\nOperation cancelled.")
+                    sys.exit(0)
+            
+            # Check if we already have a choice
+            if choice:
+                break
+    finally:
+        # Restore terminal settings
+        if old_settings:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    
+    # Use default if no choice made
+    if not choice:
+        print(f"\rUsing default option {default_key}...          \n")
+        choice = default_key
     
     # Process choice
     while True:
@@ -917,7 +995,7 @@ def main() -> int:
                         subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
                         pre_rip_choice = True
                     
-                    print("=" * 50)
+                    print("=" * 50 + "\n")
 
                     # Rip only the main feature
                     try:
@@ -1109,8 +1187,8 @@ def main() -> int:
 
     # Check if we can skip the prompt for simple English content
     # Skip prompt if: English movie + English audio + English SOFT subtitles
+    # Also skip if we already made a choice during pre-rip prompt
     skip_prompt = False
-    pre_rip_choice = False  # Track if we already got user's choice
     if not force_all_tracks and mkvs:
         main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
         
@@ -1124,8 +1202,7 @@ def main() -> int:
                            for s in subtitle_streams)
         
         # If we already made a choice during disc ripping, use it
-        if 'subtitle_config' in locals():
-            pre_rip_choice = True
+        if 'subtitle_config' in dir() and subtitle_config:
             skip_prompt = True
         elif all_english_audio and eng_soft_subs:
             # Simple case - skip prompt, just proceed with extraction
@@ -1138,7 +1215,7 @@ def main() -> int:
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
             subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
         
-        print("=" * 50)
+        print("=" * 50 + "\n")
 
     for mkv in mkvs:
         # Check if file still exists (might have been deleted/moved)
