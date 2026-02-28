@@ -237,13 +237,25 @@ def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
     return audio_streams, subtitle_streams
 
 
-def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams: list, main_title_id: str) -> dict:
-    """Interactive prompt for subtitle processing using disc info (before rip)"""
+def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list, 
+                               source_name: str = "MKV File", main_title_id: str = None) -> dict:
+    """Interactive prompt for subtitle processing
+    
+    Args:
+        audio_streams: List of audio stream dictionaries
+        subtitle_streams: List of subtitle stream dictionaries  
+        source_name: Name of the source (e.g., "Disc Analysis", "MKV File")
+        main_title_id: If provided, filter streams for this title (disc mode)
+    """
     import sys
     
-    # Filter streams for the main title
-    main_audio = [s for s in audio_streams if s.get('title') == main_title_id]
-    main_subs = [s for s in subtitle_streams if s.get('title') == main_title_id]
+    # Filter streams for main title if in disc mode
+    if main_title_id:
+        main_audio = [s for s in audio_streams if s.get('title') == main_title_id]
+        main_subs = [s for s in subtitle_streams if s.get('title') == main_title_id]
+    else:
+        main_audio = audio_streams
+        main_subs = subtitle_streams
     
     # Analyze content
     has_preferred_audio = any(matches_language(s.get('language', ''), LANG_AUDIO) for s in main_audio)
@@ -254,22 +266,6 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     preferred_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
                       for s in main_subs)
-    
-    print(f"\n🎬 Disc Analysis (Main Feature)\n")
-    print("=" * 50 + "\n")
-    
-    # Audio analysis
-    print(f"🎵 Audio Tracks: {len(main_audio)}")
-    for i, stream in enumerate(main_audio):
-        lang = stream.get('language', 'und')
-        codec = stream.get('codec', 'unknown')
-        print(f"   Track {i}: {lang.upper()} ({codec})")
-    
-    print(f"\n📝 Subtitle Tracks: {len(main_subs)}")
-    for i, stream in enumerate(main_subs):
-        lang = stream.get('language', 'und')
-        codec = stream.get('codec', 'unknown')
-        print(f"   Track {i}: {lang.upper()} ({codec})")
     
     # Determine default action (most useful option)
     default_action = "standard_mp4"
@@ -284,6 +280,77 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
         # Preferred audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
+    
+    print(f"\n {source_name}\n")
+    print("=" * 50 + "\n")
+    
+    # Audio analysis
+    print(f" Audio Tracks: {len(main_audio)}")
+    
+    # Find the best audio track (most channels among preferred language)
+    preferred_audio_tracks = [s for i, s in enumerate(main_audio) 
+                             if matches_language(s.get('language', ''), LANG_AUDIO)]
+    
+    if preferred_audio_tracks:
+        best_audio_track = max(preferred_audio_tracks, key=lambda s: s.get('channels', 0))
+        best_audio_index = main_audio.index(best_audio_track)
+    else:
+        best_audio_index = 0
+        best_audio_track = main_audio[0] if main_audio else None
+    
+    for i, stream in enumerate(main_audio):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        marker = " " if i == best_audio_index else "   "
+        
+        # Show channel count if available
+        channels = stream.get('channels', '')
+        if channels:
+            track_info = f"{lang.upper()} ({codec}, {channels}ch)"
+        else:
+            track_info = f"{lang.upper()} ({codec})"
+        
+        # Add note for the selected track
+        if i == best_audio_index and len(main_audio) > 1:
+            track_info += " SELECTED"
+        
+        print(f"{marker} Track {i}: {track_info}")
+    
+    print(f"\n Subtitle Tracks: {len(main_subs)}")
+    
+    # Find the best subtitle track (text preferred over image, first matching)
+    preferred_sub_tracks = [s for i, s in enumerate(main_subs) 
+                          if matches_language(s.get('language', ''), LANG_SUBTITLES)]
+    
+    if preferred_sub_tracks:
+        # Prefer text subtitles over image subtitles
+        text_codecs = ['subrip', 'ass', 'ssa', 'text', 'webvtt']
+        text_subs = [s for s in preferred_sub_tracks if s.get('codec') in text_codecs]
+        
+        if text_subs:
+            # Use first text subtitle
+            best_sub_track = text_subs[0]
+        else:
+            # Use first image subtitle
+            best_sub_track = preferred_sub_tracks[0]
+        
+        best_sub_index = main_subs.index(best_sub_track)
+    else:
+        best_sub_index = -1
+        best_sub_track = None
+    
+    for i, stream in enumerate(main_subs):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        marker = " " if i == best_sub_index else "   "
+        
+        track_info = f"{lang.upper()} ({codec})"
+        
+        # Add note for the selected track
+        if i == best_sub_index and len(main_subs) > 1:
+            track_info += " SELECTED"
+        
+        print(f"{marker} Track {i}: {track_info}")
     
     print("\n" + "=" * 50 + "\n")
     
@@ -311,30 +378,26 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     
     print("Available Options:\n")
     for key, action, description in options:
-        marker = " 👉" if action == default_action else "   "
+        marker = " " if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
-    # Get user choice with countdown
-    import sys
-    import time
-    import select
-    import tty
-    import termios
-    
-    timeout_seconds = 31
-    default_key = next(k for k, a, _ in options if a == default_action)
-    choice = None
-    
-    print(f"\nPress 1-{len(options)} to select (default: {default_key})")
+    print(f"\nPress 1-{len(options)} to select (default: {next(k for k,a,_ in options if a==default_action)})")
     print()  # Empty line for countdown
     
-    # Save terminal settings
-    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
+    # Non-blocking countdown with keypress detection
+    import select
+    import termios
+    import tty
     
+    timeout_seconds = 31
+    choice = None
+    default_key = next(k for k, a, _ in options if a == default_action)
+    
+    # Save terminal settings
+    old_settings = termios.tcgetattr(sys.stdin.fileno())
     try:
-        # Set terminal to raw mode for non-blocking input
-        if sys.stdin.isatty():
-            tty.setcbreak(sys.stdin.fileno())
+        # Set raw mode for non-blocking input
+        tty.setraw(sys.stdin.fileno())
         
         # Countdown loop
         for remaining in range(timeout_seconds, 0, -1):
@@ -358,12 +421,11 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
             # Check if we already have a choice
             if choice:
                 break
+        
     finally:
         # Restore terminal settings
-        if old_settings:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, old_settings)
     
-    # Use default if no choice made
     if not choice:
         print(f"\rUsing default option {default_key}...          \n")
         choice = default_key
@@ -378,6 +440,20 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
         'preferred_pgs_subs': preferred_pgs_subs,
         'subtitle_streams': main_subs
     }
+
+
+# Convenience wrappers for backward compatibility
+def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams: list, main_title_id: str) -> dict:
+    """Interactive prompt for subtitle processing using disc info (before rip)"""
+    return interactive_subtitle_prompt(audio_streams, subtitle_streams, 
+                                     source_name="Disc Analysis (Main Feature)", 
+                                     main_title_id=main_title_id)
+
+
+def interactive_subtitle_prompt_mkv(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
+    """Interactive prompt for subtitle processing using MKV file info"""
+    return interactive_subtitle_prompt(audio_streams, subtitle_streams, 
+                                     source_name=f"Analyzing {mkv_path.name}")
 
 
 def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
@@ -403,6 +479,76 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
             default_action = "burn_pgs_subs"
     elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
         default_action = "extract_pgs_ocr"
+    
+    print("\n" + "=" * 50 + "\n")
+    
+    # Show track analysis
+    print(f"🎵 Audio Tracks: {len(audio_streams)}")
+    
+    # Find the best audio track (most channels among preferred language)
+    preferred_audio_tracks = [s for i, s in enumerate(audio_streams) 
+                             if matches_language(s.get('language', ''), LANG_AUDIO)]
+    
+    if preferred_audio_tracks:
+        best_audio_track = max(preferred_audio_tracks, key=lambda s: s.get('channels', 0))
+        best_audio_index = audio_streams.index(best_audio_track)
+    else:
+        best_audio_index = 0
+        best_audio_track = audio_streams[0] if audio_streams else None
+    
+    for i, stream in enumerate(audio_streams):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        marker = " 👉" if i == best_audio_index else "   "
+        
+        # Show channel count if available
+        channels = stream.get('channels', '')
+        if channels:
+            track_info = f"{lang.upper()} ({codec}, {channels}ch)"
+        else:
+            track_info = f"{lang.upper()} ({codec})"
+        
+        # Add note for the selected track
+        if i == best_audio_index and len(audio_streams) > 1:
+            track_info += " ← SELECTED"
+        
+        print(f"{marker} Track {i}: {track_info}")
+    
+    print(f"\n📝 Subtitle Tracks: {len(subtitle_streams)}")
+    
+    # Find the best subtitle track (text preferred over image, first matching)
+    preferred_sub_tracks = [s for i, s in enumerate(subtitle_streams) 
+                          if matches_language(s.get('language', ''), LANG_SUBTITLES)]
+    
+    if preferred_sub_tracks:
+        # Prefer text subtitles over image subtitles
+        text_codecs = ['subrip', 'ass', 'ssa', 'text', 'webvtt']
+        text_subs = [s for s in preferred_sub_tracks if s.get('codec') in text_codecs]
+        
+        if text_subs:
+            # Use first text subtitle
+            best_sub_track = text_subs[0]
+        else:
+            # Use first image subtitle
+            best_sub_track = preferred_sub_tracks[0]
+        
+        best_sub_index = subtitle_streams.index(best_sub_track)
+    else:
+        best_sub_index = -1
+        best_sub_track = None
+    
+    for i, stream in enumerate(subtitle_streams):
+        lang = stream.get('language', 'und')
+        codec = stream.get('codec', 'unknown')
+        marker = " 👉" if i == best_sub_index else "   "
+        
+        track_info = f"{lang.upper()} ({codec})"
+        
+        # Add note for the selected track
+        if i == best_sub_index and len(subtitle_streams) > 1:
+            track_info += " ← SELECTED"
+        
+        print(f"{marker} Track {i}: {track_info}")
     
     print("\n" + "=" * 50 + "\n")
     
@@ -1230,7 +1376,7 @@ def main() -> int:
         elif not force_all_tracks and mkvs:
             # Show interactive prompt for complex cases
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
-            subtitle_config = interactive_subtitle_prompt(main_mkv, audio_streams, subtitle_streams)
+            subtitle_config = interactive_subtitle_prompt_mkv(main_mkv, audio_streams, subtitle_streams)
         
         print("=" * 50 + "\n")
 
