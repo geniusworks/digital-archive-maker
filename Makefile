@@ -86,9 +86,9 @@ rip-video:
 
 rip-movie:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
-	  echo "Usage: make rip-movie [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
+	  echo "Usage: make rip-movie [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999 [TITLE_INDEX=0]" >&2; exit 1; \
 	fi
-	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" python3 bin/video/rip_video.py $(if $(TITLE_INDEX),--title-index $(TITLE_INDEX),) $(if $(TYPE),$(TYPE),auto)
 
 rip-movie-all:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \

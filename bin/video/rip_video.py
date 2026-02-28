@@ -739,6 +739,8 @@ def main() -> int:
                         choices=["dvd", "bluray", "auto"])
     parser.add_argument("--force-all-tracks", action="store_true",
                         help="Encode all tracks instead of just the main feature (largest file)")
+    parser.add_argument("--title-index", type=int, default=0,
+                        help="Select title by size ranking (0=largest, 1=2nd largest, etc.)")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -901,17 +903,25 @@ def main() -> int:
                                         title_sizes.append((title_id, size_gb))
 
                             if title_sizes:
-                                # Sort by size (largest first) and pick the
-                                # biggest
+                                # Sort by size (largest first) and pick by index
                                 title_sizes.sort(
                                     key=lambda x: x[1], reverse=True)
-                                main_title_id = title_sizes[0][0]
+                                
+                                # Validate title_index is within range
+                                if args.title_index >= len(title_sizes):
+                                    print(f"❌ Title index {args.title_index} out of range (only {len(title_sizes)} titles available)")
+                                    print(f"  → Available titles: 0-{len(title_sizes)-1}")
+                                    return 1
+                                
+                                main_title_id = title_sizes[args.title_index][0]
                                 main_duration = next(
                                     t[1] for t in titles if t[0] == main_title_id)
                                 main_duration_str = next(
                                     t[2] for t in titles if t[0] == main_title_id)
+                                
+                                size_desc = "largest" if args.title_index == 0 else f"{args.title_index + 1}{'st' if args.title_index == 1 else 'nd' if args.title_index == 2 else 'rd' if args.title_index == 3 else 'th'} largest"
                                 print(
-                                    f"Selected largest title: {main_title_id} ({title_sizes[0][1]} GB)")
+                                    f"Selected {size_desc} title: {main_title_id} ({title_sizes[args.title_index][1]} GB)")
                             else:
                                 main_title_id, main_duration, main_duration_str = titles[0]
                         else:
