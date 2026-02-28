@@ -1084,6 +1084,7 @@ def main() -> int:
                                     dvd_device = device
                                     break
                         
+                        # Build HandBrake command based on user's subtitle choice
                         hb_cmd = [
                             "HandBrakeCLI",
                             "-i", dvd_device,
@@ -1098,15 +1099,25 @@ def main() -> int:
                             "--audio-lang-list", LANG_AUDIO,
                             "--first-audio",  # Use first matching audio track
                             "--aencoder", "copy",  # Copy audio quality
-                            # Subtitles: prefer preferred language
-                            "--subtitle-lang-list", LANG_SUBTITLES,
-                            "--first-subtitle",  # Use first matching subtitle
-                            "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
                         ]
+                        
+                        # Add subtitle handling based on user's choice
+                        if subtitle_config.get('action') in ['extract_srt', 'burn_subs']:
+                            # User wants subtitles
+                            hb_cmd.extend([
+                                "--subtitle-lang-list", LANG_SUBTITLES,
+                                "--first-subtitle",  # Use first matching subtitle
+                                "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
+                            ])
+                            subtitle_action = "burned"
+                        else:
+                            # User doesn't want subtitles
+                            subtitle_action = "none"
+                        
                         print(f"  → Running HandBrake: {' '.join(hb_cmd[:5])}...")
                         print(f"  → Using device: {dvd_device}")
                         print(f"  → Audio preference: {LANG_AUDIO.upper()}")
-                        print(f"  → Subtitle preference: {LANG_SUBTITLES.upper()}")
+                        print(f"  → Subtitles: {subtitle_action}")
                         hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
                         
                         if hb_output.exists():
