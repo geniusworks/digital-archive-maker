@@ -411,10 +411,11 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
                         key = sys.stdin.read(1)
                         if key in [opt[0] for opt in options]:
                             choice = key
-                            # Clear the countdown line and show selection
+                            # Clear the countdown line and move up to align with prompt
                             sys.stdout.write("\r" + " " * 50 + "\r")
                             sys.stdout.flush()
                             print(f"Selected option {choice}")
+                            print()  # Add proper spacing before the separator
                             break
                 except KeyboardInterrupt:
                     print("\nOperation cancelled.")
