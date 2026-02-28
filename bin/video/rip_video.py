@@ -1197,9 +1197,9 @@ def main() -> int:
                     return 1  # Exit gracefully
 
         # Eject disc if requested (default: true for disc rips)
-        if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
-            print("Disc rip complete, ejecting...")
-            eject_disc()
+        # Note: Don't eject here - HandBrake fallback may need the disc
+        # Eject will happen after HandBrake fallback completes
+        pass
 
         # Debug: Check what files exist after rip
         print(f"  → Checking files in {outdir}:")
@@ -1286,6 +1286,11 @@ def main() -> int:
                 return 1
 
         print(f"  ✓ Found {len(mkvs)} MKV file(s) after ripping")
+
+        # Eject disc after all ripping attempts complete (including HandBrake fallback)
+        if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
+            print("Disc rip complete, ejecting...")
+            eject_disc()
 
     # Filter for main feature only (largest file) unless forcing all tracks
     if not force_all_tracks and len(mkvs) > 1:
