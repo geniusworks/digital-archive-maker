@@ -8,6 +8,24 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime
+
+# Import authoritative language code mapping
+try:
+    from language_codes import normalize_language_code, get_all_variants, matches_language
+except ImportError:
+    # Fallback if language_codes.py not available
+    def normalize_language_code(lang_code: str) -> str:
+        return lang_code.lower() if lang_code else 'und'
+    
+    def get_all_variants(lang_code: str) -> list[str]:
+        return [lang_code] if lang_code else []
+    
+    def matches_language(code1: str, code2: str) -> bool:
+        return code1.lower() == code2.lower() if code1 and code2 else False
+
+# Load language preferences from environment
+LANG_AUDIO = normalize_language_code(os.getenv('LANG_AUDIO', 'en'))
+LANG_SUBTITLES = normalize_language_code(os.getenv('LANG_SUBTITLES', 'en'))
 from pathlib import Path
 
 
@@ -228,13 +246,13 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     main_subs = [s for s in subtitle_streams if s.get('title') == main_title_id]
     
     # Analyze content
-    has_english_audio = any(s.get('language', '').startswith('en') for s in main_audio)
-    has_foreign_audio = any(not s.get('language', '').startswith('en') for s in main_audio)
-    eng_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                       and s.get('language', '').startswith('en')
+    has_preferred_audio = any(matches_language(s.get('language', ''), LANG_AUDIO) for s in main_audio)
+    has_foreign_audio = any(not matches_language(s.get('language', ''), LANG_AUDIO) for s in main_audio)
+    preferred_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
                        for s in main_subs)
-    eng_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
-                      and s.get('language', '').startswith('en')
+    preferred_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
+                      and matches_language(s.get('language', ''), LANG_SUBTITLES)
                       for s in main_subs)
     
     print(f"\n🎬 Disc Analysis (Main Feature)\n")
@@ -255,16 +273,16 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     
     # Determine default action (most useful option)
     default_action = "standard_mp4"
-    if not has_english_audio and has_foreign_audio:
-        if eng_text_subs:
+    if not has_preferred_audio and has_foreign_audio:
+        if preferred_text_subs:
             default_action = "burn_subs"
-        elif eng_pgs_subs:
+        elif preferred_pgs_subs:
             default_action = "burn_pgs_subs"
-    elif has_english_audio and eng_text_subs:
-        # English audio + soft subs → extract SRT (preferred)
+    elif has_preferred_audio and preferred_text_subs:
+        # Preferred audio + soft subs → extract SRT (preferred)
         default_action = "extract_srt"
-    elif has_english_audio and eng_pgs_subs and not eng_text_subs:
-        # English audio + PGS subs (no soft subs) → extract PGS for OCR
+    elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
+        # Preferred audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
     
     print("\n" + "=" * 50 + "\n")
@@ -273,13 +291,13 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     available_actions = []
     
     # Text subtitles (preferred - soft, toggleable)
-    if eng_text_subs:
+    if preferred_text_subs:
         available_actions.append(("extract_srt", "MP4 + Create .srt file"))
         if has_foreign_audio:
             available_actions.append(("burn_subs", "MP4 + Burn text subtitles"))
     
     # PGS subtitles (image-based, good for OCR extraction)
-    if eng_pgs_subs:
+    if preferred_pgs_subs:
         available_actions.append(("extract_pgs_ocr", "MP4 + Convert image subtitles"))
         if has_foreign_audio:
             available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
@@ -356,8 +374,8 @@ def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams:
     return {
         'action': selected_action,
         'has_foreign_audio': has_foreign_audio,
-        'eng_text_subs': eng_text_subs,
-        'eng_pgs_subs': eng_pgs_subs,
+        'preferred_text_subs': preferred_text_subs,
+        'preferred_pgs_subs': preferred_pgs_subs,
         'subtitle_streams': main_subs
     }
 
@@ -367,23 +385,23 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     import sys
     
     # Analyze content
-    has_english_audio = any(s.get('language', '').startswith('en') for s in audio_streams)
-    has_foreign_audio = any(not s.get('language', '').startswith('en') for s in audio_streams)
-    eng_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                       and s.get('language', '').startswith('en')
+    has_preferred_audio = any(matches_language(s.get('language', ''), LANG_AUDIO) for s in audio_streams)
+    has_foreign_audio = any(not matches_language(s.get('language', ''), LANG_AUDIO) for s in audio_streams)
+    preferred_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
                        for s in subtitle_streams)
-    eng_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
-                      and s.get('language', '').startswith('en')
+    preferred_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
+                      and matches_language(s.get('language', ''), LANG_SUBTITLES)
                       for s in subtitle_streams)
     
     # Determine default action
     default_action = "standard_mp4"
-    if not has_english_audio and has_foreign_audio:
-        if eng_text_subs:
+    if not has_preferred_audio and has_foreign_audio:
+        if preferred_text_subs:
             default_action = "burn_subs"
-        elif eng_pgs_subs:
+        elif preferred_pgs_subs:
             default_action = "burn_pgs_subs"
-    elif has_english_audio and eng_pgs_subs and not eng_text_subs:
+    elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
         default_action = "extract_pgs_ocr"
     
     print("\n" + "=" * 50 + "\n")
@@ -392,13 +410,13 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     available_actions = []
     
     # Text subtitles (preferred - soft, toggleable)
-    if eng_text_subs:
+    if preferred_text_subs:
         available_actions.append(("extract_srt", "MP4 + Create .srt file"))
         if has_foreign_audio:
             available_actions.append(("burn_subs", "MP4 + Burn text subtitles"))
     
     # PGS subtitles (image-based, good for OCR extraction)
-    if eng_pgs_subs:
+    if preferred_pgs_subs:
         available_actions.append(("extract_pgs_ocr", "MP4 + Convert image subtitles"))
         if has_foreign_audio:
             available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
@@ -488,8 +506,8 @@ def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_st
     return {
         'action': selected_action,
         'has_foreign_audio': has_foreign_audio,
-        'eng_text_subs': eng_text_subs,
-        'eng_pgs_subs': eng_pgs_subs
+        'preferred_text_subs': preferred_text_subs,
+        'preferred_pgs_subs': preferred_pgs_subs
     }
 
 
@@ -562,7 +580,7 @@ def extract_pgs_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                     })
         
         for stream in pgs_streams:
-            if stream['language'].lower().startswith('en'):
+            if matches_language(stream['language'], LANG_AUDIO):
                 sup_path = output_dir / f"{mkv_path.stem}.en.sup"
                 print(f"  → Extracting English PGS subtitles to {sup_path.name}")
                 
@@ -608,7 +626,7 @@ def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
             lang = parts[2] if len(parts) > 2 else "und"
 
             # Extract English subtitles
-            if lang.lower().startswith("en"):
+            if matches_language(lang, LANG_SUBTITLES):
                 srt_path = output_dir / f"{mkv_path.stem}.en.srt"
 
                 print(f"  → Extracting English subtitles to {srt_path.name}")
@@ -672,7 +690,7 @@ def pick_default_audio_lang(audio_streams: list[dict]) -> str:
     # If no default track, prefer English tracks
     for s in audio_streams:
         lang = ((s.get("tags") or {}).get("language") or "").lower()
-        if lang.startswith("en"):
+        if matches_language(lang, LANG_AUDIO):
             return lang
 
     # Fall back to first track
@@ -692,7 +710,7 @@ def first_eng_text_sub_index(subs: list[dict]) -> int:
     for s in subs:
         lang = ((s.get("tags") or {}).get("language") or "").lower()
         codec = (s.get("codec_name") or "").lower()
-        if lang.startswith("en") and codec in text_codecs:
+        if matches_language(lang, LANG_SUBTITLES) and codec in text_codecs:
             return int(s.get("index", -1))
     return -1
 
@@ -702,7 +720,7 @@ def first_eng_image_sub_index(subs: list[dict]) -> tuple[int, str]:
     for s in subs:
         lang = ((s.get("tags") or {}).get("language") or "").lower()
         codec = (s.get("codec_name") or "").lower()
-        if lang.startswith("en") and codec not in text_codecs:
+        if matches_language(lang, LANG_SUBTITLES) and codec not in text_codecs:
             return int(s.get("index", -1)), codec
     return -1, ""
 
@@ -979,16 +997,16 @@ def main() -> int:
                     main_audio = [s for s in audio_streams if s.get('title') == str(main_title_id)]
                     main_subs = [s for s in subtitle_streams if s.get('title') == str(main_title_id)]
                     
-                    all_english_audio = all(s.get('language', '').startswith('en') for s in main_audio)
-                    eng_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                                       and s.get('language', '').startswith('en')
+                    all_preferred_audio = all(matches_language(s.get('language', ''), LANG_AUDIO) for s in main_audio)
+                    preferred_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
                                        for s in main_subs)
                     
-                    if all_english_audio and eng_soft_subs:
+                    if all_preferred_audio and preferred_soft_subs:
                         # Simple case - skip prompt, just proceed with extraction
                         print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
                         print(f"  → Will automatically extract English soft subtitles to .srt file")
-                        subtitle_config = {'action': 'extract_srt', 'eng_text_subs': True}
+                        subtitle_config = {'action': 'extract_srt', 'preferred_text_subs': True}
                         pre_rip_choice = True
                     else:
                         # Show interactive prompt
@@ -1195,21 +1213,20 @@ def main() -> int:
         # Analyze streams
         audio_streams, subtitle_streams = analyze_mkv_streams(main_mkv)
         
-        # Check if all English (movie + audio + soft subs)
-        all_english_audio = all(s.get('language', '').startswith('en') for s in audio_streams)
-        eng_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                           and s.get('language', '').startswith('en')
+        # Check if all preferred language (movie + audio + soft subs)
+        all_preferred_audio = all(matches_language(s.get('language', ''), LANG_AUDIO) for s in audio_streams)
+        preferred_soft_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
+                           and matches_language(s.get('language', ''), LANG_SUBTITLES)
                            for s in subtitle_streams)
         
-        # If we already made a choice during disc ripping, use it
         if 'subtitle_config' in dir() and subtitle_config:
             skip_prompt = True
-        elif all_english_audio and eng_soft_subs:
+        elif all_preferred_audio and preferred_soft_subs:
             # Simple case - skip prompt, just proceed with extraction
             skip_prompt = True
             print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
             print(f"  → Will automatically extract English soft subtitles to .srt file")
-            subtitle_config = {'action': 'extract_srt', 'eng_text_subs': True}
+            subtitle_config = {'action': 'extract_srt', 'preferred_text_subs': True}
         elif not force_all_tracks and mkvs:
             # Show interactive prompt for complex cases
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
@@ -1273,12 +1290,12 @@ def main() -> int:
         if has_en_audio:
             # For multiple English tracks, prefer the one with most channels
             # (main movie over commentary)
-            eng_tracks = [s for s in audio_streams if (
-                (s.get("tags") or {}).get("language") or "").lower().startswith("en")]
-            if len(eng_tracks) > 1:
-                # Find the English track with the most channels
+            preferred_tracks = [s for s in audio_streams if (
+                matches_language((s.get("tags") or {}).get("language") or "", LANG_AUDIO))]
+            if len(preferred_tracks) > 1:
+                # Find the preferred track with the most channels
                 best_track = max(
-                    eng_tracks, key=lambda s: s.get("channels", 0))
+                    preferred_tracks, key=lambda s: s.get("channels", 0))
                 # HandBrake uses 1-based indexing
                 best_idx = audio_streams.index(best_track) + 1
                 hb_audio_opts = ["--audio", str(best_idx)]
@@ -1287,14 +1304,14 @@ def main() -> int:
 
         if needs_lang_action and policy:
             if policy == "prefer-audio" and has_en_audio:
-                # For multiple English tracks, prefer the one with most
+                # For multiple preferred tracks, prefer the one with most
                 # channels (main movie over commentary)
-                eng_tracks = [s for s in audio_streams if (
-                    (s.get("tags") or {}).get("language") or "").lower().startswith("en")]
-                if len(eng_tracks) > 1:
-                    # Find the English track with the most channels
+                preferred_tracks = [s for s in audio_streams if (
+                    matches_language((s.get("tags") or {}).get("language") or "", LANG_AUDIO))]
+                if len(preferred_tracks) > 1:
+                    # Find the preferred track with the most channels
                     best_track = max(
-                        eng_tracks, key=lambda s: s.get("channels", 0))
+                        preferred_tracks, key=lambda s: s.get("channels", 0))
                     # HandBrake uses 1-based indexing
                     best_idx = audio_streams.index(best_track) + 1
                     hb_audio_opts = ["--audio", str(best_idx)]
@@ -1310,17 +1327,17 @@ def main() -> int:
             # User made interactive choice
             action = subtitle_config['action']
             
-            if action == "burn_subs" and subtitle_config['eng_text_subs']:
+            if action == "burn_subs" and subtitle_config['preferred_text_subs']:
                 # Burn English text subtitles
                 if eng_text_idx >= 0:
                     hb_sub_opts = ["--subtitle", str(eng_text_idx + 1), "--subtitle-burned"]
                     print(f"  ⚠️  BURNING English text subtitles (user choice)")
-            elif action == "burn_pgs_subs" and subtitle_config['eng_pgs_subs']:
+            elif action == "burn_pgs_subs" and subtitle_config['preferred_pgs_subs']:
                 # Burn English PGS subtitles
                 if eng_image_idx >= 0:
                     hb_sub_opts = ["--subtitle", str(eng_image_hb_track), "--subtitle-burned"]
                     print(f"  ⚠️  BURNING English PGS subtitles (user choice)")
-            elif action == "extract_srt" and subtitle_config['eng_text_subs']:
+            elif action == "extract_srt" and subtitle_config['preferred_text_subs']:
                 # Extract text subtitles to SRT
                 print(f"  → Extracting English text subtitles to SRT (user choice)")
             elif action == "extract_pgs_ocr":
@@ -1392,7 +1409,7 @@ def main() -> int:
             if 'subtitle_config' in locals() and subtitle_config:
                 action = subtitle_config['action']
                 
-                if action == "extract_srt" and subtitle_config['eng_text_subs']:
+                if action == "extract_srt" and subtitle_config['preferred_text_subs']:
                     # Extract text subtitles to SRT
                     srt_files = extract_subtitles_to_srt(mkv, outdir)
                     if srt_files:
