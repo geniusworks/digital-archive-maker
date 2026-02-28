@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # Import authoritative language code mapping
 try:
@@ -26,8 +27,6 @@ except ImportError:
 # Load language preferences from environment
 LANG_AUDIO = normalize_language_code(os.getenv('LANG_AUDIO', 'en'))
 LANG_SUBTITLES = normalize_language_code(os.getenv('LANG_SUBTITLES', 'en'))
-from pathlib import Path
-
 
 def check_virtual_environment() -> None:
     """Check if we're running in the virtual environment and exit gracefully if not."""
