@@ -260,7 +260,8 @@ def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
 
 
 def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list, 
-                               source_name: str = "MKV File", main_title_id: str = None) -> dict:
+                               source_name: str = "MKV File", main_title_id: str = None,
+                               preferred_audio_codec: str = "") -> dict:
     """Interactive prompt for subtitle processing
     
     Args:
@@ -268,6 +269,7 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         subtitle_streams: List of subtitle stream dictionaries  
         source_name: Name of the source (e.g., "Disc Analysis", "MKV File")
         main_title_id: If provided, filter streams for this title (disc mode)
+        preferred_audio_codec: Optional preferred audio codec (e.g., "ac3", "dts")
     """
     import sys
     
@@ -325,6 +327,11 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         """Score track by compatibility and channels"""
         codec = track.get('codec', '').lower()
         channels = track.get('channels', 0)
+        
+        # If user specified a preferred codec, prioritize it heavily
+        if preferred_audio_codec and codec == preferred_audio_codec:
+            return 100 + min(channels, 8)
+        
         compat_score = codec_priority.get(codec, 1)
         # Weight channels but not as much as compatibility
         return compat_score * 10 + min(channels, 8)
@@ -828,6 +835,10 @@ def main() -> int:
     year_raw = get_env_str("YEAR", None)
     dest_category = get_env_str("DEST_CATEGORY", "Movies") or "Movies"
     policy = (get_env_str("AUDIO_SUBS_POLICY", "keep") or "keep").strip()
+    
+    # Audio/subtitle preferences (optional overrides)
+    preferred_audio_codec = get_env_str("PREFERRED_AUDIO_CODEC", "").lower().strip()
+    preferred_subtitle_type = get_env_str("PREFERRED_SUBTITLE_TYPE", "").lower().strip()
 
     require_command("makemkvcon")
     require_command("HandBrakeCLI")
@@ -1023,7 +1034,8 @@ def main() -> int:
                         subtitle_config = interactive_subtitle_prompt(
                             audio_streams, subtitle_streams, 
                             source_name="Disc Analysis (Main Feature)", 
-                            main_title_id=str(main_title_id)
+                            main_title_id=str(main_title_id),
+                            preferred_audio_codec=preferred_audio_codec
                         )
                         pre_rip_choice = True
                     
@@ -1373,7 +1385,8 @@ def main() -> int:
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
             subtitle_config = interactive_subtitle_prompt(
                 audio_streams, subtitle_streams, 
-                source_name=f"Analyzing {main_mkv.name}"
+                source_name=f"Analyzing {main_mkv.name}",
+                preferred_audio_codec=preferred_audio_codec
             )
         
         print("=" * 50 + "\n")
