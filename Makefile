@@ -65,6 +65,11 @@ install-video-deps:
 		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon && \
 		echo "Linked makemkvcon to /usr/local/bin/makemkvcon") || \
 		echo "Note: Install MakeMKV from https://www.makemkv.com/download/ then rerun this target to link makemkvcon."
+	@echo "Creating MakeMKV ccextractor symlink..."
+	@([ -x /opt/homebrew/bin/ccextractor ] && \
+		sudo ln -sf /opt/homebrew/bin/ccextractor /usr/local/bin/mmccextr && \
+		echo "Linked ccextractor to /usr/local/bin/mmccextr for MakeMKV") || \
+		echo "Note: ccextractor not found, install with: brew install ccextractor"
 	@echo "If 'mkvmerge' is still not found, ensure Homebrew bin is in PATH (e.g., export PATH=\"$$(brew --prefix)/bin:$$PATH\")."
 	@echo ""
 	@echo "For OCR of image-based subtitles (VobSub/PGS), consider:"
