@@ -309,12 +309,32 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
     # Audio analysis
     print(f"🎵 Audio Tracks: {len(main_audio)}")
     
-    # Find the best audio track (most channels among preferred language)
+    # Codec compatibility ranking (higher = more compatible)
+    codec_priority = {
+        'ac3': 3,      # Most compatible - plays everywhere
+        'eac3': 3,     # Dolby Digital Plus - very compatible
+        'dts': 2,      # Good compatibility
+        'aac': 2,      # Good compatibility
+        'mp3': 2,      # Good compatibility
+        'a_pcm': 0,    # PCM - least compatible, large files
+        'truehd': 1,   # Lossless - less compatible
+        'flac': 1,     # Lossless - less compatible
+    }
+    
+    def audio_track_score(track):
+        """Score track by compatibility and channels"""
+        codec = track.get('codec', '').lower()
+        channels = track.get('channels', 0)
+        compat_score = codec_priority.get(codec, 1)
+        # Weight channels but not as much as compatibility
+        return compat_score * 10 + min(channels, 8)
+    
+    # Find the best audio track (most compatible + most channels among preferred language)
     preferred_audio_tracks = [s for i, s in enumerate(main_audio) 
                              if matches_language(s.get('language', ''), LANG_AUDIO)]
     
     if preferred_audio_tracks:
-        best_audio_track = max(preferred_audio_tracks, key=lambda s: s.get('channels', 0))
+        best_audio_track = max(preferred_audio_tracks, key=audio_track_score)
         best_audio_index = main_audio.index(best_audio_track)
     else:
         best_audio_index = 0
