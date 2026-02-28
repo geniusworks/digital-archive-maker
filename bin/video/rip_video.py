@@ -1069,16 +1069,59 @@ def main() -> int:
                         raise
                 else:
                     print("❌ Could not determine main feature")
-                    print("\n💡 This could be due to:")
-                    print("   - Disc with multiple equal-length features")
-                    print("   - MakeMKV unable to identify the main title")
-                    print("   - Unusual disc structure")
-                    print("\n🔧 Suggestions:")
-                    print("   - Try using --force-all-tracks if you want all content")
-                    print("   - Check the disc manually for the main feature")
-                    print("   - Use a different ripping tool for this disc")
-                    print("\n⚠️  Exiting gracefully - no files were created")
-                    return 1  # Exit with error code
+                    print("\n� Trying HandBrake CLI as fallback...")
+                    
+                    # Try HandBrake CLI directly from disc
+                    try:
+                        hb_output = outdir / f"{TITLE}_{YEAR}_handbrake.mkv"
+                        
+                        # Find DVD device
+                        dvd_device = "/dev/rdisk1"  # Default macOS DVD device
+                        if not Path(dvd_device).exists():
+                            # Try other common DVD devices
+                            for device in ["/dev/disk1", "/dev/rdisk2", "/dev/disk2"]:
+                                if Path(device).exists():
+                                    dvd_device = device
+                                    break
+                        
+                        hb_cmd = [
+                            "HandBrakeCLI",
+                            "-i", dvd_device,
+                            "-o", str(hb_output),
+                            "-t", "0",  # First title
+                            "-c", "1",  # Chapter 1 (main feature)
+                            "--min-duration", "1200",  # 20 minutes minimum
+                            "--preset", "Fast 1080p30",
+                            "--encoder", "x264",
+                            "--quality", "20",
+                            "--audio", "1",  # First audio track
+                            "--aencoder", "copy",  # Copy audio
+                            "--subtitle", "1,2",  # Include subtitles
+                            "--subtitle-burned"  # Burn if needed
+                        ]
+                        print(f"  → Running HandBrake: {' '.join(hb_cmd[:5])}...")
+                        print(f"  → Using device: {dvd_device}")
+                        hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
+                        
+                        if hb_output.exists():
+                            print(f"  ✓ HandBrake succeeded: {hb_output.name}")
+                            mkvs = [hb_output]
+                        else:
+                            print(f"  ✗ HandBrake failed to create output")
+                    except Exception as hb_error:
+                        print(f"  ✗ HandBrake fallback failed: {hb_error}")
+                    
+                    if not mkvs:
+                        print("\n�� This could be due to:")
+                        print("   - Disc with multiple equal-length features")
+                        print("   - MakeMKV unable to identify the main title")
+                        print("   - Unusual disc structure")
+                        print("\n🔧 Suggestions:")
+                        print("   - Try using --force-all-tracks if you want all content")
+                        print("   - Check the disc manually for the main feature")
+                        print("   - Use a different ripping tool for this disc")
+                        print("\n⚠️  Exiting gracefully - no files were created")
+                        return 1  # Exit with error code
 
             except Exception as e:
                 print(f"\n❌ Error during disc processing: {e}")
