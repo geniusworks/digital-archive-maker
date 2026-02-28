@@ -281,11 +281,11 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         # Preferred audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
     
-    print(f"\n {source_name}\n")
+    print(f"\n🎬 {source_name}\n")
     print("=" * 50 + "\n")
     
     # Audio analysis
-    print(f" Audio Tracks: {len(main_audio)}")
+    print(f"🎵 Audio Tracks: {len(main_audio)}")
     
     # Find the best audio track (most channels among preferred language)
     preferred_audio_tracks = [s for i, s in enumerate(main_audio) 
@@ -301,7 +301,7 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
     for i, stream in enumerate(main_audio):
         lang = stream.get('language', 'und')
         codec = stream.get('codec', 'unknown')
-        marker = " " if i == best_audio_index else "   "
+        marker = " 👉" if i == best_audio_index else "   "
         
         # Show channel count if available
         channels = stream.get('channels', '')
@@ -312,11 +312,11 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         
         # Add note for the selected track
         if i == best_audio_index and len(main_audio) > 1:
-            track_info += " SELECTED"
+            track_info += " ← SELECTED"
         
         print(f"{marker} Track {i}: {track_info}")
     
-    print(f"\n Subtitle Tracks: {len(main_subs)}")
+    print(f"\n📝 Subtitle Tracks: {len(main_subs)}")
     
     # Find the best subtitle track (text preferred over image, first matching)
     preferred_sub_tracks = [s for i, s in enumerate(main_subs) 
@@ -342,13 +342,13 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
     for i, stream in enumerate(main_subs):
         lang = stream.get('language', 'und')
         codec = stream.get('codec', 'unknown')
-        marker = " " if i == best_sub_index else "   "
+        marker = " 👉" if i == best_sub_index else "   "
         
         track_info = f"{lang.upper()} ({codec})"
         
         # Add note for the selected track
         if i == best_sub_index and len(main_subs) > 1:
-            track_info += " SELECTED"
+            track_info += " ← SELECTED"
         
         print(f"{marker} Track {i}: {track_info}")
     
@@ -378,7 +378,7 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
     
     print("Available Options:\n")
     for key, action, description in options:
-        marker = " " if action == default_action else "   "
+        marker = " 👉" if action == default_action else "   "
         print(f"{marker} {key}) {description}")
     
     print(f"\nPress 1-{len(options)} to select (default: {next(k for k,a,_ in options if a==default_action)})")
@@ -439,221 +439,6 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         'preferred_text_subs': preferred_text_subs,
         'preferred_pgs_subs': preferred_pgs_subs,
         'subtitle_streams': main_subs
-    }
-
-
-# Convenience wrappers for backward compatibility
-def interactive_subtitle_prompt_from_disc(audio_streams: list, subtitle_streams: list, main_title_id: str) -> dict:
-    """Interactive prompt for subtitle processing using disc info (before rip)"""
-    return interactive_subtitle_prompt(audio_streams, subtitle_streams, 
-                                     source_name="Disc Analysis (Main Feature)", 
-                                     main_title_id=main_title_id)
-
-
-def interactive_subtitle_prompt_mkv(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
-    """Interactive prompt for subtitle processing using MKV file info"""
-    return interactive_subtitle_prompt(audio_streams, subtitle_streams, 
-                                     source_name=f"Analyzing {mkv_path.name}")
-
-
-def interactive_subtitle_prompt(mkv_path: Path, audio_streams: list, subtitle_streams: list) -> dict:
-    """Interactive prompt for subtitle processing using MKV file info"""
-    import sys
-    
-    # Analyze content
-    has_preferred_audio = any(matches_language(s.get('language', ''), LANG_AUDIO) for s in audio_streams)
-    has_foreign_audio = any(not matches_language(s.get('language', ''), LANG_AUDIO) for s in audio_streams)
-    preferred_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
-                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
-                       for s in subtitle_streams)
-    preferred_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
-                      and matches_language(s.get('language', ''), LANG_SUBTITLES)
-                      for s in subtitle_streams)
-    
-    # Determine default action
-    default_action = "standard_mp4"
-    if not has_preferred_audio and has_foreign_audio:
-        if preferred_text_subs:
-            default_action = "burn_subs"
-        elif preferred_pgs_subs:
-            default_action = "burn_pgs_subs"
-    elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
-        default_action = "extract_pgs_ocr"
-    
-    print("\n" + "=" * 50 + "\n")
-    
-    # Show track analysis
-    print(f"🎵 Audio Tracks: {len(audio_streams)}")
-    
-    # Find the best audio track (most channels among preferred language)
-    preferred_audio_tracks = [s for i, s in enumerate(audio_streams) 
-                             if matches_language(s.get('language', ''), LANG_AUDIO)]
-    
-    if preferred_audio_tracks:
-        best_audio_track = max(preferred_audio_tracks, key=lambda s: s.get('channels', 0))
-        best_audio_index = audio_streams.index(best_audio_track)
-    else:
-        best_audio_index = 0
-        best_audio_track = audio_streams[0] if audio_streams else None
-    
-    for i, stream in enumerate(audio_streams):
-        lang = stream.get('language', 'und')
-        codec = stream.get('codec', 'unknown')
-        marker = " 👉" if i == best_audio_index else "   "
-        
-        # Show channel count if available
-        channels = stream.get('channels', '')
-        if channels:
-            track_info = f"{lang.upper()} ({codec}, {channels}ch)"
-        else:
-            track_info = f"{lang.upper()} ({codec})"
-        
-        # Add note for the selected track
-        if i == best_audio_index and len(audio_streams) > 1:
-            track_info += " ← SELECTED"
-        
-        print(f"{marker} Track {i}: {track_info}")
-    
-    print(f"\n📝 Subtitle Tracks: {len(subtitle_streams)}")
-    
-    # Find the best subtitle track (text preferred over image, first matching)
-    preferred_sub_tracks = [s for i, s in enumerate(subtitle_streams) 
-                          if matches_language(s.get('language', ''), LANG_SUBTITLES)]
-    
-    if preferred_sub_tracks:
-        # Prefer text subtitles over image subtitles
-        text_codecs = ['subrip', 'ass', 'ssa', 'text', 'webvtt']
-        text_subs = [s for s in preferred_sub_tracks if s.get('codec') in text_codecs]
-        
-        if text_subs:
-            # Use first text subtitle
-            best_sub_track = text_subs[0]
-        else:
-            # Use first image subtitle
-            best_sub_track = preferred_sub_tracks[0]
-        
-        best_sub_index = subtitle_streams.index(best_sub_track)
-    else:
-        best_sub_index = -1
-        best_sub_track = None
-    
-    for i, stream in enumerate(subtitle_streams):
-        lang = stream.get('language', 'und')
-        codec = stream.get('codec', 'unknown')
-        marker = " 👉" if i == best_sub_index else "   "
-        
-        track_info = f"{lang.upper()} ({codec})"
-        
-        # Add note for the selected track
-        if i == best_sub_index and len(subtitle_streams) > 1:
-            track_info += " ← SELECTED"
-        
-        print(f"{marker} Track {i}: {track_info}")
-    
-    print("\n" + "=" * 50 + "\n")
-    
-    # Present options based on what's available (preferred first)
-    available_actions = []
-    
-    # Text subtitles (preferred - soft, toggleable)
-    if preferred_text_subs:
-        available_actions.append(("extract_srt", "MP4 + Create .srt file"))
-        if has_foreign_audio:
-            available_actions.append(("burn_subs", "MP4 + Burn text subtitles"))
-    
-    # PGS subtitles (image-based, good for OCR extraction)
-    if preferred_pgs_subs:
-        available_actions.append(("extract_pgs_ocr", "MP4 + Convert image subtitles"))
-        if has_foreign_audio:
-            available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
-    
-    # Always available as fallback
-    available_actions.append(("standard_mp4", "MP4 (no subtitles)"))
-    
-    options = []
-    for i, (action, description) in enumerate(available_actions, 1):
-        options.append((str(i), action, description))
-    
-    print("Available Options:\n")
-    for key, action, description in options:
-        marker = "👉" if action == default_action else "   "
-        print(f"{marker} {key}) {description}")
-    
-    # Get user choice with countdown
-    import sys
-    import time
-    import select
-    import tty
-    import termios
-    
-    timeout_seconds = 31
-    default_key = next(k for k, a, _ in options if a == default_action)
-    choice = None
-    
-    print(f"\nPress 1-{len(options)} to select (default: {default_key})")
-    print()  # Empty line for countdown
-    
-    # Save terminal settings
-    old_settings = termios.tcgetattr(sys.stdin) if sys.stdin.isatty() else None
-    
-    try:
-        # Set terminal to raw mode for non-blocking input
-        if sys.stdin.isatty():
-            tty.setcbreak(sys.stdin.fileno())
-        
-        # Countdown loop
-        for remaining in range(timeout_seconds, 0, -1):
-            sys.stdout.write(f"\rContinuing with default in {remaining}s...")
-            sys.stdout.flush()
-            
-            # Check for keypress (non-blocking)
-            if sys.stdin.isatty():
-                try:
-                    dr, dw, de = select.select([sys.stdin], [], [], 1)
-                    if dr:
-                        key = sys.stdin.read(1)
-                        if key in [opt[0] for opt in options]:
-                            choice = key
-                            print(f"\nSelected option {choice}")
-                            break
-                except KeyboardInterrupt:
-                    print("\nOperation cancelled.")
-                    sys.exit(0)
-            
-            # Check if we already have a choice
-            if choice:
-                break
-    finally:
-        # Restore terminal settings
-        if old_settings:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-    
-    # Use default if no choice made
-    if not choice:
-        print(f"\rUsing default option {default_key}...          \n")
-        choice = default_key
-    
-    # Process choice
-    while True:
-        if not choice:
-            choice = next(key for key, action, _ in options if action == default_action)
-        
-        if choice in [opt[0] for opt in options]:
-            selected_action = next(opt[1] for opt in options if opt[0] == choice)
-            break
-        else:
-            print(f"Invalid choice. Please select 1-{len(options)}.")
-            try:
-                choice = input(f"Select option [1-{len(options)}, default={next(k for k,a,_ in options if a==default_action)}]: ").strip()
-            except KeyboardInterrupt:
-                print("\nOperation cancelled.")
-                sys.exit(1)
-    
-    return {
-        'action': selected_action,
-        'has_foreign_audio': has_foreign_audio,
-        'preferred_text_subs': preferred_text_subs,
-        'preferred_pgs_subs': preferred_pgs_subs
     }
 
 
@@ -1051,7 +836,9 @@ def main() -> int:
     if not mkvs:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
-            print("Scanning for main feature (longest track)...")
+            print("Scanning for main feature...")
+            print("  → Primary: Longest duration")
+            print("  → Secondary: Largest file size if durations similar (±1 min)")
             try:
                 # Get disc info to find all titles
                 info_res = _run(["makemkvcon", "-r", "--cache=1",
@@ -1156,7 +943,11 @@ def main() -> int:
                         pre_rip_choice = True
                     else:
                         # Show interactive prompt
-                        subtitle_config = interactive_subtitle_prompt_from_disc(audio_streams, subtitle_streams, str(main_title_id))
+                        subtitle_config = interactive_subtitle_prompt(
+                            audio_streams, subtitle_streams, 
+                            source_name="Disc Analysis (Main Feature)", 
+                            main_title_id=str(main_title_id)
+                        )
                         pre_rip_choice = True
                     
                     print("=" * 50 + "\n")
@@ -1228,54 +1019,31 @@ def main() -> int:
                             print(f"    stderr: {e.stderr.strip()}")
                         raise
                 else:
-                    print("Could not determine main feature, ripping all tracks...")
-                    try:
-                        _run(["makemkvcon", "mkv", "disc:0", "all",
-                             str(outdir), f"--minlength={minlength}"])
-                        print(f"✓ Successfully ripped all tracks")
-                    except subprocess.CalledProcessError as e:
-                        print(f"✗ MakeMKV failed to rip all tracks: {e}")
-                        raise
+                    print("❌ Could not determine main feature")
+                    print("\n💡 This could be due to:")
+                    print("   - Disc with multiple equal-length features")
+                    print("   - MakeMKV unable to identify the main title")
+                    print("   - Unusual disc structure")
+                    print("\n🔧 Suggestions:")
+                    print("   - Try using --force-all-tracks if you want all content")
+                    print("   - Check the disc manually for the main feature")
+                    print("   - Use a different ripping tool for this disc")
+                    print("\n⚠️  Exiting gracefully - no files were created")
+                    return 1  # Exit with error code
 
             except Exception as e:
-                print(
-                    f"Could not determine main feature ({e}), ripping all tracks...")
-                try:
-                    _run(["makemkvcon", "mkv", "disc:0", "all",
-                         str(outdir), f"--minlength={minlength}"])
-                    print(f"✓ Successfully ripped all tracks (fallback)")
-                except subprocess.CalledProcessError as e2:
-                    print(
-                        f"✗ MakeMKV failed to rip all tracks (fallback): {e2}")
-                    print(f"  → Trying backup method for problematic disc...")
+                print(f"\n❌ Error during disc processing: {e}")
+                print("\n💡 This could be due to:")
+                print("   - Disc reading issues (try cleaning the disc)")
+                print("   - MakeMKV compatibility problems")
+                print("   - Internal script errors")
+                print("\n🔧 Suggestions:")
+                print("   - Try cleaning the disc and re-running")
+                print("   - Use a different Blu-ray drive if available")
+                print("   - Check the disc for scratches or damage")
+                print("\n⚠️  Exiting gracefully - no files were created")
+                return 1  # Exit with error code
 
-                    # Try backup method for problematic discs
-                    backup_cmd = ["makemkvcon",
-                                  "backup", "disc:0", str(outdir)]
-                    print(f"  → Running backup: {' '.join(backup_cmd)}")
-                    backup_result = _run(backup_cmd, capture=True)
-                    # Last 200 chars
-                    print(
-                        f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")
-
-                    # Now rip ALL titles from backup (don't rely on title ID
-                    # mapping)
-                    backup_mkv_cmd = ["makemkvcon", "mkv", f"file:{outdir}", "all", str(
-                        outdir), f"--minlength={minlength}"]
-                    print(
-                        f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                    try:
-                        backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                        print(
-                            f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
-                        print(f"  ✓ Successfully ripped using backup method")
-                    except subprocess.CalledProcessError as e3:
-                        print(f"  ✗ Backup rip also failed: {e3}")
-                        print(
-                            f"  ❌ This disc appears to be unreadable or heavily protected")
-                        print(
-                            f"  💡 Try cleaning the disc or using a different Blu-ray drive")
-                        return 1  # Exit gracefully
         else:
             print("Ripping all tracks (forced)...")
             try:
@@ -1376,7 +1144,10 @@ def main() -> int:
         elif not force_all_tracks and mkvs:
             # Show interactive prompt for complex cases
             print(f"\n🎬 Analyzing main feature: {main_mkv.name}")
-            subtitle_config = interactive_subtitle_prompt_mkv(main_mkv, audio_streams, subtitle_streams)
+            subtitle_config = interactive_subtitle_prompt(
+                audio_streams, subtitle_streams, 
+                source_name=f"Analyzing {main_mkv.name}"
+            )
         
         print("=" * 50 + "\n")
 
