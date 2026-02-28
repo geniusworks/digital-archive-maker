@@ -438,6 +438,7 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
                             sys.stdout.write("\r" + " " * 50 + "\r")
                             sys.stdout.flush()
                             print(f"Selected option {choice}")
+                            print()  # Blank line before separator
                             # Ensure cursor is at start of line for next output
                             sys.stdout.write("\r")
                             sys.stdout.flush()
