@@ -1101,18 +1101,24 @@ def main() -> int:
                             "--aencoder", "copy",  # Copy audio quality
                         ]
                         
-                        # Add subtitle handling based on user's choice
+                        # Add subtitle handling based on user's choice and language match
                         if subtitle_config.get('action') in ['extract_srt', 'burn_subs']:
-                            # User wants subtitles
-                            hb_cmd.extend([
-                                "--subtitle-lang-list", LANG_SUBTITLES,
-                                "--first-subtitle",  # Use first matching subtitle
-                                "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
-                            ])
-                            subtitle_action = "burned"
+                            # User wants subtitles, but check if we really need them
+                            if LANG_AUDIO == LANG_SUBTITLES:
+                                # Same language for audio and subtitles - don't burn
+                                subtitle_action = "none (same language)"
+                                # No subtitle flags added to HandBrake command
+                            else:
+                                # Different languages - burn subtitles for translation
+                                hb_cmd.extend([
+                                    "--subtitle-lang-list", LANG_SUBTITLES,
+                                    "--first-subtitle",  # Use first matching subtitle
+                                    "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
+                                ])
+                                subtitle_action = "burned (different language)"
                         else:
                             # User doesn't want subtitles
-                            subtitle_action = "none"
+                            subtitle_action = "none (user choice)"
                         
                         print(f"  → Running HandBrake: {' '.join(hb_cmd[:5])}...")
                         print(f"  → Using device: {dvd_device}")
