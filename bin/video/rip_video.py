@@ -1282,7 +1282,10 @@ def main() -> int:
                     print(f"  ✗ HandBrake failed to create output")
                     return 1
             except Exception as hb_error:
-                print(f"  ✗ HandBrake fallback failed: {hb_error}")
+                print(f"\n❌ HandBrake fallback failed")
+                print(f"   → Error: {hb_error}")
+                print(f"   → This disc may be CSS-protected or damaged")
+                print(f"   → Try cleaning the disc or using a different ripping tool")
                 return 1
 
         print(f"  ✓ Found {len(mkvs)} MKV file(s) after ripping")
