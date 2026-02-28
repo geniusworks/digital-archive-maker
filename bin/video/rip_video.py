@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import signal
 from datetime import datetime
 from pathlib import Path
 
@@ -27,6 +28,22 @@ except ImportError:
 # Load language preferences from environment
 LANG_AUDIO = normalize_language_code(os.getenv('LANG_AUDIO', 'en'))
 LANG_SUBTITLES = normalize_language_code(os.getenv('LANG_SUBTITLES', 'en'))
+
+# Global flag for graceful cancellation
+CANCELLED = False
+
+def signal_handler(signum, frame):
+    global CANCELLED
+    if not CANCELLED:
+        print("\n⚠️  Interrupt received (Ctrl+C)")
+        print("   → Gracefully cancelling...")
+        CANCELLED = True
+    else:
+        print("\n❌ Force exit")
+        sys.exit(1)
+
+# Register signal handler
+signal.signal(signal.SIGINT, signal_handler)
 
 def check_virtual_environment() -> None:
     """Check if we're running in the virtual environment and exit gracefully if not."""
@@ -82,6 +99,12 @@ def _run(cmd: list[str], *, check: bool = True,
     kwargs = {}
     if capture:
         kwargs.update({"capture_output": True, "text": True})
+    
+    # Check for cancellation before running
+    global CANCELLED
+    if CANCELLED:
+        raise KeyboardInterrupt("Operation cancelled by user")
+    
     return subprocess.run(cmd, check=check, **kwargs)
 
 
@@ -978,6 +1001,17 @@ def main() -> int:
                         if result.stderr:
                             print(
                                 f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
+                    except KeyboardInterrupt:
+                        print(f"\n❌ Rip cancelled by user")
+                        print(f"   → Cleaning up partial files...")
+                        # Clean up any partial files
+                        for partial_file in outdir.glob(f"*t{main_title_id:02d}*"):
+                            try:
+                                partial_file.unlink()
+                                print(f"   → Removed: {partial_file.name}")
+                            except:
+                                pass
+                        return 1
 
                         # Check if file was actually created
                         # MakeMKV uses different naming: DVDs use "title_t00.mkv", Blu-rays use "MovieName_t00.mkv"
