@@ -262,7 +262,7 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
     preferred_text_subs = any(s.get('codec') in ['subrip', 'webvtt', 'ass', 'ssa'] 
                        and matches_language(s.get('language', ''), LANG_SUBTITLES)
                        for s in main_subs)
-    preferred_pgs_subs = any(s.get('codec') == 'hdmv_pgs_subtitle'
+    preferred_pgs_subs = any(s.get('codec') in ['hdmv_pgs_subtitle', 's_vobsub']
                       and matches_language(s.get('language', ''), LANG_SUBTITLES)
                       for s in main_subs)
     
@@ -411,7 +411,10 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
                         key = sys.stdin.read(1)
                         if key in [opt[0] for opt in options]:
                             choice = key
-                            print(f"\nSelected option {choice}")
+                            # Clear the countdown line and show selection
+                            sys.stdout.write("\r" + " " * 50 + "\r")
+                            sys.stdout.flush()
+                            print(f"Selected option {choice}")
                             break
                 except KeyboardInterrupt:
                     print("\nOperation cancelled.")
