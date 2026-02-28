@@ -909,19 +909,27 @@ def main() -> int:
                         same_duration_titles = [t for t in titles if abs(
                             t[1] - longest_duration) <= 60]
 
-                        if len(same_duration_titles) > 1:
-                            print(
-                                f"Found {len(same_duration_titles)} titles with similar duration, checking sizes...")
-                            # Get file sizes for titles with same duration
+                        # Get sizes for size-based selection when title_index > 0
+                        # or when there are same-duration titles
+                        if args.title_index > 0 or len(same_duration_titles) > 1:
+                            if args.title_index > 0:
+                                print(
+                                    f"Title index {args.title_index} specified, checking all title sizes...")
+                            else:
+                                print(
+                                    f"Found {len(same_duration_titles)} titles with similar duration, checking sizes...")
+                            
+                            # Get file sizes for all titles (or same-duration ones)
                             title_sizes = []
-                            for title_id, _, _ in same_duration_titles:
+                            titles_to_check = titles  # Check all titles when index specified
+                            
+                            for title_id, _, _ in titles_to_check:
                                 size_line = next((line for line in info_res.stdout.split('\n')
                                                  if f"TINFO:{title_id},10," in line), None)
                                 if size_line:
                                     size_str = size_line.split(
                                         ',')[3].strip('"')
-                                    # Parse size string like "19.0 GB" or "23.8
-                                    # GB"
+                                    # Parse size string like "19.0 GB" or "23.8 GB"
                                     if 'GB' in size_str:
                                         size_gb = float(
                                             size_str.replace(' GB', ''))
