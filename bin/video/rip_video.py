@@ -1222,7 +1222,7 @@ def main() -> int:
             
             # Try HandBrake CLI directly from disc
             try:
-                hb_output = outdir / f"{TITLE}_{YEAR}_handbrake.mkv"
+                hb_output = outdir / f"{title_raw}_{year_raw}_handbrake.mkv"
                 
                 # Find DVD device
                 dvd_device = "/dev/rdisk1"  # Default macOS DVD device
