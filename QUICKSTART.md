@@ -27,7 +27,19 @@ source venv/bin/activate
 cp .env.sample .env
 ```
 
-Edit `.env` with your paths:
+Edit `.env` with your paths and preferences:
+
+```bash
+# Required paths
+MOVIES_ROOT="/path/to/your/movies"
+TV_ROOT="/path/to/your/tv"
+MUSIC_ROOT="/path/to/your/music"
+
+# Optional: Language preferences for video ripping
+# Use 2-letter ISO 639-1 codes (e.g., "en", "fr", "es", "de", "ja")
+LANG_AUDIO=en          # Preferred audio track language
+LANG_SUBTITLES=en      # Preferred subtitle track language
+```
 
 ```bash
 # Required: Where your media library lives

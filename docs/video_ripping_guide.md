@@ -442,6 +442,56 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
 
 - **Cleanup**. Once both MP4s are confirmed, archive or remove any unused `.mkv` or `.backfill_ocr_*` files.
 
+## 🌍 Multilingual Language Support
+
+The ripping system supports 186+ languages with automatic track selection based on your preferences.
+
+### Configuration
+
+Set your preferred languages in `.env`:
+
+```bash
+# Language preferences (ISO 639-1 codes)
+LANG_AUDIO=en          # Preferred audio track language  
+LANG_SUBTITLES=en      # Preferred subtitle track language
+
+# Examples:
+# LANG_AUDIO=fr        # French audio preferred
+# LANG_SUBTITLES=es    # Spanish subtitles preferred
+# LANG_AUDIO=ja        # Japanese audio preferred
+```
+
+### Supported Languages
+
+The system handles all ISO 639-1 and ISO 639-2 language codes, including:
+- **Major languages**: English, French, Spanish, German, Italian, Japanese, Chinese, Korean, Russian, Portuguese, Arabic
+- **European languages**: Swedish, Norwegian, Danish, Dutch, Polish, Turkish, Czech, Hungarian, Romanian, Finnish, Greek
+- **And 150+ more** - full ISO 639 standard compliance
+
+### Track Selection Logic
+
+**Audio tracks**: 
+- Most channels among preferred language (5.1 > 2.0 > stereo)
+- Falls back to first track if no preferred language
+
+**Subtitle tracks**:
+- Text subtitles preferred over image subtitles  
+- First matching track of preferred format
+
+### Visual Indicators
+
+The interactive prompt shows which tracks will be selected:
+
+```
+🎵 Audio Tracks: 2
+ 👉 Track 0: ENG (dts, 5.1ch) ← SELECTED
+    Track 1: ENG (dts, 2.0ch)
+
+📝 Subtitle Tracks: 2  
+ 👉 Track 0: ENG (subrip) ← SELECTED
+    Track 1: ENG (hdmv_pgs_subtitle)
+```
+
 ## Audio/subtitle language handling (English preference)
 When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
 
@@ -579,6 +629,51 @@ If automatic subtitle burn-in fails or subtitles don't appear in the output:
    Replace `<TRACK_NUM>` with the track number from the HandBrake scan (e.g., 2 for "2, English (VOBSUB)").
 
 4. **Recent fix**: A bug was fixed in Oct 2025 where the script incorrectly calculated HandBrake track numbers. Ensure you're using the latest version of `bin/video/rip_video.py`.
+
+---
+
+## 🚨 Error Handling & Troubleshooting
+
+### Graceful Error Handling
+
+The script now exits gracefully on errors instead of falling back to "ripping all tracks":
+
+**Before (unsafe):**
+```
+Could not determine main feature, ripping all tracks...
+```
+
+**After (safe):**
+```
+❌ Could not determine main feature
+
+💡 This could be due to:
+   - Disc with multiple equal-length features
+   - MakeMKV unable to identify the main title
+   - Unusual disc structure
+
+🔧 Suggestions:
+   - Try using --force-all-tracks if you want all content
+   - Check the disc manually for the main feature
+   - Use a different ripping tool for this disc
+
+⚠️  Exiting gracefully - no files were created
+```
+
+### Common Issues
+
+1. **Disc reading errors**: Clean the disc and try again
+2. **MakeMKV compatibility**: Some discs may need alternative tools
+3. **Language detection**: Ensure `LANG_AUDIO` and `LANG_SUBTITLES` are set correctly in `.env`
+
+### No More "All Tracks" Fallback
+
+The script will **never** automatically rip all tracks as a fallback. This prevents:
+- Massive files with multiple audio/subtitle tracks
+- Wasted time and disk space
+- Unexpected content in your library
+
+If you need all tracks, explicitly use `--force-all-tracks`.
 
 ---
 
