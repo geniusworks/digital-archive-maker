@@ -458,6 +458,10 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
                     dr, dw, de = select.select([sys.stdin], [], [], 1)
                     if dr:
                         key = sys.stdin.read(1)
+                        # Check for Ctrl+C (ETX character in raw mode)
+                        if key == '\x03':
+                            print("\n⚠️  Operation cancelled")
+                            sys.exit(0)
                         if key in [opt[0] for opt in options]:
                             choice = key
                             # Clear the countdown line and reset cursor position
