@@ -1218,7 +1218,72 @@ def main() -> int:
         if not mkvs:
             print(
                 f"  ❌ No MKV files created after ripping - something went wrong")
-            return 1
+            print(f"\n🔄 Trying HandBrake CLI as fallback...")
+            
+            # Try HandBrake CLI directly from disc
+            try:
+                hb_output = outdir / f"{TITLE}_{YEAR}_handbrake.mkv"
+                
+                # Find DVD device
+                dvd_device = "/dev/rdisk1"  # Default macOS DVD device
+                if not Path(dvd_device).exists():
+                    # Try other common DVD devices
+                    for device in ["/dev/disk1", "/dev/rdisk2", "/dev/disk2"]:
+                        if Path(device).exists():
+                            dvd_device = device
+                            break
+                
+                # Build HandBrake command based on user's subtitle choice
+                hb_cmd = [
+                    "HandBrakeCLI",
+                    "-i", dvd_device,
+                    "-o", str(hb_output),
+                    "-t", "0",  # First title
+                    "-c", "1",  # Chapter 1 (main feature)
+                    "--min-duration", "1200",  # 20 minutes minimum
+                    "--preset", "Fast 1080p30",
+                    "--encoder", "x264",
+                    "--quality", "20",
+                    # Audio: prefer preferred language, most channels
+                    "--audio-lang-list", LANG_AUDIO,
+                    "--first-audio",  # Use first matching audio track
+                    "--aencoder", "copy",  # Copy audio quality
+                ]
+                
+                # Add subtitle handling based on user's choice and language match
+                if subtitle_config.get('action') in ['extract_srt', 'burn_subs']:
+                    # User wants subtitles, but check if we really need them
+                    if LANG_AUDIO == LANG_SUBTITLES:
+                        # Same language for audio and subtitles - don't burn
+                        subtitle_action = "none (same language)"
+                        # No subtitle flags added to HandBrake command
+                    else:
+                        # Different languages - burn subtitles for translation
+                        hb_cmd.extend([
+                            "--subtitle-lang-list", LANG_SUBTITLES,
+                            "--first-subtitle",  # Use first matching subtitle
+                            "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
+                        ])
+                        subtitle_action = "burned (different language)"
+                else:
+                    # User doesn't want subtitles
+                    subtitle_action = "none (user choice)"
+                
+                print(f"  → Running HandBrake: {' '.join(hb_cmd[:5])}...")
+                print(f"  → Using device: {dvd_device}")
+                print(f"  → Audio preference: {LANG_AUDIO.upper()}")
+                print(f"  → Subtitles: {subtitle_action}")
+                hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
+                
+                if hb_output.exists():
+                    print(f"  ✓ HandBrake succeeded: {hb_output.name}")
+                    mkvs = [hb_output]
+                else:
+                    print(f"  ✗ HandBrake failed to create output")
+                    return 1
+            except Exception as hb_error:
+                print(f"  ✗ HandBrake fallback failed: {hb_error}")
+                return 1
 
         print(f"  ✓ Found {len(mkvs)} MKV file(s) after ripping")
 
