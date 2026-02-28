@@ -1094,13 +1094,19 @@ def main() -> int:
                             "--preset", "Fast 1080p30",
                             "--encoder", "x264",
                             "--quality", "20",
-                            "--audio", "1",  # First audio track
-                            "--aencoder", "copy",  # Copy audio
-                            "--subtitle", "1,2",  # Include subtitles
-                            "--subtitle-burned"  # Burn if needed
+                            # Audio: prefer preferred language, most channels
+                            "--audio-lang-list", LANG_AUDIO,
+                            "--first-audio",  # Use first matching audio track
+                            "--aencoder", "copy",  # Copy audio quality
+                            # Subtitles: prefer preferred language
+                            "--subtitle-lang-list", LANG_SUBTITLES,
+                            "--first-subtitle",  # Use first matching subtitle
+                            "--subtitle-burned"  # Burn subtitles (HandBrake limitation)
                         ]
                         print(f"  → Running HandBrake: {' '.join(hb_cmd[:5])}...")
                         print(f"  → Using device: {dvd_device}")
+                        print(f"  → Audio preference: {LANG_AUDIO.upper()}")
+                        print(f"  → Subtitle preference: {LANG_SUBTITLES.upper()}")
                         hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
                         
                         if hb_output.exists():
