@@ -443,6 +443,12 @@ def interactive_subtitle_prompt(audio_streams: list, subtitle_streams: list,
         
         # Countdown loop
         for remaining in range(timeout_seconds, 0, -1):
+            # Check for global cancellation
+            global CANCELLED
+            if CANCELLED:
+                print("\n⚠️  Operation cancelled")
+                sys.exit(0)
+            
             sys.stdout.write(f"\rContinuing with default in {remaining}s...")
             sys.stdout.flush()
             
