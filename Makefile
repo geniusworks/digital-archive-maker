@@ -60,6 +60,8 @@ install-video-deps:
 		  echo "Already installed: $$p"; \
 		fi; \
 	  done
+	@echo "Fixing HandBrakeCLI dependencies..."
+	@brew reinstall libvpx handbrake || echo "HandBrake dependency fix completed"
 	@echo "Attempting to link makemkvcon if MakeMKV is installed..."
 	@([ -x /Applications/MakeMKV.app/Contents/MacOS/makemkvcon ] && \
 		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon && \
