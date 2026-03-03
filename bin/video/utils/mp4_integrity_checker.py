@@ -26,24 +26,37 @@ def run_command(cmd, capture=True, timeout=10):
 
 def find_mp4_directories():
     """Find directories containing MP4 files in the library"""
-    base_dirs = [
-        Path("/Users/martin/Movies/Rips"),
-        Path.home() / "Movies" / "Rips",
-        Path("/Volumes/Data/Media/Library"),
-    ]
+    # Get LIBRARY_ROOT from .env
+    libroot = None
+    try:
+        env_file = Path(__file__).parent.parent.parent.parent / ".env"
+        if env_file.exists():
+            with open(env_file, 'r') as f:
+                for line in f:
+                    if line.startswith('LIBRARY_ROOT='):
+                        libroot = Path(line.split('=', 1)[1].strip())
+                        break
+    except:
+        pass
+    
+    if not libroot:
+        print("❌ LIBRARY_ROOT not found in .env file")
+        print("💡 Please set LIBRARY_ROOT in your .env file")
+        return []
+    
+    if not libroot.exists():
+        print(f"❌ LIBRARY_ROOT directory not found: {libroot}")
+        print("💡 Please check LIBRARY_ROOT path in .env file")
+        return []
     
     mp4_dirs = []
     
-    for base_dir in base_dirs:
-        if not base_dir.exists():
-            continue
-            
-        # Look for directories with MP4 files
-        for subdir in base_dir.rglob("*"):
-            if subdir.is_dir():
-                mp4_files = list(subdir.glob("*.mp4"))
-                if mp4_files:
-                    mp4_dirs.append((subdir, len(mp4_files)))
+    # Look for directories with MP4 files
+    for subdir in libroot.rglob("*"):
+        if subdir.is_dir():
+            mp4_files = list(subdir.glob("*.mp4"))
+            if mp4_files:
+                mp4_dirs.append((subdir, len(mp4_files)))
     
     return sorted(mp4_dirs, key=lambda x: x[1], reverse=True)  # Sort by file count
 
@@ -381,7 +394,10 @@ def main():
             print()
         
         if len(results) > 3:
-            print(f"... and {len(results) - 3} more perfect files ✅")
+            remaining = len(results) - 3
+            print(f"... and {remaining} more perfect files ✅")
+        else:
+            print()  # Add newline if no "more files" message
 
 if __name__ == "__main__":
     main()
