@@ -5,6 +5,7 @@ venv/
 log/**
 cache/**
 config/**
+.local/
 
 # Exception: allow .gitkeep files to track empty directories
 !log/.gitkeep
