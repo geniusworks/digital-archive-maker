@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+print()  # Add newline at beginning
+
 def run_command(cmd, capture=True, timeout=10):
     """Run a command and return result"""
     try:
@@ -245,20 +247,27 @@ def analyze_mp4_file(mp4_path):
 def main():
     """Main analysis function"""
     import sys
+    import argparse
+    
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='MP4 Integrity Checker')
+    parser.add_argument('directory', nargs='?', help='Directory to analyze (optional)')
+    parser.add_argument('--analyze-all', action='store_true', help='Show details for all files, not just problematic ones')
+    args = parser.parse_args()
     
     print("🔍 MP4 Integrity Checker")
     print("=" * 50)
     
     # Check if directory argument provided
     target_dir = None
-    if len(sys.argv) > 1:
-        target_dir = Path(sys.argv[1])
+    if args.directory:
+        target_dir = Path(args.directory)
         if not target_dir.exists():
             print(f"❌ Directory not found: {target_dir}")
-            print("Usage: python3 mp4_integrity_checker.py [directory]")
+            print("Usage: python3 mp4_integrity_checker.py [directory] [--analyze-all]")
             return
     else:
-        # Auto-detect MP4 directories
+        # Auto-detect MP4 directories and analyze all files
         print("🔍 Scanning for MP4 directories...")
         mp4_dirs = find_mp4_directories()
         
@@ -267,27 +276,41 @@ def main():
             print("💡 Try specifying a directory: python3 mp4_integrity_checker.py /path/to/mp4s")
             return
         
-        print(f"📁 Found {len(mp4_dirs)} directories with MP4 files:")
-        for i, (dir_path, count) in enumerate(mp4_dirs[:5], 1):
-            print(f"   {i}. {dir_path} ({count} files)")
+        if args.analyze_all:
+            print(f"📁 Found {len(mp4_dirs)} directories with MP4 files:")
+            for i, (dir_path, count) in enumerate(mp4_dirs[:5], 1):
+                print(f"   {i}. {dir_path} ({count} files)")
+            
+            if len(mp4_dirs) > 1:
+                print(f"   ... and {len(mp4_dirs) - 5} more directories")
+                print()
+                print("🎯 Analyzing ALL MP4 files across all directories")
+        else:
+            print(f"📁 Found {len(mp4_dirs)} directories with MP4 files")
+            print("🎯 Analyzing ALL MP4 files across all directories")
         
-        if len(mp4_dirs) > 1:
-            print(f"   ... and {len(mp4_dirs) - 5} more directories")
-            print()
-            print("🎯 Using directory with most MP4 files")
+        # Collect all MP4 files from all directories
+        all_mp4_files = []
+        for dir_path, count in mp4_dirs:
+            mp4_files = list(dir_path.glob("*.mp4"))
+            all_mp4_files.extend(mp4_files)
         
-        target_dir = mp4_dirs[0][0]
+        target_dir = None  # We'll analyze files from all directories
     
-    print(f"🎬 Analyzing MP4 files in: {target_dir}")
+    # Get MP4 files to analyze
+    if target_dir:
+        # Specific directory mode
+        print(f"🎬 Analyzing MP4 files in: {target_dir}")
+        mp4_files = list(target_dir.rglob("*.mp4"))
+        if not mp4_files:
+            print("❌ No MP4 files found")
+            return
+    else:
+        # Auto-detect mode - use collected files
+        mp4_files = all_mp4_files
+        print(f"🎬 Analyzing {len(mp4_files)} MP4 files across all directories")
+    
     print()
-    
-    # Find all MP4 files
-    mp4_files = list(target_dir.rglob("*.mp4"))
-    
-    if not mp4_files:
-        print("❌ No MP4 files found")
-        return
-    
     print(f"📁 Found {len(mp4_files)} MP4 files...")
     print()
     
@@ -389,22 +412,22 @@ def main():
     else:
         print("🎉 All files have perfect integrity!")
         print("✨ No encoding or streaming issues detected")
-        print()
-        print("📝 Sample file details:")
-        print("-" * 30)
-        for result in results[:3]:
-            info = result['info']
-            print(f"📁 {result['path'].name}")
-            print(f"   📹 {info.get('video_codec', '?')} ({info.get('video_width', '?')}x{info.get('video_height', '?')})")
-            print(f"   💾 {info.get('size_mb', '?')} MB")
-            print(f"   ⏱️  {info.get('duration', '?')} sec")
-            print()
         
-        if len(results) > 3:
-            remaining = len(results) - 3
-            print(f"... and {remaining} more perfect files ✅")
+        if args.analyze_all:
+            print()
+            print("📝 All file details:")
+            print("-" * 25)
+            for result in results:
+                info = result['info']
+                print(f"📁 {result['path'].name}")
+                print(f"   📹 {info.get('video_codec', '?')} ({info.get('video_width', '?')}x{info.get('video_height', '?')})")
+                print(f"   💾 {info.get('size_mb', '?')} MB")
+                print(f"   ⏱️  {info.get('duration', '?')} sec")
+                print()
         else:
-            print()  # Add newline if no "more files" message
+            print()
+            print("💡 Use --analyze-all to see details for all files")
+            print()  # Add newline at end
 
 if __name__ == "__main__":
     main()
