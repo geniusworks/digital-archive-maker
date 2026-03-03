@@ -49,10 +49,17 @@ def find_mp4_directories():
         print("💡 Please check LIBRARY_ROOT path in .env file")
         return []
     
+    # Look in LIBRARY_ROOT/Movies by default
+    movies_dir = libroot / "Movies"
+    if not movies_dir.exists():
+        print(f"❌ Movies directory not found: {movies_dir}")
+        print("💡 Expected structure: LIBRARY_ROOT/Movies/")
+        return []
+    
     mp4_dirs = []
     
-    # Look for directories with MP4 files
-    for subdir in libroot.rglob("*"):
+    # Look for directories with MP4 files under Movies
+    for subdir in movies_dir.rglob("*"):
         if subdir.is_dir():
             mp4_files = list(subdir.glob("*.mp4"))
             if mp4_files:
