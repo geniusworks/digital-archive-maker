@@ -1,7 +1,50 @@
 #!/usr/bin/env python3
 """
 MP4 Integrity Checker - Analyze MP4 files for encoding and streaming compatibility issues.
-Automatically detects MP4 directories and outputs summary to stdout.
+
+PURPOSE:
+    This script analyzes MP4 files to detect potential issues that could cause playback problems,
+    particularly with media servers like Jellyfin. It checks both encoding compatibility and
+    streaming-specific issues.
+
+WHEN TO USE:
+    • When experiencing "Player error encountered" or playback issues
+    • After batch encoding to verify quality and compatibility  
+    • Before adding new files to your media library
+    • When troubleshooting streaming/transcoding problems
+    • To validate ripped Blu-ray/DVD conversions
+
+WHAT IT CHECKS:
+    • Video codec compatibility (H.264, HEVC, etc.)
+    • Audio codec issues (DTS, TrueHD compatibility problems)
+    • Frame rate and resolution anomalies
+    • Bitrate and file size inconsistencies
+    • Streaming compatibility issues
+    • Container format problems
+
+USAGE EXAMPLES:
+    # Quick check of all MP4 files (auto-detects from LIBRARY_ROOT/Movies)
+    python3 bin/video/utils/mp4_integrity_checker.py
+    
+    # Analyze specific directory
+    python3 bin/video/utils/mp4_integrity_checker.py /path/to/movies
+    
+    # Show detailed analysis of all files
+    python3 bin/video/utils/mp4_integrity_checker.py --analyze-all
+    
+    # Specific directory with full details
+    python3 bin/video/utils/mp4_integrity_checker.py /path/to/movies --analyze-all
+
+OUTPUT:
+    • Progress indicators during analysis
+    • Summary of files with/without issues
+    • Detailed breakdown of problematic files
+    • Recommendations for fixing issues
+    • Full file details (with --analyze-all flag)
+
+DEPENDENCIES:
+    • ffprobe (from FFmpeg) - required for media analysis
+    • Python 3.6+ with pathlib, subprocess, json modules
 """
 
 import os
@@ -250,8 +293,19 @@ def main():
     import argparse
     
     # Parse arguments
-    parser = argparse.ArgumentParser(description='MP4 Integrity Checker')
-    parser.add_argument('directory', nargs='?', help='Directory to analyze (optional)')
+    parser = argparse.ArgumentParser(
+        description='Analyze MP4 files for encoding and streaming compatibility issues',
+        epilog="""
+EXAMPLES:
+  %(prog)s                                    # Auto-detect and analyze all MP4 files
+  %(prog)s /path/to/movies                    # Analyze specific directory  
+  %(prog)s --analyze-all                      # Show full details for all files
+  %(prog)s /path/to/movies --analyze-all      # Specific directory with full details
+
+For more information, see the script header documentation.""",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument('directory', nargs='?', help='Directory to analyze (optional - auto-detects from LIBRARY_ROOT/Movies)')
     parser.add_argument('--analyze-all', action='store_true', help='Show details for all files, not just problematic ones')
     args = parser.parse_args()
     
