@@ -67,6 +67,11 @@ install-video-deps:
 		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon && \
 		echo "Linked makemkvcon to /usr/local/bin/makemkvcon") || \
 		echo "Note: Install MakeMKV from https://www.makemkv.com/download/ then rerun this target to link makemkvcon."
+	@echo "Linking MakeMKV mmgplsrv service..."
+	@([ -x /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv ] && \
+		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv /usr/local/bin/mmgplsrv && \
+		echo "Linked mmgplsrv to /usr/local/bin/mmgplsrv") || \
+		echo "Note: mmgplsrv not found, MakeMKV may not be properly installed."
 	@echo "Creating MakeMKV ccextractor symlink..."
 	@([ -x /opt/homebrew/bin/ccextractor ] && \
 		sudo ln -sf /opt/homebrew/bin/ccextractor /usr/local/bin/mmccextr && \
