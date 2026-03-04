@@ -13,7 +13,7 @@ endif
 help:
 	@echo "Available targets:"
 	@echo "  install-deps        Install Homebrew deps and Python packages"
-	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, ccextractor; link makemkvcon"
+	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, ccextractor, libdvdcss; link makemkvcon"
 	@echo "  rip-cd              Rip an audio CD using abcde"
 	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/video/rip_video.py"
 	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
@@ -53,7 +53,7 @@ install-deps:
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"
-	@for p in handbrake ffmpeg jq tesseract mkvtoolnix ccextractor; do \
+	@for p in handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss; do \
 		if ! brew list $$p >/dev/null 2>&1; then \
 		  echo "brew install $$p"; brew install $$p || true; \
 		else \

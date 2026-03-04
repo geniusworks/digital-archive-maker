@@ -14,8 +14,14 @@ Get from zero to ripping your first CD in under 10 minutes.
 git clone https://github.com/yourusername/digital-library.git
 cd digital-library
 
-# Install system dependencies
+# Install system dependencies (audio/CD tools)
 make install-deps
+
+# Install video ripping dependencies (DVD/Blu-ray support)
+make install-video-deps
+
+# Note: MakeMKV requires manual installation from https://www.makemkv.com/download/
+# After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
 # Activate virtual environment for Python scripts
 source venv/bin/activate
