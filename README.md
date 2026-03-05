@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-Turn your CDs, DVDs, and Blu-rays into a beautiful digital library you can stream from anywhere — no technical expertise required.
+Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can access from anywhere.
 </p>
 
 <div align="center">
