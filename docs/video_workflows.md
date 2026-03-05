@@ -1,6 +1,6 @@
 # Video Processing Workflows
 
-Complete guide to all video processing scenarios and workflows in the digital library system.
+Complete guide to all video processing scenarios and workflows in Digital Archive Maker.
 
 > **Updated:** February 2026 - Unified MP4 + External SRT approach for all content
 

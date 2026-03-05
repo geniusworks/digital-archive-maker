@@ -200,8 +200,8 @@ The authors of this software have no affiliation with MakeMKV.
 **Portfolio-Ready README Structure:**
 ```markdown
 <div align="center">
-  <img src="docs/assets/logo.svg" width="200" alt="Digital Library Logo">
-  <h1>Digital Library</h1>
+  <img src="docs/assets/logo.svg" width="200" alt="Digital Archive Maker Logo">
+  <h1>Digital Archive Maker</h1>
   <p><strong>Physical Media → Digital Library → Streaming Server</strong></p>
   
   <p>
@@ -223,7 +223,7 @@ The authors of this software have no affiliation with MakeMKV.
 > 🎬 **Tag everything** with TMDb, Spotify, and iTunes metadata  
 > 🔄 **Sync to Jellyfin/Plex** with content filtering (explicit, ratings)
 
-## ✨ Why Digital Library?
+## ✨ Why Digital Archive Maker?
 
 | Problem | Solution |
 |---------|----------|
@@ -236,8 +236,8 @@ The authors of this software have no affiliation with MakeMKV.
 
 \`\`\`bash
 # Clone and setup
-git clone https://github.com/geniusworks/digital-library.git
-cd digital-library
+git clone https://github.com/geniusworks/digital-archive-maker.git
+cd digital-archive-maker
 make install-deps
 
 # Configure
@@ -424,14 +424,14 @@ rm -rf .git
 # 3. Initialize fresh repo
 git init
 git add .
-git commit -m "Initial release: Physical media to digital library automation"
+git commit -m "Initial release: Physical media to digital archive automation"
 
 # 4. Create new GitHub repo (do NOT use existing one)
-# Go to github.com → New repository → "digital-library"
+# Go to github.com → New repository → "digital-archive-maker"
 # Do NOT initialize with README (we have one)
 
 # 5. Push to new remote
-git remote add origin git@github.com:USERNAME/digital-library.git
+git remote add origin git@github.com:USERNAME/digital-archive-maker.git
 git branch -M main
 git push -u origin main
 ```
@@ -441,7 +441,7 @@ git push -u origin main
 # Creates single commit from all history
 git checkout --orphan fresh-main
 git add .
-git commit -m "Initial release: Physical media to digital library automation"
+git commit -m "Initial release: Physical media to digital archive automation"
 git branch -D main
 git branch -m main
 git push -f origin main  # DANGER: Force push
@@ -470,7 +470,7 @@ git status --ignored
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     DIGITAL LIBRARY SYSTEM                       │
+│                   DIGITAL ARCHIVE MAKER SYSTEM                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐     │
@@ -523,12 +523,11 @@ git status --ignored
 ### Project Name Options
 | Name | Pros | Cons |
 |------|------|------|
-| **Digital Library** | Descriptive, clear purpose, matches repo name | Generic |
-| **MediaFlow** | Professional, implies pipeline | Already taken |
+| **Digital Archive Maker** | Descriptive, clear purpose, archival angle | New name |
 | **DiscVault** | Physical media focus, archival feel | Narrow scope |
 | **Archivista** | Sophisticated, library-like | Hard to spell |
 
-**Current name:** `Digital Library` — clear, descriptive, matches the repo and target audience (archivists, collectors)
+**Current name:** `Digital Archive Maker` — descriptive, action-oriented, matches purpose
 
 ### Visual Identity
 - **Colors:** Deep blue (#1a365d) + warm orange (#ed8936) accent

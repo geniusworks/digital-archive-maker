@@ -1,4 +1,4 @@
-# Workflow Overview (Disc → Digital Library)
+# Workflow Overview (Disc → Digital Archive)
 
 This repository is organized around three primary workflows:
 

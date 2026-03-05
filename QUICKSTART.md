@@ -11,8 +11,8 @@ Get from zero to ripping your first CD in under 10 minutes.
 ## 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/geniusworks/digital-library.git
-cd digital-library
+git clone https://github.com/geniusworks/digital-archive-maker.git
+cd digital-archive-maker
 
 # Install system dependencies (audio/CD tools)
 make install-deps
@@ -81,7 +81,7 @@ For seamless media management, add this function to your `~/.zshrc`:
 ```bash
 media() {
     local VENV_PATH="$HOME/venvs/media"
-    local REPO_PATH="$HOME/Herd/digital-library"
+    local REPO_PATH="$HOME/Herd/digital-archive-maker"
     
     case "${1:-help}" in
         "sync"|"master-sync")

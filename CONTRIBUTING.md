@@ -1,4 +1,4 @@
-# Contributing to Digital Library
+# Contributing to Digital Archive Maker
 
 First off, thank you for considering contributing! 🎉
 
@@ -62,8 +62,8 @@ Ready to contribute code? See [Development Setup](#development-setup) below.
 
 ```bash
 # Clone the repository
-git clone https://github.com/geniusworks/digital-library.git
-cd digital-library
+git clone https://github.com/geniusworks/digital-archive-maker.git
+cd digital-archive-maker
 
 # Create virtual environment
 python3 -m venv venv
