@@ -1,78 +1,155 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Digital Library Logo" width="320" />
+</p>
+
+<p align="center">
+Transform physical media into a streaming-ready digital archive — CDs, DVDs, and Blu-rays, organized and tagged automatically.
+</p>
+
 <div align="center">
 
-# 📀 Digital Library
-
-**Physical Media → Digital Archive → Streaming Server**
-
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
-
-[Quick Start](QUICKSTART.md) •
-[Documentation](docs/) •
-[Contributing](CONTRIBUTING.md)
+[![License](https://img.shields.io/github/license/geniusworks/digital-library?style=for-the-badge&label=License&labelColor=444444&color=007ec6)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/github/v/release/geniusworks/digital-library?style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](CHANGELOG.md)
+[![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg?style=for-the-badge&label=Platform&labelColor=444444&color=999999)](https://www.apple.com/macos/)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg?style=for-the-badge&label=Python&labelColor=444444&color=3776AB)](https://www.python.org/downloads/)
 
 </div>
 
+<p align="center">
+  <a href="QUICKSTART.md">Quick Start</a> ·
+  <a href="docs/">Documentation</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="DISCLAIMER.md">Disclaimer</a> ·
+  <a href="SECURITY.md">Security</a>
+</p>
+
 ---
 
-> 🎵 **Rip CDs** to FLAC with MusicBrainz metadata and cover art  
-> 📀 **Archive DVDs/Blu-rays** with proper subtitles and organization  
-> 🏷️ **Tag everything** automatically from MusicBrainz, TMDb, Spotify, iTunes  
-> 🔄 **Sync to Jellyfin/Plex** with content filtering (explicit, ratings)
+## About
 
-## Why This Exists
+**Digital Library** transforms your physical media collection — CDs, DVDs, and Blu-rays — into a perfectly organized digital archive ready for Jellyfin, Plex, or any media server.
 
-| Problem | Solution |
-|---------|----------|
-| CDs piling up, no organization | One command: rip, tag, organize, done |
-| DVDs with wrong subtitles | Intelligent language detection and burn-in |
-| Manual metadata entry is tedious | Automatic lookups from 5+ sources |
-| Explicit content on family server | Filter by EXPLICIT tag or MPAA rating |
+**What it provides:**
+- 🎵 **CD Ripping** — Automatic metadata from MusicBrainz, cover art fetching, FLAC lossless
+- 📀 **DVD/Blu-ray Archiving** — MakeMKV + HandBrake with intelligent subtitle handling
+- 🏷️ **Smart Tagging** — Explicit content flags, genre normalization, lyrics fetching
+- 🔄 **Multi-destination Sync** — rsync with content filtering (explicit, ratings)
+- 📱 **Media Server Ready** — Outputs organized files with proper metadata for Jellyfin/Plex
 
-## Quick Start
+Perfect for anyone with a growing pile of physical media who wants to preserve their collection in a modern, streaming-ready format — while keeping full control of their data on their own hardware.
 
+---
+
+## Getting Started
+
+**Step 1: Clone and install dependencies**
 ```bash
-# Clone and setup
 git clone https://github.com/geniusworks/digital-library.git
 cd digital-library
 make install-deps
 source venv/bin/activate
+```
 
-# Configure
+**Step 2: Configure**
+```bash
 cp .env.sample .env
-# Edit .env with your paths and API keys
+# Edit .env with your paths and optional API keys
+```
 
-# Rip a CD
+**Step 3: Rip a CD**
+```bash
 make rip-cd
+```
 
-# Rip a DVD/Blu-ray
+**Step 4: Rip a DVD/Blu-ray**
+```bash
 make rip-video
+```
 
-# (Optional) Add convenience aliases - see QUICKSTART.md for "media" command
+**Step 5: Sync to your media server**
+```bash
+python bin/sync/master-sync.py
 ```
 
 📖 **[Full Quick Start Guide →](QUICKSTART.md)**
 
-## Features
+---
+
+## Core Features
 
 ### 🎵 Music Pipeline
-- **CD Ripping** — `abcde` + MusicBrainz for accurate metadata
-- **Cover Art** — Automatic fetch from Cover Art Archive
-- **Explicit Tagging** — Waterfall lookup: Spotify → iTunes → MusicBrainz
-- **Genre Tagging** — Curated whitelist with 100+ genres
-- `fix_missing_metadata.py` — comprehensive metadata fixer using MusicBrainz; detects and fixes missing titles/artists/albums
-- `download_lyrics.py` — smart lyrics downloader with album-by-album processing, rate limit protection, permanent skip list, intelligent artist variations, and failed lookup tracking
+| Feature | Description |
+|---------|-------------|
+| **CD Ripping** | `abcde` with MusicBrainz lookup, FLAC output |
+| **Cover Art** | Automatic fetch from Cover Art Archive |
+| **Explicit Tagging** | Waterfall: Spotify → iTunes → MusicBrainz |
+| **Genre Tagging** | Curated whitelist with 100+ genres |
+| **Metadata Fixer** | Comprehensive MusicBrainz-based repair |
+| **Lyrics Download** | Genius API + lyrics.ovh fallback |
 
-### 📀 Video Pipeline  
-- **DVD/Blu-ray Ripping** — MakeMKV extraction + HandBrake encoding
-- **Subtitle Handling** — Auto-detect, burn-in, or soft-sub muxing
-- **Music Videos** — Organize and tag with artist/title metadata
+### 📀 Video Pipeline
+| Feature | Description |
+|---------|-------------|
+| **Disc Ripping** | MakeMKV extraction + HandBrake encoding |
+| **Subtitle Handling** | Auto-detect, burn-in, or soft-sub muxing |
+| **Language Detection** | Intelligent audio/subtitle selection |
+| **Music Videos** | Organize with artist/title metadata |
 
 ### 🔄 Library Management
-- **Multi-destination Sync** — YAML-configured rsync with filters
-- **Content Filtering** — Exclude explicit/adult content per destination
-- **Playlist Generation** — Auto-create `.m3u8` playlists
+| Feature | Description |
+|---------|-------------|
+| **Multi-destination Sync** | YAML-configured rsync with filters |
+| **Content Filtering** | Exclude explicit/adult content per destination |
+| **Playlist Generation** | Auto-create `.m3u8` playlists |
+
+---
+
+## Command Reference
+
+```bash
+# Rip media
+make rip-cd              # Rip audio CD to FLAC
+make rip-video           # Rip DVD/Blu-ray to MP4/MKV
+
+# Tag and organize
+python bin/music/tag-explicit-mb.py --path /path/to/music
+python bin/music/download_lyrics.py --path /path/to/music --recursive
+python bin/music/update-genre-mb.py --path /path/to/music
+
+# Sync library
+python bin/sync/master-sync.py
+python bin/sync/sync-library.py --config sync-config.yaml
+
+# Quality checks
+python bin/music/check_album_integrity.py --path /path/to/music
+```
+
+For more commands, see [Documentation](docs/).
+
+---
+
+## System Requirements
+
+**macOS requirements:**
+- macOS with Homebrew
+- Python 3.9+
+
+**External tools (installed via `make install-deps`):**
+- `abcde` — CD ripping
+- `flac` — Audio encoding
+- `ffmpeg` — Media processing
+- `HandBrakeCLI` — Video encoding
+- `MakeMKV` — Disc decryption (installed separately)
+
+**Optional API keys for enhanced metadata:**
+| Service | Purpose | Get Key |
+|---------|---------|---------|
+| Spotify | Explicit detection | [developer.spotify.com](https://developer.spotify.com/) |
+| TMDb | Movie/TV metadata | [themoviedb.org](https://www.themoviedb.org/documentation/api) |
+| Genius | Lyrics fetching | [genius.com/developers](https://genius.com/developers) |
+| AcoustID | Audio fingerprinting | [acoustid.org](https://acoustid.org/) |
+
+---
 
 ## Documentation
 
@@ -81,9 +158,11 @@ make rip-video
 | **[Quick Start](QUICKSTART.md)** | Get running in 10 minutes |
 | **[Workflow Overview](docs/workflow_overview.md)** | High-level pipelines |
 | **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-Jellyfin guide |
-| **[CD Ripping](docs/cd_ripping_guide.md)** | Detailed `abcde` setup |
 | **[Video Ripping](docs/video_ripping_guide.md)** | DVD/Blu-ray workflow |
 | **[Media Server Setup](docs/media_server_setup.md)** | Jellyfin/Plex configuration |
+| **[Server Setups](docs/server_setups/)** | Hardware-specific guides |
+
+---
 
 ## Project Structure
 
@@ -93,53 +172,53 @@ digital-library/
 │   ├── music/          # CD ripping, tagging, metadata
 │   ├── video/          # DVD/Blu-ray ripping, subtitles
 │   ├── sync/           # Library sync and filtering
+│   ├── tv/             # TV show metadata
 │   └── utils/          # Playlist tools, helpers
 ├── docs/               # Detailed guides
+├── config/             # Configuration templates
+├── cache/              # Runtime cache
 ├── tests/              # Test suite
 └── Makefile            # Common tasks
 ```
 
-## Requirements
+---
 
-- **macOS** with Homebrew
-- **Python 3.9+**
-- **External tools**: `abcde`, `flac`, `ffmpeg`, `HandBrakeCLI`, `MakeMKV`
+## Troubleshooting
 
-All dependencies install via:
+**"Command not found: abcde"**
 ```bash
-make install-deps
-source venv/bin/activate
+brew install abcde
 ```
 
-## API Keys (Optional but Recommended)
+**"MakeMKV not found"**
+Download from [makemkv.com](https://www.makemkv.com/) and install.
 
-Enhanced metadata requires free API keys:
+**"No disc found"**
+Ensure your disc is inserted and mounted. External drives may need a moment.
 
-| Service | Purpose | Get Key |
-|---------|---------|---------|
-| Spotify | Explicit detection | [developer.spotify.com](https://developer.spotify.com/) |
-| TMDb | Movie/TV metadata | [themoviedb.org](https://www.themoviedb.org/documentation/api) |
-| AcoustID | Audio fingerprinting | [acoustid.org](https://acoustid.org/) |
+**API errors**
+Check that your `.env` file has valid API keys and that you haven't exceeded rate limits.
 
-Configure in `.env` — see `.env.sample` for all options.
+Need more help? Check [docs/](docs/) or open an issue.
+
+---
 
 ## Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Legal
+---
+
+## Disclaimer
 
 This software is for **personal backup of media you legally own**. Users are solely responsible for compliance with applicable copyright laws in their jurisdiction.
 
-- **No decryption code is included.** External tools (MakeMKV) must be obtained and licensed separately.
-- **No copyrighted content is downloaded.** Metadata lookups use authorized public APIs.
-- See [DISCLAIMER.md](DISCLAIMER.md) for full terms and third-party service obligations.
+- **No decryption code is included** — External tools (MakeMKV) must be obtained and licensed separately
+- **No copyrighted content is downloaded** — Metadata lookups use authorized public APIs
+- **For personal use only** — See [DISCLAIMER.md](DISCLAIMER.md) for full terms
 
 ---
 
-<div align="center">
+## Author
 
-**[⬆ Back to Top](#-digital-library)**
-
-</div>
-
+Made by Martin Herd
