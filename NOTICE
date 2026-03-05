@@ -1,0 +1,79 @@
+Digital Library
+Copyright (c) 2026 Martin Herd
+
+This project is licensed under the MIT License. See LICENSE for details.
+
+================================================================================
+THIRD-PARTY SOFTWARE
+================================================================================
+
+This software orchestrates and invokes the following third-party tools, which
+are NOT included in this repository. Users must obtain and license them
+separately:
+
+  MakeMKV          https://www.makemkv.com/
+                   Proprietary (beta-free or purchased license)
+                   NOT affiliated with this project
+
+  HandBrakeCLI     https://handbrake.fr/
+                   GNU General Public License v2.0
+
+  abcde            https://abcde.einval.com/
+                   GNU General Public License
+
+  FFmpeg           https://ffmpeg.org/
+                   GNU Lesser General Public License v2.1+
+
+  MKVToolNix       https://mkvtoolnix.download/
+                   GNU General Public License v2.0
+
+  Tesseract OCR    https://github.com/tesseract-ocr/tesseract
+                   Apache License 2.0
+
+  cdparanoia       https://xiph.org/paranoia/
+                   GNU General Public License v2.0
+
+================================================================================
+THIRD-PARTY SERVICES (APIs)
+================================================================================
+
+This software interfaces with the following external services. Users must
+obtain their own API keys (where required) and comply with each service's
+terms of use:
+
+  MusicBrainz      https://musicbrainz.org/
+                   Usage: https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
+                   Data license: CC0 (public domain)
+
+  TMDb             https://www.themoviedb.org/
+                   Terms: https://www.themoviedb.org/documentation/api/terms-of-use
+                   Attribution required per ToS
+
+  OMDb             https://www.omdbapi.com/
+                   API key required
+
+  Spotify          https://developer.spotify.com/
+                   Terms: https://developer.spotify.com/terms
+
+  iTunes Search    https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/
+                   Subject to Apple's Terms of Service
+
+  Genius           https://genius.com/developers
+                   API token required; subject to rate limits
+
+  lyrics.ovh       https://lyrics.ovh/
+                   Public API; no key required
+
+  Cover Art Archive https://coverartarchive.org/
+                   Data license: CC0 (public domain)
+
+  AcoustID         https://acoustid.org/
+                   API key required for fingerprinting
+
+================================================================================
+PYTHON DEPENDENCIES
+================================================================================
+
+This project uses Python packages listed in requirements.txt and
+requirements-test.txt. All are permissively licensed (MIT, BSD, Apache 2.0,
+or PSF). Run `pip-licenses` for a full dependency license report.

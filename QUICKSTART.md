@@ -11,7 +11,7 @@ Get from zero to ripping your first CD in under 10 minutes.
 ## 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/yourusername/digital-library.git
+git clone https://github.com/geniusworks/digital-library.git
 cd digital-library
 
 # Install system dependencies (audio/CD tools)
@@ -158,7 +158,7 @@ Follow the prompts to select title and configure encoding.
 
 - **[Full Documentation](docs/)** — Detailed guides for each workflow
 - **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
-- **[Video Disc Guide](docs/video_disc_guide.md)** — DVD/Blu-ray workflow
+- **[Video Ripping Guide](docs/video_ripping_guide.md)** — DVD/Blu-ray workflow
 - **[README](README.md)** — Full feature overview
 
 ---

@@ -26,14 +26,14 @@
 ### Pillar 1: Open Source Compliance ✅ COMPLETE
 
 **Completed Items (Feb 3, 2026):**
-- [x] **LICENSE file** - MIT license added
+- [x] **LICENSE file** - MIT license added (Apache 2.0 evaluated; MIT preferred for GPL-2.0 tool compatibility and simplicity)
 - [x] **CONTRIBUTING.md** - Contribution guidelines with style guide
 - [x] **CODE_OF_CONDUCT.md** - Minimal, practical community standards
 - [x] **SECURITY.md** - Vulnerability reporting process
 - [x] **DISCLAIMER.md** - Comprehensive legal protections
 - [ ] **Dependency licensing audit** - Verify all deps are compatible
 
-**Recommended License:** MIT or Apache 2.0 (permissive, portfolio-friendly)
+**License:** MIT (chosen for simplicity, maximum compatibility with GPL-2.0 tools like HandBrake/abcde, and approachability for hobbyist contributors)
 
 **Action Items:**
 ```
@@ -103,7 +103,7 @@ bin/
 **Proposed Refactor:**
 ```
 digital-library/
-├── mediaflow/              # Python package (new)
+├── digitallibrary/         # Python package (new)
 │   ├── __init__.py
 │   ├── cli.py             # Unified CLI entry point
 │   ├── core/
@@ -200,8 +200,8 @@ The authors of this software have no affiliation with MakeMKV.
 **Portfolio-Ready README Structure:**
 ```markdown
 <div align="center">
-  <img src="docs/assets/logo.svg" width="200" alt="MediaFlow Logo">
-  <h1>MediaFlow</h1>
+  <img src="docs/assets/logo.svg" width="200" alt="Digital Library Logo">
+  <h1>Digital Library</h1>
   <p><strong>Physical Media → Digital Library → Streaming Server</strong></p>
   
   <p>
@@ -223,7 +223,7 @@ The authors of this software have no affiliation with MakeMKV.
 > 🎬 **Tag everything** with TMDb, Spotify, and iTunes metadata  
 > 🔄 **Sync to Jellyfin/Plex** with content filtering (explicit, ratings)
 
-## ✨ Why MediaFlow?
+## ✨ Why Digital Library?
 
 | Problem | Solution |
 |---------|----------|
@@ -236,8 +236,8 @@ The authors of this software have no affiliation with MakeMKV.
 
 \`\`\`bash
 # Clone and setup
-git clone https://github.com/yourusername/mediaflow.git
-cd mediaflow
+git clone https://github.com/geniusworks/digital-library.git
+cd digital-library
 make install-deps
 
 # Configure
@@ -289,7 +289,7 @@ make rip-cd
 - [ ] **Script Audit** - See detailed checklist below
 - [ ] **Standardize naming**: Mixed `snake_case`/`kebab-case` - decide policy for new scripts
 - [ ] **Add type hints** to critical Python functions (start with public APIs)
-- [ ] **Extract shared code** into `mediaflow/core/` (config, logging, API clients)
+- [ ] **Extract shared code** into `digitallibrary/core/` (config, logging, API clients)
 - [ ] **Add pre-commit hooks** (black, isort, flake8)
 - [ ] **Create unified CLI** entry point (optional, nice-to-have)
 
@@ -470,7 +470,7 @@ git status --ignored
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        MEDIAFLOW SYSTEM                          │
+│                     DIGITAL LIBRARY SYSTEM                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐     │
@@ -523,13 +523,12 @@ git status --ignored
 ### Project Name Options
 | Name | Pros | Cons |
 |------|------|------|
-| **MediaFlow** | Clear, professional, implies pipeline | Generic |
+| **Digital Library** | Descriptive, clear purpose, matches repo name | Generic |
+| **MediaFlow** | Professional, implies pipeline | Already taken |
 | **DiscVault** | Physical media focus, archival feel | Narrow scope |
-| **RipStation** | Action-oriented, memorable | Sounds amateur |
 | **Archivista** | Sophisticated, library-like | Hard to spell |
-| **PhysicalDigital** | Descriptive | Too long |
 
-**Recommendation:** `MediaFlow` - professional, memorable, domain-available
+**Current name:** `Digital Library` — clear, descriptive, matches the repo and target audience (archivists, collectors)
 
 ### Visual Identity
 - **Colors:** Deep blue (#1a365d) + warm orange (#ed8936) accent
@@ -588,8 +587,8 @@ git status --ignored
 
 ---
 
-*Last Updated: February 3, 2026*
+*Last Updated: March 5, 2026*
 
-*Status: Planning Phase - Legal compliance is blocking release*
+*Status: Legal compliance complete. Documentation polish in progress. Targeting v1.0.0 release.*
 
-*Next Action: Create LICENSE and DISCLAIMER.md files*
+*Next Action: Complete script audit and final documentation review*

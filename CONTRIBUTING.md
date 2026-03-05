@@ -1,4 +1,4 @@
-# Contributing to MediaFlow
+# Contributing to Digital Library
 
 First off, thank you for considering contributing! 🎉
 
@@ -62,8 +62,8 @@ Ready to contribute code? See [Development Setup](#development-setup) below.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mediaflow.git
-cd mediaflow
+git clone https://github.com/geniusworks/digital-library.git
+cd digital-library
 
 # Create virtual environment
 python3 -m venv venv

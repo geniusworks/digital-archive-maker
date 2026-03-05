@@ -243,5 +243,13 @@ Dependencies (installed via `make install-video-deps`): `makemkv`, `handbrakecli
 - UHD/HDR handling: tone mapping vs. HDR10 pass-through strategies.
 - Handling multi-disc albums, box sets, and bonus materials.
 
-## Legal and usage note
-All tools and processes here are for making copies of media you own for local, personal use only. Respect the laws of your jurisdiction, disc decryption rules, and API terms for metadata services.
+## Legal and Usage Note
+
+All tools and processes in this repository are intended for creating personal backups of physical media you legally own, for local and personal use only. This software does not include or provide any copy protection circumvention capabilities.
+
+- **Respect the laws of your jurisdiction** regarding personal backups and format-shifting
+- **Obtain and license third-party tools** (e.g., MakeMKV) separately and in accordance with their terms
+- **Comply with API terms of service** for all metadata services (MusicBrainz, TMDb, Spotify, Genius, etc.)
+- **Obtain your own API keys** where required; never share or redistribute them
+
+See [DISCLAIMER.md](DISCLAIMER.md) for comprehensive legal terms and [LICENSE](LICENSE) for the MIT software license.

@@ -5,7 +5,7 @@
 **Physical Media → Digital Archive → Streaming Server**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
 
 [Quick Start](QUICKSTART.md) •
@@ -34,7 +34,7 @@
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/digital-library.git
+git clone https://github.com/geniusworks/digital-library.git
 cd digital-library
 make install-deps
 source venv/bin/activate
@@ -129,9 +129,11 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Legal
 
-This software is for **personal backup of media you legally own**. See [DISCLAIMER.md](DISCLAIMER.md) for full terms.
+This software is for **personal backup of media you legally own**. Users are solely responsible for compliance with applicable copyright laws in their jurisdiction.
 
-**No decryption code is included.** External tools (MakeMKV) must be obtained and licensed separately.
+- **No decryption code is included.** External tools (MakeMKV) must be obtained and licensed separately.
+- **No copyrighted content is downloaded.** Metadata lookups use authorized public APIs.
+- See [DISCLAIMER.md](DISCLAIMER.md) for full terms and third-party service obligations.
 
 ---
 
