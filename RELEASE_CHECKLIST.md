@@ -293,7 +293,29 @@ git branch -m main
 - [ ] Document launcher creation in gui/README.md
 - [ ] Consider creating a simple `.command` file for easy double-click launch
 
-### I3. Future Standalone Packaging (Post-v1.0)
+### I3. GUI UX Improvements & Reliability Testing
+- [ ] Add confirmation dialogs for all destructive operations
+  - [ ] Include "Don't ask again" checkbox for frequent operations
+  - [ ] Clear messaging about what will happen before execution
+- [ ] Eliminate all GUI failures due to missing configuration
+  - [ ] Detect missing API keys before operations start
+  - [ ] Provide inline help and links to obtain missing keys
+  - [ ] Guide users through setup with contextual prompts
+- [ ] Implement comprehensive error handling and user guidance
+  - [ ] Catch all CLI errors and present user-friendly messages
+  - [ ] Provide specific help for each error type
+  - [ ] Offer one-click fixes where possible
+- [ ] Test GUI reliability under various conditions
+  - [ ] Test with missing/invalid configuration
+  - [ ] Test with missing dependencies
+  - [ ] Test network connectivity issues
+  - [ ] Test file permission problems
+- [ ] Ensure liquid, predictable user experience
+  - [ ] All operations should have clear start/progress/end states
+  - [ ] No silent failures or cryptic error messages
+  - [ ] Consistent feedback for all user actions
+
+### I4. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
 - [ ] Consider PyInstaller or similar for creating truly standalone app
 - [ ] Evaluate trade-offs: bundle size vs. user convenience
@@ -343,4 +365,4 @@ git branch -m main
 ---
 
 *Last updated: March 2026*
-*Status: Sections A (hygiene), B (docs), C (script audit), I (GUI app) complete. Sections D–H remain for future work.*
+*Status: Sections A (hygiene), B (docs), C (script audit), I1-I2 (GUI app) complete. Sections D–H, I3-I4 remain for future work.*
