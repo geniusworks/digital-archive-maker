@@ -296,11 +296,13 @@ git branch -m main
 - [ ] Test icon displays correctly in Dock and About menu
 
 ### I2. Build & Distribution
-- [ ] Build distributable .dmg: `npm run build:dmg`
+- [ ] Build distributable .dmg: `npm run build:dmg` (creates `gui/dist/Digital-Archive-Maker-X.X.X.dmg`)
 - [ ] Verify .dmg launches correctly on clean macOS system
 - [ ] Test Gatekeeper flow (right-click → Open first time)
-- [ ] Add .dmg to GitHub Releases as downloadable asset
-- [ ] Update README.md to include GUI download instructions
+- [ ] Create GitHub Release tagged with version (e.g., `v1.0.0`)
+- [ ] Upload .dmg as release asset with release notes
+- [ ] Update gui/README.md to point to GitHub Releases (standard open source pattern)
+- [ ] Do NOT commit .dmg to repo (avoids git bloat, follows desktop app conventions)
 
 ### I3. Code Signing (Optional Future)
 - [ ] Investigate free Apple Developer account options
