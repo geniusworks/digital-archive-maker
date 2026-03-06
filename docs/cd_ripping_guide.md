@@ -81,8 +81,8 @@ Note: `~/.abcde.conf` uses `LIBRARY_ROOT` from the environment (defined in `.env
   ```
 - Fix missing metadata across entire library:
   ```bash
-  python3 bin/music/fix_missing_metadata.py --scan "/path/to/music"
-  python3 bin/music/fix_missing_metadata.py --fix "/path/to/music"
+  python3 bin/music/fix-missing-metadata.py --scan "/path/to/music"
+  python3 bin/music/fix-missing-metadata.py --fix "/path/to/music"
   ```
 - Fetch missing cover art only:
   ```bash

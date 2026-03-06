@@ -83,15 +83,6 @@ To manually set or override EXPLICIT tags:
 metaflac --set-tag=EXPLICIT=Yes "Artist/Album/01 - Song.flac"
 
 # Set all tracks in album
-
-**Using the helper script (`bin/music/set_explicit.py`):**
-```bash
-# Set single file (auto-detects format)
-python3 bin/music/set_explicit.py "/path/to/file" Yes
-
-# Set entire album
-python3 bin/music/set_explicit.py "/path/to/album" Yes --album
-```
 for f in "Artist/Album"/*.flac; do
   metaflac --set-tag=EXPLICIT=No "$f"
 done
@@ -100,13 +91,13 @@ done
 metaflac --show-tag=EXPLICIT "Artist/Album/01 - Song.flac"
 ```
 
-**Using the helper script:**
+**Using the helper script (`bin/music/set_explicit.py`):**
 ```bash
-# Set single track
-python3 bin/music/set_explicit.py "Artist/Album/01 - Song.flac" Yes
+# Set single file (auto-detects format)
+python3 bin/music/set_explicit.py "/path/to/file" Yes
 
-# Set all tracks in album
-python3 bin/music/set_explicit.py "Artist/Album" No --album
+# Set entire album
+python3 bin/music/set_explicit.py "/path/to/album" Yes --album
 ```
 
 **To revert to API-determined tags:**

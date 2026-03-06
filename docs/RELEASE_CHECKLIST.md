@@ -1,86 +1,311 @@
-# Open Source Release: User Experience & Polish Checklist
+# Release Checklist: v1.0.0 Public Release
 
-This document outlines the roadmap to transform this project from a collection of powerful power-user scripts into a cohesive, delightful, and user-friendly toolkit. The target audience includes unsophisticated users who "just want to digitize their physical media and use Jellyfin to view it," while retaining the accuracy and granular control that power users expect.
+> **Single source of truth** for everything needed to ship Digital Archive Maker as a polished, delightful, public open-source tool.
+>
+> Target: a user who "just wants to digitize their physical media and watch it on Jellyfin" — while retaining power-user depth underneath.
 
-## 1. Unified CLI & Stepwise Implementation
-*Goal: Replace scattered scripts with a single, intuitive entry point that guides the user step-by-step based on their goals.*
+---
 
-- [ ] **Create a Unified Entry Point (`dl` or `digitize` command)**
-  - Implement a modern CLI (using `click`, `typer`, or `rich`) with clear subcommands: `dl rip`, `dl tag`, `dl sync`, `dl config`.
-- [ ] **Goal-Oriented "A La Carte" Processing**
-  - Allow users to specify exactly what they want to achieve.
-  - E.g., `dl tag --music --lyrics --covers` vs `dl tag --music --basic-only`.
-  - Introduce interactive prompts if run without flags: "What would you like to refine today? [ ] Basic Tags [ ] Lyrics [ ] High-Res Covers [ ] Explicit Ratings"
-- [ ] **Feature-Driven API Onboarding**
-  - Instead of demanding all API keys upfront, prompt for them *only* when a user requests a feature that requires them.
-  - E.g., If they select "Lyrics", prompt: *"To fetch lyrics, you need a free Genius API key. Go to [URL] to get one, and paste it here: "*
-  - Save provided keys securely to the central configuration.
+## Current State (March 2026)
 
-## 2. Non-Destructive Idempotency & Workflow Safety
-*Goal: Users should feel safe experimenting. The system should never destroy existing work unless explicitly instructed.*
+| Area | Status | Notes |
+|------|--------|-------|
+| **Functionality** | ✅ Complete | CD / DVD / Blu-ray / TV / Music Video / Sync pipelines all working |
+| **Legal & Compliance** | ✅ Complete | LICENSE, DISCLAIMER, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, NOTICE |
+| **Community Infra** | ✅ Complete | Issue templates, PR template, CI workflow |
+| **README / QUICKSTART** | ✅ Solid | Redesigned hero page, badges, Quick Start guide |
+| **Documentation** | 🟡 Needs consolidation | 8 docs + 2 server guides — some overlap, some stale |
+| **Code Quality** | 🟡 Needs polish | Naming inconsistency, no shared library, some stale scripts |
+| **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
+| **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
 
-- [ ] **Safe Resumption & Additive Processing**
-  - If a user re-runs a command with new requirements (e.g., adding lyrics to an already-tagged library), the system must *add* the new data without disturbing or deleting the existing metadata.
-- [ ] **Explicit Deletion Confirmation**
-  - Require a double-confirmation (e.g., typing out the folder name or adding a `--force-overwrite` flag) before replacing, overwriting, or deleting existing files or high-quality artwork.
-- [ ] **Smart Sync Dry-Run**
-  - Make `dl sync --dry-run` the default behavior if no flags are provided, showing exactly what will be copied, deleted, or skipped.
-  - Require a `--confirm` or `-y` flag to actually execute the sync, preventing accidental deletions.
+---
 
-## 3. Workflow Optimization (The "Just Work" Philosophy)
-*Goal: Minimize the number of decisions a user has to make to get a perfect result.*
+## A. Repository Hygiene (Do First)
 
-- [ ] **Zero-Configuration Defaults**
-  - Provide sensible defaults for ripping (e.g., standard FLAC for audio, high-quality Handbrake presets for video) that don't require tweaking.
-- [ ] **Auto-Detection of Media**
-  - `dl rip` should automatically detect if a CD, DVD, or Blu-ray is inserted and launch the correct underlying pipeline.
-- [ ] **Automated Path Management**
-  - Abstract away the need to define exact source and destination paths for every command. Use a central `dl config` wizard to ask for the "Media Library folder" once.
+### A1. Root-Level File Cleanup
+- [x] Create `CHANGELOG.md` (was referenced by README badge but missing)
+- [x] Fix `pyproject.toml` — wrong project name, wrong URLs, wrong author
+- [x] Fix `NOTICE` — wrong project name and author
+- [x] Consolidate `requirements-lyrics.txt` into `requirements.txt`; add missing `Pillow`
+- [x] Fix `QUICKSTART.md` — env vars didn't match `.env.sample`
+- [ ] **Delete `requirements-lyrics.txt`** (now redundant)
+- [ ] **Delete `TODO.md`** (content absorbed here and into `CHANGELOG.md`)
+- [ ] **Delete `IMPROVEMENTS.md`** (changelog → `CHANGELOG.md`; capabilities already documented in guides)
+- [ ] Verify no remaining broken links across all `.md` files
+- [ ] Final PII / secrets scan of all tracked files before public push
 
-## 4. User-Friendly Prompting & Interactive Conflict Resolution
-*Goal: Never fail silently, and never make a destructive guess without asking.*
+### A2. Directory Cleanup
+- [ ] Remove empty `explicit/` directory (no `.gitkeep`, no purpose)
+- [ ] Verify `_archive/` and `_install/` remain gitignored (local-only; not shipped)
+- [ ] Add `.gitkeep` to `log/` and `cache/` if not already present
+- [ ] Confirm `config/` ships only `.gitkeep` (user-specific overrides stay local)
 
-- [ ] **Interactive Disambiguation**
-  - When TMDB, OMDB, or MusicBrainz returns multiple close matches for a movie or album, pause and present a numbered list: 
-    *"Found multiple matches for 'Dune'. Which is correct?"*
-    *[1] Dune (1984) - Directed by David Lynch*
-    *[2] Dune: Part One (2021) - Directed by Denis Villeneuve*
-- [ ] **Smart Overrides**
-  - When the user resolves a conflict interactively, automatically save that choice to the respective `config/` override files so they never have to answer the same question twice.
-- [ ] **Interactive Video Ripping Options**
-  - Read disc contents and ask in plain English: *"Found 1 Main Feature (1h 45m) and 3 Extras. Rip all, or just the Main Feature?"*
-  - Ask about subtitles simply: *"This is a foreign language film. Do you want English subtitles burned in? (Y/n)"*
+### A3. Dependency & Packaging
+- [ ] Audit all Python deps for license compatibility (MIT project; all deps should be permissive)
+- [ ] Bump `pyproject.toml` version to `1.0.0` at release time
+- [ ] Ensure `make install-deps` + `make install-video-deps` is truly one-command on a fresh Mac
+- [ ] Test full clone → install → rip-cd workflow on a clean macOS machine
 
-## 5. Transparent Retry Logic & Smart Caching
-*Goal: Network errors and API limits shouldn't crash the program or confuse the user.*
+---
 
-- [ ] **Transparent Exponential Backoff**
-  - Instead of hanging or throwing an exception when an API rate limit is hit (e.g., Genius or TMDB), show a friendly spinner: *"Rate limit reached for Genius API. Waiting 15 seconds before retrying..."*
-- [ ] **Clear Cache Indicators**
-  - When running a tagger, indicate if data is being pulled from cache to explain why it's running so fast: *"Fetching movie metadata (using local cache)..."*
-- [ ] **Graceful Degradation**
-  - If a specific non-critical API is down (e.g., lyrics.ovh), note it cleanly in the summary rather than failing the whole tagging run: *"Skipped lyrics for 5 tracks (API currently unreachable)."*
+## B. Documentation Consolidation
 
-## 6. Repository Cleanup: Solidifying the Core
-*Goal: Scour the repo to consolidate permanent features and remove or deprecate transitory "fixer" scripts that complicate the codebase.*
+### B1. Reduce Root Markdown Sprawl
+After cleanup, root should contain only **standard GitHub files**:
 
-- [ ] **Consolidate the `music` Pipeline**
-  - **Core Features to Keep:** `tag-explicit-mb.py` (explicit tagging), `download_lyrics.py` (lyrics fetching), `update-genre-mb.py` (genre tagging), `generate-playlists.py` (M3U generation), `check_album_integrity.py` (validation).
-  - **Transitory/Fixer Scripts to Deprecate or Move to `utils/`:** `fix-missing-metadata.py`, `fix-single-title.py`, `fix-track-numbers.py`, `fix-unknown-album.py`, `fix_album.py`, `fix_album_covers.py`, `fix_metadata.py`, `fix_track.py`, `repair-flac-tags.py`, `set_explicit.py`. These were likely written to fix specific historical library issues and confuse new users.
-- [ ] **Consolidate the `video` Pipeline**
-  - **Core Features to Keep:** `rip_video.py` / `bluray_to_mp4.zsh` (ripping), `tag-movie-metadata.py` (metadata), `tag-movie-ratings.py` (ratings), `vobsub_to_srt.py` / `backfill_subs.py` (subtitles).
-  - **Transitory/Fixer Scripts to Deprecate or Move to `utils/`:** `repair_mp4.sh`, `optimize_mp4_streaming.py`, `embed_thumbnail.py`, `fix_music_videos_mapped.py`, `fix_music_videos_secondary.py`.
-  - **Optional Enhancements to Add:**
-    - **PGS to SRT OCR Conversion:** Add support for converting Blu-ray PGS (image-based) subtitles to SRT text files using Tesseract OCR. This would extract subtitles from discs like "Silent Running" that only have image-based subtitles, improving subtitle coverage across more Blu-ray releases.
-- [ ] **Consolidate the `tv` Pipeline**
-  - **Core Features to Keep:** `tag-show-metadata.py`, `rename_shows_jellyfin.py`.
-- [ ] **Consolidate the `sync` Pipeline**
-  - **Core Features to Keep:** `master-sync.py`, `sync-library.py`, `sync-config.yaml`.
+| File | Purpose | Status |
+|------|---------|--------|
+| `README.md` | Hero page — what / why / quick start | ✅ Keep |
+| `QUICKSTART.md` | 10-minute first-run guide | ✅ Keep |
+| `CHANGELOG.md` | Release history | ✅ Created |
+| `CONTRIBUTING.md` | How to contribute | ✅ Keep |
+| `DISCLAIMER.md` | Legal protections | ✅ Keep |
+| `CODE_OF_CONDUCT.md` | Community standards | ✅ Keep |
+| `SECURITY.md` | Vulnerability reporting | ✅ Keep |
+| `LICENSE` | MIT license | ✅ Keep |
+| `NOTICE` | Third-party attribution | ✅ Keep |
+| ~~`TODO.md`~~ | ~~594-line planning doc~~ | ❌ Delete (absorbed here) |
+| ~~`IMPROVEMENTS.md`~~ | ~~256-line changelog/roadmap~~ | ❌ Delete (absorbed into CHANGELOG.md) |
 
-## 7. Documentation & Onboarding
-*Goal: A user should feel confident and excited after reading the README.*
+### B2. Consolidate `docs/` Guides
+Current `docs/` has overlapping files. Target structure:
 
-- [ ] **"Zero to Jellyfin" Visual Guide**
-  - Step-by-step Markdown guide with terminal screenshots and Jellyfin UI screenshots showing the exact workflow from inserting a physical disc to watching it.
-- [ ] **Architecture Map**
-  - A simple diagram for contributors explaining how the ripping, tagging, caching, and syncing modules interact.
+| File | Purpose | Action |
+|------|---------|--------|
+| `workflow_overview.md` | High-level Mermaid diagrams of all pipelines | ✅ Keep as-is |
+| `music_collection_guide.md` | Complete music pipeline (all sources → Jellyfin) | ✅ Keep; absorb `cd_ripping_guide.md` |
+| `cd_ripping_guide.md` | CD-only ripping (subset of music guide) | ⚠️ Merge into `music_collection_guide.md`, then delete |
+| `video_ripping_guide.md` | Complete DVD/Blu-ray guide (727 lines) | ✅ Keep; absorb `video_workflows.md` |
+| `video_workflows.md` | Mermaid decision trees for video scenarios | ⚠️ Merge into `video_ripping_guide.md`, then delete |
+| `media_server_setup.md` | Server naming conventions, sync, explicit filtering | ✅ Keep |
+| `server_setups/` | Hardware-specific guides (BMAX, Jellyfin small box) | ✅ Keep |
+| `RELEASE_CHECKLIST.md` | **This file** — the single release plan | ✅ Keep |
+
+**Result:** 6 docs instead of 8, with zero content loss.
+
+### B3. Fix Known Doc Bugs
+- [ ] `media_server_setup.md` lines 86-101: broken/duplicated markdown code block for `metaflac` examples
+- [ ] Verify all `bin/music/fix_missing_metadata.py` references → actual file is `fix-missing-metadata.py` (kebab-case)
+- [ ] Ensure every doc links back to QUICKSTART.md for prereqs
+- [ ] Replace hardcoded `/Volumes/Data/Media/...` paths with `${LIBRARY_ROOT}/...` where possible
+
+---
+
+## C. Script Audit & Consolidation
+
+### C1. Naming Policy
+**Decision:** Keep existing filenames (mixed `snake_case` / `kebab-case`) for backward compatibility. New scripts use `snake_case`. Document this in `CONTRIBUTING.md`.
+
+### C2. `bin/music/` — 19 scripts → classify as Core vs Utility
+
+| Script | Category | Action |
+|--------|----------|--------|
+| `tag-explicit-mb.py` | **Core** | Keep — explicit content tagging |
+| `download_lyrics.py` | **Core** | Keep — lyrics fetching |
+| `update-genre-mb.py` | **Core** | Keep — genre tagging |
+| `generate-playlists.py` | **Core** | Keep — M3U generation |
+| `check_album_integrity.py` | **Core** | Keep — validation |
+| `tag-manual-genre.py` | **Core** | Keep — manual genre assignment |
+| `update-from-m3u.py` | **Core** | Keep — playlist-driven metadata |
+| `compare_music.py` | **Core** | Keep — library comparison |
+| `fix_album.py` | **Utility** | Keep — album normalization (documented in guides) |
+| `fix_album_covers.py` | **Utility** | Keep — cover art fetching (documented in guides) |
+| `fix_track.py` | **Utility** | Keep — single-track organizer (Makefile target) |
+| `fix_metadata.py` | **Utility** | Keep — metadata validation |
+| `fix-missing-metadata.py` | **Utility** | Keep — MusicBrainz metadata repair |
+| `set_explicit.py` | **Utility** | Keep — manual explicit tag setter |
+| `fix-single-title.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
+| `fix-track-numbers.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
+| `fix-unknown-album.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
+| `repair-flac-tags.py` | **Archive candidate** | Review: overlaps with fix-missing-metadata? |
+| `specialized/` | **Keep** | Prince Lovesexy splitter — niche but harmless |
+
+### C3. `bin/video/` — 17 scripts → classify
+
+| Script | Category | Action |
+|--------|----------|--------|
+| `rip_video.py` | **Core** | Keep — unified ripping pipeline |
+| `bluray_to_mp4.zsh` | **Core** | Keep — direct Blu-ray encode |
+| `tag-movie-metadata.py` | **Core** | Keep — TMDb/OMDb metadata |
+| `tag-movie-ratings.py` | **Core** | Keep — MPAA ratings |
+| `backfill_subs.py` | **Core** | Keep — subtitle muxing |
+| `vobsub_to_srt.py` | **Core** | Keep — subtitle conversion |
+| `language_codes.py` | **Core** | Keep — shared language data |
+| `set-movie-imdb-override.py` | **Utility** | Keep — override helper |
+| `fix_music_videos.py` | **Utility** | Keep — generic music video organizer |
+| `standardize_music_video_filenames.py` | **Utility** | Keep — filename standardizer |
+| `scan_music_video_metadata.py` | **Utility** | Keep — metadata scanner |
+| `utils/mp4_integrity_checker.py` | **Utility** | Keep — validation |
+| `optimize_mp4_streaming.py` | **Utility** | Keep — Jellyfin optimization |
+| `embed_thumbnail.py` | **Archive candidate** | Review: is this used by any pipeline? |
+| `repair_mp4.sh` | **Archive candidate** | Review: one-off fixer? |
+| `fix_music_videos_mapped.py` | **Archive candidate** | Review: has hardcoded personal mappings |
+| `fix_music_videos_secondary.py` | **Archive candidate** | Review: has hardcoded personal mappings |
+
+### C4. `bin/sync/` — Clean ✅
+| Script | Status |
+|--------|--------|
+| `master-sync.py` | ✅ Keep |
+| `sync-library.py` | ✅ Keep |
+| `sync-config.yaml` | Gitignored (user-specific); `.example` ships |
+
+### C5. `bin/tv/` — Clean ✅
+| Script | Status |
+|--------|--------|
+| `tag-show-metadata.py` | ✅ Keep |
+| `rename_shows_jellyfin.py` | ✅ Keep |
+
+### C6. `bin/utils/` — Clean ✅
+| Script | Status |
+|--------|--------|
+| `clean_playlists.py` | ✅ Keep |
+| `clean-redundant-overrides.py` | ✅ Keep |
+
+---
+
+## D. User Experience Improvements
+
+### D1. Unified CLI (Major Feature — Post-1.0 or 1.0)
+*Replace scattered scripts with a single, intuitive entry point.*
+
+- [ ] Create unified CLI entry point (`dam` or `archive` command) using `typer` or `click` + `rich`
+  - Subcommands: `dam rip`, `dam tag`, `dam sync`, `dam config`
+  - Interactive prompts if run without flags
+- [ ] Goal-oriented processing: `dam tag --lyrics --covers --genres`
+- [ ] Feature-driven API onboarding: prompt for keys only when a feature needs them
+  - *"To fetch lyrics, you need a free Genius API key. Get one at [URL], paste it here:"*
+  - Save keys to `.env` automatically
+
+### D2. Non-Destructive Safety
+*Users should feel safe experimenting. Never destroy work without explicit confirmation.*
+
+- [ ] Safe resumption: re-running a command adds new data without disturbing existing metadata
+- [ ] Explicit deletion confirmation: `--force-overwrite` flag or typed confirmation
+- [ ] Smart sync dry-run: make dry-run the default, require `--confirm` to execute
+
+### D3. "Just Works" Defaults
+*Minimize decisions for a perfect result.*
+
+- [ ] Zero-config defaults: sensible FLAC for audio, good Handbrake presets for video
+- [ ] Auto-detect media type: `dam rip` detects CD vs DVD vs Blu-ray automatically
+- [ ] Central path config: `dam config` wizard asks for library root once
+
+### D4. Interactive Conflict Resolution
+*Never fail silently, never guess destructively.*
+
+- [ ] Interactive disambiguation for TMDb / MusicBrainz multi-matches
+- [ ] Save interactive choices to override files automatically
+- [ ] Plain-English video ripping prompts: *"Found 1 Main Feature and 3 Extras. Rip all?"*
+
+### D5. Transparent Retry & Caching
+*Network errors shouldn't crash or confuse.*
+
+- [ ] Friendly spinner on rate limits: *"Rate limit reached. Waiting 15s..."*
+- [ ] Cache indicators: *"Fetching metadata (using local cache)..."*
+- [ ] Graceful degradation: note skipped items in summary instead of crashing
+
+---
+
+## E. Code Quality & Polish
+
+### E1. Important for Professional Release
+- [ ] Add `--help` with clear usage examples to every script
+- [ ] Ensure every script checks for required tools before running (e.g., `makemkvcon`, `HandBrakeCLI`)
+- [ ] Add type hints to critical public functions
+- [ ] Extract shared patterns into a `lib/` or `digitallibrary/core/` module (config, logging, API clients)
+- [ ] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
+
+### E2. Testing
+- [ ] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
+- [ ] Add tests for: `download_lyrics`, `tag-explicit-mb`, `rip_video` (mock-based)
+- [ ] Target: 70%+ coverage for core scripts
+
+### E3. CI / Pre-commit
+- [ ] Add pre-commit hooks config: `black`, `isort`, `flake8`
+- [ ] Ensure CI runs on PR (already have `.github/workflows/ci.yml`)
+
+---
+
+## F. Visual Polish & Delight
+
+- [ ] Create project logo (or refine existing `assets/logo.png`)
+- [ ] Add GIF demo of CD ripping workflow (terminal recording)
+- [ ] Add terminal screenshots showing beautiful output
+- [ ] Test README rendering on GitHub before release
+- [ ] Consistent emoji language across docs (already partially done)
+
+---
+
+## G. Release Execution
+
+### Pre-Release Final Steps
+- [ ] Complete items in sections A–C above
+- [ ] Run full PII / secrets scan on all tracked files
+- [ ] Test every documented workflow on a clean macOS system
+- [ ] Verify README renders correctly on GitHub
+- [ ] Bump version to `1.0.0` in `pyproject.toml`
+- [ ] Tag release: `git tag v1.0.0`
+
+### Git History (if needed)
+If existing git history contains sensitive data, consider a fresh start:
+```bash
+# Option: Squash to single initial commit
+git checkout --orphan fresh-main
+git add .
+git commit -m "Initial release: Physical media to digital archive automation"
+git branch -D main
+git branch -m main
+```
+
+### Post-Release
+- [ ] Monitor issues for first-user feedback
+- [ ] Set up GitHub Discussions if community grows
+- [ ] Optional: announcement post (HN, Reddit, media server forums)
+
+---
+
+## H. Architecture Reference
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                  DIGITAL ARCHIVE MAKER                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌────────┐  ┌────────┐  ┌──────────┐  ┌────────┐          │
+│  │  CDs   │  │  DVDs  │  │ Blu-rays │  │ Files  │          │
+│  └───┬────┘  └───┬────┘  └────┬─────┘  └───┬────┘          │
+│      │           │            │             │               │
+│      ▼           ▼            ▼             ▼               │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │               INPUT LAYER                        │       │
+│  │  abcde (CD)  │  MakeMKV (Video)  │  File Scan   │       │
+│  └──────────────────────────────────────────────────┘       │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │             PROCESSING LAYER                     │       │
+│  │  Encoder    │  Tagger    │  Organizer  │ Checker │       │
+│  │  HandBrake  │  MusicBrnz │  Rename     │ Quality │       │
+│  └──────────────────────────────────────────────────┘       │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │              METADATA LAYER                      │       │
+│  │  MusicBrainz │ TMDb │ Spotify │ iTunes │ Genius  │       │
+│  └──────────────────────────────────────────────────┘       │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │               OUTPUT LAYER                       │       │
+│  │  Local Library ──── Sync Engine ──── Media Server│       │
+│  │  /Library/         rsync + filter   Jellyfin     │       │
+│  └──────────────────────────────────────────────────┘       │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+*Last updated: March 2026*
+*Status: Repository hygiene fixes applied. Documentation consolidation and script audit in progress.*

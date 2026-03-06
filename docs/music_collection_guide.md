@@ -34,10 +34,10 @@ make rip-cd
 #### Step 2: Fix Missing Metadata (NEW!)
 ```bash
 # Scan for metadata issues:
-python3 bin/music/fix_missing_metadata.py --scan "/Volumes/Data/Media/Library/CDs"
+python3 bin/music/fix-missing-metadata.py --scan "/Volumes/Data/Media/Library/CDs"
 
 # Fix all issues:
-python3 bin/music/fix_missing_metadata.py --fix "/Volumes/Data/Media/Library/CDs"
+python3 bin/music/fix-missing-metadata.py --fix "/Volumes/Data/Media/Library/CDs"
 ```
 
 #### Step 3: Tag Explicit Content
@@ -134,10 +134,10 @@ python3 bin/sync/sync-library.py \
 #### Step 1: Scan and Fix Metadata
 ```bash
 # Scan entire music library:
-python3 bin/music/fix_missing_metadata.py --scan "/path/to/music"
+python3 bin/music/fix-missing-metadata.py --scan "/path/to/music"
 
 # Fix all metadata issues:
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/music"
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/music"
 ```
 
 #### Step 2: Normalize Album Organization
@@ -197,7 +197,7 @@ python3 bin/music/fix_track.py /path/to/loose-track.mp3 --target "/Volumes/Data/
 
 #### Step 2: Fix Metadata
 ```bash
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/organized/track"
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/organized/track"
 ```
 
 #### Step 3: Sync to Jellyfin
@@ -302,8 +302,8 @@ sync_jobs:
 **Solution:**
 ```bash
 # Rescan and fix metadata
-python3 bin/music/fix_missing_metadata.py --scan "/path/to/problem/files"
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/problem/files"
+python3 bin/music/fix-missing-metadata.py --scan "/path/to/problem/files"
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/problem/files"
 
 # Refresh Jellyfin library
 ```
@@ -312,8 +312,8 @@ python3 bin/music/fix_missing_metadata.py --fix "/path/to/problem/files"
 **Cause:** Missing or incorrect title metadata
 **Solution:**
 ```bash
-python3 bin/music/fix_missing_metadata.py --scan "/path/to/music"
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/music"
+python3 bin/music/fix-missing-metadata.py --scan "/path/to/music"
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/music"
 # This populates missing title metadata using MusicBrainz
 ```
 
@@ -329,7 +329,7 @@ python3 bin/music/fix_album_covers.py "/path/to/music"
 **Solution:**
 ```bash
 # Force MusicBrainz lookup
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/music"
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/music"
 ```
 
 ---
@@ -357,10 +357,10 @@ python3 bin/music/fix_missing_metadata.py --fix "/path/to/music"
 ### Bulk Operations
 ```bash
 # Process entire library at once
-python3 bin/music/fix_missing_metadata.py --fix "/Volumes/Data/Media/Library/Music" --recursive
+python3 bin/music/fix-missing-metadata.py --fix "/Volumes/Data/Media/Library/Music" --recursive
 
 # Dry run to preview changes
-python3 bin/music/fix_missing_metadata.py --fix "/path/to/music" --dry-run --verbose
+python3 bin/music/fix-missing-metadata.py --fix "/path/to/music" --dry-run --verbose
 ```
 
 ### Content Filtering

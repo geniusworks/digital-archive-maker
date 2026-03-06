@@ -36,27 +36,19 @@ cp .env.sample .env
 Edit `.env` with your paths and preferences:
 
 ```bash
-# Required paths
-MOVIES_ROOT="/path/to/your/movies"
-TV_ROOT="/path/to/your/tv"
-MUSIC_ROOT="/path/to/your/music"
+# Required: Where your media library lives
+LIBRARY_ROOT="/Volumes/Data/Media/Library"
 
 # Optional: Language preferences for video ripping
 # Use 2-letter ISO 639-1 codes (e.g., "en", "fr", "es", "de", "ja")
 LANG_AUDIO=en          # Preferred audio track language
 LANG_SUBTITLES=en      # Preferred subtitle track language
-```
 
-```bash
-# Required: Where your media library lives
-LIBRARY_ROOT="/Volumes/Data/Media/Library"
-RIPS_ROOT="/Volumes/Data/Media/Rips"
-
-# Optional: API keys for enhanced metadata
-MUSICBRAINZ_USER_AGENT="YourApp/1.0 (your@email.com)"
+# Optional: API keys for enhanced metadata (add these as you need them)
 TMDB_API_KEY="your_tmdb_key"
 SPOTIFY_CLIENT_ID="your_spotify_client_id"
 SPOTIFY_CLIENT_SECRET="your_spotify_client_secret"
+GENIUS_API_TOKEN="your_genius_token"
 ```
 
 ### MakeMKV Configuration (Important for Subtitles)

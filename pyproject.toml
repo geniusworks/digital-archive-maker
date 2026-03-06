@@ -3,14 +3,15 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "digital-library"
+name = "digital-archive-maker"
 version = "0.9.0"
+# NOTE: Bump to 1.0.0 for public release
 description = "Physical media to digital library automation - CD/DVD/Blu-ray ripping, tagging, and sync"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "Martin Herd"}
+    {name = "Martin Diekhoff"}
 ]
 keywords = [
     "media",
@@ -60,10 +61,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/digital-library"
-Documentation = "https://github.com/yourusername/digital-library#readme"
-Repository = "https://github.com/yourusername/digital-library"
-Issues = "https://github.com/yourusername/digital-library/issues"
+Homepage = "https://github.com/geniusworks/digital-archive-maker"
+Documentation = "https://github.com/geniusworks/digital-archive-maker#readme"
+Repository = "https://github.com/geniusworks/digital-archive-maker"
+Issues = "https://github.com/geniusworks/digital-archive-maker/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
