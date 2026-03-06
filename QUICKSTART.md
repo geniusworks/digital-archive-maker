@@ -14,7 +14,7 @@ Get from zero to ripping your first CD in under 10 minutes.
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
 
-# Install system dependencies (audio/CD tools)
+# Install system dependencies (audio/CD tools) — this creates the venv
 make install-deps
 
 # Install video ripping dependencies (DVD/Blu-ray support)
@@ -23,8 +23,16 @@ make install-video-deps
 # Note: MakeMKV requires manual installation from https://www.makemkv.com/download/
 # After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
-# Activate virtual environment and install the dam CLI
+# Activate the virtual environment and install the dam CLI
 source venv/bin/activate
+pip install -e .
+```
+
+*If you prefer not to use `make`, create the venv manually:*
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 pip install -e .
 ```
 
