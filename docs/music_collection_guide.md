@@ -25,11 +25,27 @@ Complete guide to processing music from CDs, digital files, and loose tracks int
 **Path:** CD Disc → FLAC → Metadata → Jellyfin
 
 #### Step 1: Rip CD to FLAC
+
+**First time only — configure abcde:**
+```bash
+cp .abcde.conf.sample ~/.abcde.conf
+```
+Verify key settings in `~/.abcde.conf`:
+- `OUTPUTDIR="${LIBRARY_ROOT}/CDs"` — uses `LIBRARY_ROOT` from `.env`
+- `OUTPUTFORMAT='${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'`
+- `ACTIONS=cddb,getalbumart,encode,tag,move,playlist,clean`
+- `EJECTCD=y` — ejects disc when done
+
+**Rip:**
 ```bash
 # Insert CD and run:
 make rip-cd
 ```
-**Output:** `/Volumes/Data/Media/Library/CDs/Artist/Album/NN - Title.flac`
+The Makefile auto-loads `.env` so abcde sees `LIBRARY_ROOT`. Alternative (direct): `set -a; . ./.env; set +a && abcde`
+
+**Output:** `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac`
+
+> **Notes:** Ensure your drive supports accurate audio extraction. MusicBrainz and Cover Art Archive rate limits apply.
 
 #### Step 2: Fix Missing Metadata (NEW!)
 ```bash
@@ -382,7 +398,6 @@ python3 bin/music/update-genre-mb.py "/path/to/music"
 
 ## 📚 Related Documentation
 
-- **CD Ripping:** `docs/cd_ripping_guide.md`
 - **Video Processing:** `docs/video_ripping_guide.md`
 - **Media Server Setup:** `docs/media_server_setup.md`
 - **Workflow Overview:** `docs/workflow_overview.md`

@@ -14,7 +14,7 @@
 | **Legal & Compliance** | ✅ Complete | LICENSE, DISCLAIMER, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, NOTICE |
 | **Community Infra** | ✅ Complete | Issue templates, PR template, CI workflow |
 | **README / QUICKSTART** | ✅ Solid | Redesigned hero page, badges, Quick Start guide |
-| **Documentation** | 🟡 Needs consolidation | 8 docs + 2 server guides — some overlap, some stale |
+| **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
 | **Code Quality** | 🟡 Needs polish | Naming inconsistency, no shared library, some stale scripts |
 | **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
 | **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
@@ -29,15 +29,15 @@
 - [x] Fix `NOTICE` — wrong project name and author
 - [x] Consolidate `requirements-lyrics.txt` into `requirements.txt`; add missing `Pillow`
 - [x] Fix `QUICKSTART.md` — env vars didn't match `.env.sample`
-- [ ] **Delete `requirements-lyrics.txt`** (now redundant)
-- [ ] **Delete `TODO.md`** (content absorbed here and into `CHANGELOG.md`)
-- [ ] **Delete `IMPROVEMENTS.md`** (changelog → `CHANGELOG.md`; capabilities already documented in guides)
-- [ ] Verify no remaining broken links across all `.md` files
+- [x] **Delete `requirements-lyrics.txt`** (now redundant)
+- [x] **Delete `TODO.md`** (content absorbed here and into `CHANGELOG.md`)
+- [x] **Delete `IMPROVEMENTS.md`** (changelog → `CHANGELOG.md`; capabilities already documented in guides)
+- [x] Verify no remaining broken links across all `.md` files
 - [ ] Final PII / secrets scan of all tracked files before public push
 
 ### A2. Directory Cleanup
-- [ ] Remove empty `explicit/` directory (no `.gitkeep`, no purpose)
-- [ ] Verify `_archive/` and `_install/` remain gitignored (local-only; not shipped)
+- [x] Remove empty `explicit/` directory (no `.gitkeep`, no purpose)
+- [x] Verify `_archive/` and `_install/` remain gitignored (local-only; not shipped)
 - [ ] Add `.gitkeep` to `log/` and `cache/` if not already present
 - [ ] Confirm `config/` ships only `.gitkeep` (user-specific overrides stay local)
 
@@ -74,19 +74,19 @@ Current `docs/` has overlapping files. Target structure:
 | File | Purpose | Action |
 |------|---------|--------|
 | `workflow_overview.md` | High-level Mermaid diagrams of all pipelines | ✅ Keep as-is |
-| `music_collection_guide.md` | Complete music pipeline (all sources → Jellyfin) | ✅ Keep; absorb `cd_ripping_guide.md` |
-| `cd_ripping_guide.md` | CD-only ripping (subset of music guide) | ⚠️ Merge into `music_collection_guide.md`, then delete |
-| `video_ripping_guide.md` | Complete DVD/Blu-ray guide (727 lines) | ✅ Keep; absorb `video_workflows.md` |
-| `video_workflows.md` | Mermaid decision trees for video scenarios | ⚠️ Merge into `video_ripping_guide.md`, then delete |
+| `music_collection_guide.md` | Complete music pipeline (all sources → Jellyfin) | ✅ Done — absorbed `cd_ripping_guide.md` |
+| ~~`cd_ripping_guide.md`~~ | ~~CD-only ripping~~ | ✅ Merged & deleted |
+| `video_ripping_guide.md` | Complete DVD/Blu-ray guide + scenario diagrams | ✅ Done — absorbed `video_workflows.md` |
+| ~~`video_workflows.md`~~ | ~~Mermaid decision trees~~ | ✅ Merged & deleted |
 | `media_server_setup.md` | Server naming conventions, sync, explicit filtering | ✅ Keep |
 | `server_setups/` | Hardware-specific guides (BMAX, Jellyfin small box) | ✅ Keep |
 | `RELEASE_CHECKLIST.md` | **This file** — the single release plan | ✅ Keep |
 
-**Result:** 6 docs instead of 8, with zero content loss.
+**Result:** 6 docs instead of 8, with zero content loss. ✅ Complete.
 
 ### B3. Fix Known Doc Bugs
-- [ ] `media_server_setup.md` lines 86-101: broken/duplicated markdown code block for `metaflac` examples
-- [ ] Verify all `bin/music/fix_missing_metadata.py` references → actual file is `fix-missing-metadata.py` (kebab-case)
+- [x] `media_server_setup.md` lines 86-101: broken/duplicated markdown code block for `metaflac` examples
+- [x] Verify all `bin/music/fix_missing_metadata.py` references → actual file is `fix-missing-metadata.py` (kebab-case)
 - [ ] Ensure every doc links back to QUICKSTART.md for prereqs
 - [ ] Replace hardcoded `/Volumes/Data/Media/...` paths with `${LIBRARY_ROOT}/...` where possible
 
@@ -115,10 +115,10 @@ Current `docs/` has overlapping files. Target structure:
 | `fix_metadata.py` | **Utility** | Keep — metadata validation |
 | `fix-missing-metadata.py` | **Utility** | Keep — MusicBrainz metadata repair |
 | `set_explicit.py` | **Utility** | Keep — manual explicit tag setter |
-| `fix-single-title.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
-| `fix-track-numbers.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
-| `fix-unknown-album.py` | **Archive candidate** | Review: is this still used? If not → `_archive/` |
-| `repair-flac-tags.py` | **Archive candidate** | Review: overlaps with fix-missing-metadata? |
+| `fix-single-title.py` | **Utility** | ✅ Keep — generic FLAC title fixer, no personal data |
+| `fix-track-numbers.py` | **Utility** | ✅ Keep — generic track number fixer, no personal data |
+| `fix-unknown-album.py` | **Utility** | ✅ Keep — album repair with MusicBrainz, no personal data |
+| `repair-flac-tags.py` | **Utility** | ✅ Keep — tag repair from playlists, no personal data |
 | `specialized/` | **Keep** | Prince Lovesexy splitter — niche but harmless |
 
 ### C3. `bin/video/` — 17 scripts → classify
@@ -138,10 +138,10 @@ Current `docs/` has overlapping files. Target structure:
 | `scan_music_video_metadata.py` | **Utility** | Keep — metadata scanner |
 | `utils/mp4_integrity_checker.py` | **Utility** | Keep — validation |
 | `optimize_mp4_streaming.py` | **Utility** | Keep — Jellyfin optimization |
-| `embed_thumbnail.py` | **Archive candidate** | Review: is this used by any pipeline? |
-| `repair_mp4.sh` | **Archive candidate** | Review: one-off fixer? |
-| `fix_music_videos_mapped.py` | **Archive candidate** | Review: has hardcoded personal mappings |
-| `fix_music_videos_secondary.py` | **Archive candidate** | Review: has hardcoded personal mappings |
+| `embed_thumbnail.py` | **Utility** | ✅ Keep — generic MP4 cover art embedder, no personal data |
+| `repair_mp4.sh` | **Utility** | ✅ Keep — generic MP4 streaming compliance fixer, no personal data |
+| ~~`fix_music_videos_mapped.py`~~ | **Archived** | ✅ Moved to `_archive/` — 367-entry personal mapping table |
+| ~~`fix_music_videos_secondary.py`~~ | **Archived** | ✅ Moved to `_archive/` — hardcoded personal paths + mapping |
 
 ### C4. `bin/sync/` — Clean ✅
 | Script | Status |
@@ -308,4 +308,4 @@ git branch -m main
 ---
 
 *Last updated: March 2026*
-*Status: Repository hygiene fixes applied. Documentation consolidation and script audit in progress.*
+*Status: Sections A (hygiene), B (docs), C (script audit) complete. Sections D–G remain for future work.*

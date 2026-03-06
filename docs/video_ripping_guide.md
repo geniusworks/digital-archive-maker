@@ -2,7 +2,6 @@
 
 Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with proper metadata and organization.
 
-> **📚 See Also:** [Video Workflows](video_workflows.md) for detailed scenario diagrams and decision trees  
 > **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
 > **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
 
@@ -23,7 +22,18 @@ BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
 make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
 ```
 
-**📖 For detailed workflows, scenarios, and diagrams, see [Video Workflows](video_workflows.md)**
+---
+
+## � Scenario Matrix
+
+| Scenario | Input | Output | Subtitles | Use Case |
+|----------|-------|--------|-----------|----------|
+| **English DVD** | DVD disc | MP4 + SRT | External SRT | English DVDs |
+| **English Blu-ray** | Blu-ray disc | MP4 + SRT | External SRT | English Blu-rays |
+| **Foreign DVD** | DVD disc | MP4 (burned) + SRT | Burned + External | Foreign DVDs |
+| **Foreign Blu-ray** | Blu-ray disc | MP4 (burned) + SRT | Burned + External | Foreign Blu-rays |
+| **Existing MKV** | MKV file | MP4 + SRT | External SRT | Already ripped |
+| **Large MKV** | Uncompressed MKV | Compressed MP4 + SRT | External SRT | Re-compression needed |
 
 ---
 
@@ -136,18 +146,65 @@ Select option [1-3, default=1]:
 ## 🚨 Common Scenarios
 
 ### English Film (DVD or Blu-ray)
+
+```mermaid
+graph TD
+    A[Start: make rip-movie] --> B{MKV files exist?}
+    B -->|Yes| C[Process existing MKV]
+    B -->|No| D[Scan disc for main feature]
+    D --> E{English audio + English soft subs?}
+    E -->|Yes| F[Auto-extract SRT - no prompt]
+    E -->|No| G[Interactive prompt before rip]
+    F --> H[Rip main feature to MKV]
+    G --> H
+    H --> I[HandBrake Encode]
+    C --> I
+    I --> J[MP4 + External SRT]
+    J --> K[Organize to Movies/Title Year/]
+```
+
 ```bash
 make rip-movie TITLE="The Goonies" YEAR=1985 TYPE=bluray
 ```
 **Result:** MP4 + external SRT subtitles
 
 ### Foreign Film with English Subtitles
+
+```mermaid
+graph TD
+    A[Start: make rip-movie] --> B{MKV files exist?}
+    B -->|Yes| C[Process existing MKV]
+    B -->|No| D[Scan disc for main feature]
+    D --> E{English audio present?}
+    E -->|No| F[Suggest subtitle burning]
+    E -->|Yes| G[Standard MP4 processing]
+    F --> H[Interactive prompt]
+    G --> H
+    H --> I[Rip + HandBrake + Apply subtitle choice]
+    C --> I
+    I --> J[MP4 with burned subs + External SRT]
+    J --> K[Organize to Movies/Title Year/]
+```
+
 ```bash
 BURN_SUBTITLES=true make rip-movie TITLE="Amélie" YEAR=2001 TYPE=bluray
 ```
 **Result:** MP4 with burned subtitles + external SRT
 
 ### Existing Large MKV File
+
+```mermaid
+graph TD
+    A[Start: make rip-movie] --> B{MKV files exist?}
+    B -->|Yes| C{File size check}
+    C -->|< 10GB| D[Already compressed - skip encode]
+    C -->|> 10GB| E[Re-encode with HandBrake]
+    E --> F[Compressed MP4]
+    D --> G[Extract SRT if available]
+    F --> G
+    G --> H[Organize to Movies/Title Year/]
+```
+
 ```bash
 make rip-movie TITLE="Silent Running" YEAR=1972 TYPE=bluray
 ```
@@ -178,7 +235,6 @@ STREAMING_OPTIMIZE=false make rip-movie TITLE="Film" YEAR=2023 TYPE=bluray
 - **"File too large"** - Script will automatically re-compress files >10GB
 
 ### Getting Help
-- **Detailed workflows:** See [Video Workflows](video_workflows.md)
 - **Log output:** Check console messages for specific errors
 - **Prerequisites:** Ensure `make install-video-deps` was run
 - **MakeMKV:** Verify installation in `/Applications/`
@@ -187,11 +243,9 @@ STREAMING_OPTIMIZE=false make rip-movie TITLE="Film" YEAR=2023 TYPE=bluray
 
 ## 📚 Related Documentation
 
-- **[Video Workflows](video_workflows.md)** - Detailed scenarios and decision trees
 - **[Workflow Overview](workflow_overview.md)** - General system workflows
 - **[Media Server Setup](media_server_setup.md)** - Jellyfin configuration
 - **[Quick Start Guide](../QUICKSTART.md)** - Initial setup instructions
-- **Flexible output directory** (provide path or use default)
 
 ### Option 2: Manual Step-by-Step Workflow
 For more control over the process:

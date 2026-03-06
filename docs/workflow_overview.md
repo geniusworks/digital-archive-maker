@@ -83,7 +83,7 @@ flowchart LR
 ```
 
 ### A1) Rip CD to FLAC (MusicBrainz + cover + playlist)
-- Guide: `docs/cd_ripping_guide.md`
+- Guide: `docs/music_collection_guide.md` (Source 1: Audio CDs)
 - Typical command:
   - `make rip-cd`
 

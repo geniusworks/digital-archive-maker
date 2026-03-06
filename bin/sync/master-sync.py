@@ -816,7 +816,7 @@ def run_music_video_tagging(source_path, dry_run=False, quiet=False, verbose=Fal
         print("  Tagging music videos...")
 
     repo_root = Path(__file__).parent.parent.parent
-    tag_script = repo_root / "bin" / "video" / "fix_music_videos_mapped.py"
+    tag_script = repo_root / "bin" / "video" / "fix_music_videos.py"
 
     cmd = [
         sys.executable,
