@@ -17,7 +17,7 @@
 | **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
 | **Code Quality** | 🟡 Needs polish | Naming inconsistency, no shared library, some stale scripts |
 | **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
-| **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings, .dmg build |
+| **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings (runs from repo) |
 | **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
 
 ---
@@ -278,36 +278,25 @@ git branch -m main
 
 ---
 
-## I. GUI Distribution (Electron App)
+## I. GUI App Polish (Electron)
 
 ### I1. App Icon & Branding
 - [ ] Create 1024×1024 app icon in `gui/assets/`
   - `gui/assets/icon.icns` (macOS format)
   - `gui/assets/icon.png` (source PNG)
   - Use `electron-icon-builder` or any `.icns` generator from a square PNG
-- [ ] Update `gui/package.json` build config to reference icon:
-  ```json
-  "build": {
-    "mac": {
-      "icon": "assets/icon.icns"
-    }
-  }
-  ```
+- [ ] Update `gui/package.json` to reference icon for window title bar
 - [ ] Test icon displays correctly in Dock and About menu
 
-### I2. Build & Distribution
-- [ ] Build distributable .dmg: `npm run build:dmg` (creates `gui/dist/Digital-Archive-Maker-X.X.X.dmg`)
-- [ ] Verify .dmg launches correctly on clean macOS system
-- [ ] Test Gatekeeper flow (right-click → Open first time)
-- [ ] Create GitHub Release tagged with version (e.g., `v1.0.0`)
-- [ ] Upload .dmg as release asset with release notes
-- [ ] Update gui/README.md to point to GitHub Releases (standard open source pattern)
-- [ ] Do NOT commit .dmg to repo (avoids git bloat, follows desktop app conventions)
+### I2. Desktop Launcher (Optional)
+- [ ] Create a double-clickable launcher script or Automator app
+- [ ] Document launcher creation in gui/README.md
+- [ ] Consider creating a simple `.command` file for easy double-click launch
 
-### I3. Code Signing (Optional Future)
-- [ ] Investigate free Apple Developer account options
-- [ ] Consider ad-hoc signing to reduce Gatekeeper warnings
-- [ ] Document current notarization-free approach in GUI README
+### I3. Future Standalone Packaging (Post-v1.0)
+- [ ] Research bundling Python environment with Electron app
+- [ ] Consider PyInstaller or similar for creating truly standalone app
+- [ ] Evaluate trade-offs: bundle size vs. user convenience
 
 ---
 

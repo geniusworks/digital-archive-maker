@@ -2,32 +2,32 @@
 
 Electron-based GUI wrapper for the `dam` CLI.
 
-## Download and Install
+## Quick Start
 
-1. Go to [GitHub Releases](../../releases)
-2. Download the latest `Digital-Archive-Maker-X.X.X.dmg`
-3. Open the `.dmg` file
-4. Drag the app to your Applications folder
-5. Right-click the app and choose **Open** (first time only)
+1. Clone or download the repository
+2. Install dependencies: `make install-deps`
+3. Launch the GUI: `cd gui && npm start`
 
-> **Gatekeeper note:** Since this is not notarized, users must right-click the app and choose **Open** the first time.
+> **Note:** The GUI app runs from the repository and uses the existing Python environment and CLI tools.
 
 ## Development
 
-For developers wanting to contribute or run from source:
+For developers wanting to contribute:
 
 ### Prerequisites
-1. Python venv set up in the repo root:
-   ```bash
-   make install-deps
-   source venv/bin/activate
-   pip install -e .
-   ```
-2. Node.js 18+ and npm
+- Node.js 18+ and npm (Python deps handled by `make install-deps`)
 
 ### Run in development
 ```bash
 cd gui
 npm install
 npm start
+```
+
+### Create a desktop shortcut (macOS)
+```bash
+# Create an app bundle in /Applications
+ln -s /path/to/your/repo/gui/src/main.js /Applications/Digital\ Archive\ Maker.app
+# Or use Automator to create a double-clickable app that runs:
+# cd /path/to/repo/gui && npm start
 ```
