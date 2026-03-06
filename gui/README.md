@@ -31,13 +31,3 @@ npm run build:dmg
 The `.dmg` will be in `gui/dist/`. Distribute via GitHub Releases.
 
 > **Gatekeeper note:** Since this is not notarized, users must right-click the app and choose **Open** the first time.
-
-## Adding the app icon
-
-Place a 1024×1024 `.icns` (macOS) and `.png` file in `gui/assets/`:
-- `gui/assets/icon.icns`
-- `gui/assets/icon.png`
-
-Use `electron-icon-builder` or any `.icns` generator from a square PNG.
-
-> **Note:** Icon creation and DMG distribution steps are tracked in `../RELEASE_CHECKLIST.md` section I.

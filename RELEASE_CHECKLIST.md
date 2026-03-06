@@ -284,7 +284,15 @@ git branch -m main
 - [ ] Create 1024×1024 app icon in `gui/assets/`
   - `gui/assets/icon.icns` (macOS format)
   - `gui/assets/icon.png` (source PNG)
-- [ ] Update `gui/package.json` build config to reference icon
+  - Use `electron-icon-builder` or any `.icns` generator from a square PNG
+- [ ] Update `gui/package.json` build config to reference icon:
+  ```json
+  "build": {
+    "mac": {
+      "icon": "assets/icon.icns"
+    }
+  }
+  ```
 - [ ] Test icon displays correctly in Dock and About menu
 
 ### I2. Build & Distribution
