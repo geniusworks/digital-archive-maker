@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <title>Digital Archive Maker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div id="sidebar-header">
+      <div id="logo-mark">🗂</div>
+      <div id="app-title">
+        <span id="app-name">Digital Archive Maker</span>
+        <span id="app-version">v0.9.0</span>
+      </div>
+    </div>
+
+    <ul id="nav-list">
+      <li class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">⬛</span><span class="nav-label">Dashboard</span>
+      </li>
+      <li class="nav-item" data-view="rip">
+        <span class="nav-icon">💿</span><span class="nav-label">Rip Media</span>
+      </li>
+      <li class="nav-item" data-view="tag">
+        <span class="nav-icon">🏷️</span><span class="nav-label">Tag &amp; Enrich</span>
+      </li>
+      <li class="nav-item" data-view="sync">
+        <span class="nav-icon">🔄</span><span class="nav-label">Sync Library</span>
+      </li>
+      <li class="nav-divider"></li>
+      <li class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Settings</span>
+      </li>
+      <li class="nav-item" data-view="check">
+        <span class="nav-icon">🔍</span><span class="nav-label">System Check</span>
+      </li>
+    </ul>
+
+    <div id="sidebar-footer">
+      <div id="status-venv" class="status-pill status-unknown" title="Python venv status">
+        <span class="dot"></span> Python venv
+      </div>
+      <div id="status-env" class="status-pill status-unknown" title=".env file status">
+        <span class="dot"></span> .env config
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="content">
+
+    <!-- ── Dashboard ─────────────────────────────────────────────────────── -->
+    <section id="view-dashboard" class="view active">
+      <div class="view-header">
+        <h1>Dashboard</h1>
+        <p class="view-subtitle">What would you like to do today?</p>
+      </div>
+
+      <div class="card-grid">
+        <button class="workflow-card" data-view="rip">
+          <span class="card-icon">💿</span>
+          <span class="card-title">Rip Media</span>
+          <span class="card-desc">CD → FLAC · DVD/Blu-ray → MP4</span>
+        </button>
+        <button class="workflow-card" data-view="tag">
+          <span class="card-icon">🏷️</span>
+          <span class="card-title">Tag &amp; Enrich</span>
+          <span class="card-desc">Explicit · Genres · Lyrics · Movie info</span>
+        </button>
+        <button class="workflow-card" data-view="sync">
+          <span class="card-icon">🔄</span>
+          <span class="card-title">Sync Library</span>
+          <span class="card-desc">Push to Jellyfin, Plex or Emby</span>
+        </button>
+        <button class="workflow-card" data-view="settings">
+          <span class="card-icon">⚙️</span>
+          <span class="card-title">Settings</span>
+          <span class="card-desc">Library path · API keys</span>
+        </button>
+      </div>
+
+      <div id="setup-alert" class="alert alert-warning hidden">
+        <strong>⚠ Setup needed.</strong>
+        <span id="setup-alert-msg"></span>
+        <button class="alert-action" data-view="check">Run System Check →</button>
+      </div>
+    </section>
+
+    <!-- ── Rip Media ──────────────────────────────────────────────────────── -->
+    <section id="view-rip" class="view">
+      <div class="view-header">
+        <h1>Rip Media</h1>
+        <p class="view-subtitle">Convert physical discs to digital files</p>
+      </div>
+
+      <div class="option-group">
+        <h2>Audio CD → FLAC</h2>
+        <p class="option-desc">Insert a CD and rip to lossless FLAC with full MusicBrainz metadata, cover art, and playlist generation.</p>
+        <div class="action-row">
+          <button class="btn btn-primary" data-command='["rip","cd"]'>
+            💿 Rip CD
+          </button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="option-group">
+        <h2>DVD / Blu-ray → MP4</h2>
+        <p class="option-desc">Rip a video disc to a high-quality MP4 with subtitles and metadata. Optionally provide title and year for automatic organisation.</p>
+        <div class="form-row">
+          <label>Title <input type="text" id="rip-title" placeholder="e.g. Gladiator" /></label>
+          <label>Year <input type="text" id="rip-year" placeholder="e.g. 2000" maxlength="4" style="width:80px" /></label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="rip-burn-subs" />
+            Burn subtitles into video
+          </label>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="btn-rip-video">📼 Rip Video</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tag & Enrich ───────────────────────────────────────────────────── -->
+    <section id="view-tag" class="view">
+      <div class="view-header">
+        <h1>Tag &amp; Enrich</h1>
+        <p class="view-subtitle">Add metadata, ratings, and lyrics to your library</p>
+      </div>
+
+      <div class="option-group">
+        <div class="form-row">
+          <label>Library path
+            <div class="path-input-row">
+              <input type="text" id="tag-path" placeholder="/Volumes/Data/Media/Library/Music" />
+              <button class="btn btn-secondary btn-icon" id="btn-pick-tag-path">📂</button>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="tag-actions">
+        <div class="tag-card">
+          <span class="tag-icon">🔞</span>
+          <span class="tag-name">Explicit Content</span>
+          <span class="tag-desc">Tag explicit tracks via MusicBrainz + Spotify</span>
+          <div class="tag-actions-row">
+            <label class="checkbox-label"><input type="checkbox" id="tag-explicit-dry" /> Dry run</label>
+            <button class="btn btn-sm btn-primary" data-tag-command="explicit">Tag Explicit</button>
+          </div>
+        </div>
+
+        <div class="tag-card">
+          <span class="tag-icon">🎸</span>
+          <span class="tag-name">Genre Tags</span>
+          <span class="tag-desc">Add genre metadata via MusicBrainz</span>
+          <div class="tag-actions-row">
+            <button class="btn btn-sm btn-primary" data-tag-command="genres">Update Genres</button>
+          </div>
+        </div>
+
+        <div class="tag-card">
+          <span class="tag-icon">📝</span>
+          <span class="tag-name">Lyrics</span>
+          <span class="tag-desc">Download lyrics via Genius API (saves .lrc files)</span>
+          <div class="tag-actions-row">
+            <label class="checkbox-label"><input type="checkbox" id="tag-lyrics-recursive" checked /> Recursive</label>
+            <button class="btn btn-sm btn-primary" data-tag-command="lyrics">Fetch Lyrics</button>
+          </div>
+        </div>
+
+        <div class="tag-card">
+          <span class="tag-icon">🎬</span>
+          <span class="tag-name">Movie Metadata</span>
+          <span class="tag-desc">Add movie info via TMDb / OMDb</span>
+          <div class="tag-actions-row">
+            <button class="btn btn-sm btn-primary" data-tag-command="movie">Tag Movies</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Sync Library ───────────────────────────────────────────────────── -->
+    <section id="view-sync" class="view">
+      <div class="view-header">
+        <h1>Sync Library</h1>
+        <p class="view-subtitle">Push your library to Jellyfin, Plex, or Emby</p>
+      </div>
+
+      <div class="option-group">
+        <p class="option-desc">Sync runs the configured pipeline — compares local library to destinations and transfers new or changed files.</p>
+        <div class="action-row gap">
+          <label class="checkbox-label">
+            <input type="checkbox" id="sync-dry-run" />
+            Dry run (preview only — no changes made)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="sync-quiet" />
+            Quiet output
+          </label>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" id="btn-sync">🔄 Sync Now</button>
+          <button class="btn btn-secondary" id="btn-sync-dry">🔍 Preview</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Settings ───────────────────────────────────────────────────────── -->
+    <section id="view-settings" class="view">
+      <div class="view-header">
+        <h1>Settings</h1>
+        <p class="view-subtitle">Configure library path and API keys</p>
+      </div>
+
+      <form id="settings-form">
+        <div class="settings-group">
+          <h2>Library</h2>
+          <label>Library root
+            <div class="path-input-row">
+              <input type="text" id="cfg-library-root" placeholder="/Volumes/Data/Media/Library" />
+              <button type="button" class="btn btn-secondary btn-icon" id="btn-pick-library">📂</button>
+            </div>
+          </label>
+          <div class="form-row">
+            <label>Audio language <input type="text" id="cfg-lang-audio" placeholder="en" maxlength="5" style="width:80px" /></label>
+            <label>Subtitle language <input type="text" id="cfg-lang-subtitles" placeholder="en" maxlength="5" style="width:80px" /></label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h2>API Keys <span class="optional-badge">optional</span></h2>
+          <p class="option-desc">All keys are optional. Features that require them will work better or enable additional metadata.</p>
+
+          <div class="api-key-row">
+            <label>AcoustID
+              <span class="api-note">Audio fingerprinting · <a href="#" data-url="https://acoustid.org/api-key">Get free key</a></span>
+              <input type="password" id="cfg-acoustid" placeholder="••••••••••••••••" />
+            </label>
+          </div>
+          <div class="api-key-row">
+            <label>Genius API Token
+              <span class="api-note">Song lyrics · <a href="#" data-url="https://genius.com/api-clients">Get free key</a></span>
+              <input type="password" id="cfg-genius" placeholder="••••••••••••••••" />
+            </label>
+          </div>
+          <div class="api-key-row">
+            <label>Spotify Client ID
+              <span class="api-note">Explicit content · <a href="#" data-url="https://developer.spotify.com/dashboard">Get free key</a></span>
+              <input type="text" id="cfg-spotify-id" placeholder="" />
+            </label>
+          </div>
+          <div class="api-key-row">
+            <label>Spotify Client Secret
+              <input type="password" id="cfg-spotify-secret" placeholder="••••••••••••••••" />
+            </label>
+          </div>
+          <div class="api-key-row">
+            <label>TMDb API Key
+              <span class="api-note">Movie/TV metadata · <a href="#" data-url="https://www.themoviedb.org/settings/api">Get free key</a></span>
+              <input type="password" id="cfg-tmdb" placeholder="••••••••••••••••" />
+            </label>
+          </div>
+          <div class="api-key-row">
+            <label>OMDb API Key
+              <span class="api-note">Movie ratings · <a href="#" data-url="https://www.omdbapi.com/apikey.aspx">Get free key</a></span>
+              <input type="password" id="cfg-omdb" placeholder="••••••••••••••••" />
+            </label>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button type="submit" class="btn btn-primary" id="btn-save-settings">💾 Save Settings</button>
+          <span id="settings-saved-msg" class="save-msg hidden">✓ Saved</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── System Check ───────────────────────────────────────────────────── -->
+    <section id="view-check" class="view">
+      <div class="view-header">
+        <h1>System Check</h1>
+        <p class="view-subtitle">Verify tools, Python packages, and API keys</p>
+      </div>
+
+      <div class="option-group">
+        <div class="action-row gap">
+          <button class="btn btn-primary" id="btn-check">🔍 Run Check</button>
+          <button class="btn btn-secondary" id="btn-check-install">📦 Check &amp; Install Missing</button>
+          <div class="scope-row">
+            <label>Scope:
+              <select id="check-scope">
+                <option value="">All</option>
+                <option value="music">Music only</option>
+                <option value="video">Video only</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Output Console ────────────────────────────────────────────────────── -->
+  <div id="console-panel">
+    <div id="console-header">
+      <span id="console-title">Output</span>
+      <div id="console-controls">
+        <button id="btn-kill" class="console-btn hidden" title="Stop process">■ Stop</button>
+        <button id="btn-clear" class="console-btn" title="Clear output">✕ Clear</button>
+        <button id="btn-toggle-console" class="console-btn" title="Expand/collapse">▲</button>
+      </div>
+    </div>
+    <div id="console-output"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

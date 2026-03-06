@@ -21,6 +21,10 @@ config/**
 .DS_Store
 Icon*
 
+# Electron GUI build artefacts
+gui/node_modules/
+gui/dist/
+
 # Python caches
 __pycache__/
 *.egg-info/

@@ -1,0 +1,55 @@
+{
+  "name": "digital-archive-maker",
+  "version": "0.9.0",
+  "description": "Physical media → digital library automation",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "ELECTRON_RUN_AS_NODE= electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --mac",
+    "build:dmg": "electron-builder --mac dmg"
+  },
+  "keywords": [
+    "media",
+    "ripping",
+    "flac",
+    "jellyfin",
+    "plex"
+  ],
+  "author": "Martin Diekhoff",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "works.genius.digital-archive-maker",
+    "productName": "Digital Archive Maker",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns"
+    },
+    "dmg": {
+      "title": "Digital Archive Maker",
+      "background": "assets/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "!assets/*.dmg"
+    ]
+  }
+}
