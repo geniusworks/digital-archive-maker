@@ -182,6 +182,7 @@ See [Contributing](CONTRIBUTING.md#running-tests) for detailed testing options.
 ## What's Next?
 
 - **`dam --help`** — See all available commands
+- **[GUI Desktop App](gui/README.md)** — Graphical interface for all workflows
 - **[Full Documentation](docs/)** — Detailed guides for each workflow
 - **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
 - **[Video Ripping Guide](docs/video_ripping_guide.md)** — DVD/Blu-ray workflow

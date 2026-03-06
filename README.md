@@ -91,6 +91,11 @@ dam rip video
 dam sync
 ```
 
+**GUI Option:** For a graphical interface, launch the desktop app:
+```bash
+cd gui && npm start
+```
+
 ## Verify Installation
 
 Optional: Run the test suite to confirm everything works:
