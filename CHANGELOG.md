@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Unified CLI** (`dam` command) — Single entry point for all workflows: `dam rip`, `dam tag`, `dam sync`, `dam check`, `dam config`
+- **Shared library** (`dam/` package) — Centralised config loader, dependency checker with auto-install, interactive API key onboarding, and Rich console helpers
+- **Dependency checker** (`dam check`) — Reports status of all system tools, Python packages, and API keys; `--install` flag auto-installs missing Homebrew packages
+- **Configuration wizard** (`dam config`) — Interactive first-run setup for library path and API keys with signup URLs
+- **API key onboarding** (`dam.keys`) — Feature-driven prompts: keys are requested only when a feature needs them, with automatic `.env` persistence
+- **Pre-commit hooks** (`.pre-commit-config.yaml`) — black, isort, flake8, trailing whitespace, end-of-file fixer
 - **Lyrics downloader** (`bin/music/download_lyrics.py`) — Comprehensive lyrics fetching with Genius API + lyrics.ovh fallback, Jellyfin-compatible `.lrc` output, smart rate limiting, and album-by-album processing
 - **Metadata fixer** (`bin/music/fix-missing-metadata.py`) — MusicBrainz-first metadata repair for FLAC, MP3, and MP4/M4A files with cached lookups and dry-run support
 - **Manual genre tagger** (`bin/music/tag-manual-genre.py`) — Whitelist-validated manual genre assignment with bulk operations

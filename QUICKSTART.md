@@ -23,12 +23,20 @@ make install-video-deps
 # Note: MakeMKV requires manual installation from https://www.makemkv.com/download/
 # After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
-# Activate virtual environment for Python scripts
+# Activate virtual environment and install the dam CLI
 source venv/bin/activate
+pip install -e .
 ```
 
 ## 2. Configure Environment
 
+**Option A: Interactive wizard** (recommended)
+```bash
+dam config
+```
+This walks you through setting your library path and API keys interactively.
+
+**Option B: Manual setup**
 ```bash
 cp .env.sample .env
 ```
@@ -51,6 +59,12 @@ SPOTIFY_CLIENT_SECRET="your_spotify_client_secret"
 GENIUS_API_TOKEN="your_genius_token"
 ```
 
+### Verify your setup
+```bash
+dam check                 # shows status of all tools, packages, and API keys
+dam check --install       # auto-installs missing Homebrew dependencies
+```
+
 ### MakeMKV Configuration (Important for Subtitles)
 The `rip_video.py` script will automatically configure MakeMKV to extract all subtitles (including Blu-ray PGS subtitles) by adding this to `~/.MakeMKV/settings.conf`:
 ```
@@ -63,7 +77,8 @@ This ensures both DVD and Blu-ray rips contain the necessary subtitle streams.
 Insert a CD, then:
 
 ```bash
-make rip-cd
+dam rip cd
+# or: make rip-cd
 ```
 
 ## 4. (Optional) Add Convenience Aliases
@@ -139,7 +154,8 @@ This will:
 ## 5. Rip Your First DVD/Blu-ray
 
 ```bash
-make rip-video
+dam rip video
+# or: make rip-video
 ```
 
 Follow the prompts to select title and configure encoding.
@@ -148,6 +164,7 @@ Follow the prompts to select title and configure encoding.
 
 ## What's Next?
 
+- **`dam --help`** — See all available commands
 - **[Full Documentation](docs/)** — Detailed guides for each workflow
 - **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
 - **[Video Ripping Guide](docs/video_ripping_guide.md)** — DVD/Blu-ray workflow

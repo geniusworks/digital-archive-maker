@@ -69,19 +69,34 @@ cd digital-archive-maker
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the project in editable mode (includes dam CLI + all deps)
+pip install -e ".[dev]"
 pip install -r requirements-test.txt
 
-# Install development tools
-pip install black isort flake8 mypy
+# Set up pre-commit hooks
+pip install pre-commit
+pre-commit install
 
 # Copy environment template
 cp .env.sample .env
 
-# Run tests to verify setup
+# Verify setup
+dam check
 make test
 ```
+
+### Project Layout
+
+| Directory | Purpose |
+|-----------|--------|
+| `dam/` | Shared library & unified CLI (`dam` command) |
+| `bin/` | Individual pipeline scripts (music, video, sync, tv, utils) |
+| `tests/` | pytest test suite |
+| `docs/` | User-facing guides |
+
+The `dam/` package provides centralised config loading (`dam.config`), dependency checking
+(`dam.deps`), API key onboarding (`dam.keys`), and rich console output (`dam.console`).
+New scripts should import from `dam.*` rather than re-implementing these patterns.
 
 ### Running Tests
 

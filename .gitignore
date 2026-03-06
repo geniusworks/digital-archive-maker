@@ -23,6 +23,7 @@ Icon*
 
 # Python caches
 __pycache__/
+*.egg-info/
 .venv/
 .coverage
 htmlcov/

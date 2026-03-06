@@ -166,16 +166,17 @@ Current `docs/` has overlapping files. Target structure:
 
 ## D. User Experience Improvements
 
-### D1. Unified CLI (Major Feature — Post-1.0 or 1.0)
+### D1. Unified CLI ✅
 *Replace scattered scripts with a single, intuitive entry point.*
 
-- [ ] Create unified CLI entry point (`dam` or `archive` command) using `typer` or `click` + `rich`
-  - Subcommands: `dam rip`, `dam tag`, `dam sync`, `dam config`
-  - Interactive prompts if run without flags
-- [ ] Goal-oriented processing: `dam tag --lyrics --covers --genres`
-- [ ] Feature-driven API onboarding: prompt for keys only when a feature needs them
-  - *"To fetch lyrics, you need a free Genius API key. Get one at [URL], paste it here:"*
-  - Save keys to `.env` automatically
+- [x] Create unified CLI entry point (`dam` command) using `typer` + `rich`
+  - Subcommands: `dam rip cd`, `dam rip video`, `dam tag explicit|genres|lyrics|movie`, `dam sync`, `dam config`, `dam check`
+  - `dam check --install` auto-installs missing Homebrew deps
+  - `dam config` interactive wizard for library path + API keys
+- [x] Feature-driven API onboarding: prompt for keys only when a feature needs them
+  - `dam.keys.require_key()` prompts with signup URL and persists to `.env`
+  - Scripts call `require_key("TMDB_API_KEY")` on their critical path
+- [ ] Goal-oriented batch processing: `dam tag --lyrics --covers --genres` (future)
 
 ### D2. Non-Destructive Safety
 *Users should feel safe experimenting. Never destroy work without explicit confirmation.*
@@ -189,7 +190,7 @@ Current `docs/` has overlapping files. Target structure:
 
 - [ ] Zero-config defaults: sensible FLAC for audio, good Handbrake presets for video
 - [ ] Auto-detect media type: `dam rip` detects CD vs DVD vs Blu-ray automatically
-- [ ] Central path config: `dam config` wizard asks for library root once
+- [x] Central path config: `dam config` wizard asks for library root once
 
 ### D4. Interactive Conflict Resolution
 *Never fail silently, never guess destructively.*
@@ -205,15 +206,26 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] Cache indicators: *"Fetching metadata (using local cache)..."*
 - [ ] Graceful degradation: note skipped items in summary instead of crashing
 
+### D6. Interactive Dependency Installation & API Key Onboarding
+*Users should never have to hunt for installation commands or signup URLs.*
+
+- [x] `dam check` reports all system tools, Python packages, and API keys with status
+- [x] `dam check --install` auto-installs missing Homebrew packages
+- [x] `dam config` walks through API key setup with signup URLs and free-tier info
+- [x] `dam.keys.require_key()` prompts on the critical path of any script that needs a key
+- [ ] Migrate existing scripts to use `dam.deps` for tool checks at startup
+- [ ] Migrate existing scripts to use `dam.keys.require_key()` instead of bare `os.getenv()`
+- [ ] Add `dam doctor` command: full diagnostic report (tools + versions, Python deps, API keys, disk space, .env sanity)
+
 ---
 
 ## E. Code Quality & Polish
 
 ### E1. Important for Professional Release
 - [ ] Add `--help` with clear usage examples to every script
-- [ ] Ensure every script checks for required tools before running (e.g., `makemkvcon`, `HandBrakeCLI`)
+- [x] Ensure every script checks for required tools before running → `dam.deps` module + `dam check`
 - [ ] Add type hints to critical public functions
-- [ ] Extract shared patterns into a `lib/` or `digitallibrary/core/` module (config, logging, API clients)
+- [x] Extract shared patterns into `dam/` package (config, deps, keys, console)
 - [ ] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
 
 ### E2. Testing
@@ -222,7 +234,7 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] Target: 70%+ coverage for core scripts
 
 ### E3. CI / Pre-commit
-- [ ] Add pre-commit hooks config: `black`, `isort`, `flake8`
+- [x] Add pre-commit hooks config: `black`, `isort`, `flake8`, trailing whitespace, end-of-file, check-yaml
 - [ ] Ensure CI runs on PR (already have `.github/workflows/ci.yml`)
 
 ---
@@ -240,7 +252,7 @@ Current `docs/` has overlapping files. Target structure:
 ## G. Release Execution
 
 ### Pre-Release Final Steps
-- [ ] Complete items in sections A–C above
+- [x] Complete items in sections A–C above
 - [ ] Run full PII / secrets scan on all tracked files
 - [ ] Test every documented workflow on a clean macOS system
 - [ ] Verify README renders correctly on GitHub

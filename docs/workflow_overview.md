@@ -176,10 +176,8 @@ flowchart LR
 ```
 
 ### C1) Organize music videos into artist folders
-- Scripts:
-  - `bin/video/fix_music_videos_mapped.py` — Primary collection with hardcoded mappings
-  - `bin/video/fix_music_videos_secondary.py` — Secondary collection with separate mappings
-- Output: `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/Videos/Music/Artist/Title.mp4`
+- Script: `bin/video/fix_music_videos.py` — Uses MusicBrainz/AcoustID to identify and organize videos
+- Output: `${LIBRARY_ROOT}/Videos/Music/Artist/Title.mp4`
 
 ### C2) Standardize filenames and metadata (optional)
 - **Filename standardization:** `bin/video/standardize_music_video_filenames.py`

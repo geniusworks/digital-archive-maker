@@ -8,3 +8,5 @@ python-dotenv>=1.0.0
 PyYAML>=6.0.1
 Pillow>=9.0.0
 lyricsgenius>=3.0.1
+typer>=0.9.0
+rich>=13.0.0

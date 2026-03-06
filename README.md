@@ -42,33 +42,45 @@ Whether you're preserving a decades-old CD collection or archiving your favorite
 
 ## Getting Started
 
-**Step 1: Clone and install dependencies**
+**Step 1: Clone and install**
 ```bash
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
 make install-deps
 source venv/bin/activate
+pip install -e .          # installs the `dam` command
 ```
 
-**Step 2: Configure**
+**Step 2: Configure** (interactive wizard)
+```bash
+dam config                # sets library path, walks you through API keys
+```
+
+Or manually:
 ```bash
 cp .env.sample .env
 # Edit .env with your paths and optional API keys
 ```
 
-**Step 3: Rip a CD**
+**Step 3: Check your setup**
 ```bash
-make rip-cd
+dam check                 # verifies tools, Python packages, and API keys
+dam check --install       # auto-installs missing Homebrew dependencies
 ```
 
-**Step 4: Rip a DVD/Blu-ray**
+**Step 4: Rip a CD**
 ```bash
-make rip-video
+dam rip cd
 ```
 
-**Step 5: Sync to your media server**
+**Step 5: Rip a DVD/Blu-ray**
 ```bash
-python bin/sync/master-sync.py
+dam rip video
+```
+
+**Step 6: Sync to your media server**
+```bash
+dam sync
 ```
 
 📖 **[Full Quick Start Guide →](QUICKSTART.md)**
@@ -108,24 +120,30 @@ python bin/sync/master-sync.py
 ## Command Reference
 
 ```bash
+# Setup & configuration
+dam check                # Verify all dependencies and API keys
+dam check --install      # Auto-install missing Homebrew packages
+dam config               # Interactive first-run wizard (library path, API keys)
+
 # Rip media
-make rip-cd              # Rip audio CD to FLAC
-make rip-video           # Rip DVD/Blu-ray to MP4/MKV
+dam rip cd               # Rip audio CD to FLAC
+dam rip video             # Rip DVD/Blu-ray to MP4
+dam rip video --title "Movie" --year 2024   # With metadata
 
 # Tag and organize
-python bin/music/tag-explicit-mb.py --path /path/to/music
-python bin/music/download_lyrics.py --path /path/to/music --recursive
-python bin/music/update-genre-mb.py --path /path/to/music
+dam tag explicit /path/to/music    # Tag explicit content
+dam tag genres /path/to/music      # Add genre tags
+dam tag lyrics /path/to/music      # Download lyrics
+dam tag movie /path/to/movies      # Add movie metadata
 
 # Sync library
-python bin/sync/master-sync.py
-python bin/sync/sync-library.py --config sync-config.yaml
-
-# Quality checks
-python bin/music/check_album_integrity.py --path /path/to/music
+dam sync                 # Sync to media server
+dam sync --dry-run       # Preview without changes
 ```
 
-For more commands, see [Documentation](docs/).
+The `dam` CLI wraps the underlying scripts and handles dependency checks and API key
+onboarding automatically. You can still use `make` targets and individual scripts directly —
+see [Documentation](docs/) for details.
 
 ---
 
@@ -133,9 +151,10 @@ For more commands, see [Documentation](docs/).
 
 **Just a Mac** — This runs on any Mac with macOS. You'll need Homebrew (free package manager) installed.
 
-**Optional tools:**
-- **MakeMKV** — Required for ripping DVDs/Blu-rays. The free trial works indefinitely for this purpose.
-- **API keys** — Optional but recommended for better results:
+Run `dam check --install` and the tool will install everything it can automatically. For the rest:
+
+- **MakeMKV** — Required for ripping DVDs/Blu-rays. Download from [makemkv.com](https://www.makemkv.com/).
+- **API keys** — Optional but recommended. Run `dam config` and you'll be walked through each one:
 
 | Service | Why | How to get it |
 |---------|-----|---------------|
@@ -143,7 +162,7 @@ For more commands, see [Documentation](docs/).
 | TMDb | Better movie/TV descriptions | Free at themoviedb.org |
 | Genius | Song lyrics when available | Free at genius.com/developers |
 
-Everything else installs automatically with one command.
+API keys are requested only when you use a feature that needs them — you're never blocked upfront.
 
 ---
 
@@ -164,6 +183,12 @@ Everything else installs automatically with one command.
 
 ```
 digital-archive-maker/
+├── dam/                # Shared library & unified CLI
+│   ├── cli.py          #   `dam` command entry point
+│   ├── config.py       #   Centralised configuration loader
+│   ├── deps.py         #   Dependency checker & installer
+│   ├── keys.py         #   Interactive API key onboarding
+│   └── console.py      #   Rich terminal output helpers
 ├── bin/
 │   ├── music/          # CD ripping and tagging scripts
 │   ├── video/          # DVD/Blu-ray ripping scripts
@@ -174,26 +199,26 @@ digital-archive-maker/
 ├── config/             # Configuration templates
 ├── cache/              # Temporary data
 ├── tests/              # Tests
-└── Makefile            # Common commands
+└── Makefile            # Make targets (also usable directly)
 ```
 
 ---
 
 ## Common Issues
 
-**"abcde not found"**
+**"abcde not found" / "HandBrakeCLI not found"**
 ```bash
-brew install abcde
+dam check --install      # auto-installs all Homebrew dependencies
 ```
 
 **"MakeMKV not found"**
-Download from [makemkv.com](https://www.makemkv.com/) and install the app.
+Download from [makemkv.com](https://www.makemkv.com/) and install the app, then run `dam check`.
 
 **"No disc found"**
 Make sure the disc is inserted. If using an external drive, give it a moment to mount.
 
 **"API errors"**
-If you added API keys, check that they're correct in your `.env` file.
+Run `dam config` to re-enter your API keys, or check `.env` directly.
 
 Still stuck? Check the [docs](docs/) or open an issue.
 
