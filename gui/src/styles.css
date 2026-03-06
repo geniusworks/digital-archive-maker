@@ -10,9 +10,9 @@
   --bg-input:     #2c2c36;
   --bg-console:   #1a1a2e;
   --border:       rgba(255, 255, 255, 0.1);
-  --accent:       #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-dim:   rgba(124, 58, 237, 0.15);
+  --accent:       #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-dim:   rgba(139, 92, 246, 0.15);
   --green:        #10b981;
   --yellow:       #f59e0b;
   --red:          #ef4444;
@@ -106,7 +106,7 @@ body {
   transition: height .2s;
 }
 .nav-item:hover { 
-  background: rgba(124, 58, 237, 0.1); 
+  background: rgba(139, 92, 246, 0.12); 
   color: var(--text);
   transform: translateX(2px);
 }
@@ -115,7 +115,7 @@ body {
 }
 .nav-item.active { 
   background: var(--accent-dim); 
-  color: var(--accent);
+  color: #a78bfa;
   font-weight: 500;
 }
 .nav-item.active::before {
