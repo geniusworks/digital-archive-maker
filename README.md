@@ -91,6 +91,15 @@ dam rip video
 dam sync
 ```
 
+## Verify Installation
+
+Optional: Run the test suite to confirm everything works:
+```bash
+make test  # Runs all 81 tests
+```
+
+See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
+
 📖 **[Full Quick Start Guide →](QUICKSTART.md)**
 
 ---

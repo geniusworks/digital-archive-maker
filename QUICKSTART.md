@@ -168,6 +168,15 @@ dam rip video
 
 Follow the prompts to select title and configure encoding.
 
+## 6. (Optional) Run Tests
+
+Verify your installation with the test suite:
+```bash
+make test  # Should show "All tests passed!"
+```
+
+See [Contributing](CONTRIBUTING.md#running-tests) for detailed testing options.
+
 ---
 
 ## What's Next?

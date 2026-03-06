@@ -100,16 +100,39 @@ New scripts should import from `dam.*` rather than re-implementing these pattern
 
 ### Running Tests
 
+The project has 81 tests covering core functionality. Install test dependencies first:
 ```bash
-# Run all tests
+pip install -r requirements-test.txt
+```
+
+**Test options:**
+```bash
+# Run all tests (recommended)
 make test
 
-# Run with coverage
+# Run with coverage report (HTML in htmlcov/index.html)
 make test-coverage
+
+# Run only fast unit tests
+make test-unit
+
+# Run only integration tests (may require external tools)
+make test-integration
 
 # Run specific test file
 python -m pytest tests/test_fix_album.py -v
+
+# Run specific test method
+python -m pytest tests/test_fix_album.py::TestFixAlbum::test_url_encode -v
+
+# Run tests matching a pattern
+python -m pytest tests/ -k "test_url_encode" -v
 ```
+
+**Test markers:**
+- `unit` - Fast tests, no external dependencies
+- `integration` - May require external tools (ffmpeg, abcde, etc.)
+- `slow` - Network calls or large file operations
 
 ---
 
