@@ -39,3 +39,5 @@ Place a 1024×1024 `.icns` (macOS) and `.png` file in `gui/assets/`:
 - `gui/assets/icon.png`
 
 Use `electron-icon-builder` or any `.icns` generator from a square PNG.
+
+> **Note:** Icon creation and DMG distribution steps are tracked in `../RELEASE_CHECKLIST.md` section I.

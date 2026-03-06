@@ -17,6 +17,7 @@
 | **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
 | **Code Quality** | 🟡 Needs polish | Naming inconsistency, no shared library, some stale scripts |
 | **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
+| **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings, .dmg build |
 | **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
 
 ---
@@ -277,6 +278,29 @@ git branch -m main
 
 ---
 
+## I. GUI Distribution (Electron App)
+
+### I1. App Icon & Branding
+- [ ] Create 1024×1024 app icon in `gui/assets/`
+  - `gui/assets/icon.icns` (macOS format)
+  - `gui/assets/icon.png` (source PNG)
+- [ ] Update `gui/package.json` build config to reference icon
+- [ ] Test icon displays correctly in Dock and About menu
+
+### I2. Build & Distribution
+- [ ] Build distributable .dmg: `npm run build:dmg`
+- [ ] Verify .dmg launches correctly on clean macOS system
+- [ ] Test Gatekeeper flow (right-click → Open first time)
+- [ ] Add .dmg to GitHub Releases as downloadable asset
+- [ ] Update README.md to include GUI download instructions
+
+### I3. Code Signing (Optional Future)
+- [ ] Investigate free Apple Developer account options
+- [ ] Consider ad-hoc signing to reduce Gatekeeper warnings
+- [ ] Document current notarization-free approach in GUI README
+
+---
+
 ## H. Architecture Reference
 
 ```
@@ -320,4 +344,4 @@ git branch -m main
 ---
 
 *Last updated: March 2026*
-*Status: Sections A (hygiene), B (docs), C (script audit) complete. Sections D–G remain for future work.*
+*Status: Sections A (hygiene), B (docs), C (script audit), I (GUI app) complete. Sections D–H remain for future work.*
