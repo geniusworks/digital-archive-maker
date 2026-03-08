@@ -27,16 +27,25 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 ## About
 
-**Media Archive Maker** does the heavy lifting for you — just insert a disc, and it handles the ripping, tagging, and organizing automatically. Your music and movies appear in your library with proper titles, album art, and descriptions — no manual typing required.
+**Digital Archive Maker** transforms your physical media collection into a organized digital library. 
+
+**The Problem:** Your CDs, DVDs, and Blu-rays sit on shelves, collecting dust. They're difficult to browse, can't be searched, and only work when you have the physical disc and player. Your favorite music and movies are trapped in plastic boxes.
+
+**The Solution:** Digital Archive Maker liberates your media by:
+- **Extracting** perfect digital copies from physical discs
+- **Organizing** everything with proper names, metadata, and artwork  
+- **Tagging** each item with rich details from online databases
+- **Structuring** files in a way that media servers understand
+- **Syncing** your entire library to devices you actually use
 
 **What it does:**
-- 🎵 **Rips your CDs** — Saves as high-quality FLAC with album art and metadata
-- 📀 **Archives DVDs & Blu-rays** — Preserves your movies with the right subtitles and language tracks
-- 🏷️ **Adds all the details** — Album names, artist info, movie descriptions, genre tags
-- 🔄 **Syncs everywhere** — Keeps your library in sync across your devices
-- 📱 **Works with your media server** — Send your collection to Jellyfin, Plex, or Emby with one command
+- 🎵 **Digitizes CDs** — Creates lossless FLAC files with complete album info and cover art
+- 📀 **Preserves DVDs & Blu-rays** — Extracts movies with correct audio tracks and subtitles
+- 🏷️ **Enriches metadata** — Adds artist bios, movie descriptions, genre tags, and ratings
+- �️ **Organizes everything** — Creates a browsable, searchable library structure
+- 📱 **Integrates with media servers** — Works seamlessly with Jellyfin, Plex, and Emby
 
-Whether you're preserving a decades-old CD collection or archiving your favorite movies, this tool handles the tedious work so you can enjoy your library on any device — all stored on your own hardware, with no monthly fees.
+The result: Your entire media collection becomes instantly accessible from any device, searchable by any criteria, and safely backed up on your own hardware—no subscriptions required.
 
 ---
 
@@ -44,8 +53,8 @@ Whether you're preserving a decades-old CD collection or archiving your favorite
 
 **Step 1: Clone and install**
 ```bash
-git clone https://github.com/geniusworks/media-archive-maker.git
-cd media-archive-maker
+git clone https://github.com/geniusworks/digital-archive-maker.git
+cd digital-archive-maker
 make install-deps        # creates venv and installs system deps + Python packages
 source venv/bin/activate  # activate the virtual environment
 pip install -e .          # installs the `dam` command
