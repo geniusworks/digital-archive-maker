@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import json
 import argparse
+import json
+import os
 import re
-import requests
-from pathlib import Path
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
 
 try:
     from mutagen.mp4 import MP4, MP4FreeForm
+
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
@@ -28,6 +30,7 @@ def _utcnow_isoz():
 def _load_env():
     try:
         from dotenv import load_dotenv
+
         load_dotenv(_REPO_ROOT / ".env")
     except ImportError:
         pass
@@ -38,11 +41,11 @@ def _load_show_overrides():
     overrides_file = _REPO_ROOT / "config" / "show_tmdb_overrides.json"
     if not overrides_file.exists():
         return {}
-    
+
     try:
-        with open(overrides_file, 'r', encoding='utf-8') as f:
+        with open(overrides_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data.get('overrides', {})
+            return data.get("overrides", {})
     except Exception as e:
         if os.getenv("DEBUG"):
             print(f"Warning: Could not load show overrides: {e}")
@@ -112,7 +115,11 @@ def _extract_year_from_text(text):
 
 
 def _parse_jellyfin_episode_filename(filename):
-    m = re.match(r"^(?P<show>.+?)\s+-\s+S(?P<season>\d{2})E(?P<episode>\d{2})\s+-\s+(?P<title>.+)\.(?P<ext>mp4|m4v)$", filename, re.IGNORECASE)
+    m = re.match(
+        r"^(?P<show>.+?)\s+-\s+S(?P<season>\d{2})E(?P<episode>\d{2})\s+-\s+(?P<title>.+)\.(?P<ext>mp4|m4v)$",
+        filename,
+        re.IGNORECASE,
+    )
     if not m:
         return None
     return {
@@ -249,7 +256,12 @@ def _plan_episode_tag_updates(mp4, show_title, show_year, season, episode, ep_da
         planned.append("\xa9day")
 
     if isinstance(ep_data, dict) and isinstance(ep_data.get("id"), int):
-        if _would_set_freeform_text(mp4, "----:com.apple.iTunes:tmdb_episode_id", str(ep_data["id"]), force=force):
+        if _would_set_freeform_text(
+            mp4,
+            "----:com.apple.iTunes:tmdb_episode_id",
+            str(ep_data["id"]),
+            force=force,
+        ):
             planned.append("tmdb_episode_id")
 
     return planned
@@ -291,28 +303,31 @@ def _get_omdb_show_data(imdb_id, language="en-US"):
     """Fetch TV show data from OMDb using IMDb ID."""
     if not imdb_id:
         return None
-    
+
     # Ensure IMDb ID starts with 'tt'
-    if not imdb_id.startswith('tt'):
-        imdb_id = f'tt{imdb_id}'
-    
+    if not imdb_id.startswith("tt"):
+        imdb_id = f"tt{imdb_id}"
+
     api_key = os.getenv("OMDB_API_KEY")
     if not api_key:
         print("Warning: OMDB_API_KEY not set, cannot use IMDb lookup")
         return None
-    
+
     try:
         url = "http://www.omdbapi.com/"
-        params = {'apikey': api_key, 'i': imdb_id, 'r': 'json'}
-        
+        params = {"apikey": api_key, "i": imdb_id, "r": "json"}
+
         response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
         data = response.json()
-        
-        if data.get('Response') == 'True' and data.get('Type') in ['series', 'movie']:
+
+        if data.get("Response") == "True" and data.get("Type") in [
+            "series",
+            "movie",
+        ]:
             return data
         else:
-            if data.get('Error'):
+            if data.get("Error"):
                 print(f"OMDb error: {data.get('Error')}")
             else:
                 print(f"OMDb: Not found or not a series/movie")
@@ -330,7 +345,12 @@ def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verb
     if isinstance(cached, dict) and cached.get("not_found") is True:
         return None
 
-    query = {"query": show_title, "page": 1, "include_adult": "false", "language": language}
+    query = {
+        "query": show_title,
+        "page": 1,
+        "include_adult": "false",
+        "language": language,
+    }
     if show_year:
         query["first_air_date_year"] = str(show_year)
 
@@ -345,7 +365,7 @@ def _tmdb_find_show_id(cache, show_title, show_year=None, language="en-US", verb
     best = results[0]
     if show_year:
         for r in results:
-            fad = (r.get("first_air_date") or "")
+            fad = r.get("first_air_date") or ""
             if fad.startswith(f"{show_year}-"):
                 best = r
                 break
@@ -377,7 +397,10 @@ def _tmdb_get_episode(cache, show_id, season, episode, language="en-US"):
         return cached["episode"]
 
     try:
-        ep = _tmdb_get_json(f"/tv/{show_id}/season/{int(season)}/episode/{int(episode)}", {"language": language})
+        ep = _tmdb_get_json(
+            f"/tv/{show_id}/season/{int(season)}/episode/{int(episode)}",
+            {"language": language},
+        )
         if not ep:
             cache[key] = {"not_found": True, "fetched_at": _utcnow_isoz()}
             return None
@@ -389,7 +412,16 @@ def _tmdb_get_episode(cache, show_id, season, episode, language="en-US"):
     return ep
 
 
-def _write_episode_metadata(file_path, show_title, show_year, season, episode, ep_data, dry_run=False, force=False):
+def _write_episode_metadata(
+    file_path,
+    show_title,
+    show_year,
+    season,
+    episode,
+    ep_data,
+    dry_run=False,
+    force=False,
+):
     if not MUTAGEN_AVAILABLE:
         print("  Warning: mutagen not available; skipping file")
         return False
@@ -432,7 +464,15 @@ def _write_episode_metadata(file_path, show_title, show_year, season, episode, e
         changed = _set_mp4_value(mp4, "\xa9day", [year_to_write], force=force) or changed
 
     if isinstance(ep_data, dict) and isinstance(ep_data.get("id"), int):
-        changed = _set_freeform_text(mp4, "----:com.apple.iTunes:tmdb_episode_id", str(ep_data["id"]), force=force) or changed
+        changed = (
+            _set_freeform_text(
+                mp4,
+                "----:com.apple.iTunes:tmdb_episode_id",
+                str(ep_data["id"]),
+                force=force,
+            )
+            or changed
+        )
 
     if not changed:
         return False
@@ -467,12 +507,23 @@ def main():
     parser = argparse.ArgumentParser(description="Tag TV show episode MP4s with metadata from TMDb")
     parser.add_argument("paths", nargs="+", help="Episode file(s) or directory")
     parser.add_argument("--recursive", action="store_true", help="Recurse into directories")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without writing")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing tags (default is fill-missing)")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without writing",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing tags (default is fill-missing)",
+    )
     parser.add_argument("--language", default="en-US", help="TMDb language (default: en-US)")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     parser.add_argument("--tmdb-id", type=int, help="Override TMDb show ID (skips search)")
-    parser.add_argument("--imdb-id", help="Override IMDb ID (e.g., 'tt1234567') - converts to TMDb ID")
+    parser.add_argument(
+        "--imdb-id",
+        help="Override IMDb ID (e.g., 'tt1234567') - converts to TMDb ID",
+    )
     args = parser.parse_args()
 
     files = _find_video_files(args.paths, recursive=args.recursive)
@@ -516,60 +567,72 @@ def main():
             # Check for manual overrides first
             override_key = f"{show_title} ({show_year})" if show_year else show_title
             manual_override = overrides.get(override_key)
-            
+
             if manual_override:
                 # Use manual override
-                if manual_override.get('imdb_id'):
+                if manual_override.get("imdb_id"):
                     # Use IMDb ID from override
-                    omdb_data = _get_omdb_show_data(manual_override['imdb_id'], args.language)
+                    omdb_data = _get_omdb_show_data(manual_override["imdb_id"], args.language)
                     if omdb_data is None:
-                        print(f"  Could not fetch IMDb data for {manual_override['imdb_id']} (from override)")
+                        print(
+                            f"  Could not fetch IMDb data for {manual_override['imdb_id']} (from override)"
+                        )
                         skipped += 1
                         continue
-                    
-                    show_name = omdb_data.get('Title', 'Unknown')
-                    show_year_override = omdb_data.get('Year', '').split('–')[0]
+
+                    show_name = omdb_data.get("Title", "Unknown")
+                    show_year_override = omdb_data.get("Year", "").split("–")[0]
                     if args.verbose:
-                        print(f"  IMDb show (override): {show_name} ({show_year_override}) [id={manual_override['imdb_id']}]")
-                    
+                        print(
+                            f"  IMDb show (override): {show_name} ({show_year_override}) [id={manual_override['imdb_id']}]"
+                        )
+
                     episode_title = local_title or f"Episode {episode}"
                     if show_name and episode_title:
-                        if ':' in show_name and '-' in episode_title:
-                            episode_title = episode_title.replace('-', ':', 1)
-                    
+                        if ":" in show_name and "-" in episode_title:
+                            episode_title = episode_title.replace("-", ":", 1)
+
                     ep_data = {
                         "name": episode_title,
                         "overview": "",
                         "air_date": "",
                         "episode_number": episode,
                         "season_number": season,
-                        "imdb_id": manual_override['imdb_id']
+                        "imdb_id": manual_override["imdb_id"],
                     }
                     show_id = f"imdb_{manual_override['imdb_id']}"
-                    
-                elif manual_override.get('tmdb_id'):
+
+                elif manual_override.get("tmdb_id"):
                     # Use TMDb ID from override
-                    show_id = manual_override['tmdb_id']
+                    show_id = manual_override["tmdb_id"]
                     try:
                         show_info = _tmdb_get_json(f"/tv/{show_id}", {"language": args.language})
                         if show_info:
                             if args.verbose:
-                                print(f"  TMDb show (override): {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]")
+                                print(
+                                    f"  TMDb show (override): {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
+                                )
                     except Exception:
                         if args.verbose:
                             print(f"  TMDb show (override): id={show_id}")
-                    
-                    ep_data = _tmdb_get_episode(cache, show_id, season, episode, language=args.language)
+
+                    ep_data = _tmdb_get_episode(
+                        cache, show_id, season, episode, language=args.language
+                    )
                     cache_dirty = True
                     if not isinstance(ep_data, dict):
                         ep_nf_key = (int(show_id), int(season), int(episode))
                         if ep_nf_key not in printed_episode_not_found:
                             if local_title:
                                 if args.verbose:
-                                    print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
+                                    print(
+                                        f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})"
+                                    )
                             else:
                                 if args.verbose:
-                                    print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
+                                    print(
+                                        f"  No TMDb episode match for S{season:02d}E{episode:02d}"
+                                    )
                             printed_episode_not_found.add(ep_nf_key)
                         skipped += 1
                         continue
@@ -578,7 +641,7 @@ def main():
                         print(f"  Invalid override for {override_key}")
                     skipped += 1
                     continue
-                    
+
             # Use provided TMDb ID, convert IMDb ID, or search for it
             elif args.tmdb_id:
                 show_id = args.tmdb_id
@@ -588,7 +651,9 @@ def main():
                 try:
                     show_info = _tmdb_get_json(f"/tv/{show_id}", {"language": args.language})
                     if show_info:
-                        print(f"  TMDb show: {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]")
+                        print(
+                            f"  TMDb show: {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
+                        )
                 except Exception:
                     print(f"  TMDb show: id={show_id}")
             elif args.imdb_id:
@@ -598,39 +663,45 @@ def main():
                     print(f"  Could not fetch IMDb data for {args.imdb_id}")
                     skipped += 1
                     continue
-                
+
                 if args.verbose:
                     print(f"  Using IMDb ID: {args.imdb_id}")
-                
+
                 # Display show info from OMDb
-                show_name = omdb_data.get('Title', 'Unknown')
-                show_year = omdb_data.get('Year', '').split('–')[0]  # Take first year for range
+                show_name = omdb_data.get("Title", "Unknown")
+                show_year = omdb_data.get("Year", "").split("–")[0]  # Take first year for range
                 print(f"  IMDb show: {show_name} ({show_year}) [id={args.imdb_id}]")
-                
+
                 # For IMDb mode, we'll use filename-based episode info
                 # OMDb doesn't have reliable episode data for TV series
                 # But fix common filesystem character conversions
                 episode_title = local_title or f"Episode {episode}"
-                
+
                 # Fix common filesystem character conversions
                 # macOS converts ":" to "-" in filenames
                 if show_name and episode_title:
                     # If show name contains ":", fix episode title to match
-                    if ':' in show_name and '-' in episode_title:
+                    if ":" in show_name and "-" in episode_title:
                         # Replace first dash with colon to match show title format
-                        episode_title = episode_title.replace('-', ':', 1)
-                
+                        episode_title = episode_title.replace("-", ":", 1)
+
                 ep_data = {
                     "name": episode_title,
                     "overview": "",
                     "air_date": "",
                     "episode_number": episode,
                     "season_number": season,
-                    "imdb_id": args.imdb_id
+                    "imdb_id": args.imdb_id,
                 }
                 show_id = f"imdb_{args.imdb_id}"  # Use special prefix for IMDb shows
             else:
-                show_id = _tmdb_find_show_id(cache, show_title, show_year, language=args.language, verbose=args.verbose)
+                show_id = _tmdb_find_show_id(
+                    cache,
+                    show_title,
+                    show_year,
+                    language=args.language,
+                    verbose=args.verbose,
+                )
                 if show_id is None:
                     show_nf_key = (show_title or "", show_year or "")
                     if show_nf_key not in printed_show_not_found:
@@ -644,22 +715,28 @@ def main():
                 show_match_key = (show_title or "", show_year or "")
                 if show_match_key not in printed_show_match:
                     cached_show = cache.get(_cache_key_show(show_title, show_year))
-                    if isinstance(cached_show, dict) and isinstance(cached_show.get("show_id"), int):
+                    if isinstance(cached_show, dict) and isinstance(
+                        cached_show.get("show_id"), int
+                    ):
                         matched_name = cached_show.get("name") or show_title
                         matched_date = cached_show.get("first_air_date")
                         if matched_date:
                             if args.verbose:
-                                print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]")
+                                print(
+                                    f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]"
+                                )
                         else:
                             if args.verbose:
-                                print(f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]")
+                                print(
+                                    f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]"
+                                )
                     else:
                         if args.verbose:
                             print(f"  TMDb show match: {show_title} ({show_year}) -> id={show_id}")
                     printed_show_match.add(show_match_key)
 
             # Get episode data (skip for IMDb shows since we created it above)
-            if args.imdb_id or (manual_override and manual_override.get('imdb_id')):
+            if args.imdb_id or (manual_override and manual_override.get("imdb_id")):
                 # ep_data already created above from filename/local title
                 cache_dirty = True
                 if args.verbose:
@@ -672,7 +749,9 @@ def main():
                     if ep_nf_key not in printed_episode_not_found:
                         if local_title:
                             if args.verbose:
-                                print(f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})")
+                                print(
+                                    f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})"
+                                )
                         else:
                             if args.verbose:
                                 print(f"  No TMDb episode match for S{season:02d}E{episode:02d}")
@@ -715,11 +794,15 @@ def main():
                 if args.dry_run:
                     fields = ",".join(planned_updates) if planned_updates else "(unknown)"
                     if local_title and tmdb_ep_title and local_title != tmdb_ep_title:
-                        print(f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} -> {tmdb_ep_title} [{fields}]")
+                        print(
+                            f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} -> {tmdb_ep_title} [{fields}]"
+                        )
                     elif local_title:
                         print(f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} [{fields}]")
                     elif tmdb_ep_title:
-                        print(f"  [DRY RUN] S{season:02d}E{episode:02d}: {tmdb_ep_title} [{fields}]")
+                        print(
+                            f"  [DRY RUN] S{season:02d}E{episode:02d}: {tmdb_ep_title} [{fields}]"
+                        )
                     else:
                         print(f"  [DRY RUN] S{season:02d}E{episode:02d} [{fields}]")
                 else:
@@ -737,9 +820,13 @@ def main():
         _save_cache(cache)
 
     if args.dry_run:
-        print(f"\nDry run completed. Would update: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}.")
+        print(
+            f"\nDry run completed. Would update: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}."
+        )
     else:
-        print(f"\nAll updates completed. Updated: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}.")
+        print(
+            f"\nAll updates completed. Updated: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}."
+        )
 
 
 if __name__ == "__main__":

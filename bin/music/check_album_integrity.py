@@ -32,7 +32,9 @@ class AlbumReport:
 
 
 def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Check album folders for cover art and playlist integrity.")
+    parser = argparse.ArgumentParser(
+        description="Check album folders for cover art and playlist integrity."
+    )
     parser.add_argument(
         "root",
         nargs="?",
@@ -99,7 +101,10 @@ def collect_explicit_albums(root: Path, entries: List[str]) -> List[Path]:
             print(f"Warning: album path not found: {album_path}", file=sys.stderr)
             continue
         if not album_path.is_dir():
-            print(f"Warning: album path is not a directory: {album_path}", file=sys.stderr)
+            print(
+                f"Warning: album path is not a directory: {album_path}",
+                file=sys.stderr,
+            )
             continue
         dirs.append(album_path)
     return sorted(set(dirs))
@@ -128,7 +133,9 @@ def iter_album_dirs(root: Path, max_depth: Optional[int]) -> Iterator[Path]:
         yield current
 
 
-def collect_album_dirs(root: Path, explicit: Optional[List[str]], max_depth: Optional[int]) -> List[Path]:
+def collect_album_dirs(
+    root: Path, explicit: Optional[List[str]], max_depth: Optional[int]
+) -> List[Path]:
     if explicit:
         return collect_explicit_albums(root, explicit)
 
@@ -140,113 +147,116 @@ def collect_album_dirs(root: Path, explicit: Optional[List[str]], max_depth: Opt
 def download_cover_image(album: Path, dry_run: bool = False) -> bool:
     """Download album cover from Cover Art Archive and save as _cover.jpg."""
     try:
+        import urllib.parse
+
         import requests
         from mutagen.flac import FLAC
-        import urllib.parse
     except ImportError as e:
         print(f"  Error: Missing required library: {e}")
         print("  Install with: pip install requests mutagen")
         return False
-    
+
     # Get first FLAC file to extract metadata
     flac_files = list(album.glob("*.flac"))
     if not flac_files:
         print(f"  Error: No FLAC files found in {album}")
         return False
-    
+
     try:
         audio = FLAC(flac_files[0])
         artist = audio.get("artist", [""])[0]
         album_name = audio.get("album", [""])[0]
-        
+
         if not artist or not album_name:
             print(f"  Error: Missing artist or album metadata in {flac_files[0].name}")
             return False
     except Exception as e:
         print(f"  Error: Failed to read metadata from {flac_files[0].name}: {e}")
         return False
-    
+
     if dry_run:
         print(f"  Would download cover for: {artist} - {album_name}")
         return True
-    
+
     # Search MusicBrainz for release ID (like fix_album_covers.sh)
     try:
         # URL-encode artist and album names
         q_artist = urllib.parse.quote(artist)
         q_album = urllib.parse.quote(album_name)
-        
+
         # Query MusicBrainz API
         mb_url = f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}%20release:{q_album}&fmt=json&limit=1"
-        
+
         response = requests.get(mb_url, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
         if not data.get("releases") or len(data["releases"]) == 0:
             print(f"  Error: No MusicBrainz release found for {artist} - {album_name}")
             return False
-        
+
         release_id = data["releases"][0]["id"]
-        
+
     except Exception as e:
         print(f"  Error: Failed to query MusicBrainz for {artist} - {album_name}: {e}")
         return False
-    
+
     # Download from Cover Art Archive (like fix_album_covers.sh)
     try:
         cover_url = f"https://coverartarchive.org/release/{release_id}/front.jpg"
-        
+
         # Download to temp file first
-        import tempfile
         import os
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmpfile:
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmpfile:
             tmp_path = tmpfile.name
-        
+
         try:
             response = requests.get(cover_url, timeout=30)
             response.raise_for_status()
-            
-            with open(tmp_path, 'wb') as f:
+
+            with open(tmp_path, "wb") as f:
                 f.write(response.content)
-            
+
             # Verify it's a valid JPEG
             try:
                 from PIL import Image
+
                 with Image.open(tmp_path) as img:
                     img.verify()
             except Exception:
                 print(f"  Error: Downloaded file is not a valid image for {artist} - {album_name}")
                 os.unlink(tmp_path)
                 return False
-            
+
             # Resize if larger than 1000x1000 (like fix_album_covers.sh)
             try:
                 from PIL import Image
+
                 with Image.open(tmp_path) as img:
                     if img.width > 1000 or img.height > 1000:
                         img.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-                        img.save(tmp_path, 'JPEG', quality=95)
+                        img.save(tmp_path, "JPEG", quality=95)
             except ImportError:
                 # Pillow not available, skip resizing
                 pass
             except Exception as e:
                 print(f"  Warning: Failed to resize image for {artist} - {album_name}: {e}")
-            
+
             # Move to final location
             cover_path = album / "_cover.jpg"
             os.rename(tmp_path, cover_path)
-            
+
             print(f"  Downloaded: {artist} - {album_name} -> _cover.jpg")
             return True
-            
+
         except Exception as e:
             print(f"  Error: Failed to download cover for {artist} - {album_name}: {e}")
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
             return False
-            
+
     except Exception as e:
         print(f"  Error: Failed to download cover for {artist} - {album_name}: {e}")
         return False
@@ -255,21 +265,36 @@ def download_cover_image(album: Path, dry_run: bool = False) -> bool:
 def resize_cover_image(cover_path: Path, dry_run: bool = False) -> bool:
     """Resize cover image to exactly 1000x1000 pixels using ImageMagick or Pillow."""
     target_size = (1000, 1000)
-    
+
     if dry_run:
         width_height = get_image_size(cover_path)
         if width_height:
-            print(f"  Would fix: {cover_path.name} (resize from {width_height[0]}x{width_height[1]} to 1000x1000)")
+            print(
+                f"  Would fix: {cover_path.name} (resize from {width_height[0]}x{width_height[1]} to 1000x1000)"
+            )
         else:
             print(f"  Would fix: {cover_path.name} (resize to 1000x1000)")
         return True
-    
+
     # Try ImageMagick first (better quality)
     magick_cmds = [
-        ["magick", "convert", str(cover_path), "-resize", f"{target_size[0]}x{target_size[1]}!", str(cover_path)],
-        ["convert", "-resize", f"{target_size[0]}x{target_size[1]}!", str(cover_path), str(cover_path)],
+        [
+            "magick",
+            "convert",
+            str(cover_path),
+            "-resize",
+            f"{target_size[0]}x{target_size[1]}!",
+            str(cover_path),
+        ],
+        [
+            "convert",
+            "-resize",
+            f"{target_size[0]}x{target_size[1]}!",
+            str(cover_path),
+            str(cover_path),
+        ],
     ]
-    
+
     for cmd in magick_cmds:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -277,10 +302,11 @@ def resize_cover_image(cover_path: Path, dry_run: bool = False) -> bool:
             return True
         except (FileNotFoundError, subprocess.CalledProcessError):
             continue
-    
+
     # Fall back to Pillow
     try:
         from PIL import Image
+
         with Image.open(cover_path) as img:
             resized = img.resize(target_size, Image.Resampling.LANCZOS)
             resized.save(cover_path, quality=95)
@@ -291,10 +317,16 @@ def resize_cover_image(cover_path: Path, dry_run: bool = False) -> bool:
         return False
 
 
-def check_cover(album: Path, fix_covers: bool = False, dry_run: bool = False, size_tolerance: float = 5.0, get_covers: bool = False) -> Optional[str]:
+def check_cover(
+    album: Path,
+    fix_covers: bool = False,
+    dry_run: bool = False,
+    size_tolerance: float = 5.0,
+    get_covers: bool = False,
+) -> Optional[str]:
     cover = album / "cover.jpg"
     temp_cover = album / "_cover.jpg"
-    
+
     if not cover.exists():
         if get_covers:
             # Skip if _cover.jpg already exists
@@ -316,47 +348,55 @@ def check_cover(album: Path, fix_covers: bool = False, dry_run: bool = False, si
     if width_height != (1000, 1000):
         if fix_covers:
             w, h = width_height
-            
+
             # Case 1: Near 1000x1000 (within size tolerance) - resize to exact 1000x1000
             tolerance_low = 1000 * (1 - size_tolerance / 100)
             tolerance_high = 1000 * (1 + size_tolerance / 100)
-            
+
             if tolerance_low <= w <= tolerance_high and tolerance_low <= h <= tolerance_high:
                 if resize_cover_image(cover, dry_run=dry_run):
                     return None  # Fixed or would be fixed successfully
                 else:
                     return f"Failed to resize cover.jpg from {width_height[0]}x{width_height[1]}"
-            
+
             # Case 2: Both dimensions larger than 1000 and within 5% aspect ratio of each other
             elif w > 1000 and h > 1000:
                 aspect_ratio = w / h
                 aspect_diff = abs(aspect_ratio - 1.0) * 100  # Percentage difference from square
-                
+
                 if aspect_diff <= size_tolerance:
                     if resize_cover_image(cover, dry_run=dry_run):
                         return None  # Fixed or would be fixed successfully
                     else:
-                        return f"Failed to resize cover.jpg from {width_height[0]}x{width_height[1]}"
+                        return (
+                            f"Failed to resize cover.jpg from {width_height[0]}x{width_height[1]}"
+                        )
                 else:
                     if dry_run:
-                        print(f"  Would skip: {cover.name} (aspect ratio {aspect_ratio:.3f} outside {size_tolerance}% tolerance)")
+                        print(
+                            f"  Would skip: {cover.name} (aspect ratio {aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
+                        )
                     return f"cover.jpg is {width_height[0]}x{width_height[1]} (aspect ratio {aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
             else:
                 # Case 3: Undersized or other covers - skip resizing
                 if dry_run:
-                    print(f"  Would skip: {cover.name} (size {width_height[0]}x{width_height[1]} outside tolerance)")
+                    print(
+                        f"  Would skip: {cover.name} (size {width_height[0]}x{width_height[1]} outside tolerance)"
+                    )
                 return f"cover.jpg is {width_height[0]}x{width_height[1]} (expected 1000x1000, outside tolerance)"
         elif get_covers:
             # Handle get_covers when fix_covers is False
             w, h = width_height
-            
+
             # Check if cover is too small for --fix-covers to handle
             tolerance_low = 1000 * (1 - size_tolerance / 100)
             tolerance_high = 1000 * (1 + size_tolerance / 100)
-            
+
             # Download if cover is undersized (not within tolerance and not both >1000)
-            is_undersized = not (tolerance_low <= w <= tolerance_high and tolerance_low <= h <= tolerance_high) and not (w > 1000 and h > 1000)
-            
+            is_undersized = not (
+                tolerance_low <= w <= tolerance_high and tolerance_low <= h <= tolerance_high
+            ) and not (w > 1000 and h > 1000)
+
             if is_undersized:
                 # Skip if _cover.jpg already exists
                 if temp_cover.exists():
@@ -366,7 +406,9 @@ def check_cover(album: Path, fix_covers: bool = False, dry_run: bool = False, si
                 if download_cover_image(album, dry_run=dry_run):
                     return None  # Downloaded or would be downloaded successfully
                 else:
-                    return f"Failed to download better cover for {width_height[0]}x{width_height[1]}"
+                    return (
+                        f"Failed to download better cover for {width_height[0]}x{width_height[1]}"
+                    )
             else:
                 # Cover is within --fix-covers range, so don't download
                 return None
@@ -485,7 +527,14 @@ def has_flac_files(album: Path) -> bool:
     return any(album.glob("*.flac"))
 
 
-def check_album(album: Path, require_cover: bool = True, fix_covers: bool = False, dry_run: bool = False, size_tolerance: float = 5.0, get_covers: bool = False) -> AlbumReport:
+def check_album(
+    album: Path,
+    require_cover: bool = True,
+    fix_covers: bool = False,
+    dry_run: bool = False,
+    size_tolerance: float = 5.0,
+    get_covers: bool = False,
+) -> AlbumReport:
     report = AlbumReport(path=album)
 
     if not has_flac_files(album):
@@ -493,7 +542,13 @@ def check_album(album: Path, require_cover: bool = True, fix_covers: bool = Fals
         return report
 
     if require_cover:
-        cover_issue = check_cover(album, fix_covers=fix_covers, dry_run=dry_run, size_tolerance=size_tolerance, get_covers=get_covers)
+        cover_issue = check_cover(
+            album,
+            fix_covers=fix_covers,
+            dry_run=dry_run,
+            size_tolerance=size_tolerance,
+            get_covers=get_covers,
+        )
         if cover_issue:
             report.issues.append(cover_issue)
 
@@ -516,7 +571,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     total = 0
     failures = 0
     for album in albums:
-        report = check_album(album, require_cover=args.require_cover, fix_covers=args.fix_covers, dry_run=args.dry_run, size_tolerance=args.size_tolerance, get_covers=args.get_covers)
+        report = check_album(
+            album,
+            require_cover=args.require_cover,
+            fix_covers=args.fix_covers,
+            dry_run=args.dry_run,
+            size_tolerance=args.size_tolerance,
+            get_covers=args.get_covers,
+        )
         if not has_flac_files(album):
             continue
         total += 1

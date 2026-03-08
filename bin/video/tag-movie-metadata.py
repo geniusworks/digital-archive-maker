@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import json
 import argparse
-import re
-import requests
-from pathlib import Path
-from mutagen.mp4 import MP4, MP4Cover
-from mutagen.mp4 import MP4FreeForm
 import base64
+import json
+import os
+import re
+import sys
 from datetime import datetime
+from pathlib import Path
+
+import requests
+from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _LOG_DIR = _REPO_ROOT / "log"
@@ -21,6 +21,7 @@ _CACHE_FILE = _CACHE_DIR / "movie_metadata_cache.json"
 def _load_env():
     try:
         from dotenv import load_dotenv
+
         load_dotenv(_REPO_ROOT / ".env")
     except ImportError:
         pass
@@ -71,45 +72,58 @@ def _cache_key(imdb_id=None, tmdb_id=None, title=None, year=None):
         return f"title:{t}"
     return None
 
+
 def find_imdb_id_from_file(file_path):
     """Try to extract IMDb ID from filename or existing tags."""
     # Check filename for IMDb ID pattern
     filename = os.path.basename(file_path)
     import re
-    imdb_match = re.search(r'tt(\d+)', filename)
+
+    imdb_match = re.search(r"tt(\d+)", filename)
     if imdb_match:
         return f"tt{imdb_match.group(1)}"
-    
+
     # Check existing tags for IMDb ID
     try:
         mp4 = MP4(file_path)
         # Check common IMDb ID tags
-        for key in ['----:com.apple.iTunes:imdb', '----:com.apple.iTunes:IMDb', '----:com.apple.iTunes:imdb_id']:
+        for key in [
+            "----:com.apple.iTunes:imdb",
+            "----:com.apple.iTunes:IMDb",
+            "----:com.apple.iTunes:imdb_id",
+        ]:
             if key in mp4:
-                return mp4[key][0].decode('utf-8')
-    except:
+                return mp4[key][0].decode("utf-8")
+    except Exception:
         pass
-    
+
     return None
+
 
 def find_tmdb_id_from_file(file_path):
     """Try to extract TMDb ID from filename or existing tags."""
     filename = os.path.basename(file_path)
     import re
-    tmdb_match = re.search(r'tmdb(\d+)', filename)
+
+    tmdb_match = re.search(r"tmdb(\d+)", filename)
     if tmdb_match:
         return tmdb_match.group(1)
-    
+
     # Check existing tags for TMDb ID
     try:
         mp4 = MP4(file_path)
-        for key in ['----:com.apple.iTunes:tmdb', '----:com.apple.iTunes:TMDb', '----:com.apple.iTunes:tmdb_id']:
+        for key in [
+            "----:com.apple.iTunes:tmdb",
+            "----:com.apple.iTunes:TMDb",
+            "----:com.apple.iTunes:tmdb_id",
+        ]:
             if key in mp4:
-                return mp4[key][0].decode('utf-8')
-    except:
+                return mp4[key][0].decode("utf-8")
+    except Exception:
         pass
-    
+
     return None
+
 
 def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose=False):
     """Fetch comprehensive metadata from TMDb."""
@@ -123,7 +137,7 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
     headers = {"Accept": "application/json"}
     if read_token:
         headers["Authorization"] = f"Bearer {read_token}"
-    
+
     # Try to find movie by IMDb ID first
     if imdb_id:
         try:
@@ -134,50 +148,45 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
             response = requests.get(url, headers=headers, params=params, timeout=20)
             response.raise_for_status()
             data = response.json()
-            
-            if data.get('movie_results'):
-                tmdb_id = data['movie_results'][0]['id']
+
+            if data.get("movie_results"):
+                tmdb_id = data["movie_results"][0]["id"]
             else:
                 print(f"No TMDb results found for IMDb ID: {imdb_id}")
                 return None
         except Exception as e:
             print(f"TMDb IMDb lookup failed: {e}")
             return None
-    
+
     # Search by title (and optional year) if no IDs
     if not tmdb_id and title:
         try:
             url = "https://api.themoviedb.org/3/search/movie"
-            params = {
-                'query': title,
-                'page': 1
-            }
+            params = {"query": title, "page": 1}
             if api_key and not read_token:
                 params["api_key"] = api_key
             if year:
-                params['year'] = year
+                params["year"] = year
             response = requests.get(url, headers=headers, params=params, timeout=20)
             response.raise_for_status()
             data = response.json()
-            
-            if data.get('results'):
-                tmdb_id = data['results'][0]['id']
+
+            if data.get("results"):
+                tmdb_id = data["results"][0]["id"]
             else:
                 print(f"No TMDb search results for: {title} ({year})")
                 return None
         except Exception as e:
             print(f"TMDb search failed: {e}")
             return None
-    
+
     if not tmdb_id:
         return None
-    
+
     # Get full movie details
     try:
         url = f"https://api.themoviedb.org/3/movie/{tmdb_id}"
-        params = {
-            'append_to_response': 'credits,videos,images,keywords'
-        }
+        params = {"append_to_response": "credits,videos,images,keywords"}
         if api_key and not read_token:
             params["api_key"] = api_key
         response = requests.get(url, headers=headers, params=params, timeout=20)
@@ -187,6 +196,7 @@ def get_tmdb_metadata(imdb_id=None, tmdb_id=None, title=None, year=None, verbose
         print(f"TMDb details lookup failed: {e}")
         return None
 
+
 def get_omdb_metadata(imdb_id=None, title=None, year=None, verbose=False):
     """Fetch metadata from OMDb as backup/supplement."""
     api_key = os.getenv("OMDB_API_KEY")
@@ -194,24 +204,24 @@ def get_omdb_metadata(imdb_id=None, title=None, year=None, verbose=False):
         if verbose:
             print("Warning: OMDB_API_KEY not set, skipping OMDb lookup")
         return None
-    
+
     try:
         url = "http://www.omdbapi.com/"
-        params = {'apikey': api_key, 'plot': 'full', 'r': 'json'}
+        params = {"apikey": api_key, "plot": "full", "r": "json"}
         if imdb_id:
-            params['i'] = imdb_id
+            params["i"] = imdb_id
         elif title:
-            params['t'] = title
+            params["t"] = title
             if year:
-                params['y'] = str(year)
+                params["y"] = str(year)
         else:
             return None
 
         response = requests.get(url, params=params, timeout=20)
         response.raise_for_status()
         data = response.json()
-        
-        if data.get('Response') == 'True':
+
+        if data.get("Response") == "True":
             return data
         else:
             print(f"OMDb error: {data.get('Error', 'Unknown error')}")
@@ -238,15 +248,27 @@ def _normalize_omdb_metadata(data):
         genres = [{"name": g.strip()} for g in data.get("Genre").split(",") if g.strip()]
 
     crew = []
-    if isinstance(data.get("Director"), str) and data.get("Director").strip() and data.get("Director") != "N/A":
+    if (
+        isinstance(data.get("Director"), str)
+        and data.get("Director").strip()
+        and data.get("Director") != "N/A"
+    ):
         for d in [p.strip() for p in data.get("Director").split(",") if p.strip()]:
             crew.append({"job": "Director", "name": d})
-    if isinstance(data.get("Writer"), str) and data.get("Writer").strip() and data.get("Writer") != "N/A":
+    if (
+        isinstance(data.get("Writer"), str)
+        and data.get("Writer").strip()
+        and data.get("Writer") != "N/A"
+    ):
         for w in [p.strip() for p in data.get("Writer").split(",") if p.strip()]:
             crew.append({"job": "Writer", "name": w})
 
     cast = []
-    if isinstance(data.get("Actors"), str) and data.get("Actors").strip() and data.get("Actors") != "N/A":
+    if (
+        isinstance(data.get("Actors"), str)
+        and data.get("Actors").strip()
+        and data.get("Actors") != "N/A"
+    ):
         for a in [p.strip() for p in data.get("Actors").split(",") if p.strip()]:
             cast.append({"name": a, "character": ""})
 
@@ -288,6 +310,7 @@ def _normalize_omdb_metadata(data):
         "_poster_url": poster_url,
     }
 
+
 def download_image(url, timeout=30, verbose=False):
     """Download image from URL."""
     try:
@@ -298,6 +321,7 @@ def download_image(url, timeout=30, verbose=False):
         if verbose:
             print(f"Failed to download image from {url}: {e}")
         return None
+
 
 def _is_missing_mp4_tag(mp4, key):
     try:
@@ -401,76 +425,96 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False, verb
         mp4 = MP4(file_path)
         changed = False
 
-        if metadata.get('title'):
-            changed = _set_mp4_text(mp4, '\xa9nam', metadata.get('title'), force=force) or changed
+        if metadata.get("title"):
+            changed = _set_mp4_text(mp4, "\xa9nam", metadata.get("title"), force=force) or changed
 
-        if metadata.get('year'):
-            changed = _set_mp4_text(mp4, '\xa9day', str(metadata.get('year')), force=force) or changed
-        elif isinstance(metadata.get('release_date'), str) and metadata.get('release_date'):
-            changed = _set_mp4_text(mp4, '\xa9day', metadata['release_date'][:4], force=force) or changed
+        if metadata.get("year"):
+            changed = (
+                _set_mp4_text(mp4, "\xa9day", str(metadata.get("year")), force=force) or changed
+            )
+        elif isinstance(metadata.get("release_date"), str) and metadata.get("release_date"):
+            changed = (
+                _set_mp4_text(mp4, "\xa9day", metadata["release_date"][:4], force=force) or changed
+            )
 
-        if metadata.get('overview'):
-            changed = _set_mp4_text(mp4, '\xa9des', metadata.get('overview'), force=force) or changed
+        if metadata.get("overview"):
+            changed = (
+                _set_mp4_text(mp4, "\xa9des", metadata.get("overview"), force=force) or changed
+            )
 
-        genres_list = metadata.get('genres') or []
+        genres_list = metadata.get("genres") or []
         if genres_list:
-            genres = [g.get('name') for g in genres_list if isinstance(g, dict) and g.get('name')]
+            genres = [g.get("name") for g in genres_list if isinstance(g, dict) and g.get("name")]
             genres = [g for g in genres if g]
             if genres:
-                changed = _set_mp4_text(mp4, '\xa9gen', ', '.join(genres), force=force) or changed
+                changed = _set_mp4_text(mp4, "\xa9gen", ", ".join(genres), force=force) or changed
 
-        credits = metadata.get('credits') or {}
-        crew = credits.get('crew') or []
+        credits = metadata.get("credits") or {}
+        crew = credits.get("crew") or []
         if crew:
-            directors = [c.get('name') for c in crew if isinstance(c, dict) and c.get('job') == 'Director' and c.get('name')]
-            writers = [c.get('name') for c in crew if isinstance(c, dict) and c.get('job') in ['Writer', 'Screenplay'] and c.get('name')]
+            directors = [
+                c.get("name")
+                for c in crew
+                if isinstance(c, dict) and c.get("job") == "Director" and c.get("name")
+            ]
+            writers = [
+                c.get("name")
+                for c in crew
+                if isinstance(c, dict)
+                and c.get("job") in ["Writer", "Screenplay"]
+                and c.get("name")
+            ]
 
             if directors:
-                changed = _set_mp4_text(mp4, '\xa9ART', ', '.join(directors), force=force) or changed
+                changed = (
+                    _set_mp4_text(mp4, "\xa9ART", ", ".join(directors), force=force) or changed
+                )
             if writers:
-                changed = _set_mp4_text(mp4, '\xa9wrt', ', '.join(writers), force=force) or changed
+                changed = _set_mp4_text(mp4, "\xa9wrt", ", ".join(writers), force=force) or changed
 
-        cast_list = credits.get('cast') or []
+        cast_list = credits.get("cast") or []
         if cast_list:
             cast = cast_list[:10]
             actors = []
             for c in cast:
                 if not isinstance(c, dict):
                     continue
-                name = c.get('name')
-                character = c.get('character')
+                name = c.get("name")
+                character = c.get("character")
                 if name and character:
                     actors.append(f"{name} as {character}")
                 elif name:
                     actors.append(str(name))
             if actors:
-                changed = _set_mp4_text(mp4, '\xa9act', '\n'.join(actors), force=force) or changed
+                changed = _set_mp4_text(mp4, "\xa9act", "\n".join(actors), force=force) or changed
 
-        companies = metadata.get('production_companies') or []
+        companies = metadata.get("production_companies") or []
         if companies:
-            studios = [c.get('name') for c in companies if isinstance(c, dict) and c.get('name')]
+            studios = [c.get("name") for c in companies if isinstance(c, dict) and c.get("name")]
             if studios:
-                changed = _set_mp4_text(mp4, '\xa9cpy', studios[0], force=force) or changed
+                changed = _set_mp4_text(mp4, "\xa9cpy", studios[0], force=force) or changed
 
         freeform_data = {}
-        if metadata.get('imdb_id'):
-            freeform_data['imdb_id'] = metadata['imdb_id']
-        if metadata.get('id'):
-            freeform_data['tmdb_id'] = str(metadata['id'])
-        if metadata.get('runtime'):
-            freeform_data['runtime'] = str(metadata['runtime'])
-        if metadata.get('budget'):
-            freeform_data['budget'] = str(metadata['budget'])
-        if metadata.get('revenue'):
-            freeform_data['revenue'] = str(metadata['revenue'])
+        if metadata.get("imdb_id"):
+            freeform_data["imdb_id"] = metadata["imdb_id"]
+        if metadata.get("id"):
+            freeform_data["tmdb_id"] = str(metadata["id"])
+        if metadata.get("runtime"):
+            freeform_data["runtime"] = str(metadata["runtime"])
+        if metadata.get("budget"):
+            freeform_data["budget"] = str(metadata["budget"])
+        if metadata.get("revenue"):
+            freeform_data["revenue"] = str(metadata["revenue"])
 
-        keywords_container = metadata.get('keywords') or {}
-        keywords_list = keywords_container.get('keywords') or []
+        keywords_container = metadata.get("keywords") or {}
+        keywords_list = keywords_container.get("keywords") or []
         if keywords_list:
-            keywords = [k.get('name') for k in keywords_list if isinstance(k, dict) and k.get('name')]
+            keywords = [
+                k.get("name") for k in keywords_list if isinstance(k, dict) and k.get("name")
+            ]
             keywords = [k for k in keywords if k]
             if keywords:
-                freeform_data['keywords'] = ', '.join(keywords)
+                freeform_data["keywords"] = ", ".join(keywords)
 
         for key, value in freeform_data.items():
             if value:
@@ -478,18 +522,18 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False, verb
                 changed = _set_freeform_text(mp4, freeform_key, value, force=force) or changed
 
         poster_url = None
-        if metadata.get('poster_path'):
+        if metadata.get("poster_path"):
             poster_url = f"https://image.tmdb.org/t/p/original{metadata['poster_path']}"
-        elif metadata.get('_poster_url'):
-            poster_url = metadata.get('_poster_url')
+        elif metadata.get("_poster_url"):
+            poster_url = metadata.get("_poster_url")
 
-        if poster_url and (force or _is_missing_mp4_tag(mp4, 'covr')):
+        if poster_url and (force or _is_missing_mp4_tag(mp4, "covr")):
             if dry_run:
                 changed = True
             else:
                 poster_data = download_image(poster_url, verbose=verbose)
                 if poster_data:
-                    mp4['covr'] = [MP4Cover(poster_data, imageformat=MP4Cover.FORMAT_JPEG)]
+                    mp4["covr"] = [MP4Cover(poster_data, imageformat=MP4Cover.FORMAT_JPEG)]
                     changed = True
 
         if not changed:
@@ -504,18 +548,19 @@ def write_metadata_to_file(file_path, metadata, dry_run=False, force=False, verb
         print(f"Error writing metadata to {file_path}: {e}")
         return False
 
+
 def parse_title_year_from_filename(file_path):
     """Extract title and year from filename."""
     filename = os.path.basename(file_path)
     import re
-    
+
     # Look for (YYYY) pattern
-    match = re.search(r'(.+?)\s*\((\d{4})\)', filename)
+    match = re.search(r"(.+?)\s*\((\d{4})\)", filename)
     if match:
-        title = match.group(1).replace('.', ' ').strip()
+        title = match.group(1).replace(".", " ").strip()
         year = int(match.group(2))
         return title, year
-    
+
     return None, None
 
 
@@ -529,22 +574,35 @@ def parse_title_year_from_path(file_path):
         return match_title, match_year
     return None, None
 
+
 def main():
     _load_env()
     cache = _load_cache()
-    parser = argparse.ArgumentParser(description='Tag movie files with comprehensive metadata')
-    parser.add_argument('paths', nargs='+', help='Movie file(s) or directory')
-    parser.add_argument('--imdb-id', help='IMDb ID (tt#######)')
-    parser.add_argument('--tmdb-id', help='TMDb ID')
-    parser.add_argument('--title', help='Movie title (for search)')
-    parser.add_argument('--year', type=int, help='Release year (for search)')
-    parser.add_argument('--dry-run', action='store_true', help='Show what would be done without writing')
-    parser.add_argument('--force', action='store_true', help='Overwrite existing tags/artwork (default is to only fill missing)')
-    parser.add_argument('--verbose', action='store_true', help='Verbose output')
-    parser.add_argument('--recursive', action='store_true', help='Process directories recursively')
-    
+    parser = argparse.ArgumentParser(description="Tag movie files with comprehensive metadata")
+    parser.add_argument("paths", nargs="+", help="Movie file(s) or directory")
+    parser.add_argument("--imdb-id", help="IMDb ID (tt#######)")
+    parser.add_argument("--tmdb-id", help="TMDb ID")
+    parser.add_argument("--title", help="Movie title (for search)")
+    parser.add_argument("--year", type=int, help="Release year (for search)")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without writing",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing tags/artwork (default is to only fill missing)",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Process directories recursively",
+    )
+
     args = parser.parse_args()
-    
+
     # Find movie files
     movie_files = []
     for path in args.paths:
@@ -554,19 +612,19 @@ def main():
             if args.recursive:
                 for root, dirs, files in os.walk(path):
                     for file in files:
-                        if file.lower().endswith(('.mp4', '.m4v')):
+                        if file.lower().endswith((".mp4", ".m4v")):
                             movie_files.append(os.path.join(root, file))
             else:
                 for file in os.listdir(path):
-                    if file.lower().endswith(('.mp4', '.m4v')):
+                    if file.lower().endswith((".mp4", ".m4v")):
                         movie_files.append(os.path.join(path, file))
-    
+
     if not movie_files:
         print("No movie files found")
         return
-    
+
     print(f"Found {len(movie_files)} movie file(s)")
-    
+
     cache_dirty = False
     for file_path in movie_files:
         print(f"\nProcessing: {file_path}")
@@ -575,7 +633,7 @@ def main():
             if args.verbose:
                 print("  Already has metadata; skipping")
             continue
-        
+
         imdb_id = args.imdb_id or find_imdb_id_from_file(file_path)
         tmdb_id = args.tmdb_id or find_tmdb_id_from_file(file_path)
         title = args.title
@@ -583,13 +641,13 @@ def main():
 
         if not title and not imdb_id and not tmdb_id:
             title, year = parse_title_year_from_path(file_path)
-        
+
         if args.verbose:
             print(f"  IMDb ID: {imdb_id}")
             print(f"  TMDb ID: {tmdb_id}")
             print(f"  Title: {title}")
             print(f"  Year: {year}")
-        
+
         if not any([imdb_id, tmdb_id, title]):
             print(f"  No identifiers found (no IDs and couldn't infer title/year); skipping")
             continue
@@ -607,12 +665,18 @@ def main():
             metadata = get_tmdb_metadata(imdb_id, tmdb_id, title, year, verbose=args.verbose)
 
             if not metadata:
-                omdb = get_omdb_metadata(imdb_id=imdb_id, title=title, year=year, verbose=args.verbose)
+                omdb = get_omdb_metadata(
+                    imdb_id=imdb_id,
+                    title=title,
+                    year=year,
+                    verbose=args.verbose,
+                )
                 metadata = _normalize_omdb_metadata(omdb)
 
             if key:
                 try:
                     from datetime import timezone
+
                     cache[key] = {
                         "fetched_at": datetime.now(timezone.utc).isoformat(),
                         "not_found": metadata is None,
@@ -625,23 +689,29 @@ def main():
                         "metadata": metadata,
                     }
                 cache_dirty = True
-        
+
         if not metadata:
             print(f"  No metadata found for {file_path}")
             continue
-        
+
         if args.verbose:
-            title_out = metadata.get('title', 'Unknown')
-            year_out = metadata.get('year')
-            if not year_out and isinstance(metadata.get('release_date'), str):
-                year_out = metadata.get('release_date', '')[:4]
+            title_out = metadata.get("title", "Unknown")
+            year_out = metadata.get("year")
+            if not year_out and isinstance(metadata.get("release_date"), str):
+                year_out = metadata.get("release_date", "")[:4]
             print(f"  Found: {title_out} ({year_out})")
             print(f"  Genres: {', '.join([g['name'] for g in metadata.get('genres', [])])}")
-            overview = metadata.get('overview') or ''
+            overview = metadata.get("overview") or ""
             print(f"  Overview: {overview[:100]}...")
-        
+
         # Write metadata
-        wrote = write_metadata_to_file(file_path, metadata, args.dry_run, force=args.force, verbose=args.verbose)
+        wrote = write_metadata_to_file(
+            file_path,
+            metadata,
+            args.dry_run,
+            force=args.force,
+            verbose=args.verbose,
+        )
         if args.dry_run:
             if wrote:
                 print(f"  [DRY RUN] Would write metadata to {file_path}")
@@ -657,5 +727,6 @@ def main():
             _save_cache(cache)
             cache_dirty = False
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

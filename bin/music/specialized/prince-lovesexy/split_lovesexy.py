@@ -6,7 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 TRACKS = [
     ("👁 No", "00:00"),
     ("Alphabet St.", "05:46"),
@@ -32,7 +31,9 @@ def require_command(cmd: str) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Split Lovesexy.flac (one-file album) into track files using fixed timestamps")
+    parser = argparse.ArgumentParser(
+        description="Split Lovesexy.flac (one-file album) into track files using fixed timestamps"
+    )
     parser.add_argument("input", nargs="?", default="Lovesexy.flac")
     parser.add_argument("--out", default="Lovesexy_Split")
     args = parser.parse_args()

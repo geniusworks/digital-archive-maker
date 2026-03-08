@@ -39,61 +39,65 @@ Integration with backfill workflow:
 - Optionally replace with proper OCR later
 """
 
-import re
 import os
+import re
 import sys
 from pathlib import Path
+
 
 def extract_timing_info(idx_content):
     """
     Extract timing information from VobSub index file.
-    
+
     VobSub .idx files contain timing stamps in various formats.
     This function attempts to parse common patterns.
     """
     timestamps = []
-    
+
     # Look for timestamp patterns (HH:MM:SS:mmm format)
     timestamp_patterns = [
-        r'timestamp: (\d{2}:\d{2}:\d{2}:\d{3})',  # Standard format
-        r'(\d{2}:\d{2}:\d{2}:\d{3})',             # Bare timestamp
-        r'(\d{2}:\d{2}:\d{2}\.\d{3})',            # Dot separator
+        r"timestamp: (\d{2}:\d{2}:\d{2}:\d{3})",  # Standard format
+        r"(\d{2}:\d{2}:\d{2}:\d{3})",  # Bare timestamp
+        r"(\d{2}:\d{2}:\d{2}\.\d{3})",  # Dot separator
     ]
-    
+
     for pattern in timestamp_patterns:
         matches = re.findall(pattern, idx_content)
         if matches:
             timestamps.extend(matches)
             break
-    
+
     return timestamps
+
 
 def create_placeholder_srt(idx_file, output_srt):
     """
     Create a placeholder SRT file from VobSub timing information.
-    
+
     Args:
         idx_file (str): Path to the .idx file
         output_srt (str): Path for the output .srt file
-    
+
     Returns:
         bool: True if successful, False otherwise
     """
     try:
         # Read the index file with latin-1 encoding (common for VobSub)
-        with open(idx_file, 'r', encoding='latin-1', errors='ignore') as f:
+        with open(idx_file, "r", encoding="latin-1", errors="ignore") as f:
             content = f.read()
-        
+
         # Extract timing information
         timestamps = extract_timing_info(content)
-        
+
         # Create the SRT file
-        with open(output_srt, 'w', encoding='utf-8') as srt:
+        with open(output_srt, "w", encoding="utf-8") as srt:
             if timestamps and len(timestamps) >= 2:
                 # Use extracted timestamps if available
-                start_time = timestamps[0].replace(':', ',', 3)  # SRT uses comma for milliseconds
-                end_time = timestamps[-1].replace(':', ',', 3) if len(timestamps) > 1 else "01:30:00,000"
-                
+                start_time = timestamps[0].replace(":", ",", 3)  # SRT uses comma for milliseconds
+                end_time = (
+                    timestamps[-1].replace(":", ",", 3) if len(timestamps) > 1 else "01:30:00,000"
+                )
+
                 srt.write("1\n")
                 srt.write(f"00:00:01,000 --> {end_time}\n")
                 srt.write("[English subtitles extracted from VobSub]\n")
@@ -106,18 +110,19 @@ def create_placeholder_srt(idx_file, output_srt):
                 srt.write("[VobSub subtitles detected]\n")
                 srt.write("[Timing extraction failed - using placeholder]\n")
                 srt.write("[Use Subtitle Edit GUI for proper OCR]\n\n")
-        
+
         print(f"✓ Created placeholder SRT: {output_srt}")
         print(f"  - Source: {idx_file}")
         print(f"  - Timestamps found: {len(timestamps)}")
         print("  - This is a PLACEHOLDER file for muxing purposes")
         print("  - For actual subtitle text, use Subtitle Edit with the .sub file")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"✗ Error processing {idx_file}: {e}")
         return False
+
 
 def main():
     """Main entry point for the script."""
@@ -130,36 +135,36 @@ def main():
         print("This creates a placeholder SRT file for muxing into MP4.")
         print("For full OCR, use Subtitle Edit GUI with the corresponding .sub file.")
         sys.exit(1)
-    
+
     idx_file = sys.argv[1]
-    
+
     # Validate input file
     if not os.path.exists(idx_file):
         print(f"✗ Error: File not found: {idx_file}")
         sys.exit(1)
-    
-    if not idx_file.endswith('.idx'):
+
+    if not idx_file.endswith(".idx"):
         print(f"✗ Error: Expected .idx file, got: {idx_file}")
         sys.exit(1)
-    
+
     # Check for corresponding .sub file
-    sub_file = idx_file.replace('.idx', '.sub')
+    sub_file = idx_file.replace(".idx", ".sub")
     if not os.path.exists(sub_file):
         print(f"⚠ Warning: Corresponding .sub file not found: {sub_file}")
         print("  The .sub file contains the actual subtitle images for OCR")
-    
+
     # Generate output filename
-    base_name = idx_file.replace('.idx', '')
+    base_name = idx_file.replace(".idx", "")
     output_srt = f"{base_name}.srt"
-    
+
     print(f"Converting VobSub to placeholder SRT...")
     print(f"  Input:  {idx_file}")
     print(f"  Output: {output_srt}")
     print("")
-    
+
     # Perform the conversion
     success = create_placeholder_srt(idx_file, output_srt)
-    
+
     if success:
         print("")
         print("Next steps:")
@@ -180,6 +185,7 @@ def main():
     else:
         print("✗ Conversion failed")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

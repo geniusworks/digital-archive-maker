@@ -16,6 +16,7 @@ from pathlib import Path
 OVERRIDES_FILE = Path("config/movie_rating_overrides.json")
 CACHE_FILE = Path("cache/movie_rating_cache.json")
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Remove redundant entries from movie_rating_overrides.json (already present in movie_rating_cache.json)."
@@ -51,7 +52,9 @@ def main():
             kept[title] = rating
 
     if removed:
-        print(f"{'[DRY RUN] Would remove' if args.dry_run else 'Removing'} {len(removed)} overrides already present in rating cache:")
+        print(
+            f"{'[DRY RUN] Would remove' if args.dry_run else 'Removing'} {len(removed)} overrides already present in rating cache:"
+        )
         for title, rating in sorted(removed.items()):
             print(f"  - {title}: {rating}")
 
@@ -65,6 +68,7 @@ def main():
         print(f"Wrote {len(kept)} overrides back to {OVERRIDES_FILE}")
     else:
         print("No overrides match rating cache; nothing to remove.")
+
 
 if __name__ == "__main__":
     main()

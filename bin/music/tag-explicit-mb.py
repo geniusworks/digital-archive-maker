@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import fnmatch
 import json
 import logging
 import os
 import re
 import sys
 import time
-import fnmatch
 from pathlib import Path
 
-from dotenv import load_dotenv
 import musicbrainzngs
 import requests
-from rapidfuzz import fuzz, process
+from dotenv import load_dotenv
 from mutagen.flac import FLAC
-from mutagen.mp3 import MP3
 from mutagen.id3 import ID3NoHeaderError
+from mutagen.mp3 import MP3
+from rapidfuzz import fuzz, process
 from tqdm import tqdm
 
 # Load .env from repo root
@@ -54,12 +54,34 @@ ITUNES_CLEANED_COUNTS_AS_EXPLICIT = True
 PRINT_EXPLICIT_TO_CONSOLE = True
 MAX_EXPLICIT_CONSOLE_LINES = 200
 MAX_TRACKS = int(os.environ.get("EXPLICIT_MAX_TRACKS", "0") or 0)
-DRY_RUN = str(os.environ.get("EXPLICIT_DRY_RUN", "0") or "0").strip().lower() in {"1", "true", "yes", "y"}
-ONLY_UNKNOWN = str(os.environ.get("EXPLICIT_ONLY_UNKNOWN", "0") or "0").strip().lower() in {"1", "true", "yes", "y"}
+DRY_RUN = str(os.environ.get("EXPLICIT_DRY_RUN", "0") or "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+ONLY_UNKNOWN = str(os.environ.get("EXPLICIT_ONLY_UNKNOWN", "0") or "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 INPUT_LOG_FILE = str(os.environ.get("EXPLICIT_INPUT_LOG", "") or "").strip() or None
-ITUNES_TRACK_FALLBACK = str(os.environ.get("EXPLICIT_ITUNES_TRACK_FALLBACK", "") or "").strip().lower() in {"1", "true", "yes", "y"}
-SPOTIFY_FALLBACK = str(os.environ.get("EXPLICIT_SPOTIFY_FALLBACK", "1") or "1").strip().lower() in {"1", "true", "yes", "y"}
-SKIP_CACHED = str(os.environ.get("EXPLICIT_SKIP_CACHED", "1") or "1").strip().lower() in {"1", "true", "yes", "y"}
+ITUNES_TRACK_FALLBACK = str(
+    os.environ.get("EXPLICIT_ITUNES_TRACK_FALLBACK", "") or ""
+).strip().lower() in {"1", "true", "yes", "y"}
+SPOTIFY_FALLBACK = str(os.environ.get("EXPLICIT_SPOTIFY_FALLBACK", "1") or "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+SKIP_CACHED = str(os.environ.get("EXPLICIT_SKIP_CACHED", "1") or "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 EXPLICIT_TAG = "EXPLICIT"
 UNKNOWN_VALUE = "Unknown"
@@ -72,6 +94,7 @@ logger.setLevel(logging.INFO)
 _handler = logging.FileHandler(ERROR_LOG_FILE, mode="w", encoding="utf-8")
 _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger.addHandler(_handler)
+
 
 def _load_explicit_overrides(repo_root):
     """Load explicit overrides from CSV file - copied from sync-library.py"""
@@ -110,17 +133,19 @@ def _load_explicit_overrides(repo_root):
                 album_norm = album if album == "*" else _normalize_override_pattern(album)
                 title_norm = title if title == "*" else _normalize_override_pattern(title)
 
-                overrides.append({
-                    "artist": artist_norm,
-                    "album": album_norm,
-                    "title": title_norm,
-                    "value": val_out,
-                    "order": order,
-                })
+                overrides.append(
+                    {
+                        "artist": artist_norm,
+                        "album": album_norm,
+                        "title": title_norm,
+                        "value": val_out,
+                        "order": order,
+                    }
+                )
                 order += 1
     except Exception:
         return []
-    
+
     return overrides
 
 
@@ -133,7 +158,12 @@ def _load_cache():
         with open(cache_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             if not isinstance(data, dict):
-                return {"mb_albums": {}, "itunes_albums": {}, "itunes_tracks": {}, "spotify_tracks": {}}
+                return {
+                    "mb_albums": {},
+                    "itunes_albums": {},
+                    "itunes_tracks": {},
+                    "spotify_tracks": {},
+                }
 
             # Backward compatible with previous cache format where the whole
             # file was a mapping of album_key -> {release_id, tracks}
@@ -150,12 +180,27 @@ def _load_cache():
                 "Delete %s if you want to silence this message.",
                 CACHE_FILE,
             )
-            return {"mb_albums": {}, "itunes_albums": {}, "itunes_tracks": {}, "spotify_tracks": {}}
+            return {
+                "mb_albums": {},
+                "itunes_albums": {},
+                "itunes_tracks": {},
+                "spotify_tracks": {},
+            }
     except FileNotFoundError:
-        return {"mb_albums": {}, "itunes_albums": {}, "itunes_tracks": {}, "spotify_tracks": {}}
+        return {
+            "mb_albums": {},
+            "itunes_albums": {},
+            "itunes_tracks": {},
+            "spotify_tracks": {},
+        }
     except Exception:
         logger.exception("Failed to load cache file")
-        return {"mb_albums": {}, "itunes_albums": {}, "itunes_tracks": {}, "spotify_tracks": {}}
+        return {
+            "mb_albums": {},
+            "itunes_albums": {},
+            "itunes_tracks": {},
+            "spotify_tracks": {},
+        }
 
 
 def _save_cache(cache):
@@ -217,6 +262,7 @@ def _lookup_track_value(track_map, title_norm):
     best_key = match[0]
     return track_map.get(best_key)
 
+
 def _first_tag(audio, key):
     values = None
     try:
@@ -258,10 +304,10 @@ def _normalize_album_for_search(album):
 def _load_overrides():
     overrides = []
     overrides_mtime = None
-    
+
     if os.path.exists(OVERRIDES_FILE):
         overrides_mtime = os.path.getmtime(OVERRIDES_FILE)
-    
+
     if not os.path.exists(OVERRIDES_FILE):
         return overrides, overrides_mtime
 
@@ -282,7 +328,9 @@ def _load_overrides():
                     continue
 
                 artist_norm = artist if artist == "*" else _normalize_override_pattern(artist)
-                album_norm = album if album == "*" else _normalize_override_pattern(album)  # Don't strip years/discs for cache compatibility
+                album_norm = (
+                    album if album == "*" else _normalize_override_pattern(album)
+                )  # Don't strip years/discs for cache compatibility
                 title_norm = title if title == "*" else _normalize_override_pattern(title)
 
                 val = explicit_val.strip().lower()
@@ -374,21 +422,23 @@ def _write_explicit_tag(audio_path, audio, value):
             return value
 
     orig_mtime = os.path.getmtime(audio_path)
-    
+
     # Write tag based on format
     if audio_path.lower().endswith(".flac"):
         audio[EXPLICIT_TAG] = [value]
     else:  # MP3 - need to create proper ID3 frame
         from mutagen.id3 import TXXX
+
         # Remove existing TXXX:EXPLICIT tag if present
         if getattr(audio, "tags", None) and ("TXXX:" + EXPLICIT_TAG) in audio.tags:
             del audio.tags["TXXX:" + EXPLICIT_TAG]
         # Add new TXXX:EXPLICIT tag
         audio.tags.add(TXXX(encoding=3, desc=EXPLICIT_TAG, text=value))
-    
+
     audio.save()
     os.utime(audio_path, (orig_mtime, orig_mtime))
     return value
+
 
 def _mb_call(callable_, *args, **kwargs):
     last_exc = None
@@ -399,7 +449,7 @@ def _mb_call(callable_, *args, **kwargs):
             return result
         except Exception as exc:
             last_exc = exc
-            time.sleep(RATE_LIMIT * (2 ** attempt))
+            time.sleep(RATE_LIMIT * (2**attempt))
     raise last_exc
 
 
@@ -434,6 +484,7 @@ def _fetch_album_track_map(artist, album):
 
     return {"release_id": release_id, "tracks": tracks}
 
+
 def _http_call_json(url, params, *, rate_limit):
     last_exc = None
     for attempt in range(3):
@@ -445,7 +496,7 @@ def _http_call_json(url, params, *, rate_limit):
             return data
         except Exception as exc:
             last_exc = exc
-            time.sleep(rate_limit * (2 ** attempt))
+            time.sleep(rate_limit * (2**attempt))
     raise last_exc
 
 
@@ -578,9 +629,7 @@ def _is_itunes_collection_match(want_album_norm, cached_collection_name):
 
 
 def _itunes_track_key(artist, album, title):
-    return (
-        f"{_normalize_title(artist)}\n{_normalize_title(_normalize_album_for_search(album))}\n{_normalize_title(title)}"
-    )
+    return f"{_normalize_title(artist)}\n{_normalize_title(_normalize_album_for_search(album))}\n{_normalize_title(title)}"
 
 
 def _fetch_itunes_track_search(artist, album, title):
@@ -628,7 +677,7 @@ def _fetch_itunes_track_search(artist, album, title):
         if want_album and album_sim < 60:
             continue
         if album_sim >= 70:
-            score += (album_sim * 0.1)
+            score += album_sim * 0.1
 
         if r.get("trackExplicitness") == "explicit":
             score += 3
@@ -748,7 +797,9 @@ def _fetch_spotify_track_search(artist, album, title):
     for t in tracks:
         artists = t.get("artists") or []
         artist_names = [a.get("name", "") for a in artists]
-        artist_match = any(fuzz.WRatio(want_artist, _normalize_title(a)) >= 85 for a in artist_names)
+        artist_match = any(
+            fuzz.WRatio(want_artist, _normalize_title(a)) >= 85 for a in artist_names
+        )
         if not artist_match:
             continue
 
@@ -764,7 +815,7 @@ def _fetch_spotify_track_search(artist, album, title):
         if want_album and album_sim < 60:
             continue
         if album_sim >= 70:
-            score += (album_sim * 0.1)
+            score += album_sim * 0.1
 
         if t.get("explicit"):
             score += 5
@@ -786,16 +837,33 @@ def _fetch_spotify_track_search(artist, album, title):
 
 # --- Parse command line arguments ---
 parser = argparse.ArgumentParser(description="Tag FLAC files with explicit content information")
-parser.add_argument("root", nargs="?", default=DEFAULT_ROOT, 
-                    help="Root directory to scan for FLAC files (default: %(default)s)")
-parser.add_argument("--dry-run", action="store_true", 
-                    help="Don't write tags, just report what would be done")
-parser.add_argument("--max-tracks", type=int, default=0,
-                    help="Maximum number of tracks to process (0 = no limit)")
-parser.add_argument("--generate-explicit-playlist", action="store_true",
-                    help="Generate Explicit.m3u8 playlist file (disabled by default)")
-parser.add_argument("--verbose", action="store_true",
-                    help="Print all EXPLICIT=Yes tracks (including already-tagged ones) and increase output limit")
+parser.add_argument(
+    "root",
+    nargs="?",
+    default=DEFAULT_ROOT,
+    help="Root directory to scan for FLAC files (default: %(default)s)",
+)
+parser.add_argument(
+    "--dry-run",
+    action="store_true",
+    help="Don't write tags, just report what would be done",
+)
+parser.add_argument(
+    "--max-tracks",
+    type=int,
+    default=0,
+    help="Maximum number of tracks to process (0 = no limit)",
+)
+parser.add_argument(
+    "--generate-explicit-playlist",
+    action="store_true",
+    help="Generate Explicit.m3u8 playlist file (disabled by default)",
+)
+parser.add_argument(
+    "--verbose",
+    action="store_true",
+    help="Print all EXPLICIT=Yes tracks (including already-tagged ones) and increase output limit",
+)
 
 args = parser.parse_args()
 
@@ -859,7 +927,9 @@ if ONLY_UNKNOWN:
 
 if not all_flacs:
     for root, dirs, files in os.walk(ROOT):
-        audio_files = [os.path.join(root, f) for f in files if f.lower().endswith((".flac", ".mp3"))]
+        audio_files = [
+            os.path.join(root, f) for f in files if f.lower().endswith((".flac", ".mp3"))
+        ]
         all_flacs.extend(audio_files)
 
 if MAX_TRACKS > 0:
@@ -881,10 +951,14 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                 # MP3 has no ID3 tags, create empty ID3
                 audio = MP3(audio_path)
                 audio.add_tags()
-        
+
         prev_explicit_tag = _first_tag(audio, EXPLICIT_TAG)
 
-        if ONLY_UNKNOWN and prev_explicit_tag is not None and prev_explicit_tag.strip().lower() not in {UNKNOWN_VALUE.lower(), ""}:
+        if (
+            ONLY_UNKNOWN
+            and prev_explicit_tag is not None
+            and prev_explicit_tag.strip().lower() not in {UNKNOWN_VALUE.lower(), ""}
+        ):
             continue
 
         # Prefer tags over folder names to avoid issues like "Purple Rain (1984)"
@@ -894,7 +968,7 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
             or _first_tag(audio, "artist")
             or os.path.basename(os.path.dirname(os.path.dirname(audio_path)))
         )
-        
+
         # Handle case where artist directory contains tracks directly (no album subdirectory)
         if artist == "Music" and os.path.basename(os.path.dirname(audio_path)) != "Music":
             artist = os.path.basename(os.path.dirname(audio_path))
@@ -910,7 +984,12 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
 
         # --- SKIP_CACHED: skip if already processed (has tag or in cache) and no pending override ---
         if SKIP_CACHED:
-            override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
+            override_val = _resolve_override(
+                overrides,
+                _normalize_title(artist),
+                _normalize_title(album_search),
+                title_norm,
+            )
             if override_val is not None:
                 # Override exists — check if tag already matches
                 if override_val == prev_explicit_tag:
@@ -928,7 +1007,9 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                 # Check if we have cached data for this track (Spotify/iTunes track-level) - only skip if not Unknown
                 if prev_explicit_tag != UNKNOWN_VALUE:
                     itunes_track_key = _itunes_track_key(artist, album_search, title)
-                    spotify_key = _spotify_track_key(artist, album, title)  # Use original album for Spotify
+                    spotify_key = _spotify_track_key(
+                        artist, album, title
+                    )  # Use original album for Spotify
                     if itunes_track_key in itunes_track_cache or spotify_key in spotify_track_cache:
                         continue
 
@@ -937,7 +1018,12 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
         explicit_status = None
 
         # --- Overrides (highest priority) ---
-        override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
+        override_val = _resolve_override(
+            overrides,
+            _normalize_title(artist),
+            _normalize_title(album_search),
+            title_norm,
+        )
         if override_val is not None:
             if override_val == "Yes":
                 explicit_status = True
@@ -951,7 +1037,7 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
 
         # Initialize itunes_data to None for all paths
         itunes_data = None
-        
+
         # For Unknown tracks, skip remote services and only use overrides
         if prev_explicit_tag == UNKNOWN_VALUE:
             # Skip iTunes, Spotify, MusicBrainz - just use override result or keep Unknown
@@ -974,7 +1060,11 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                         try:
                             itunes_data = _fetch_itunes_album_track_map(artist, album_search)
                         except Exception:
-                            logger.exception("iTunes request failed: %s - %s", artist, album_search)
+                            logger.exception(
+                                "iTunes request failed: %s - %s",
+                                artist,
+                                album_search,
+                            )
                             itunes_album_runtime_cache[itunes_key] = None
                         else:
                             if itunes_data is not None:
@@ -994,57 +1084,67 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                 itunes_data = None
 
         if itunes_data is not None:
-                if "collection_explicitness" not in itunes_data and itunes_data.get("collection_id"):
-                    try:
-                        meta = _fetch_itunes_collection_meta_by_id(itunes_data["collection_id"])
-                        if meta:
-                            if meta.get("collection_explicitness") is not None:
-                                itunes_data["collection_explicitness"] = meta.get("collection_explicitness")
-                            if meta.get("collection_name"):
-                                itunes_data["collection_name"] = meta.get("collection_name")
-                    except Exception:
-                        logger.exception(
-                            "Failed to fetch iTunes collectionExplicitness: %s (%s - %s)",
-                            itunes_data.get("collection_id"),
-                            artist,
-                            album_search,
-                        )
-                    else:
-                        itunes_cache[itunes_key] = itunes_data
-                        _save_cache(cache)
-
-                it_val = _lookup_track_value((itunes_data.get("tracks") or {}), title_norm)
-                if it_val == "notExplicit":
-                    it_track = None
-                    it_album_explicit = False
-                    source = "iTunesNotExplicit"
+            if "collection_explicitness" not in itunes_data and itunes_data.get("collection_id"):
+                try:
+                    meta = _fetch_itunes_collection_meta_by_id(itunes_data["collection_id"])
+                    if meta:
+                        if meta.get("collection_explicitness") is not None:
+                            itunes_data["collection_explicitness"] = meta.get(
+                                "collection_explicitness"
+                            )
+                        if meta.get("collection_name"):
+                            itunes_data["collection_name"] = meta.get("collection_name")
+                except Exception:
+                    logger.exception(
+                        "Failed to fetch iTunes collectionExplicitness: %s (%s - %s)",
+                        itunes_data.get("collection_id"),
+                        artist,
+                        album_search,
+                    )
                 else:
-                    it_track = _explicit_from_itunes(it_val)
-                    it_album_explicit = _itunes_collection_is_explicit(itunes_data.get("collection_explicitness"))
+                    itunes_cache[itunes_key] = itunes_data
+                    _save_cache(cache)
 
-                if it_track is True:
+            it_val = _lookup_track_value((itunes_data.get("tracks") or {}), title_norm)
+            if it_val == "notExplicit":
+                it_track = None
+                it_album_explicit = False
+                source = "iTunesNotExplicit"
+            else:
+                it_track = _explicit_from_itunes(it_val)
+                it_album_explicit = _itunes_collection_is_explicit(
+                    itunes_data.get("collection_explicitness")
+                )
+
+            if it_track is True:
+                explicit_status = True
+                if ITUNES_CLEANED_COUNTS_AS_EXPLICIT and it_val == "cleaned":
+                    source = "iTunesCleaned"
+                else:
+                    source = "iTunesTrack"
+            elif it_track is False:
+                if AGGRESSIVE_ALBUM_EXPLICIT and it_album_explicit and it_val != "cleaned":
                     explicit_status = True
-                    if ITUNES_CLEANED_COUNTS_AS_EXPLICIT and it_val == "cleaned":
-                        source = "iTunesCleaned"
+                    if (
+                        ITUNES_CLEANED_COUNTS_AS_EXPLICIT
+                        and itunes_data.get("collection_explicitness") == "cleaned"
+                    ):
+                        source = "iTunesAlbumCleaned"
                     else:
-                        source = "iTunesTrack"
-                elif it_track is False:
-                    if AGGRESSIVE_ALBUM_EXPLICIT and it_album_explicit and it_val != "cleaned":
-                        explicit_status = True
-                        if ITUNES_CLEANED_COUNTS_AS_EXPLICIT and itunes_data.get("collection_explicitness") == "cleaned":
-                            source = "iTunesAlbumCleaned"
-                        else:
-                            source = "iTunesAlbum"
-                    else:
-                        explicit_status = False
-                        source = "iTunesTrack"
+                        source = "iTunesAlbum"
                 else:
-                    if AGGRESSIVE_ALBUM_EXPLICIT and it_album_explicit:
-                        explicit_status = True
-                        if ITUNES_CLEANED_COUNTS_AS_EXPLICIT and itunes_data.get("collection_explicitness") == "cleaned":
-                            source = "iTunesAlbumCleaned"
-                        else:
-                            source = "iTunesAlbum"
+                    explicit_status = False
+                    source = "iTunesTrack"
+            else:
+                if AGGRESSIVE_ALBUM_EXPLICIT and it_album_explicit:
+                    explicit_status = True
+                    if (
+                        ITUNES_CLEANED_COUNTS_AS_EXPLICIT
+                        and itunes_data.get("collection_explicitness") == "cleaned"
+                    ):
+                        source = "iTunesAlbumCleaned"
+                    else:
+                        source = "iTunesAlbum"
 
         # --- iTunes (track search fallback) ---
         if explicit_status is None and (ITUNES_TRACK_FALLBACK or ONLY_UNKNOWN):
@@ -1062,7 +1162,12 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     try:
                         it_track_data = _fetch_itunes_track_search(artist, album_search, title)
                     except Exception:
-                        logger.exception("iTunes track search failed: %s - %s - %s", artist, album_search, title)
+                        logger.exception(
+                            "iTunes track search failed: %s - %s - %s",
+                            artist,
+                            album_search,
+                            title,
+                        )
                         itunes_track_runtime_cache[itunes_track_key] = None
                     else:
                         if it_track_data is not None:
@@ -1106,7 +1211,12 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     try:
                         sp_data = _fetch_spotify_track_search(artist, album_search, title)
                     except Exception:
-                        logger.exception("Spotify search failed: %s - %s - %s", artist, album_search, title)
+                        logger.exception(
+                            "Spotify search failed: %s - %s - %s",
+                            artist,
+                            album_search,
+                            title,
+                        )
                         spotify_track_runtime_cache[spotify_key] = None
                     else:
                         if sp_data is not None:
@@ -1140,7 +1250,11 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     try:
                         mb_data = _fetch_album_track_map(artist, album_search)
                     except Exception:
-                        logger.exception("MusicBrainz request failed: %s - %s", artist, album_search)
+                        logger.exception(
+                            "MusicBrainz request failed: %s - %s",
+                            artist,
+                            album_search,
+                        )
                         mb_album_runtime_cache[mb_key] = None
                     else:
                         if mb_data is not None:
@@ -1162,7 +1276,7 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
             tag_value = _write_explicit_tag(audio_path, audio, "No")
         else:
             tag_value = _write_explicit_tag(audio_path, audio, UNKNOWN_VALUE)
-        
+
         # Force save the cache after each successful tag to ensure persistence
         if tag_value and (explicit_status is not None or source == "Override"):
             _save_cache(cache)
@@ -1209,29 +1323,34 @@ for root, _dirs, files in os.walk(ROOT):
                             tag_val = str(frame.text[0]).strip()
                         else:
                             tag_val = str(frame).strip()
-            
+
             # Extract metadata for override matching
             artist = _first_tag(audio, "ARTIST") or "Unknown Artist"
             album = _first_tag(audio, "ALBUM") or "Unknown Album"
             title = _first_tag(audio, "TITLE") or os.path.splitext(name)[0]
-            
+
             # Check if this track should be explicit (either from tag or override)
             is_explicit = False
             source = "File Tag"
-            
+
             # Check metadata tag first
             if tag_val == "Yes":
                 is_explicit = True
                 source = "File Tag"
-            
+
             # Also check overrides (independent of metadata tag)
             album_search = _normalize_album_for_search(album)
             title_norm = _normalize_title(title)
-            override_val = _resolve_override(overrides, _normalize_title(artist), _normalize_title(album_search), title_norm)
+            override_val = _resolve_override(
+                overrides,
+                _normalize_title(artist),
+                _normalize_title(album_search),
+                title_norm,
+            )
             if override_val == "Yes":
                 is_explicit = True
                 source = "Override"
-            
+
             if is_explicit:
                 explicit_tracks.append([fullpath, artist, album, title, "Yes", source])
         except Exception:
@@ -1246,7 +1365,9 @@ with open(EXPLICIT_PLAYLIST_FILE, "a", encoding="utf-8", newline="") as f:
     for track in sorted(explicit_tracks):
         writer.writerow(track)
 
-print(f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to {EXPLICIT_PLAYLIST_FILE}")
+print(
+    f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to {EXPLICIT_PLAYLIST_FILE}"
+)
 
 # Build M3U playlist if enabled (legacy functionality)
 if M3U_PLAYLIST_FILE:
@@ -1258,8 +1379,10 @@ if M3U_PLAYLIST_FILE:
 else:
     playlist_count = 0
 
-processed_count = stats.get('Yes', 0) + stats.get('No', 0) + stats.get('Unknown', 0)
-print(f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} already tagged)")
+processed_count = stats.get("Yes", 0) + stats.get("No", 0) + stats.get("Unknown", 0)
+print(
+    f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} already tagged)"
+)
 if args.verbose:
     print(f"Definitive explicit tracks: {len(explicit_tracks)} total EXPLICIT=Yes tracks")
     if args.generate_explicit_playlist:
@@ -1268,7 +1391,9 @@ if args.verbose:
         print("M3U playlist: generation disabled (use --generate-explicit-playlist to enable)")
 if processed_count > 0:
     if args.verbose:
-        print(f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}")
+        print(
+            f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}"
+        )
         if source_counts:
             top_sources = sorted(source_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]
             print("  Sources:", ", ".join(f"{k}={v}" for k, v in top_sources))

@@ -12,6 +12,7 @@ from pathlib import Path
 
 try:
     from mutagen.mp4 import MP4
+
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
@@ -42,12 +43,13 @@ def needs_episode_metadata_update(file_path, season, episode, show_name, year=No
     except Exception:
         return None
 
+
 def set_episode_metadata(file_path, season, episode, show_name, year=None):
     """Set TV episode metadata in MP4 file."""
     if not MUTAGEN_AVAILABLE:
         print(f"Warning: mutagen not available, skipping metadata for {file_path.name}")
         return False
-    
+
     try:
         mp4 = MP4(file_path)
 
@@ -70,9 +72,10 @@ def set_episode_metadata(file_path, season, episode, show_name, year=None):
         print(f"Error setting metadata for {file_path.name}: {e}")
         return False
 
+
 def parse_episode_number(filename):
     """Extract leading episode number from filename."""
-    match = re.match(r'^(\d{1,2})\s+(.+)', filename)
+    match = re.match(r"^(\d{1,2})\s+(.+)", filename)
     if match:
         return int(match.group(1)), match.group(2)
     return None, filename
@@ -108,7 +111,11 @@ def _extract_order_index(stem):
             except Exception:
                 return None, stem
 
-        if pat.lower().startswith("^session") or pat.lower().startswith("^episode") or pat.lower().startswith("^part"):
+        if (
+            pat.lower().startswith("^session")
+            or pat.lower().startswith("^episode")
+            or pat.lower().startswith("^part")
+        ):
             try:
                 return int(m.group(1)), m.group(2).strip()
             except Exception:
@@ -172,14 +179,17 @@ def _strip_leading_show_prefix(title, show_title):
     if not st:
         return t
     if t.lower().startswith(st.lower()):
-        rest = t[len(st):]
+        rest = t[len(st) :]
         rest = re.sub(r"^[\s\-–—:._]+", "", rest)
         return rest.strip() or t
     return t
 
 
 def _parse_existing_jellyfin_name(show_title, filename_stem):
-    m = re.match(rf"^{re.escape(show_title)}\s+-\s+S(\d{{2}})E(\d{{2}})\s+-\s+(.+)$", filename_stem)
+    m = re.match(
+        rf"^{re.escape(show_title)}\s+-\s+S(\d{{2}})E(\d{{2}})\s+-\s+(.+)$",
+        filename_stem,
+    )
     if not m:
         return None
     return int(m.group(1)), int(m.group(2)), m.group(3).strip()
@@ -221,8 +231,17 @@ def plan_show(show_dir, strip_years=False):
         show_title = max(existing_titles.items(), key=lambda kv: kv[1])[0]
 
     # Determine structure
-    season_dirs = sorted([d for d in show_dir.iterdir() if d.is_dir() and re.match(r"^Season\s+\d{1,2}$", d.name, re.IGNORECASE)])
-    specials_dir = next((d for d in show_dir.iterdir() if d.is_dir() and d.name.lower() == "specials"), None)
+    season_dirs = sorted(
+        [
+            d
+            for d in show_dir.iterdir()
+            if d.is_dir() and re.match(r"^Season\s+\d{1,2}$", d.name, re.IGNORECASE)
+        ]
+    )
+    specials_dir = next(
+        (d for d in show_dir.iterdir() if d.is_dir() and d.name.lower() == "specials"),
+        None,
+    )
 
     operations = []
 
@@ -314,12 +333,32 @@ def plan_show(show_dir, strip_years=False):
 
     return show_title, operations
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Rename shows under the Shows folder to Jellyfin naming convention")
-    parser.add_argument("--root", default="/Volumes/Data/Media/Library/Shows", help="Shows root folder")
-    parser.add_argument("--show", action="append", default=[], help="Only process a specific show folder name (repeatable)")
-    parser.add_argument("--dry-run", action="store_true", help="Show planned changes without executing")
-    parser.add_argument("--strip-years", action="store_true", help="Remove trailing (YYYY) from episode titles in filenames")
+    parser = argparse.ArgumentParser(
+        description="Rename shows under the Shows folder to Jellyfin naming convention"
+    )
+    parser.add_argument(
+        "--root",
+        default="/Volumes/Data/Media/Library/Shows",
+        help="Shows root folder",
+    )
+    parser.add_argument(
+        "--show",
+        action="append",
+        default=[],
+        help="Only process a specific show folder name (repeatable)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show planned changes without executing",
+    )
+    parser.add_argument(
+        "--strip-years",
+        action="store_true",
+        help="Remove trailing (YYYY) from episode titles in filenames",
+    )
     args = parser.parse_args()
 
     if args.dry_run:
@@ -389,7 +428,9 @@ def main():
         if planned_renames == 0 and planned_metadata_updates == 0:
             print("Dry run completed: no changes needed.")
         else:
-            print(f"Dry run completed: {planned_renames} rename(s), {planned_metadata_updates} metadata update(s) planned.")
+            print(
+                f"Dry run completed: {planned_renames} rename(s), {planned_metadata_updates} metadata update(s) planned."
+            )
         return
 
     if planned_renames == 0 and planned_metadata_updates == 0:
@@ -421,7 +462,10 @@ def main():
                 print(f"Error processing {src}: {e}")
                 errors += 1
 
-    print(f"All updates completed. Renamed: {performed_renames}. Metadata writes: {performed_metadata_writes}. Errors: {errors}.")
+    print(
+        f"All updates completed. Renamed: {performed_renames}. Metadata writes: {performed_metadata_writes}. Errors: {errors}."
+    )
+
 
 if __name__ == "__main__":
     main()

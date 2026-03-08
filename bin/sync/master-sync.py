@@ -4,17 +4,16 @@ Master sync script for running multiple library sync jobs.
 Reads sync-config.yaml and executes sync-library.py for each job.
 """
 
-import os
-import sys
-import subprocess
 import argparse
-import time
+import os
 import re
-import tempfile
 import shutil
 import signal
+import subprocess
+import sys
+import tempfile
+import time
 from pathlib import Path
-
 
 _RSYNC_PROGRESS_RE = re.compile(r"^\s*\d+(?:\.\d+)?[KMG]?\s+\d+%")
 
@@ -57,50 +56,56 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
         # Quiet-mode: sync-job output is mostly summary noise (we already print a full summary
         # at the end of master-sync). Keep errors and progress, but suppress routine stats.
         if label and not str(label).startswith("Tagging "):
-            if stripped.startswith((
-                "Number of files:",
-                "Number of created files:",
-                "Number of deleted files:",
-                "Number of regular files transferred:",
-                "Total file size:",
-                "Total transferred file size:",
-                "Literal data:",
-                "Matched data:",
-                "File list size:",
-                "File list generation time:",
-                "File list transfer time:",
-                "Total bytes sent:",
-                "Total bytes received:",
-                "sent ",
-                "received ",
-                "total size is ",
-                "speedup is",
-                "Scanned files:",
-                "Excluded ",
-                "Overrides matched ",
-                "Tag read errors treated as ",
-                "Exclude file:",
-            )):
+            if stripped.startswith(
+                (
+                    "Number of files:",
+                    "Number of created files:",
+                    "Number of deleted files:",
+                    "Number of regular files transferred:",
+                    "Total file size:",
+                    "Total transferred file size:",
+                    "Literal data:",
+                    "Matched data:",
+                    "File list size:",
+                    "File list generation time:",
+                    "File list transfer time:",
+                    "Total bytes sent:",
+                    "Total bytes received:",
+                    "sent ",
+                    "received ",
+                    "total size is ",
+                    "speedup is",
+                    "Scanned files:",
+                    "Excluded ",
+                    "Overrides matched ",
+                    "Tag read errors treated as ",
+                    "Exclude file:",
+                )
+            ):
                 return False
 
         # Quiet-mode: keep taggers concise; move detailed stats to verbose.
         if label == "Tagging genre":
-            if stripped.startswith((
-                "Processed:",
-                "Updating genre metadata for ",
-                "Saved genre cache",
-                "Saved ",
-                "Updated ",
-            )):
+            if stripped.startswith(
+                (
+                    "Processed:",
+                    "Updating genre metadata for ",
+                    "Saved genre cache",
+                    "Saved ",
+                    "Updated ",
+                )
+            ):
                 return False
 
         if label == "Tagging movie ratings":
-            if stripped.startswith((
-                "Using TMDb API",
-                "Using OMDb API",
-                "No TMDB_API_KEY",
-                "Processing ",
-            )):
+            if stripped.startswith(
+                (
+                    "Using TMDb API",
+                    "Using OMDb API",
+                    "No TMDB_API_KEY",
+                    "Processing ",
+                )
+            ):
                 return False
 
         if label == "Tagging show metadata":
@@ -112,7 +117,7 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
     last_was_progress = False
     suppressed_processing = 0
     processing_total = 0  # Track total for progress bar
-    
+
     for line in process.stdout:
         if capture_lines is not None:
             capture_lines.append(line)
@@ -120,7 +125,7 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
 
         if quiet and last_was_progress and not stripped:
             continue
-        
+
         if quiet and stripped.startswith(("Tagging audio files:", "Tagging genre:")):
             sys.stdout.write("\r\033[K" + stripped)
             sys.stdout.flush()
@@ -151,7 +156,10 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
                     sys.stdout.flush()
                     last_was_progress = False
                 # Keep the total internally for the progress bar, but the header line is noisy in quiet mode.
-                if label not in {"Tagging movie metadata", "Tagging movie ratings"}:
+                if label not in {
+                    "Tagging movie metadata",
+                    "Tagging movie ratings",
+                }:
                     print("  " + stripped)
                 continue
 
@@ -203,7 +211,7 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
 
         if should_print:
             if quiet:
-                if stripped.startswith('=') or not stripped:
+                if stripped.startswith("=") or not stripped:
                     print(line, end="", flush=True)
                 else:
                     print("  " + stripped)
@@ -267,21 +275,21 @@ def _parse_int(value):
         return 0
     # Handle values like "329.53M" by converting to bytes
     value_str = str(value).replace(",", "").strip()
-    
+
     # Handle decimal with unit suffixes (K, M, G, T)
-    if re.match(r'^[\d.]+[KMG]T?$', value_str):
+    if re.match(r"^[\d.]+[KMG]T?$", value_str):
         number_part = float(value_str[:-1])
         unit = value_str[-1].upper()
-        
+
         multipliers = {
-            'K': 1024,
-            'M': 1024 * 1024,
-            'G': 1024 * 1024 * 1024,
-            'T': 1024 * 1024 * 1024 * 1024,
+            "K": 1024,
+            "M": 1024 * 1024,
+            "G": 1024 * 1024 * 1024,
+            "T": 1024 * 1024 * 1024 * 1024,
         }
-        
+
         return int(number_part * multipliers.get(unit, 1))
-    
+
     # Handle plain integers
     return int(float(value_str))
 
@@ -341,18 +349,34 @@ def parse_rsync_stats(output_text):
     if not output_text:
         return stats
 
-    m = re.search(r"^Number of regular files transferred:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    m = re.search(
+        r"^Number of regular files transferred:\s+([0-9,]+)\s*$",
+        output_text,
+        flags=re.MULTILINE,
+    )
     if not m:
-        m = re.search(r"^Number of files transferred:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+        m = re.search(
+            r"^Number of files transferred:\s+([0-9,]+)\s*$",
+            output_text,
+            flags=re.MULTILINE,
+        )
     if m:
         stats["files_copied"] = _parse_int(m.group(1))
 
-    m = re.search(r"^Total transferred file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+    m = re.search(
+        r"^Total transferred file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
+        output_text,
+        flags=re.MULTILINE,
+    )
     if m:
         stats["bytes_transferred"] = _parse_int(m.group(1))
     else:
         # Fallback: try "Literal data" which rsync uses for actual data transferred
-        m = re.search(r"^Literal data:\s+([\d.,]+[KMG]T?)\s+bytes\s*$", output_text, flags=re.MULTILINE)
+        m = re.search(
+            r"^Literal data:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
+            output_text,
+            flags=re.MULTILINE,
+        )
         if m:
             stats["bytes_transferred"] = _parse_int(m.group(1))
         else:
@@ -363,7 +387,7 @@ def parse_rsync_stats(output_text):
                 r"^Total file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
                 r"([\d.,]+[KMG]T?)\s+bytes.*transferred",
             ]
-            
+
             for pattern in patterns:
                 m = re.search(pattern, output_text, flags=re.MULTILINE | re.IGNORECASE)
                 if m:
@@ -377,14 +401,21 @@ def parse_rsync_stats(output_text):
                     stats["bytes_transferred"] = -1  # Unknown/parse error
 
     m_sent = re.search(r"^Total bytes sent:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
-    m_recv = re.search(r"^Total bytes received:\s+([0-9,]+)\s*$", output_text, flags=re.MULTILINE)
+    m_recv = re.search(
+        r"^Total bytes received:\s+([0-9,]+)\s*$",
+        output_text,
+        flags=re.MULTILINE,
+    )
     if m_sent:
         stats["bytes_sent"] = _parse_int(m_sent.group(1))
     if m_recv:
         stats["bytes_received"] = _parse_int(m_recv.group(1))
 
     if not (m_sent and m_recv):
-        m = re.search(r"sent\s+([0-9,]+)\s+bytes\s+received\s+([0-9,]+)\s+bytes", output_text)
+        m = re.search(
+            r"sent\s+([0-9,]+)\s+bytes\s+received\s+([0-9,]+)\s+bytes",
+            output_text,
+        )
         if m:
             stats["bytes_sent"] = _parse_int(m.group(1))
             stats["bytes_received"] = _parse_int(m.group(2))
@@ -394,25 +425,27 @@ def parse_rsync_stats(output_text):
 
 def load_config(config_path):
     """Load sync configuration from YAML file with environment variable expansion."""
-    import yaml
     import os
     import re
-    
+
+    import yaml
+
     def expand_env_vars(text):
         """Expand environment variables with ${VAR:-default} syntax support."""
+
         def replace_var(match):
             var_expr = match.group(1)
-            if ':-' in var_expr:
-                var, default = var_expr.split(':-', 1)
+            if ":-" in var_expr:
+                var, default = var_expr.split(":-", 1)
                 return os.environ.get(var, default)
             else:
-                return os.environ.get(var_expr, '')
-        
+                return os.environ.get(var_expr, "")
+
         # Handle ${VAR} and ${VAR:-default} patterns
-        return re.sub(r'\$\{([^}]+)\}', replace_var, text)
-    
+        return re.sub(r"\$\{([^}]+)\}", replace_var, text)
+
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             content = f.read()
             # Expand environment variables in the content
             expanded_content = expand_env_vars(content)
@@ -430,10 +463,12 @@ def build_sync_command(job, sync_script_path, global_opts):
     cmd = [
         sys.executable,  # Use current python interpreter
         sync_script_path,
-        "--src", job["src"],
-        "--dest", job["dest"]
+        "--src",
+        job["src"],
+        "--dest",
+        job["dest"],
     ]
-    
+
     media = job.get("media", "music")
     cli_media = media
     if media == "cartoons":
@@ -473,21 +508,21 @@ def build_sync_command(job, sync_script_path, global_opts):
         pass
 
     # Note: delete is now handled globally, not per-job
-    
+
     if job.get("dry_run", False) or global_opts.get("dry_run", False):
         cmd.append("--dry-run")
     if job.get("ssh"):
         cmd.extend(["--ssh", job["ssh"]])
-    
+
     # Add global options
     if global_opts.get("print_command", False):
         cmd.append("--print-command")
     if global_opts.get("max_flacs"):
         cmd.extend(["--max-flacs", str(global_opts["max_flacs"])])
-    
+
     # For all sync jobs, use --no-delete to avoid cross-library deletion
     cmd.append("--no-delete")
-    
+
     return cmd
 
 
@@ -499,21 +534,21 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False, verbose=False)
         print(f"{'='*60}")
     else:
         print("  Tagging explicit content...")
-    
+
     # Get the directory of this script to find repo root
     # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
     repo_root = Path(__file__).parent.parent.parent
     tag_script = repo_root / "bin" / "music" / "tag-explicit-mb.py"
-    
+
     cmd = [
         sys.executable,  # Use current python interpreter
         str(tag_script),
         source_path,
     ]
-    
+
     if verbose:
         cmd.append("--verbose")
-    
+
     process = None
     try:
         if not quiet:
@@ -523,8 +558,8 @@ def run_explicit_tagging(source_path, dry_run=False, quiet=False, verbose=False)
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging explicit content")
@@ -554,7 +589,7 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False, verbose=False):
     """Run genre tagging on music files."""
     if not verbose:
         print("  Updating genre metadata...")
-    
+
     # Get the directory of this script to find repo root
     # Script is now at bin/sync/master-sync.py, so parent.parent.parent = repo root
     repo_root = Path(__file__).parent.parent.parent
@@ -568,10 +603,10 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False, verbose=False):
 
     if dry_run:
         cmd.append("--dry-run")
-    
+
     if verbose:
         cmd.append("--verbose")
-    
+
     process = None
     try:
         if not quiet:
@@ -585,8 +620,8 @@ def run_genre_tagging(source_path, dry_run=False, quiet=False, verbose=False):
             stdout=subprocess.PIPE,
             stderr=None,
             text=True,
-            encoding='utf-8',
-            errors='replace',
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging genre")
@@ -652,9 +687,9 @@ def run_movie_rating_tagging(source_path, dry_run=False, quiet=False, verbose=Fa
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
-            bufsize=1
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging movie ratings")
         process.wait()
@@ -714,9 +749,9 @@ def run_movie_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
-            bufsize=1
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging movie metadata")
         process.wait()
@@ -761,7 +796,7 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=F
 
     if dry_run:
         cmd.append("--dry-run")
-    
+
     if verbose:
         cmd.append("--verbose")
 
@@ -779,8 +814,8 @@ def run_show_metadata_tagging(source_path, dry_run=False, quiet=False, verbose=F
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging show metadata")
@@ -841,9 +876,9 @@ def run_music_video_tagging(source_path, dry_run=False, quiet=False, verbose=Fal
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
-            bufsize=1
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
         )
         _stream_process_output(process, quiet=quiet, label="Tagging music videos")
         process.wait()
@@ -868,7 +903,15 @@ def run_music_video_tagging(source_path, dry_run=False, quiet=False, verbose=Fal
         return False
 
 
-def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False, verbose=False, skip_tagging=False):
+def run_sync_job(
+    job,
+    sync_script_path,
+    global_opts,
+    dry_run=False,
+    quiet=False,
+    verbose=False,
+    skip_tagging=False,
+):
     """Run a single sync job and return statistics."""
     if verbose:
         print(f"\n{'='*60}")
@@ -878,51 +921,68 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
         print(f"{'='*60}")
     else:
         print(f"\n→ {job['name']} ({job.get('media', 'music')})")
-    
+
     media = job.get("media", "music")
-    
+
     job_stats = {
-        'name': job['name'],
-        'media_type': media,
-        'start_time': time.time(),
-        'end_time': None,
-        'elapsed_seconds': 0,
-        'files_copied': 0,
-        'bytes_transferred': 0,
-        'bytes_sent': 0,
-        'bytes_received': 0,
-        'success': False
+        "name": job["name"],
+        "media_type": media,
+        "start_time": time.time(),
+        "end_time": None,
+        "elapsed_seconds": 0,
+        "files_copied": 0,
+        "bytes_transferred": 0,
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "success": False,
     }
 
-    effective_dry_run = bool(dry_run or job.get("dry_run", False) or global_opts.get("dry_run", False))
+    effective_dry_run = bool(
+        dry_run or job.get("dry_run", False) or global_opts.get("dry_run", False)
+    )
 
     # Run tagging first unless dry run
     if not effective_dry_run and not skip_tagging:
         tag_metadata = job.get("tag_metadata")
         if tag_metadata is None:
-            tag_metadata = media in {"movies", "shows", "cartoons", "music_videos"}
+            tag_metadata = media in {
+                "movies",
+                "shows",
+                "cartoons",
+                "music_videos",
+            }
 
         if media == "movies":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+                if not run_movie_metadata_tagging(
+                    job["src"], dry_run=False, quiet=quiet, verbose=verbose
+                ):
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
-            if not run_movie_rating_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+            if not run_movie_rating_tagging(
+                job["src"], dry_run=False, quiet=quiet, verbose=verbose
+            ):
                 print("Warning: Movie rating tagging failed, proceeding with sync anyway")
         elif media == "shows":
             if tag_metadata:
-                if not run_show_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+                if not run_show_metadata_tagging(
+                    job["src"], dry_run=False, quiet=quiet, verbose=verbose
+                ):
                     print("Warning: Show metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Shows sync - skipping metadata tagging")
         elif media == "cartoons":
             if tag_metadata:
-                if not run_movie_metadata_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+                if not run_movie_metadata_tagging(
+                    job["src"], dry_run=False, quiet=quiet, verbose=verbose
+                ):
                     print("Warning: Movie metadata tagging failed, proceeding with sync anyway")
             else:
                 print("Cartoons sync - skipping metadata tagging")
         elif media == "music_videos":
             if tag_metadata:
-                if not run_music_video_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
+                if not run_music_video_tagging(
+                    job["src"], dry_run=False, quiet=quiet, verbose=verbose
+                ):
                     print("Warning: Music video tagging failed, proceeding with sync anyway")
             else:
                 print("Music videos sync - skipping metadata tagging")
@@ -934,17 +994,17 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
         else:
             if not run_explicit_tagging(job["src"], dry_run=False, quiet=quiet, verbose=verbose):
                 print("Warning: Explicit tagging failed, proceeding with sync anyway")
-    
+
     cmd = build_sync_command(job, sync_script_path, global_opts)
-    
+
     if effective_dry_run:
         print("DRY RUN - Would execute:")
         print(" ".join(f'"{arg}"' for arg in cmd))
-        job_stats['end_time'] = time.time()
-        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
-        job_stats['success'] = True
+        job_stats["end_time"] = time.time()
+        job_stats["elapsed_seconds"] = job_stats["end_time"] - job_stats["start_time"]
+        job_stats["success"] = True
         return job_stats
-    
+
     process = None
     try:
         process = subprocess.Popen(
@@ -952,20 +1012,25 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            encoding='utf-8',
-            errors='replace',
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
         )
 
         stdout_lines = []
-        _stream_process_output(process, quiet=quiet, label=job.get("name"), capture_lines=stdout_lines)
+        _stream_process_output(
+            process,
+            quiet=quiet,
+            label=job.get("name"),
+            capture_lines=stdout_lines,
+        )
         process.wait()
         if process.returncode != 0:
             return_code = process.returncode
             print(f"  Error: sync job '{job['name']}' failed with exit code {return_code}")
 
-        stdout_text = ''.join(stdout_lines)
-        
+        stdout_text = "".join(stdout_lines)
+
         # Debug: Log rsync output for parsing issues
         if "files_copied" not in job_stats or job_stats.get("files_copied", 0) > 0:
             bytes_transferred = parse_rsync_stats(stdout_text).get("bytes_transferred", 0)
@@ -975,19 +1040,19 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
                 print(f"DEBUG: Bytes transferred detected: {bytes_transferred}")
                 print(f"DEBUG: Rsync stdout snippet:")
                 # Show last 20 lines of rsync output for debugging
-                debug_lines = stdout_text.strip().split('\n')[-20:]
+                debug_lines = stdout_text.strip().split("\n")[-20:]
                 for line in debug_lines:
                     print(f"  {line}")
                 print(f"DEBUG: End of rsync output")
-        
+
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text)
-        
+
         job_stats.update(parse_rsync_stats(stdout_text))
-        job_stats['success'] = True
-        job_stats['end_time'] = time.time()
-        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
-        
+        job_stats["success"] = True
+        job_stats["end_time"] = time.time()
+        job_stats["elapsed_seconds"] = job_stats["end_time"] - job_stats["start_time"]
+
         return job_stats
     except KeyboardInterrupt:
         print("\n\nSync interrupted by user. Cleaning up...")
@@ -997,9 +1062,9 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
-        job_stats['success'] = False
-        job_stats['end_time'] = time.time()
-        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        job_stats["success"] = False
+        job_stats["end_time"] = time.time()
+        job_stats["elapsed_seconds"] = job_stats["end_time"] - job_stats["start_time"]
         print("Sync aborted.")
         sys.exit(1)
     except subprocess.CalledProcessError as e:
@@ -1009,9 +1074,9 @@ def run_sync_job(job, sync_script_path, global_opts, dry_run=False, quiet=False,
             print(f"STDOUT: {e.stdout}")
         if e.stderr:
             print(f"STDERR: {e.stderr}")
-        job_stats['success'] = False
-        job_stats['end_time'] = time.time()
-        job_stats['elapsed_seconds'] = job_stats['end_time'] - job_stats['start_time']
+        job_stats["success"] = False
+        job_stats["end_time"] = time.time()
+        job_stats["elapsed_seconds"] = job_stats["end_time"] - job_stats["start_time"]
         return job_stats
 
 
@@ -1019,11 +1084,11 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
     """Run global cleanup to remove folders that no longer exist in any source."""
     if not global_opts.get("delete", False):
         return True
-    
+
     print(f"\n{'='*60}")
     print("Running global cleanup (delete mode)")
     print(f"{'='*60}")
-    
+
     # Group jobs by destination
     dest_groups = {}
     for job in jobs:
@@ -1031,9 +1096,9 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
         if dest not in dest_groups:
             dest_groups[dest] = []
         dest_groups[dest].append(job)
-    
+
     cleanup_success = True
-    
+
     for dest, dest_jobs in dest_groups.items():
         print(f"\nCleaning destination: {dest}")
 
@@ -1050,7 +1115,9 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
             if media == "cartoons":
                 cli_media = "shows"
             keep_file = f"/tmp/keep_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
-            exclude_file = f"/tmp/exclude_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
+            exclude_file = (
+                f"/tmp/exclude_{hash(dest)}_{hash(job.get('name', job.get('src', '')))}.txt"
+            )
 
             cmd = [
                 sys.executable,
@@ -1105,7 +1172,14 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                 cmd.append("--print-command")
 
             try:
-                result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                result = subprocess.run(
+                    cmd,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
                 if result.stdout:
                     print(result.stdout)
                 if result.stderr:
@@ -1141,7 +1215,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
             # Always protect Playlists folder in music destinations
             if "/Music" in dest:
                 f.write("P /Playlists/\n")
-            
+
             # Add all files from keep set
             for p in sorted(keep_set):
                 f.write(f"P /{p}\n")
@@ -1184,10 +1258,10 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                     text=True,
                     encoding="utf-8",
                     errors="replace",
-                    bufsize=1
+                    bufsize=1,
                 )
                 for line in process.stdout:
-                    print(line, end='', flush=True)
+                    print(line, end="", flush=True)
                 _, stderr = process.communicate()
                 if stderr:
                     print("STDERR:", stderr)
@@ -1214,7 +1288,7 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
             os.remove(filter_file)
         except Exception:
             pass
-    
+
     return cleanup_success
 
 
@@ -1222,6 +1296,7 @@ def main():
     # Load environment variables from .env file
     try:
         from dotenv import load_dotenv
+
         # Get the repository root (bin/sync -> bin -> repo root)
         repo_root = Path(__file__).parent.parent.parent
         env_file = repo_root / ".env"
@@ -1230,71 +1305,64 @@ def main():
     except ImportError:
         # dotenv not available, continue without it
         pass
-    
+
     _require_python_deps()
     parser = argparse.ArgumentParser(description="Run multiple library sync jobs")
     parser.add_argument(
-        "--config", 
+        "--config",
         default="sync-config.yaml",
-        help="Path to sync configuration file"
+        help="Path to sync configuration file",
     )
+    parser.add_argument("--job", help="Run only specific job (by name)")
     parser.add_argument(
-        "--job", 
-        help="Run only specific job (by name)"
-    )
-    parser.add_argument(
-        "--dry-run", 
+        "--dry-run",
         action="store_true",
-        help="Show what would be executed without running"
+        help="Show what would be executed without running",
     )
-    parser.add_argument(
-        "--list-jobs", 
-        action="store_true",
-        help="List available jobs and exit"
-    )
-    
+    parser.add_argument("--list-jobs", action="store_true", help="List available jobs and exit")
+
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Verbose console output (disables quiet mode)"
+        help="Verbose console output (disables quiet mode)",
     )
 
     parser.add_argument(
         "--skip-tagging",
         action="store_true",
-        help="Skip the pre-sync tagging phase (explicit/genre/metadata)"
+        help="Skip the pre-sync tagging phase (explicit/genre/metadata)",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Get paths
     script_dir = Path(__file__).parent
     config_path = script_dir / args.config
     # sync-library.py is now in the same directory as master-sync.py
     sync_script_path = script_dir / "sync-library.py"
-    
+
     # Load configuration
     config = load_config(config_path)
-    
+
     # List jobs if requested
     if args.list_jobs:
         print("Available sync jobs:")
         for job in config.get("sync_jobs", []):
             print(f"  - {job['name']}: {job['src']} -> {job['dest']}")
         return 0
-    
+
     # Check if sync script exists
     if not sync_script_path.exists():
         print(f"Error: sync-library.py not found at {sync_script_path}")
         return 1
-    
+
     # Get global options
     global_opts = config.get("global", {})  # Changed from "global_options" to "global"
-    
+
     # Override with command line args
     if args.dry_run:
         global_opts["dry_run"] = True
-    
+
     # Filter jobs if specific job requested
     jobs = config.get("sync_jobs", [])
     if args.job:
@@ -1302,12 +1370,12 @@ def main():
         if not jobs:
             print(f"Error: Job '{args.job}' not found in configuration")
             return 1
-    
+
     run_start = time.time()
     success_count = 0
     total_count = len(jobs)
     job_stats_list = []
-    
+
     quiet = not bool(args.verbose)
 
     if args.skip_tagging:
@@ -1336,10 +1404,10 @@ def main():
         job_stats_list.append(stats)
         if stats.get("success"):
             success_count += 1
-    
+
     # Run global cleanup if enabled
     cleanup_success = run_global_cleanup(jobs, str(sync_script_path), global_opts, args.dry_run)
-    
+
     # Summary
     print(f"\n{'='*60}")
     print(f"Sync Summary:")
@@ -1382,7 +1450,9 @@ def main():
             print(f"    Files copied: {b['files_copied']}")
             print(f"    Data transferred: {_format_bytes(b['bytes_transferred'])}")
             if b["bytes_sent"] or b["bytes_received"]:
-                print(f"    Network: sent {_format_bytes(b['bytes_sent'])}, received {_format_bytes(b['bytes_received'])}")
+                print(
+                    f"    Network: sent {_format_bytes(b['bytes_sent'])}, received {_format_bytes(b['bytes_received'])}"
+                )
             print(f"    Job time: {_format_duration(b['elapsed_seconds'])}")
 
         total_files = sum(int(s.get("files_copied") or 0) for s in job_stats_list)
@@ -1393,11 +1463,13 @@ def main():
         print(f"  Total files copied: {total_files}")
         print(f"  Total data transferred: {_format_bytes(total_bytes)}")
         if total_sent or total_recv:
-            print(f"  Total network: sent {_format_bytes(total_sent)}, received {_format_bytes(total_recv)}")
+            print(
+                f"  Total network: sent {_format_bytes(total_sent)}, received {_format_bytes(total_recv)}"
+            )
         print(f"  Wall time: {_format_duration(run_elapsed)}")
 
     print(f"{'='*60}")
-    
+
     return 0 if (success_count == total_count and cleanup_success) else 1
 
 

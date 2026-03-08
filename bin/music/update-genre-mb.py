@@ -16,20 +16,22 @@ Usage:
 import argparse
 import json
 import os
+import re
 import signal
 import ssl
 import sys
 import time
-import urllib.error
-import re
 import unicodedata
+import urllib.error
 from pathlib import Path
-from mutagen.flac import FLAC
 from typing import Dict, List, Optional, Set
+
+from mutagen.flac import FLAC
 
 # Try to import tqdm for progress bar
 try:
     from tqdm import tqdm
+
     HAS_TQDM = True
 except ImportError:
     HAS_TQDM = False
@@ -46,6 +48,7 @@ def _log(msg: str) -> None:
         except Exception:
             pass
     print(msg)
+
 
 # Global flag for graceful shutdown
 SHUTDOWN_REQUESTED = False
@@ -66,71 +69,203 @@ UNRESOLVED_FILES: set = set()
 # Curated whitelist of real genres
 GENRE_WHITELIST = {
     # Rock family
-    'rock', 'pop rock', 'hard rock', 'soft rock', 'progressive rock', 'art rock',
-    'punk rock', 'punk', 'post-punk', 'new wave', 'gothic rock', 'indie rock',
-    'alternative rock', 'alternative', 'grunge', 'shoegaze', 'emo',
-    'metal', 'heavy metal', 'thrash metal', 'death metal', 'black metal',
-    'power metal', 'doom metal', 'folk metal', 'symphonic metal',
-    
+    "rock",
+    "pop rock",
+    "hard rock",
+    "soft rock",
+    "progressive rock",
+    "art rock",
+    "punk rock",
+    "punk",
+    "post-punk",
+    "new wave",
+    "gothic rock",
+    "indie rock",
+    "alternative rock",
+    "alternative",
+    "grunge",
+    "shoegaze",
+    "emo",
+    "metal",
+    "heavy metal",
+    "thrash metal",
+    "death metal",
+    "black metal",
+    "power metal",
+    "doom metal",
+    "folk metal",
+    "symphonic metal",
     # Pop family
-    'pop', 'synthpop', 'electropop', 'dance-pop', 'bubblegum pop', 'indie pop',
-    'teen pop', 'k-pop', 'j-pop', 'cantopop', 'mandopop',
-    
+    "pop",
+    "synthpop",
+    "electropop",
+    "dance-pop",
+    "bubblegum pop",
+    "indie pop",
+    "teen pop",
+    "k-pop",
+    "j-pop",
+    "cantopop",
+    "mandopop",
     # Electronic family
-    'electronic', 'electro', 'techno', 'house', 'trance', 'drum and bass',
-    'dubstep', 'ambient', 'downtempo', 'trip hop', 'idm', 'industrial',
-    'ebm', 'darkwave', 'synthwave', 'vaporwave',
-    
+    "electronic",
+    "electro",
+    "techno",
+    "house",
+    "trance",
+    "drum and bass",
+    "dubstep",
+    "ambient",
+    "downtempo",
+    "trip hop",
+    "idm",
+    "industrial",
+    "ebm",
+    "darkwave",
+    "synthwave",
+    "vaporwave",
     # Hip hop / R&B family
-    'hip hop', 'rap', 'trap', 'r&b', 'rhythm and blues', 'soul', 'funk', 'disco', 'boogie',
-    'new jack swing', 'neo soul', 'quiet storm',
-    
+    "hip hop",
+    "rap",
+    "trap",
+    "r&b",
+    "rhythm and blues",
+    "soul",
+    "funk",
+    "disco",
+    "boogie",
+    "new jack swing",
+    "neo soul",
+    "quiet storm",
     # Jazz family
-    'jazz', 'bebop', 'cool jazz', 'hard bop', 'free jazz', 'fusion',
-    'smooth jazz', 'acid jazz', 'latin jazz', 'swing', 'big band',
-    
+    "jazz",
+    "bebop",
+    "cool jazz",
+    "hard bop",
+    "free jazz",
+    "fusion",
+    "smooth jazz",
+    "acid jazz",
+    "latin jazz",
+    "swing",
+    "big band",
     # Classical family
-    'classical', 'orchestral', 'symphony', 'concerto', 'chamber music',
-    'opera', 'choral', 'baroque', 'romantic', 'renaissance', 'modern classical',
-    'minimalism', 'avant-garde', 'contemporary classical', 'musical',
-    
+    "classical",
+    "orchestral",
+    "symphony",
+    "concerto",
+    "chamber music",
+    "opera",
+    "choral",
+    "baroque",
+    "romantic",
+    "renaissance",
+    "modern classical",
+    "minimalism",
+    "avant-garde",
+    "contemporary classical",
+    "musical",
     # Folk / Traditional family
-    'folk', 'folk rock', 'country', 'bluegrass', 'americana', 'country folk',
-    'traditional', 'celtic', 'gaelic', 'irish folk', 'scottish folk',
-    'english folk', 'american folk', 'appalachian', 'appalachian folk', 'delta blues',
-    'chicago blues', 'electric blues', 'country blues',
-    
+    "folk",
+    "folk rock",
+    "country",
+    "bluegrass",
+    "americana",
+    "country folk",
+    "traditional",
+    "celtic",
+    "gaelic",
+    "irish folk",
+    "scottish folk",
+    "english folk",
+    "american folk",
+    "appalachian",
+    "appalachian folk",
+    "delta blues",
+    "chicago blues",
+    "electric blues",
+    "country blues",
     # Reggae / Caribbean family
-    'reggae', 'dub', 'dancehall', 'ska', 'rocksteady', 'roots reggae',
-    'calypso', 'soca', 'zouk', 'kompa',
-    
+    "reggae",
+    "dub",
+    "dancehall",
+    "ska",
+    "rocksteady",
+    "roots reggae",
+    "calypso",
+    "soca",
+    "zouk",
+    "kompa",
     # Latin family
-    'latin', 'salsa', 'bossa nova', 'samba', 'tango', 'bolero', 'rumba',
-    'mambo', 'cha-cha-cha', 'afro-cuban', 'norteño',
-    'ranchera', 'mariachi', 'tejano',
-    
+    "latin",
+    "salsa",
+    "bossa nova",
+    "samba",
+    "tango",
+    "bolero",
+    "rumba",
+    "mambo",
+    "cha-cha-cha",
+    "afro-cuban",
+    "norteño",
+    "ranchera",
+    "mariachi",
+    "tejano",
     # World / Regional
-    'world', 'african', 'afrobeat', 'highlife', 'soukous', 'mbalax',
-    'indian classical', 'hindustani', 'carnatic', 'bollywood', 'filmi',
-    'chinese traditional', 'japanese traditional', 'korean traditional',
-    'middle eastern', 'arabic', 'persian', 'turkish', 'greek',
-    
+    "world",
+    "african",
+    "afrobeat",
+    "highlife",
+    "soukous",
+    "mbalax",
+    "indian classical",
+    "hindustani",
+    "carnatic",
+    "bollywood",
+    "filmi",
+    "chinese traditional",
+    "japanese traditional",
+    "korean traditional",
+    "middle eastern",
+    "arabic",
+    "persian",
+    "turkish",
+    "greek",
     # Other significant genres
-    'blues', 'gospel', 'spirituals', 'new age', 'meditation', 'soundtrack',
-    'experimental', 'noise', 'drone', 'spoken word', 'comedy',
-    'children\'s', 'children\'s music', 'holiday', 'march',
-    
+    "blues",
+    "gospel",
+    "spirituals",
+    "new age",
+    "meditation",
+    "soundtrack",
+    "experimental",
+    "noise",
+    "drone",
+    "spoken word",
+    "comedy",
+    "children's",
+    "children's music",
+    "holiday",
+    "march",
     # Additional genres from rejected list
-    'compilation', 'contemporary christian', 'contemporary r&b', 'dance',
-    'minneapolis sound', 'new romantic', 'sound effects',
-    'traditional cajun music', 'traditional pop', 'christmas',
+    "compilation",
+    "contemporary christian",
+    "contemporary r&b",
+    "dance",
+    "minneapolis sound",
+    "new romantic",
+    "sound effects",
+    "traditional cajun music",
+    "traditional pop",
+    "christmas",
 }
+
 
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully."""
     global SHUTDOWN_REQUESTED
     global FORCE_EXIT_REQUESTED
-    
+
     if not SHUTDOWN_REQUESTED:
         # First Ctrl+C - graceful shutdown
         SHUTDOWN_REQUESTED = True
@@ -141,58 +276,63 @@ def signal_handler(signum, frame):
         FORCE_EXIT_REQUESTED = True
         print("\nForce exit requested. Terminating immediately...")
         import os
+
         os._exit(1)
+
 
 # Set up signal handler
 signal.signal(signal.SIGINT, signal_handler)
+
 
 def load_cache():
     """Load genre cache from disk."""
     global GENRE_CACHE
     if CACHE_FILE.exists():
         try:
-            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 GENRE_CACHE = json.load(f)
         except Exception as e:
             print(f"Warning: Could not load cache: {e}")
             GENRE_CACHE = {}
+
 
 def load_rejected_genres():
     """Load rejected genres from log file."""
     global REJECTED_GENRES
     if REJECTED_GENRES_FILE.exists():
         try:
-            with open(REJECTED_GENRES_FILE, 'r', encoding='utf-8') as f:
+            with open(REJECTED_GENRES_FILE, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
+                    if line and not line.startswith("#"):
                         REJECTED_GENRES.add(line)
         except Exception as e:
             print(f"Warning: Could not load rejected genres: {e}")
             REJECTED_GENRES = set()
 
+
 def save_rejected_genres():
     """Save rejected genres to log file (additive - preserves existing entries)."""
     try:
         REJECTED_GENRES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Load existing genres first to preserve them
         existing_genres = set()
         if REJECTED_GENRES_FILE.exists():
             try:
-                with open(REJECTED_GENRES_FILE, 'r', encoding='utf-8') as f:
+                with open(REJECTED_GENRES_FILE, "r", encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#'):
+                        if line and not line.startswith("#"):
                             existing_genres.add(line)
             except Exception:
                 pass  # If file is corrupt, start fresh
-        
+
         # Combine existing and new genres
         all_genres = existing_genres.union(REJECTED_GENRES)
-        
+
         # Write combined set
-        with open(REJECTED_GENRES_FILE, 'w', encoding='utf-8') as f:
+        with open(REJECTED_GENRES_FILE, "w", encoding="utf-8") as f:
             f.write("# Rejected genres - candidates for potential whitelisting\n")
             f.write("# Generated by update-genre-mb.py\n")
             f.write("# Format: genre_name (unique list, no examples)\n\n")
@@ -201,28 +341,30 @@ def save_rejected_genres():
     except Exception as e:
         print(f"Warning: Could not save rejected genres: {e}")
 
+
 def load_unresolved_files():
     """Load unresolved files from log file."""
     global UNRESOLVED_FILES
     if UNRESOLVED_FILE.exists():
         try:
-            with open(UNRESOLVED_FILE, 'r', encoding='utf-8') as f:
+            with open(UNRESOLVED_FILE, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
+                    if line and not line.startswith("#"):
                         UNRESOLVED_FILES.add(line)
         except Exception as e:
             print(f"Warning: Could not load unresolved files: {e}")
             UNRESOLVED_FILES = set()
 
+
 def save_unresolved_files():
     """Save unresolved files to log file (append mode - immediate logging)."""
     try:
         UNRESOLVED_FILE.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Append new unresolved files immediately
         if UNRESOLVED_FILES:
-            with open(UNRESOLVED_FILE, 'a', encoding='utf-8') as f:
+            with open(UNRESOLVED_FILE, "a", encoding="utf-8") as f:
                 for file_entry in sorted(UNRESOLVED_FILES):
                     f.write(f"{file_entry}\n")
             # Clear the set after writing to avoid duplicates
@@ -230,16 +372,18 @@ def save_unresolved_files():
     except Exception as e:
         print(f"Warning: Could not save unresolved files: {e}")
 
+
 def reset_unresolved_files():
     """Reset the unresolved files log at the start of a run."""
     try:
         UNRESOLVED_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(UNRESOLVED_FILE, 'w', encoding='utf-8') as f:
+        with open(UNRESOLVED_FILE, "w", encoding="utf-8") as f:
             f.write("# Unresolved files - no genre found (candidates for manual tagging)\n")
             f.write("# Generated by update-genre-mb.py\n")
             f.write("# Format: file_path | artist - album - title\n\n")
     except Exception as e:
         print(f"Warning: Could not reset unresolved files log: {e}")
+
 
 def add_unresolved_file(flac_path: Path, artist: str, album: str, title: str):
     """Add an unresolved file to the log with context (immediate append)."""
@@ -250,6 +394,7 @@ def add_unresolved_file(flac_path: Path, artist: str, album: str, title: str):
         # Save immediately for real-time logging
         save_unresolved_files()
 
+
 def add_rejected_genre(genre: str, artist: str, album: str):
     """Add a rejected genre to the log (stores only unique genre names)."""
     if genre and genre.strip():
@@ -258,14 +403,16 @@ def add_rejected_genre(genre: str, artist: str, album: str):
         clean_genre = genre.strip()
         REJECTED_GENRES.add(clean_genre)
 
+
 def save_cache():
     """Save genre cache to disk."""
     try:
         CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(GENRE_CACHE, f, indent=2)
     except Exception as e:
         print(f"Warning: Could not save cache: {e}")
+
 
 def normalize_tag_value(value: str) -> str:
     """Normalize a tag value by trimming and cleaning."""
@@ -294,36 +441,36 @@ def _is_valid_genre(genre: str) -> bool:
 
 def _transform_genre(genre: str) -> str:
     """Transform rejected genres to valid whitelist equivalents.
-    
+
     Only transform genres that are NOT in the whitelist.
     This preserves distinct whitelisted genres while fixing common variants.
     """
     if not genre:
         return genre
-    
+
     normalized = _normalize_cache_component(genre)
-    
+
     # First check if it's already a valid whitelisted genre
     if _is_valid_genre(genre):
         return genre  # Don't transform whitelisted genres
-    
+
     # Genre transformers: map rejected genres to whitelist equivalents
     transformers = {
         # Only transform truly rejected/problematic variants
-        'symphony orchestra': 'classical',  # Not in whitelist, maps to classical
-        'guaguancó': 'afro-cuban',          # Cuban rumba style maps to afro-cuban (whitelisted)
-        'rhythm & blues': 'rhythm and blues',  # Variant maps to full name (whitelisted)
-        'rnb': 'rhythm and blues',           # Abbreviation maps to full name (whitelisted)
-        'r and b': 'rhythm and blues',       # Variant maps to full name (whitelisted)
+        "symphony orchestra": "classical",  # Not in whitelist, maps to classical
+        "guaguancó": "afro-cuban",  # Cuban rumba style maps to afro-cuban (whitelisted)
+        "rhythm & blues": "rhythm and blues",  # Variant maps to full name (whitelisted)
+        "rnb": "rhythm and blues",  # Abbreviation maps to full name (whitelisted)
+        "r and b": "rhythm and blues",  # Variant maps to full name (whitelisted)
     }
-    
+
     # Note: 'rhythm and blues' is now in whitelist, so no transformation needed
-    
+
     # Apply transformation if found
     if normalized in transformers:
         transformed = transformers[normalized]
         return transformed
-    
+
     return genre
 
 
@@ -337,23 +484,25 @@ def _cache_key_artist(artist: str) -> str:
     a = _normalize_cache_component(artist)
     return f"artist={a}"
 
+
 def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15):
     """Retry MusicBrainz API calls with exponential backoff for network errors."""
     import signal
     import urllib.request
-    
+
     def timeout_handler(signum, frame):
         raise TimeoutError("API call timed out")
-    
+
     for attempt in range(max_retries):
         # Check for shutdown request before making API call
         if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
             if FORCE_EXIT_REQUESTED:
                 import os
+
                 os._exit(1)
             _log("Shutdown requested, skipping API call")
             return None
-        
+
         try:
             # Add timeout to prevent hanging
             signal.signal(signal.SIGALRM, timeout_handler)
@@ -361,26 +510,33 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
             result = func(*args)
             signal.alarm(0)  # Cancel timeout
             return result
-        except (ssl.SSLError, urllib.error.URLError, OSError, TimeoutError) as e:
+        except (
+            ssl.SSLError,
+            urllib.error.URLError,
+            OSError,
+            TimeoutError,
+        ) as e:
             signal.alarm(0)  # Cancel timeout on error
             if attempt < max_retries - 1:
                 # Check for shutdown request before retrying
                 if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
                     if FORCE_EXIT_REQUESTED:
                         import os
+
                         os._exit(1)
                     _log("Shutdown requested, aborting retry")
                     return None
-                
-                delay = base_delay * (2 ** attempt)  # Exponential backoff: 2s, 4s, 8s, 16s
+
+                delay = base_delay * (2**attempt)  # Exponential backoff: 2s, 4s, 8s, 16s
                 _log(f"Network error (attempt {attempt + 1}/{max_retries}): {e}")
                 _log(f"Retrying in {delay} seconds...")
-                
+
                 # Sleep with interruption check
                 for i in range(int(delay)):
                     if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
                         if FORCE_EXIT_REQUESTED:
                             import os
+
                             os._exit(1)
                         _log("Shutdown requested during retry delay")
                         return None
@@ -394,34 +550,66 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
             # Non-network errors, don't retry
             raise
 
-def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, return_source: bool = False, bypass_cache: bool = False):
+
+def get_genre_from_musicbrainz(
+    artist: str,
+    album: str,
+    title: str = "",
+    *,
+    return_source: bool = False,
+    bypass_cache: bool = False,
+):
     """Try to get genre information from MusicBrainz."""
     try:
         import musicbrainzngs
+
         musicbrainzngs.set_useragent("update-genre-mb", "1.0", "https://yourdomain.example")
         musicbrainzngs.set_hostname("musicbrainz.org")
-        
+
         # Note: Rate limiting disabled due to API version compatibility
         # musicbrainzngs.set_rate_limit(limit=1.0)
-        
+
         # Auto-detect Christmas content
         def is_christmas_content():
             """Check if artist, album, or title contains Christmas-related terms."""
             christmas_terms = {
-                'christmas', 'xmas', 'nöel', 'holiday', 'winter', 'snow', 'santa',
-                'reindeer', 'mistletoe', 'carol', 'jingle', 'bell', 'silent night',
-                'holy night', 'first noel', 'away in a manger', 'o come all ye faithful',
-                'joy to the world', 'hark the herald', 'we three kings', 'good king wenceslas',
-                'god rest ye merry', 'deck the halls', 'o christmas tree', 'what child is this',
-                'o holy night', 'the first noel', 'angels we have heard', 'it came upon'
+                "christmas",
+                "xmas",
+                "nöel",
+                "holiday",
+                "winter",
+                "snow",
+                "santa",
+                "reindeer",
+                "mistletoe",
+                "carol",
+                "jingle",
+                "bell",
+                "silent night",
+                "holy night",
+                "first noel",
+                "away in a manger",
+                "o come all ye faithful",
+                "joy to the world",
+                "hark the herald",
+                "we three kings",
+                "good king wenceslas",
+                "god rest ye merry",
+                "deck the halls",
+                "o christmas tree",
+                "what child is this",
+                "o holy night",
+                "the first noel",
+                "angels we have heard",
+                "it came upon",
             }
-            
+
             # Check all fields (case-insensitive)
             all_text = f"{artist} {album} {title}".lower()
             return any(term in all_text for term in christmas_terms)
-        
+
         christmas_genre = "christmas" if is_christmas_content() else None
-        
+
         # Cache by artist+album so we don't re-query per-track.
         # Also cache negative results (empty string) to avoid repeated failed lookups.
         cache_key_album = _cache_key_artist_album(artist, album)
@@ -440,62 +628,129 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                 if return_source:
                     return (cached_artist, "cache")
                 return cached_artist
-        
+
         # Try release group lookup first (more reliable for genres)
         def search_release_groups():
             return musicbrainzngs.search_release_groups(artist=artist, release=album, limit=1)
-        
+
         result = retry_musicbrainz_call(search_release_groups)
         if result is None:
             # Shutdown occurred during API call
             return None if not return_source else (None, "shutdown")
-        
-        if result.get('release-group-list'):
-            release_group = result['release-group-list'][0]
-            release_group_id = release_group['id']
-            
+
+        if result.get("release-group-list"):
+            release_group = result["release-group-list"][0]
+            release_group_id = release_group["id"]
+
             # Get release group details with tags
             try:
+
                 def get_release_group():
-                    return musicbrainzngs.get_release_group_by_id(release_group_id, includes=['tags'])
-                
+                    return musicbrainzngs.get_release_group_by_id(
+                        release_group_id, includes=["tags"]
+                    )
+
                 rg_info = retry_musicbrainz_call(get_release_group)
                 if rg_info is None:
                     # Shutdown occurred during API call
                     return None if not return_source else (None, "shutdown")
-                
-                tags = rg_info.get('release-group', {}).get('tag-list', [])
-                
+
+                tags = rg_info.get("release-group", {}).get("tag-list", [])
+
                 # Extract genre tags (filter out non-genre tags)
                 genre_tags = []
                 non_genre_tags = {
-                    'seen live', 'favorite', 'owned', 'wants', 'recommendations',
-                    'beautiful', 'amazing', 'awesome', 'best', 'classic', 'great',
-                    'love', 'liked', 'disliked', 'overrated', 'underrated',
+                    "seen live",
+                    "favorite",
+                    "owned",
+                    "wants",
+                    "recommendations",
+                    "beautiful",
+                    "amazing",
+                    "awesome",
+                    "best",
+                    "classic",
+                    "great",
+                    "love",
+                    "liked",
+                    "disliked",
+                    "overrated",
+                    "underrated",
                     # Decade/era tags (not real genres)
-                    '90s', '80s', '70s', '60s', '50s', '2000s', '2010s', '2020s',
-                    '1990s', '1980s', '1970s', '1960s', '1950s',
+                    "90s",
+                    "80s",
+                    "70s",
+                    "60s",
+                    "50s",
+                    "2000s",
+                    "2010s",
+                    "2020s",
+                    "1990s",
+                    "1980s",
+                    "1970s",
+                    "1960s",
+                    "1950s",
                     # Quality/subjective tags
-                    'catchy', 'danceable', 'melodic', 'energetic', 'chill',
-                    'relaxing', 'upbeat', 'mellow', 'dark', 'happy', 'sad'
+                    "catchy",
+                    "danceable",
+                    "melodic",
+                    "energetic",
+                    "chill",
+                    "relaxing",
+                    "upbeat",
+                    "mellow",
+                    "dark",
+                    "happy",
+                    "sad",
                 }
-                
+
                 # Priority genres (prefer these over decade tags)
                 priority_genres = {
-                    'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip hop',
-                    'rap', 'r&b', 'rhythm and blues', 'soul', 'funk', 'reggae', 'country', 'folk',
-                    'blues', 'metal', 'punk', 'alternative', 'indie', 'ambient',
-                    'techno', 'house', 'trance', 'dubstep', 'drum and bass',
-                    'new wave', 'post-punk', 'grunge', 'shoegaze', 'emo',
-                    'ska', 'punk rock', 'hard rock', 'progressive rock',
-                    'synthpop', 'new romantic', 'gothic rock', 'indie rock'
+                    "rock",
+                    "pop",
+                    "jazz",
+                    "classical",
+                    "electronic",
+                    "hip hop",
+                    "rap",
+                    "r&b",
+                    "rhythm and blues",
+                    "soul",
+                    "funk",
+                    "reggae",
+                    "country",
+                    "folk",
+                    "blues",
+                    "metal",
+                    "punk",
+                    "alternative",
+                    "indie",
+                    "ambient",
+                    "techno",
+                    "house",
+                    "trance",
+                    "dubstep",
+                    "drum and bass",
+                    "new wave",
+                    "post-punk",
+                    "grunge",
+                    "shoegaze",
+                    "emo",
+                    "ska",
+                    "punk rock",
+                    "hard rock",
+                    "progressive rock",
+                    "synthpop",
+                    "new romantic",
+                    "gothic rock",
+                    "indie rock",
                 }
-                
+
                 for tag in tags:
-                    tag_name = normalize_tag_value(tag.get('name', ''))
+                    tag_name = normalize_tag_value(tag.get("name", ""))
                     if tag_name and tag_name.lower() not in non_genre_tags:
                         genre_tags.append(tag_name)
-                
+
                 if genre_tags:
                     # Prioritize real genres over decade/era tags
                     priority_matches = [g for g in genre_tags if g.lower() in priority_genres]
@@ -513,7 +768,7 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                         # Log rejected genre for review
                         add_rejected_genre(genre, artist, album)
                         genre = None
-                    
+
                     # Combine with Christmas genre if detected
                     if christmas_genre and genre:
                         # If we have both Christmas and another genre, prefer Christmas
@@ -523,73 +778,138 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                     elif christmas_genre and not genre:
                         # Only Christmas detected
                         genre = christmas_genre
-                    
+
                     # Cache the validated lookup (or None if invalid)
                     GENRE_CACHE[cache_key_album] = genre
                     # Also populate an artist-level cache if not already present.
                     if GENRE_CACHE.get(cache_key_artist) is None:
                         GENRE_CACHE[cache_key_artist] = genre
-                    
+
                     if return_source:
                         return (genre, "api")
                     return genre
-                    
+
             except Exception:
                 pass
-        
+
         # Fallback to artist lookup
         try:
+
             def search_artists():
                 return musicbrainzngs.search_artists(artist=artist, limit=1)
-            
+
             artist_result = retry_musicbrainz_call(search_artists)
             if artist_result is None:
                 # Shutdown occurred during API call
                 return None if not return_source else (None, "shutdown")
-            
-            if artist_result.get('artist-list'):
-                artist_info = artist_result['artist-list'][0]
-                artist_id = artist_info['id']
-                
+
+            if artist_result.get("artist-list"):
+                artist_info = artist_result["artist-list"][0]
+                artist_id = artist_info["id"]
+
                 def get_artist():
-                    return musicbrainzngs.get_artist_by_id(artist_id, includes=['tags'])
-                
+                    return musicbrainzngs.get_artist_by_id(artist_id, includes=["tags"])
+
                 artist_info = retry_musicbrainz_call(get_artist)
                 if artist_info is None:
                     # Shutdown occurred during API call
                     return None if not return_source else (None, "shutdown")
-                
-                tags = artist_info.get('artist', {}).get('tag-list', [])
-                
+
+                tags = artist_info.get("artist", {}).get("tag-list", [])
+
                 genre_tags = []
                 non_genre_tags = {
-                    'seen live', 'favorite', 'owned', 'wants', 'recommendations',
-                    'beautiful', 'amazing', 'awesome', 'best', 'classic', 'great',
-                    'love', 'liked', 'disliked', 'overrated', 'underrated',
+                    "seen live",
+                    "favorite",
+                    "owned",
+                    "wants",
+                    "recommendations",
+                    "beautiful",
+                    "amazing",
+                    "awesome",
+                    "best",
+                    "classic",
+                    "great",
+                    "love",
+                    "liked",
+                    "disliked",
+                    "overrated",
+                    "underrated",
                     # Decade/era tags (not real genres)
-                    '90s', '80s', '70s', '60s', '50s', '2000s', '2010s', '2020s',
-                    '1990s', '1980s', '1970s', '1960s', '1950s',
+                    "90s",
+                    "80s",
+                    "70s",
+                    "60s",
+                    "50s",
+                    "2000s",
+                    "2010s",
+                    "2020s",
+                    "1990s",
+                    "1980s",
+                    "1970s",
+                    "1960s",
+                    "1950s",
                     # Quality/subjective tags
-                    'catchy', 'danceable', 'melodic', 'energetic', 'chill',
-                    'relaxing', 'upbeat', 'mellow', 'dark', 'happy', 'sad'
+                    "catchy",
+                    "danceable",
+                    "melodic",
+                    "energetic",
+                    "chill",
+                    "relaxing",
+                    "upbeat",
+                    "mellow",
+                    "dark",
+                    "happy",
+                    "sad",
                 }
-                
+
                 # Priority genres (prefer these over decade tags)
                 priority_genres = {
-                    'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip hop',
-                    'rap', 'r&b', 'rhythm and blues', 'soul', 'funk', 'reggae', 'country', 'folk',
-                    'blues', 'metal', 'punk', 'alternative', 'indie', 'ambient',
-                    'techno', 'house', 'trance', 'dubstep', 'drum and bass',
-                    'new wave', 'post-punk', 'grunge', 'shoegaze', 'emo',
-                    'ska', 'punk rock', 'hard rock', 'progressive rock',
-                    'synthpop', 'new romantic', 'gothic rock', 'indie rock'
+                    "rock",
+                    "pop",
+                    "jazz",
+                    "classical",
+                    "electronic",
+                    "hip hop",
+                    "rap",
+                    "r&b",
+                    "rhythm and blues",
+                    "soul",
+                    "funk",
+                    "reggae",
+                    "country",
+                    "folk",
+                    "blues",
+                    "metal",
+                    "punk",
+                    "alternative",
+                    "indie",
+                    "ambient",
+                    "techno",
+                    "house",
+                    "trance",
+                    "dubstep",
+                    "drum and bass",
+                    "new wave",
+                    "post-punk",
+                    "grunge",
+                    "shoegaze",
+                    "emo",
+                    "ska",
+                    "punk rock",
+                    "hard rock",
+                    "progressive rock",
+                    "synthpop",
+                    "new romantic",
+                    "gothic rock",
+                    "indie rock",
                 }
-                
+
                 for tag in tags:
-                    tag_name = normalize_tag_value(tag.get('name', ''))
+                    tag_name = normalize_tag_value(tag.get("name", ""))
                     if tag_name and tag_name.lower() not in non_genre_tags:
                         genre_tags.append(tag_name)
-                
+
                 if genre_tags:
                     # Prioritize real genres over decade/era tags
                     priority_matches = [g for g in genre_tags if g.lower() in priority_genres]
@@ -607,18 +927,18 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
                         # Log rejected genre for review
                         add_rejected_genre(genre, artist, album)
                         genre = None
-                    
+
                     # Cache the successful lookup
                     GENRE_CACHE[cache_key_album] = genre
                     GENRE_CACHE[cache_key_artist] = genre
-                    
+
                     if return_source:
                         return (genre, "api")
                     return genre
-                    
+
         except Exception:
             pass
-        
+
         # Cache the miss to avoid repeated lookups.
         # Only cache the artist-level miss when we don't have album context.
         # But if Christmas is detected, cache that instead
@@ -629,7 +949,7 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
         if return_source:
             return (final_genre if final_genre else None, "api")
         return final_genre if final_genre else None
-        
+
     except ImportError:
         print("MusicBrainz library not available, install with: pip install musicbrainzngs")
         if return_source:
@@ -640,6 +960,7 @@ def get_genre_from_musicbrainz(artist: str, album: str, title: str = "", *, retu
         if return_source:
             return (None, "error")
         return None
+
 
 def read_flac_tags(flac_path: Path) -> Dict[str, str]:
     """Read tags from a FLAC file."""
@@ -653,6 +974,7 @@ def read_flac_tags(flac_path: Path) -> Dict[str, str]:
     except Exception as e:
         print(f"Error reading tags from {flac_path}: {e}")
         return {}
+
 
 def write_flac_tags(flac_path: Path, tags: Dict[str, str]) -> bool:
     """Write tags to a FLAC file."""
@@ -671,19 +993,27 @@ def write_flac_tags(flac_path: Path, tags: Dict[str, str]) -> bool:
         print(f"Error writing tags to {flac_path}: {e}")
         return False
 
-def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = False, force: bool = False, force_missing: bool = False) -> bool:
+
+def update_file_genre(
+    flac_path: Path,
+    dry_run: bool = False,
+    verbose: bool = False,
+    force: bool = False,
+    force_missing: bool = False,
+) -> bool:
     """Update genre for a single FLAC file."""
     import time
+
     start_time = time.time()
-    
+
     # Read current tags
     current_tags = read_flac_tags(flac_path)
-    
+
     # Skip if genre tag already exists (unless force mode or force-missing mode)
-    has_genre = 'genre' in current_tags and current_tags['genre']
-    
+    has_genre = "genre" in current_tags and current_tags["genre"]
+
     if not force and not force_missing and has_genre:
-        current_genre = current_tags['genre']
+        current_genre = current_tags["genre"]
         if _is_valid_genre(current_genre):
             if verbose:
                 print(f"  Skipping {flac_path.name} (already has valid genre: {current_genre})")
@@ -694,27 +1024,27 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
                 print(f"  Removing invalid genre: {current_genre}")
             # Continue to process as if no genre exists
             # Don't return here - let the lookup happen
-    
+
     # Skip if force-missing mode and file already has genre
     if force_missing and has_genre:
         if verbose:
-            current_genre = current_tags['genre']
+            current_genre = current_tags["genre"]
             print(f"  Skipping {flac_path.name} (already has genre: {current_genre})")
         return "skipped"
-    
+
     # Show current genre if force mode
     if force and has_genre:
         if verbose:
             print(f"  Force updating {flac_path.name} (current: {current_tags['genre']})")
     elif verbose:
         print(f"  Processing {flac_path.name}")
-    
+
     # Get metadata for lookup
-    artist = current_tags.get('artist', '')
-    albumartist = current_tags.get('albumartist', '')
-    album = current_tags.get('album', '')
-    title = current_tags.get('title', '')
-    
+    artist = current_tags.get("artist", "")
+    albumartist = current_tags.get("albumartist", "")
+    album = current_tags.get("album", "")
+    title = current_tags.get("title", "")
+
     if not artist:
         if verbose:
             print(f"  Skipping {flac_path.name} (no artist tag)")
@@ -723,33 +1053,43 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
     # Prefer albumartist for caching/lookups. Track artist can vary (feat., punctuation, etc.)
     # which causes repeated cache misses for the same album.
     lookup_artist = albumartist or artist
-    
+
     # Get genre from MusicBrainz
     # Bypass cache when file has no existing genre and we're in force/force-missing mode
-    has_genre = 'genre' in current_tags and current_tags['genre']
+    has_genre = "genre" in current_tags and current_tags["genre"]
     bypass_cache = (force or force_missing) and not has_genre
-    
+
     if verbose:
-        genre, genre_source = get_genre_from_musicbrainz(lookup_artist, album, title, return_source=True, bypass_cache=bypass_cache)
+        genre, genre_source = get_genre_from_musicbrainz(
+            lookup_artist,
+            album,
+            title,
+            return_source=True,
+            bypass_cache=bypass_cache,
+        )
     else:
         genre = get_genre_from_musicbrainz(lookup_artist, album, title, bypass_cache=bypass_cache)
         genre_source = None
-    
+
     elapsed = time.time() - start_time
     if elapsed > 2.0 and verbose:
         print(f"    Slow processing ({elapsed:.1f}s): {lookup_artist} - {album}")
-    
+
     if not genre:
         if verbose:
             if genre_source == "cache":
                 print(f"  No valid genre found (cached) for {lookup_artist} - {album}")
             else:
                 print(f"  No valid genre found for {lookup_artist} - {album}")
-        
+
         # Remove invalid genre if it exists
-        if 'genre' in current_tags and current_tags['genre'] and not _is_valid_genre(current_tags['genre']):
+        if (
+            "genre" in current_tags
+            and current_tags["genre"]
+            and not _is_valid_genre(current_tags["genre"])
+        ):
             if not dry_run:
-                if write_flac_tags(flac_path, {'GENRE': ''}):
+                if write_flac_tags(flac_path, {"GENRE": ""}):
                     if verbose:
                         print(f"    Removed invalid genre: {current_tags['genre']}")
                     return "updated"  # Count as updated since we removed a tag
@@ -759,23 +1099,23 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
             else:
                 print(f"    [DRY RUN] Would remove invalid genre: {current_tags['genre']}")
                 return "updated"
-        
+
         # Log unresolved file for manual review
         add_unresolved_file(flac_path, lookup_artist, album, title)
-        
+
         return "unresolved"
-    
+
     # Update tags
-    new_tags = {'GENRE': genre}
-    
+    new_tags = {"GENRE": genre}
+
     if verbose or force:
-        current_genre = current_tags.get('genre', '')
+        current_genre = current_tags.get("genre", "")
         if current_genre:
             print(f"  Updating {flac_path.name}: {lookup_artist} - {album}")
             print(f"    {current_genre} -> {genre}")
         else:
             print(f"  Setting {flac_path.name}: {lookup_artist} - {album} -> {genre}")
-    
+
     if dry_run:
         print(f"    [DRY RUN] Would set genre to '{genre}'")
         return "updated"
@@ -786,23 +1126,30 @@ def update_file_genre(flac_path: Path, dry_run: bool = False, verbose: bool = Fa
             print(f"    Failed to update genre")
             return False
 
-def update_genres_in_folder(folder_path: Path, recursive: bool = False, 
-                           dry_run: bool = False, verbose: bool = False, force: bool = False, force_missing: bool = False) -> int:
+
+def update_genres_in_folder(
+    folder_path: Path,
+    recursive: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+    force: bool = False,
+    force_missing: bool = False,
+) -> int:
     """Update genres for FLAC files in a folder."""
     global ACTIVE_TQDM
     updated_count = 0
     skipped_count = 0
     unresolved_count = 0
-    
+
     if recursive:
         flac_files = list(folder_path.rglob("*.flac"))
     else:
         flac_files = list(folder_path.glob("*.flac"))
-    
+
     if not flac_files:
         print(f"No FLAC files found in {folder_path}")
         return 0
-    
+
     flac_files = sorted(flac_files)
     mode_text = "FORCE UPDATING" if force else "Updating"
     print(f"{mode_text} genre metadata for {len(flac_files)} FLAC files...")
@@ -826,9 +1173,11 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
         flac_iterator = pbar
     else:
         if HAS_TQDM and not verbose and not sys.stderr.isatty():
-            _log("Note: progress bar disabled (stderr is not a TTY); showing periodic progress instead")
+            _log(
+                "Note: progress bar disabled (stderr is not a TTY); showing periodic progress instead"
+            )
         flac_iterator = flac_files
-    
+
     for i, flac_file in enumerate(flac_iterator, start=1):
         # Check for shutdown request
         if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
@@ -838,9 +1187,11 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
             if FORCE_EXIT_REQUESTED:
                 print(f"\nForce exit triggered. Updated {updated_count} files before exit.")
             else:
-                print(f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown.")
+                print(
+                    f"\nGraceful shutdown requested. Updated {updated_count} files before shutdown."
+                )
             break
-        
+
         result = update_file_genre(flac_file, dry_run, verbose, force, force_missing)
         if result == "skipped":
             skipped_count += 1
@@ -848,65 +1199,80 @@ def update_genres_in_folder(folder_path: Path, recursive: bool = False,
             unresolved_count += 1
         elif result == "updated":
             updated_count += 1
-            
+
         # If no tqdm bar (e.g. non-TTY), show periodic progress without spamming
         if not use_tqdm and (i == 1 or i % 500 == 0):
             print(f"Progress: {i}/{len(flac_files)}")
-    
+
     if pbar is not None:
         pbar.close()
     ACTIVE_TQDM = False
 
     if unresolved_count:
-        print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged, unresolved {unresolved_count})")
+        print(
+            f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged, unresolved {unresolved_count})"
+        )
     else:
         print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
-    
+
     return updated_count
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Update genre metadata for FLAC files')
-    parser.add_argument('folder', help='Folder containing FLAC files')
-    parser.add_argument('--dry-run', action='store_true', help='Show what would be changed without making changes')
-    parser.add_argument('--recursive', action='store_true', help='Process subdirectories recursively')
-    parser.add_argument('--verbose', action='store_true', help='Verbose output')
-    parser.add_argument('--force', action='store_true', help='Force update existing genre tags')
-    parser.add_argument('--force-missing', action='store_true', help='Force update only files without genre tags')
-    
+    parser = argparse.ArgumentParser(description="Update genre metadata for FLAC files")
+    parser.add_argument("folder", help="Folder containing FLAC files")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be changed without making changes",
+    )
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Process subdirectories recursively",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("--force", action="store_true", help="Force update existing genre tags")
+    parser.add_argument(
+        "--force-missing",
+        action="store_true",
+        help="Force update only files without genre tags",
+    )
+
     args = parser.parse_args()
-    
+
     # Validate conflicting flags
     if args.force and args.force_missing:
         print("Error: --force and --force-missing are mutually exclusive")
         sys.exit(1)
-    
+
     folder_path = Path(args.folder).resolve()
     if not folder_path.exists():
         print(f"Error: Path {folder_path} does not exist")
         sys.exit(1)
-    
+
     if args.dry_run:
         print("DRY RUN MODE - No changes will be made")
-    
+
     if args.force:
         print("FORCE MODE - Will overwrite existing genre tags")
     elif args.force_missing:
         print("FORCE MISSING MODE - Will only update files without genre tags")
-    
+
     # Load cache at start
     load_cache()
     load_rejected_genres()
     reset_unresolved_files()  # Reset unresolved log for fresh run
-    
+
     updated_count = update_genres_in_folder(
-        folder_path, 
+        folder_path,
         recursive=args.recursive,
         dry_run=args.dry_run,
         verbose=args.verbose,
         force=args.force,
-        force_missing=args.force_missing
+        force_missing=args.force_missing,
     )
-    
+
     # Save cache at end (unless dry run)
     if not args.dry_run and not SHUTDOWN_REQUESTED and not FORCE_EXIT_REQUESTED:
         save_cache()
@@ -915,13 +1281,19 @@ def main():
         print(f"Saved genre cache with {len(GENRE_CACHE)} entries")
         if REJECTED_GENRES:
             print(f"Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}")
-    elif (SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED) and not args.dry_run and not FORCE_EXIT_REQUESTED:
+    elif (
+        (SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED)
+        and not args.dry_run
+        and not FORCE_EXIT_REQUESTED
+    ):
         save_cache()
         save_rejected_genres()
         print(f"Graceful shutdown: Saved genre cache with {len(GENRE_CACHE)} entries")
         if REJECTED_GENRES:
-            print(f"Graceful shutdown: Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}")
-    
+            print(
+                f"Graceful shutdown: Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}"
+            )
+
     if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
         if FORCE_EXIT_REQUESTED:
             print(f"Script force-exited by user.")
@@ -934,5 +1306,6 @@ def main():
         action = "Force updated" if args.force else "Updated"
         print(f"\n{action} {updated_count} files")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

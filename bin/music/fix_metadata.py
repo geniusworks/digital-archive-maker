@@ -32,30 +32,32 @@ Arguments:
 #     --force (forces update)
 #     --verbose|--trial (detailed dry run)
 
+import argparse
 import os
 import re
-import argparse
 import sys
+
 import mutagen.flac
 
-import re
 
 # Normalize both values for comparison (ignore illegal filename characters)
 def normalize_string_for_compare(s):
     if not s:
-        return ''
+        return ""
     s = s.lower()
     # Normalize common replacements from filename sanitization
-    s = s.replace('_', ' ')
-    s = s.replace('/', ' ')
-    s = s.replace(':', ' ')
-    s = re.sub(r'[\\:*?"<>|]', '', s)  # remove other illegal filesystem chars
-    s = re.sub(r'\s+', '', s)          # collapse all whitespace
+    s = s.replace("_", " ")
+    s = s.replace("/", " ")
+    s = s.replace(":", " ")
+    s = re.sub(r'[\\:*?"<>|]', "", s)  # remove other illegal filesystem chars
+    s = re.sub(r"\s+", "", s)  # collapse all whitespace
     return s
+
 
 # Determine if current tag differs from desired value meaningfully
 def needs_update(current, desired):
     return normalize_string_for_compare(current) != normalize_string_for_compare(desired)
+
 
 def derive_metadata_from_path(path):
     filename = os.path.basename(path)
@@ -74,17 +76,32 @@ def derive_metadata_from_path(path):
         "ARTIST": grandparent.strip(),
     }
 
+
 def normalize_string(s):
     return s.strip().lower().replace("_", ":").replace(" ", "")
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("pos_path", nargs="?", help="Optional positional path")
-    parser.add_argument("--path", dest="kwarg_path", help="Named path (overrides positional)", default=None)
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without writing changes")
+    parser.add_argument(
+        "--path",
+        dest="kwarg_path",
+        help="Named path (overrides positional)",
+        default=None,
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without writing changes",
+    )
     parser.add_argument("--trial", action="store_true", help="Alias for --dry-run")
     parser.add_argument("--fix", action="store_true", help="Apply changes to files")
-    parser.add_argument("--force", action="store_true", help="Overwrite all tags, even if present")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite all tags, even if present",
+    )
     parser.add_argument("--verbose", action="store_true", help="Print detailed info per file")
 
     args = parser.parse_args()
@@ -150,6 +167,7 @@ def main():
         print()
 
     print("Done.")
+
 
 if __name__ == "__main__":
     main()

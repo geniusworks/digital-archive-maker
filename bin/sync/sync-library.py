@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 import argparse
 import csv
-import os
-import subprocess
-import shutil
 import fnmatch
+import os
 import re
+import shutil
+import subprocess
 
 from mutagen.flac import FLAC
-from mutagen.mp4 import MP4
-from mutagen.mp3 import MP3
 from mutagen.id3 import ID3NoHeaderError
-
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
 
 EXPLICIT_TAG = "EXPLICIT"
 MPAA_TAG = "©rat"
@@ -133,7 +132,11 @@ def _infer_music_identity_from_path(audio_path, src_root):
     m = re.match(r"^\s*\d+\s*-\s*(.*)$", title)
     if m:
         title = m.group(1)
-    return _normalize_text(artist), _normalize_text(album), _normalize_text(title)
+    return (
+        _normalize_text(artist),
+        _normalize_text(album),
+        _normalize_text(title),
+    )
 
 
 def _read_music_identity(audio_path, src_root=None):
@@ -190,6 +193,7 @@ def _read_music_identity(audio_path, src_root=None):
             title_norm = p_title
 
     return artist_norm, album_norm, title_norm
+
 
 MPAA_ORDER = {
     "G": 0,
@@ -252,7 +256,7 @@ def _read_explicit_tag(audio_path):
             audio = MP3(audio_path)
         except ID3NoHeaderError:
             return UNKNOWN_VALUE
-    
+
     # Try different tag names for different formats
     if audio_path.lower().endswith(".flac"):
         values = audio.get(EXPLICIT_TAG) or audio.get(EXPLICIT_TAG.lower())
@@ -325,7 +329,11 @@ def _is_under_excluded_dir(rel_path, excluded_dirs):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", required=True, help="Source root")
-    parser.add_argument("--dest", required=True, help="Destination (path or rsync remote like user@host:/path)")
+    parser.add_argument(
+        "--dest",
+        required=True,
+        help="Destination (path or rsync remote like user@host:/path)",
+    )
     parser.add_argument(
         "--media",
         choices=["music", "movies", "shows", "music_videos"],
@@ -353,14 +361,43 @@ def main():
         help="Exclude movies tagged NR or Unrated",
     )
     parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to rsync")
-    parser.add_argument("--delete", action="store_true", help="(compat) Enable rsync --delete (default: enabled)")
-    parser.add_argument("--no-delete", action="store_true", help="Skip cleanup of empty destination directories (default: enabled)")
+    parser.add_argument(
+        "--delete",
+        action="store_true",
+        help="(compat) Enable rsync --delete (default: enabled)",
+    )
+    parser.add_argument(
+        "--no-delete",
+        action="store_true",
+        help="Skip cleanup of empty destination directories (default: enabled)",
+    )
     parser.add_argument("--ssh", default=None, help="Rsync remote shell, e.g. 'ssh -p 2222'")
-    parser.add_argument("--exclude-file", default=None, help="Write rsync excludes to this file")
-    parser.add_argument("--max-flacs", type=int, default=0, help="Only scan first N FLACs (debug)")
-    parser.add_argument("--print-command", action="store_true", help="Print rsync command and exit")
-    parser.add_argument("--scan-only", action="store_true", help="Scan and write exclude/keep files, but do not run rsync")
-    parser.add_argument("--keep-file", default=None, help="Write included (kept) relative file paths to this file")
+    parser.add_argument(
+        "--exclude-file",
+        default=None,
+        help="Write rsync excludes to this file",
+    )
+    parser.add_argument(
+        "--max-flacs",
+        type=int,
+        default=0,
+        help="Only scan first N FLACs (debug)",
+    )
+    parser.add_argument(
+        "--print-command",
+        action="store_true",
+        help="Print rsync command and exit",
+    )
+    parser.add_argument(
+        "--scan-only",
+        action="store_true",
+        help="Scan and write exclude/keep files, but do not run rsync",
+    )
+    parser.add_argument(
+        "--keep-file",
+        default=None,
+        help="Write included (kept) relative file paths to this file",
+    )
 
     args = parser.parse_args()
 
@@ -386,7 +423,7 @@ def main():
     patterns = []
     excluded_files = set()
     excluded_dirs = set()
-    
+
     # Track directories that have included files
     dirs_with_included_files = set()
 
@@ -453,7 +490,9 @@ def main():
                 elif rating == UNKNOWN_VALUE and args.exclude_unknown:
                     exclude = True
                     excluded_unknown += 1
-                elif max_mpaa and rating in MPAA_ORDER and MPAA_ORDER[rating] > MPAA_ORDER[max_mpaa]:
+                elif (
+                    max_mpaa and rating in MPAA_ORDER and MPAA_ORDER[rating] > MPAA_ORDER[max_mpaa]
+                ):
                     exclude = True
                     excluded_mpaa += 1
 
@@ -466,10 +505,10 @@ def main():
             if exclude:
                 patterns.append("/" + _escape_rsync_pattern(rel))
                 excluded_files.add(rel)
-                
+
                 # Also exclude associated .lrc files for explicit music tracks
-                if args.media == "music" and fullpath.lower().endswith(('.flac', '.mp3', '.m4a')):
-                    lrc_path = fullpath.rsplit('.', 1)[0] + '.lrc'
+                if args.media == "music" and fullpath.lower().endswith((".flac", ".mp3", ".m4a")):
+                    lrc_path = fullpath.rsplit(".", 1)[0] + ".lrc"
                     if os.path.exists(lrc_path):
                         lrc_rel = os.path.relpath(lrc_path, src).replace(os.sep, "/")
                         patterns.append("/" + _escape_rsync_pattern(lrc_rel))
@@ -486,7 +525,7 @@ def main():
     all_dirs = set()
     for root, dirs, files in os.walk(src):
         all_dirs.add(root)
-    
+
     # Propagate: if a child dir has included files, all ancestors should be kept
     dirs_to_keep = set()
     for d in dirs_with_included_files:
@@ -497,7 +536,7 @@ def main():
             if parent == current:
                 break
             current = parent
-    
+
     # Exclude directories that have no included files (and no children with included files)
     empty_dirs = all_dirs - dirs_to_keep - {src}
     for empty_dir in sorted(empty_dirs, reverse=True):  # Process deepest first
@@ -511,10 +550,10 @@ def main():
         # Always exclude the Playlists folder from sync operations
         patterns.append("/Playlists/")
         excluded_dirs.add("Playlists/")
-        
+
         # Exclude .m3u8 playlist files (Jellyfin doesn't need them)
         patterns.append("*.m3u8")
-        
+
         # Create Playlists directory if it doesn't exist (for remote destinations)
         if ":" in args.dest:  # Remote destination
             try:
@@ -522,12 +561,12 @@ def main():
                 host = args.dest.split(":")[0]
                 dest_path = args.dest.split(":")[1]
                 playlists_path = dest_path.rstrip("/") + "/Playlists"
-                
+
                 # Use ssh to create the directory if it doesn't exist
                 ssh_parts = ["ssh"]
                 if args.ssh:
                     ssh_parts.extend(["-e", args.ssh])
-                
+
                 create_cmd = ssh_parts + [host, f"mkdir -p '{playlists_path}'"]
                 subprocess.run(create_cmd, check=True, capture_output=True)
             except Exception:
@@ -575,7 +614,7 @@ def main():
         cmd.append("--info=progress2")
     if args.dry_run:
         cmd.append("--dry-run")
-    
+
     # Build source-aware delete patterns if delete is enabled
     delete_patterns = []
     if not args.no_delete and ":" in args.dest:  # Remote sync with delete
@@ -585,22 +624,22 @@ def main():
             rel_dir = os.path.relpath(root, src).replace(os.sep, "/")
             if rel_dir != ".":
                 source_dirs.add(rel_dir)
-        
+
         # Add include patterns for source directories
         for source_dir in sorted(source_dirs):
             delete_patterns.append(f"+ /{source_dir}/")
-        
+
         # Include all files in source directories
         delete_patterns.append("+ */")
         delete_patterns.append("+ *")
-        
+
         # Exclude everything else (other library folders)
         delete_patterns.append("- *")
-        
+
         # Write delete patterns to a separate file
-        delete_exclude_file = exclude_file.replace('.txt', '_delete.txt')
+        delete_exclude_file = exclude_file.replace(".txt", "_delete.txt")
         _write_exclude_file(delete_exclude_file, delete_patterns)
-        
+
         # Use --delete --exclude-from=delete_patterns_file
         cmd.extend(["--delete", "--exclude-from", delete_exclude_file])
     elif not args.no_delete:
@@ -620,7 +659,9 @@ def main():
     if args.media == "music":
         print(f"Scanned files: {total_flacs}")
         print(f"Excluded EXPLICIT=Yes: {excluded_yes} (exclude-explicit={args.exclude_explicit})")
-        print(f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        print(
+            f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})"
+        )
         if args.exclude_explicit:
             print(f"Overrides matched Yes: {override_yes_excluded}")
             print(f"Overrides matched No: {override_no_included}")
@@ -629,7 +670,9 @@ def main():
         print(f"Scanned files: {total_flacs}")
         print(f"Excluded MPAA above {max_mpaa}: {excluded_mpaa} (max-mpaa={args.max_mpaa})")
         print(f"Excluded NR/Unrated: {excluded_unrated} (exclude-unrated={args.exclude_unrated})")
-        print(f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})")
+        print(
+            f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})"
+        )
         print(f"Tag read errors treated as Unknown: {errors}")
     elif args.media == "shows":
         print(f"Scanned files: {total_flacs}")
@@ -649,21 +692,21 @@ def main():
         return 0
 
     result = subprocess.call(cmd)
-    
+
     # Post-process playlists on destination (only if not remote and not dry-run)
     if result == 0 and not args.dry_run and ":" not in args.dest:
         _fix_destination_playlists(args.dest, patterns)
-    
+
     return result
 
 
 def _fix_destination_playlists(dest_root, exclude_patterns):
     """Fix .m3u8 playlists on destination to replace missing tracks with (skipped) placeholders"""
     import re
-    
+
     print("Fixing playlists on destination...")
     fixed_count = 0
-    
+
     # Convert exclude patterns to a set of relative paths for quick lookup
     excluded_files = set()
     for pattern in exclude_patterns:
@@ -671,37 +714,39 @@ def _fix_destination_playlists(dest_root, exclude_patterns):
             # Convert rsync pattern to relative path
             rel_path = pattern[1:]  # Remove leading /
             excluded_files.add(rel_path)
-    
+
     for root, dirs, files in os.walk(dest_root):
         for name in files:
             if not name.lower().endswith(".m3u8"):
                 continue
-            
+
             playlist_path = os.path.join(root, name)
             try:
                 with open(playlist_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
-                
+
                 new_lines = []
                 track_num = 0
                 changed = False
-                
+
                 for line in lines:
                     line = line.rstrip("\n")
-                    
+
                     # Skip header and empty lines
                     if line.startswith("#EXTM3U") or not line.strip():
                         new_lines.append(line)
                         continue
-                    
+
                     # Skip comment lines (already processed)
                     if line.startswith("#"):
                         new_lines.append(line)
                         continue
-                    
+
                     track_num += 1
-                    rel_path = os.path.relpath(os.path.join(root, line), dest_root).replace(os.sep, "/")
-                    
+                    rel_path = os.path.relpath(os.path.join(root, line), dest_root).replace(
+                        os.sep, "/"
+                    )
+
                     # Check if file exists or was excluded
                     full_path = os.path.join(root, line)
                     if not os.path.exists(full_path) or rel_path in excluded_files:
@@ -710,16 +755,16 @@ def _fix_destination_playlists(dest_root, exclude_patterns):
                         changed = True
                     else:
                         new_lines.append(line)
-                
+
                 if changed:
                     with open(playlist_path, "w", encoding="utf-8", newline="\n") as f:
                         f.write("\n".join(new_lines) + "\n")
                     fixed_count += 1
                     print(f"  Fixed: {os.path.relpath(playlist_path, dest_root)}")
-            
+
             except Exception as e:
                 print(f"  Error fixing {playlist_path}: {e}")
-    
+
     if fixed_count > 0:
         print(f"Fixed {fixed_count} playlist files")
     else:

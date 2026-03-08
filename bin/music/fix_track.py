@@ -1,60 +1,90 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import sys
-import shutil
 import re
+import shutil
+import sys
 from pathlib import Path
-from mutagen import File
+
 import acoustid
 import musicbrainzngs
+from mutagen import File
 
 # ===== CONFIG =====
 TARGET_DIR = "/Volumes/Data/Media/Library/Music"
 ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY", "")
 musicbrainzngs.set_useragent("FixTrackScript", "1.0", "testing@example.com")
 
+
 # ---- UTILS -----
 def sanitize(name: str) -> str:
     return "".join(c for c in name if c not in '/\\:*?"<>|').strip()
 
+
 def clean_filename(name: str) -> str:
-    name = re.sub(r'^\d+[-. ]*', '', name)
-    name = re.sub(r'[_]+$', '', name)
+    name = re.sub(r"^\d+[-. ]*", "", name)
+    name = re.sub(r"[_]+$", "", name)
     return name.strip()
+
 
 def parse_from_filename(filename: str):
     name, _ = os.path.splitext(os.path.basename(filename))
     m = re.match(r"(?P<artist>.+?) - (?P<title>.+)", name)
     if m:
-        return sanitize(m.group("artist")), "Unknown Album", sanitize(m.group("title"))
-    m = re.match(r"(?P<artist>.+?) - (?P<album>.+?) - (?P<track>\d+) - (?P<title>.+)", name)
+        return (
+            sanitize(m.group("artist")),
+            "Unknown Album",
+            sanitize(m.group("title")),
+        )
+    m = re.match(
+        r"(?P<artist>.+?) - (?P<album>.+?) - (?P<track>\d+) - (?P<title>.+)",
+        name,
+    )
     if m:
-        return sanitize(m.group("artist")), sanitize(m.group("album")), sanitize(m.group("title"))
+        return (
+            sanitize(m.group("artist")),
+            sanitize(m.group("album")),
+            sanitize(m.group("title")),
+        )
     m = re.match(r"(?P<track>\d+) - (?P<artist>.+?) - (?P<title>.+)", name)
     if m:
-        return sanitize(m.group("artist")), "Unknown Album", sanitize(m.group("title"))
+        return (
+            sanitize(m.group("artist")),
+            "Unknown Album",
+            sanitize(m.group("title")),
+        )
     return "Unknown Artist", "Unknown Album", sanitize(name)
+
 
 def lookup_metadata(file_path):
     if not ACOUSTID_API_KEY:
-        print("Warning: ACOUSTID_API_KEY not set; skipping AcoustID lookup.", file=sys.stderr)
+        print(
+            "Warning: ACOUSTID_API_KEY not set; skipping AcoustID lookup.",
+            file=sys.stderr,
+        )
         return None
     try:
         results = acoustid.match(ACOUSTID_API_KEY, file_path)
         for score, recording_id, title_guess, artist_guess in results:
             if score > 0.8 and recording_id:
                 try:
-                    rec = musicbrainzngs.get_recording_by_id(recording_id, includes=["artists", "releases"])
-                    artist_name = rec['recording']['artist-credit'][0]['artist']['name']
-                    album_name = rec['recording']['release-list'][0]['title'] if rec['recording']['release-list'] else "Unknown Album"
-                    track_title = rec['recording']['title']
+                    rec = musicbrainzngs.get_recording_by_id(
+                        recording_id, includes=["artists", "releases"]
+                    )
+                    artist_name = rec["recording"]["artist-credit"][0]["artist"]["name"]
+                    album_name = (
+                        rec["recording"]["release-list"][0]["title"]
+                        if rec["recording"]["release-list"]
+                        else "Unknown Album"
+                    )
+                    track_title = rec["recording"]["title"]
                     return artist_name, album_name, track_title, None
                 except Exception:
                     continue
     except Exception:
         pass
     return None
+
 
 # ---- MAIN FUNCTION -----
 def fix_track(src_path: str, dest_root: str, skip_metadata=False) -> str:
@@ -110,12 +140,17 @@ def fix_track(src_path: str, dest_root: str, skip_metadata=False) -> str:
     print(f"Copied to: {dest_path}")
     return str(dest_path)
 
+
 # ---- CLI -----
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Organize a single track")
     parser.add_argument("source_file", help="Path to the audio file")
     parser.add_argument("--target", help="Target root directory", default=TARGET_DIR)
-    parser.add_argument("--no-metadata", action="store_true", help="Skip reading embedded metadata")
+    parser.add_argument(
+        "--no-metadata",
+        action="store_true",
+        help="Skip reading embedded metadata",
+    )
     args = parser.parse_args()
 
     try:

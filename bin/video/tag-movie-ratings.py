@@ -61,15 +61,15 @@ def _sigint_handler(signum, frame):
 def normalize_title(title):
     """Normalize movie title for API lookup"""
     # Remove common suffixes and normalize
-    title = re.sub(r'\s*\(\d{4}\).*$', '', title)  # Remove year and everything after
-    title = re.sub(r'\s*:\s.*$', '', title)  # Remove subtitle after colon
+    title = re.sub(r"\s*\(\d{4}\).*$", "", title)  # Remove year and everything after
+    title = re.sub(r"\s*:\s.*$", "", title)  # Remove subtitle after colon
     title = title.strip()
     return title
 
 
 def _format_display_title(title, year):
     """Format title for console display, avoiding double year"""
-    if re.search(r'\s*\(\d{4}\)\s*$', title):
+    if re.search(r"\s*\(\d{4}\)\s*$", title):
         return title
     elif year:
         return f"{title} ({year})"
@@ -80,17 +80,17 @@ def _format_display_title(title, year):
 def extract_year_from_path(file_path):
     """Extract year from folder name or filename"""
     path = Path(file_path)
-    
+
     # Check folder name first
-    folder_match = re.search(r'\((\d{4})\)', path.parent.name)
+    folder_match = re.search(r"\((\d{4})\)", path.parent.name)
     if folder_match:
         return int(folder_match.group(1))
-    
+
     # Check filename
-    file_match = re.search(r'\((\d{4})\)', path.stem)
+    file_match = re.search(r"\((\d{4})\)", path.stem)
     if file_match:
         return int(file_match.group(1))
-    
+
     return None
 
 
@@ -98,6 +98,7 @@ def read_imdb_id_from_file(file_path):
     """Read IMDb ID from MP4 file metadata"""
     try:
         from mutagen.mp4 import MP4
+
         audio = MP4(file_path)
         imdb_id = audio.get("----:com.apple.iTunes:imdb_id", [None])[0]
         return imdb_id
@@ -109,6 +110,7 @@ def read_rating_from_file(file_path):
     """Read existing MPAA rating from MP4 file"""
     try:
         from mutagen.mp4 import MP4
+
         audio = MP4(file_path)
         return audio, audio.get(RATING_TAG, [None])[0]
     except ImportError:
@@ -124,10 +126,11 @@ def write_rating_to_file(file_path, rating, audio=None, force=False):
     if DRY_RUN:
         print(f"DRY RUN: Would write {RATING_TAG}={rating} to {file_path}")
         return True
-    
+
     try:
         if audio is None:
             from mutagen.mp4 import MP4
+
             audio = MP4(file_path)
         existing = audio.get(RATING_TAG, [None])[0]
         if not force and existing == rating:
@@ -186,11 +189,11 @@ def load_overrides(overrides_file: Path):
         return overrides
 
     # CSV legacy
-    with open(selected, 'r', encoding='utf-8') as f:
+    with open(selected, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            title = (row.get('title') or '').strip()
-            rating = (row.get('rating') or '').strip()
+            title = (row.get("title") or "").strip()
+            rating = (row.get("rating") or "").strip()
             if not title or not rating:
                 continue
             overrides[normalize_title(title)] = rating
@@ -202,11 +205,11 @@ def load_cache(cache_file: Path):
     """Load rating cache"""
     _ensure_log_dir_exists()
     if cache_file.exists():
-        with open(cache_file, 'r') as f:
+        with open(cache_file, "r") as f:
             cache = json.load(f)
     else:
         cache = {}
-    
+
     # Migrate old keys that include year to normalized title keys
     migrated = {}
     for key, val in cache.items():
@@ -214,8 +217,8 @@ def load_cache(cache_file: Path):
             migrated[key] = val
             continue
         # Old format: Title_YYYY or Title_YYYY_extra
-        if re.match(r'.*_\d{4}$', key):
-            base = key.rsplit('_', 1)[0]
+        if re.match(r".*_\d{4}$", key):
+            base = key.rsplit("_", 1)[0]
             norm = normalize_title(base)
             if norm not in migrated:
                 migrated[norm] = val
@@ -300,11 +303,11 @@ def get_omdb_rating(title, year=None):
         query = {"t": normalize_title(title)}
         if year:
             query["y"] = str(year)
-        
+
         data = _omdb_get_json(query)
         if not data:
             return None
-        
+
         if data.get("Response") != "True":
             if VERBOSE:
                 err = data.get("Error") or "OMDb response was not True"
@@ -316,7 +319,7 @@ def get_omdb_rating(title, year=None):
                 OMDB_RATE_LIMITED = True
                 OMDB_RATE_LIMITED_DATE = date.today().isoformat()
             return None
-        
+
         rated = (data.get("Rated") or "").strip()
         if rated in VALID_RATINGS:
             return rated
@@ -333,10 +336,16 @@ def get_omdb_rating(title, year=None):
         mapped = legacy_map.get(rated_upper)
         if mapped in VALID_RATINGS:
             return mapped
-        
+
         return None
-        
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, RuntimeError) as e:
+
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        ValueError,
+        RuntimeError,
+    ) as e:
         if VERBOSE:
             print(f"OMDb API error for {title}: {e}")
         return None
@@ -345,7 +354,7 @@ def get_omdb_rating(title, year=None):
 def get_movie_rating(title, year=None):
     """Get MPAA rating from TMDb or OMDb API"""
     start_time = time.time()
-    
+
     # Try TMDb first if API key is available
     if os.getenv("TMDB_READ_ACCESS_TOKEN") or os.getenv("TMDB_API_KEY"):
         rating = get_tmdb_rating(title, year)
@@ -354,7 +363,7 @@ def get_movie_rating(title, year=None):
             if VERBOSE and elapsed > 2.0:
                 print(f"Slow TMDb lookup ({elapsed:.1f}s): {title} ({year})")
             return rating
-    
+
     # Fall back to OMDb if API key is available
     if os.getenv("OMDB_API_KEY") and not OMDB_RATE_LIMITED:
         rating = get_omdb_rating(title, year)
@@ -416,7 +425,13 @@ def get_tmdb_rating(title, year=None):
 
         return None
 
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, RuntimeError) as e:
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+        ValueError,
+        RuntimeError,
+    ) as e:
         if VERBOSE:
             print(f"TMDb API error for {title}: {e}")
         return None
@@ -425,14 +440,14 @@ def get_tmdb_rating(title, year=None):
 def find_movie_files(root_path):
     """Find all .mp4/.m4v movie files in directory or return single file if it's an MP4/M4V"""
     root = Path(root_path)
-    
+
     # If it's a single MP4/M4V file, return just that file
     if root.is_file() and root.suffix.lower() in (".mp4", ".m4v"):
         # Skip sample files and extras
         if "sample" in root.name.lower() or "extra" in root.name.lower():
             return []
         return [root]
-    
+
     # Otherwise scan directory recursively
     movie_files = []
     for ext in ["*.mp4", "*.m4v"]:
@@ -441,44 +456,58 @@ def find_movie_files(root_path):
             if "sample" in file_path.name.lower() or "extra" in file_path.name.lower():
                 continue
             movie_files.append(file_path)
-    
+
     return sorted(movie_files)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Tag MP4/M4V movie files with MPAA ratings")
-    parser.add_argument("root", nargs="?", default=".", 
-                       help="Root directory to scan for MP4/M4V files")
+    parser.add_argument(
+        "root",
+        nargs="?",
+        default=".",
+        help="Root directory to scan for MP4/M4V files",
+    )
     parser.add_argument(
         "--media",
         choices=["movies", "shows"],
         default="movies",
         help="Which library is being tagged (controls which overrides/cache files are used)",
     )
-    parser.add_argument("--dry-run", action="store_true", 
-                       help="Don't write tags, just report what would be done")
-    parser.add_argument("--verbose", action="store_true",
-                       help="Verbose output")
-    parser.add_argument("--max-files", type=int, default=0,
-                       help="Maximum number of files to process (0 = no limit)")
-    parser.add_argument("--force", action="store_true",
-                       help="Overwrite existing rating tags (default: only write if missing)")
-    
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Don't write tags, just report what would be done",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+        "--max-files",
+        type=int,
+        default=0,
+        help="Maximum number of files to process (0 = no limit)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing rating tags (default: only write if missing)",
+    )
+
     args = parser.parse_args()
-    
+
     global DRY_RUN, VERBOSE
     DRY_RUN = args.dry_run
     VERBOSE = args.verbose
 
     previous_sigint_handler = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, _sigint_handler)
-    
+
     try:
         from dotenv import load_dotenv
+
         load_dotenv(_REPO_ROOT / ".env")
     except ImportError:
         pass
-    
+
     # API keys are optional, but at least one is required for automatic lookups.
     if os.getenv("TMDB_READ_ACCESS_TOKEN"):
         print("Using TMDb API (read access token; with OMDb fallback if OMDB_API_KEY is set)")
@@ -487,8 +516,10 @@ def main():
     elif os.getenv("OMDB_API_KEY"):
         print("Using OMDb API")
     else:
-        print("No TMDB_API_KEY or OMDB_API_KEY set; API lookups disabled (override/cache/existing tags only)")
-    
+        print(
+            "No TMDB_API_KEY or OMDB_API_KEY set; API lookups disabled (override/cache/existing tags only)"
+        )
+
     if args.media == "movies":
         overrides_file = MOVIE_OVERRIDES_FILE
         cache_file = MOVIE_CACHE_FILE
@@ -511,12 +542,12 @@ def main():
 
     # Find movie files
     movie_files = find_movie_files(args.root)
-    
+
     if args.max_files > 0:
-        movie_files = movie_files[:args.max_files]
-    
+        movie_files = movie_files[: args.max_files]
+
     print(f"Processing {len(movie_files)} movie files...")
-    
+
     stats = {}
     rating_console_lines = 0
     processed_count = 0
@@ -531,37 +562,43 @@ def main():
                 print(f"Processing: {i}/{len(movie_files)}")
             else:
                 print(f"\rProcessing: {i}/{len(movie_files)}", end="", flush=True)
-         
+
             # Extract title from filename
             title = file_path.stem
             year = extract_year_from_path(file_path)
             title_norm = normalize_title(title)
-        
+
             # Check cache/overrides
             cache_key = title_norm
             cached_rating = cache.get(cache_key)
-            
+
             # Check for IMDb ID-based override first
             imdb_id = read_imdb_id_from_file(file_path)
             override_rating = None
             override_source = None
-            
+
             if imdb_id and isinstance(overrides, dict):
                 # Support both flat and nested override formats
                 if imdb_id in overrides:
                     override_rating = overrides[imdb_id]
                     override_source = f"IMDb ID ({imdb_id})"
-                elif isinstance(overrides.get('imdb_id_based'), dict) and imdb_id in overrides['imdb_id_based']:
-                    override_rating = overrides['imdb_id_based'][imdb_id]
+                elif (
+                    isinstance(overrides.get("imdb_id_based"), dict)
+                    and imdb_id in overrides["imdb_id_based"]
+                ):
+                    override_rating = overrides["imdb_id_based"][imdb_id]
                     override_source = f"IMDb ID ({imdb_id})"
-            
+
             # Fall back to title-based override
             if not override_rating:
                 if title_norm in overrides:
                     override_rating = overrides[title_norm]
                     override_source = f"Title ({title_norm})"
-                elif isinstance(overrides.get('title_based'), dict) and title_norm in overrides['title_based']:
-                    override_rating = overrides['title_based'][title_norm]
+                elif (
+                    isinstance(overrides.get("title_based"), dict)
+                    and title_norm in overrides["title_based"]
+                ):
+                    override_rating = overrides["title_based"][title_norm]
                     override_source = f"Title ({title_norm})"
 
             # Always read existing rating so we can compare and update.
@@ -610,19 +647,25 @@ def main():
                 should_write = new_rating != existing_rating
             else:
                 should_write = new_rating in VALID_RATINGS and new_rating != existing_rating
-            
+
             # Handle dry-run mode
             if should_write and new_rating in VALID_RATINGS:
                 if DRY_RUN:
                     try:
-                        print(f"  Would update rating: {existing_rating or 'None'} → {new_rating} ({source})")
+                        print(
+                            f"  Would update rating: {existing_rating or 'None'} → {new_rating} ({source})"
+                        )
                     except BrokenPipeError:
                         sys.exit(0)
                 else:
-                    success = write_rating_to_file(file_path, new_rating, audio=audio, force=args.force)
+                    success = write_rating_to_file(
+                        file_path, new_rating, audio=audio, force=args.force
+                    )
                     if success:
                         try:
-                            print(f"  Updated rating: {existing_rating or 'None'} → {new_rating} ({source})")
+                            print(
+                                f"  Updated rating: {existing_rating or 'None'} → {new_rating} ({source})"
+                            )
                         except BrokenPipeError:
                             sys.exit(0)
                         cache[cache_key] = new_rating
@@ -638,13 +681,15 @@ def main():
                         print(f"  No rating found")
                     except BrokenPipeError:
                         sys.exit(0)
-        
+
             # Print per-movie details only in verbose mode (otherwise it floods the console).
             if VERBOSE and PRINT_RATING_TO_CONSOLE:
                 if new_rating in VALID_RATINGS:
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
                         try:
-                            print(f"RATING={new_rating}: {_format_display_title(title, year)} ({source})")
+                            print(
+                                f"RATING={new_rating}: {_format_display_title(title, year)} ({source})"
+                            )
                             rating_console_lines += 1
                         except BrokenPipeError:
                             # Exit gracefully when output is piped to commands like head
@@ -663,13 +708,14 @@ def main():
     finally:
         save_cache(cache, cache_file)
         signal.signal(signal.SIGINT, previous_sigint_handler)
-     
+
     # Print summary
     try:
         print(f"\n\nProcessed: {processed_count} files")
         print("Ratings:", ", ".join(f"{k}={v}" for k, v in sorted(stats.items())))
     except BrokenPipeError:
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
