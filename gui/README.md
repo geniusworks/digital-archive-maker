@@ -1,4 +1,4 @@
-# Digital Archive Maker — Desktop App
+# Media Archive Maker — Desktop App
 
 Electron-based GUI wrapper for the `dam` CLI.
 

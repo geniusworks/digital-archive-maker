@@ -1,4 +1,4 @@
-# Contributing to Digital Archive Maker
+# Contributing to Media Archive Maker
 
 First off, thank you for considering contributing! 🎉
 
@@ -62,8 +62,8 @@ Ready to contribute code? See [Development Setup](#development-setup) below.
 
 ```bash
 # Clone the repository
-git clone https://github.com/geniusworks/digital-archive-maker.git
-cd digital-archive-maker
+git clone https://github.com/geniusworks/media-archive-maker.git
+cd media-archive-maker
 
 # Create virtual environment
 python3 -m venv venv

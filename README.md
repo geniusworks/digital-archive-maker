@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Digital Archive Maker Logo" width="320" />
+  <img src="assets/logo.png" alt="Media Archive Maker Logo" width="320" />
 </p>
 
 <p align="center">
@@ -8,8 +8,8 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 <div align="center">
 
-[![License](https://img.shields.io/github/license/geniusworks/digital-archive-maker?style=for-the-badge&label=License&labelColor=444444&color=007ec6)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/github/v/release/geniusworks/digital-archive-maker?style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](CHANGELOG.md)
+[![License](https://img.shields.io/github/license/geniusworks/media-archive-maker?style=for-the-badge&label=License&labelColor=444444&color=007ec6)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/github/v/release/geniusworks/media-archive-maker?style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg?style=for-the-badge&label=Platform&labelColor=444444&color=999999)](https://www.apple.com/macos/)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg?style=for-the-badge&label=Python&labelColor=444444&color=3776AB)](https://www.python.org/downloads/)
 
@@ -27,7 +27,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 ## About
 
-**Digital Archive Maker** does the heavy lifting for you — just insert a disc, and it handles the ripping, tagging, and organizing automatically. Your music and movies appear in your library with proper titles, album art, and descriptions — no manual typing required.
+**Media Archive Maker** does the heavy lifting for you — just insert a disc, and it handles the ripping, tagging, and organizing automatically. Your music and movies appear in your library with proper titles, album art, and descriptions — no manual typing required.
 
 **What it does:**
 - 🎵 **Rips your CDs** — Saves as high-quality FLAC with album art and metadata
@@ -44,8 +44,8 @@ Whether you're preserving a decades-old CD collection or archiving your favorite
 
 **Step 1: Clone and install**
 ```bash
-git clone https://github.com/geniusworks/digital-archive-maker.git
-cd digital-archive-maker
+git clone https://github.com/geniusworks/media-archive-maker.git
+cd media-archive-maker
 make install-deps        # creates venv and installs system deps + Python packages
 source venv/bin/activate  # activate the virtual environment
 pip install -e .          # installs the `dam` command
@@ -204,7 +204,7 @@ API keys are requested only when you use a feature that needs them — you're ne
 ## Project Structure
 
 ```
-digital-archive-maker/
+media-archive-maker/
 ├── dam/                # Shared library & unified CLI
 │   ├── cli.py          #   `dam` command entry point
 │   ├── config.py       #   Centralised configuration loader

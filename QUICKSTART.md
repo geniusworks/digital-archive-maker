@@ -1,4 +1,4 @@
-# Quick Start Guide
+# Media Archive Maker - Quick Start Guide
 
 Get from zero to ripping your first CD in under 10 minutes.
 
@@ -11,8 +11,8 @@ Get from zero to ripping your first CD in under 10 minutes.
 ## 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/geniusworks/digital-archive-maker.git
-cd digital-archive-maker
+git clone https://github.com/geniusworks/media-archive-maker.git
+cd media-archive-maker
 
 # Install system dependencies (audio/CD tools) — this creates the venv
 make install-deps
@@ -96,7 +96,7 @@ For seamless media management, add this function to your `~/.zshrc`:
 ```bash
 media() {
     local VENV_PATH="$HOME/venvs/media"
-    local REPO_PATH="$HOME/Herd/digital-archive-maker"
+    local REPO_PATH="$HOME/Herd/media-archive-maker"
     
     case "${1:-help}" in
         "sync"|"master-sync")

@@ -56,5 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library sync with explicit content filtering
 - TV show renaming and metadata tagging
 
-[Unreleased]: https://github.com/geniusworks/digital-archive-maker/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/geniusworks/digital-archive-maker/releases/tag/v0.1.0
+[Unreleased]: https://github.com/geniusworks/media-archive-maker/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/geniusworks/media-archive-maker/releases/tag/v0.1.0
