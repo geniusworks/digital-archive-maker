@@ -33,6 +33,7 @@ except ImportError:
 # Load language preferences from environment
 LANG_AUDIO = normalize_language_code(os.getenv("LANG_AUDIO", "en"))
 LANG_SUBTITLES = normalize_language_code(os.getenv("LANG_SUBTITLES", "en"))
+LANG_VIDEO = normalize_language_code(os.getenv("LANG_VIDEO", "en"))
 
 # Global flag for graceful cancellation
 CANCELLED = False
@@ -1041,6 +1042,21 @@ def main() -> int:
                 # 9)
                 titles = []
                 lines = info_res.stdout.split("\n")
+                
+                # Build a map of title_id -> video language
+                # MakeMKV stores video language in TINFO field 21 (or sometimes in the title name)
+                title_video_lang = {}
+                for line in lines:
+                    # Look for video stream info with language (field 21)
+                    if line.startswith("TINFO:") and ",21," in line:
+                        parts = line.split(",")
+                        if len(parts) >= 4:
+                            title_id = parts[0].split(":")[1]
+                            # Field 21 often contains language info
+                            lang = parts[3].strip('"')
+                            if lang and len(lang) == 2:  # ISO 639-2 language code
+                                title_video_lang[int(title_id)] = lang.lower()
+                
                 for line in lines:
                     # Look for duration info (field 9)
                     if line.startswith("TINFO:") and ",9," in line:
@@ -1055,15 +1071,26 @@ def main() -> int:
                                 if (
                                     total_seconds >= minlength
                                 ):  # Only consider titles longer than minlength
+                                    video_lang = title_video_lang.get(int(title_id), "")
                                     titles.append(
                                         (
                                             int(title_id),
                                             total_seconds,
                                             duration,
+                                            video_lang,
                                         )
                                     )
                             except ValueError:
                                 continue
+
+                # Filter titles by preferred video language if LANG_VIDEO is set and titles have language info
+                if LANG_VIDEO and any(t[3] for t in titles):  # t[3] is video_lang
+                    preferred_titles = [t for t in titles if t[3] and matches_language(t[3], LANG_VIDEO)]
+                    if preferred_titles:
+                        print(f"  → Preferring video language: {LANG_VIDEO.upper()}")
+                        titles = preferred_titles
+                    else:
+                        print(f"  → No titles found with language {LANG_VIDEO.upper()}, using all titles")
 
                 if titles:
                     # Sort by duration (longest first) and pick the main
