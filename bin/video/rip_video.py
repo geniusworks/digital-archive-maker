@@ -1121,7 +1121,7 @@ def main() -> int:
                             title_sizes = []
                             titles_to_check = titles  # Check all titles when index specified
 
-                            for title_id, _, _ in titles_to_check:
+                            for title_id, _, _, _ in titles_to_check:
                                 size_line = next(
                                     (
                                         line
