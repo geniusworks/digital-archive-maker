@@ -1044,15 +1044,15 @@ def main() -> int:
                 lines = info_res.stdout.split("\n")
                 
                 # Build a map of title_id -> video language
-                # MakeMKV stores video language in TINFO field 21 (or sometimes in the title name)
+                # MakeMKV stores video language in TINFO field 28
                 title_video_lang = {}
                 for line in lines:
-                    # Look for video stream info with language (field 21)
-                    if line.startswith("TINFO:") and ",21," in line:
+                    # Look for video stream info with language (field 28)
+                    if line.startswith("TINFO:") and ",28," in line:
                         parts = line.split(",")
                         if len(parts) >= 4:
                             title_id = parts[0].split(":")[1]
-                            # Field 21 often contains language info
+                            # Field 28 contains ISO 639-2 language code
                             lang = parts[3].strip('"')
                             if lang and len(lang) == 2:  # ISO 639-2 language code
                                 title_video_lang[int(title_id)] = lang.lower()
