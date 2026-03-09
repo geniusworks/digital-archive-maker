@@ -359,7 +359,7 @@ def interactive_subtitle_prompt(
         lang = video_stream.get("language", "und").upper()
         codec = video_stream.get("codec", "unknown")
         resolution = f"{video_stream.get('width', '?')}x{video_stream.get('height', '?')}"
-        print(f"🎥 Video: {codec.upper()} | {resolution} | {lang}")
+        print(f"🎥 Video: {codec.upper()} | {resolution} | {lang}\n")
 
     # Audio analysis
     print(f"🎵 Audio Tracks: {len(main_audio)}")
