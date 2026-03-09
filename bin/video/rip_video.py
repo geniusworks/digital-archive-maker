@@ -1168,19 +1168,19 @@ def main() -> int:
                                     main_title_id,
                                     main_duration,
                                     main_duration_str,
-                                ) = titles[0]
+                                ) = titles[0][:3]
                         else:
                             (
                                 main_title_id,
                                 main_duration,
                                 main_duration_str,
-                            ) = titles[0]
+                            ) = titles[0][:3]
                     else:
                         (
                             main_title_id,
                             main_duration,
                             main_duration_str,
-                        ) = titles[0]
+                        ) = titles[0][:3]
 
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
