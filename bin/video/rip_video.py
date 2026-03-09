@@ -294,7 +294,7 @@ def parse_disc_stream_info(info_output: str) -> tuple[list, list]:
 def interactive_subtitle_prompt(
     audio_streams: list,
     subtitle_streams: list,
-    video_stream: dict = None,
+    video_streams: list = None,
     source_name: str = "MKV File",
     main_title_id: str = None,
     preferred_audio_codec: str = "",
@@ -304,7 +304,7 @@ def interactive_subtitle_prompt(
     Args:
         audio_streams: List of audio stream dictionaries
         subtitle_streams: List of subtitle stream dictionaries
-        video_stream: Optional video stream dictionary with codec, resolution, language
+        video_streams: Optional list of video stream dictionaries with codec, resolution, language
         source_name: Name of the source (e.g., "Disc Analysis", "MKV File")
         main_title_id: If provided, filter streams for this title (disc mode)
         preferred_audio_codec: Optional preferred audio codec (e.g., "ac3", "dts")
@@ -354,12 +354,19 @@ def interactive_subtitle_prompt(
     print(f"\n🎬 {source_name}\n")
     print("=" * 50 + "\n")
 
-    # Video analysis
-    if video_stream:
-        lang = video_stream.get("language", "und").upper()
-        codec = video_stream.get("codec", "unknown")
-        resolution = f"{video_stream.get('width', '?')}x{video_stream.get('height', '?')}"
-        print(f"🎥 Video: {codec.upper()} | {resolution} | {lang}\n")
+    # Video analysis - show all video streams (multiple per language version)
+    if video_streams:
+        print(f"🎥 Video Streams: {len(video_streams)}")
+        for i, stream in enumerate(video_streams):
+            lang = stream.get("language", "und").upper()
+            codec = stream.get("codec", "unknown")
+            resolution = f"{stream.get('width', '?')}x{stream.get('height', '?')}"
+            marker = " 👉" if i == 0 else "   "
+            track_info = f"Track {i}: {codec.upper()} | {resolution} | {lang}"
+            if i == 0:
+                track_info += " ← SELECTED"
+            print(f"{marker}{track_info}")
+        print()
 
     # Audio analysis
     print(f"🎵 Audio Tracks: {len(main_audio)}")
@@ -566,17 +573,17 @@ def interactive_subtitle_prompt(
     }
 
 
-def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list, dict]:
+def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list, list]:
     """Analyze MKV file and return audio, subtitle, and video stream information"""
     try:
-        # Get video stream info
+        # Get ALL video streams (there can be multiple per language version)
         video_res = _run(
             [
                 "ffprobe",
                 "-v",
                 "error",
                 "-select_streams",
-                "v:0",
+                "v",  # Get ALL video streams, not just first
                 "-show_entries",
                 "stream=index,codec_name,width,height:stream_tags=language",
                 "-of",
@@ -586,19 +593,18 @@ def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list, dict]:
             capture=True,
         )
 
-        video_stream = None
+        video_streams = []
         for line in video_res.stdout.strip().split("\n"):
             if line.strip():
                 parts = line.split(",")
                 if len(parts) >= 3:
-                    video_stream = {
+                    video_streams.append({
                         "index": parts[0],
                         "codec": parts[1],
                         "width": parts[2] if len(parts) > 2 else "unknown",
                         "height": parts[3] if len(parts) > 3 else "unknown",
                         "language": parts[4] if len(parts) > 4 and parts[4] else "und",
-                    }
-                    break
+                    })
 
         # Get audio streams
         audio_res = _run(
@@ -660,11 +666,11 @@ def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list, dict]:
                         }
                     )
 
-        return audio_streams, subtitle_streams, video_stream
+        return audio_streams, subtitle_streams, video_streams
 
     except Exception as e:
         print(f"  ⚠️  Error analyzing streams: {e}")
-        return [], [], None
+        return [], [], []
 
 
 def extract_pgs_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
@@ -1262,7 +1268,7 @@ def main() -> int:
                         subtitle_config = interactive_subtitle_prompt(
                             audio_streams,
                             subtitle_streams,
-                            video_stream=None,  # Video stream not available in disc mode yet
+                            video_streams=[],  # Video streams not available in disc mode yet
                             source_name="Disc Analysis (Main Feature)",
                             main_title_id=str(main_title_id),
                             preferred_audio_codec=preferred_audio_codec,
@@ -1647,7 +1653,7 @@ def main() -> int:
         main_mkv = max(mkvs, key=lambda p: p.stat().st_size)
 
         # Analyze streams
-        audio_streams, subtitle_streams, video_stream = analyze_mkv_streams(main_mkv)
+        audio_streams, subtitle_streams, video_streams = analyze_mkv_streams(main_mkv)
 
         # Check if all preferred language (movie + audio + soft subs)
         all_preferred_audio = all(
@@ -1676,7 +1682,7 @@ def main() -> int:
             subtitle_config = interactive_subtitle_prompt(
                 audio_streams,
                 subtitle_streams,
-                video_stream=video_stream,
+                video_streams=video_streams,
                 source_name=f"Analyzing {main_mkv.name}",
                 preferred_audio_codec=preferred_audio_codec,
             )
