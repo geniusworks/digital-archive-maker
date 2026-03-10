@@ -55,14 +55,16 @@ The result: Your entire media collection becomes instantly accessible from any d
 ```bash
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
-make install-deps        # creates venv and installs system deps + Python packages
+make install-deps        # creates venv, auto-configures pip, installs everything
 source venv/bin/activate  # activate the virtual environment
-pip install -e .          # installs the `dam` command
 ```
+
+*The `make install-deps` command now handles PEP 668 compatibility automatically by configuring the virtual environment.*
 
 *If you prefer not to use `make`, create the venv manually:*
 ```bash
 python3 -m venv venv
+echo "break-system-packages = true" > venv/pip.conf  # Configure for modern Python
 source venv/bin/activate
 pip install -r requirements.txt
 pip install -e .

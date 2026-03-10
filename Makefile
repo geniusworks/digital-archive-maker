@@ -46,10 +46,14 @@ install-deps:
 		echo "Creating virtual environment..."; \
 		python3 -m venv venv; \
 	fi
+	@echo "Configuring virtual environment for modern Python (PEP 668 compatibility)..."
+	@echo "break-system-packages = true" > venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
 	@./venv/bin/python -m pip install --upgrade pip
 	@./venv/bin/python -m pip install -r requirements.txt
+	@./venv/bin/python -m pip install -e .
 	@echo "Virtual environment ready. Activate with: source venv/bin/activate"
+	@echo "Package installed as 'dam' command. Try: dam check"
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"
