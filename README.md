@@ -42,8 +42,12 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 - 🎵 **Digitizes CDs** — Creates lossless FLAC files with complete album info and cover art
 - 📀 **Preserves DVDs & Blu-rays** — Extracts movies with correct audio tracks and subtitles
 - 🏷️ **Enriches metadata** — Adds artist bios, movie descriptions, genre tags, and ratings
-- �️ **Organizes everything** — Creates a browsable, searchable library structure
+-️ **Organizes everything** — Creates a browsable, searchable library structure
 - 📱 **Integrates with media servers** — Works seamlessly with Jellyfin, Plex, and Emby
+
+**Key Principles:**
+- **High-quality archival** — Preserves original quality while optimizing for modern use
+- **Media server ready** — Prepares files with metadata and organization for Jellyfin/Plex/Emby
 
 The result: Your entire media collection becomes instantly accessible from any device, searchable by any criteria, and safely backed up on your own hardware—no subscriptions required.
 
