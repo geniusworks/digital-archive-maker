@@ -75,6 +75,11 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 - **PGS subtitles:** Option to burn or extract for OCR
 - **Jellyfin ready:** Auto-detected subtitle files
 
+### ✅ Resume Processing
+- **Skip disc scanning:** If MKV files exist, skips MakeMKV step
+- **Re-encode only:** Converts existing MKV to MP4 without re-ripping
+- **Preserve subtitles:** Uses existing .sup/.srt files when available
+
 ---
 
 ## 🎛️ Control Variables
@@ -496,6 +501,40 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
 
 - **Cleanup**. Once both MP4s are confirmed, archive or remove any unused `.mkv` or `.backfill_ocr_*` files.
 
+## 🔄 Re-processing Existing Files
+
+### Skip Disc Scanning
+If you've already ripped MKV files, the script automatically skips MakeMKV:
+
+```bash
+# Works with existing MKV files - no disc scanning
+make rip-movie TITLE="Finding Dory" YEAR=2011
+```
+
+The script will:
+1. Detect existing MKV files in the Blurays/ folder
+2. Skip MakeMKV disc scanning entirely
+3. Process existing MKV files directly
+
+### Re-encode Only (MP4 Regeneration)
+If you have an MKV and generated subtitles, but want to re-encode the MP4:
+
+```bash
+# Delete the MP4 but keep MKV and .sup files
+rm "/Users/martin/Movies/Rips/Movies/Finding Dory (2016)/Finding Dory (2016).mp4"
+
+# Re-run - will skip disc scanning and re-encode from MKV
+make rip-movie TITLE="Finding Dory" YEAR=2011
+```
+
+### What Gets Preserved
+- **MKV files**: Never deleted unless you manually remove them
+- **Subtitle files** (.sup, .srt): Preserved and reused
+- **Disc scanning**: Skipped when MKV files exist
+- **Time savings**: 60-80% faster by skipping MakeMKV
+
+---
+
 ## 🌍 Multilingual Language Support
 
 The ripping system supports 186+ languages with automatic track selection based on your preferences.
@@ -508,6 +547,7 @@ Set your preferred languages in `.env`:
 # Language preferences (ISO 639-1 codes)
 LANG_AUDIO=en          # Preferred audio track language  
 LANG_SUBTITLES=en      # Preferred subtitle track language
+LANG_VIDEO=en          # Preferred video/movie language (for multi-language discs)
 
 # Examples:
 # LANG_AUDIO=fr        # French audio preferred
@@ -532,19 +572,61 @@ The system handles all ISO 639-1 and ISO 639-2 language codes, including:
 - Text subtitles preferred over image subtitles  
 - First matching track of preferred format
 
+**Video tracks** (seamlessly branched discs):
+- Uses LANG_VIDEO preference when available
+- Falls back to duration/size selection
+- **Note**: MakeMKV may report all titles as same language regardless of actual content
+
 ### Visual Indicators
 
 The interactive prompt shows which tracks will be selected:
 
 ```
+🎥 Video Streams: 2
+ 👉Track 0: H264 | 1920x1080 | ENG ← SELECTED
+   Track 1: MJPEG | 640x360 | UND
+
 🎵 Audio Tracks: 2
  👉 Track 0: ENG (dts, 5.1ch) ← SELECTED
-    Track 1: ENG (dts, 2.0ch)
+    Track 1: ENG (ac3, 2.0ch)
 
 📝 Subtitle Tracks: 2  
  👉 Track 0: ENG (subrip) ← SELECTED
     Track 1: ENG (hdmv_pgs_subtitle)
 ```
+
+### 🚨 Seamless Branching Discs
+
+Some Blu-ray discs (especially Disney/Pixar) use "seamless branching" to store multiple language versions of the same movie:
+
+**Problem**: MakeMKV reports all titles as the same language (e.g., "eng") even when they contain different language versions.
+
+**Solution**: Use `TITLE_INDEX` for manual selection:
+
+```bash
+# See all available titles with precise sizes
+make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0
+
+# Try different indices to find the correct language
+make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1
+make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2
+```
+
+The script will display:
+```
+Available titles (sorted by size):
+👉 Title 8: 23.953 GB (index 0)
+   Title 7: 23.953 GB (index 1)  
+   Title 6: 23.953 GB (index 2)
+
+Selected title: 8 (23.953 GB, index 0)
+```
+
+**Tips**:
+- All titles may appear identical in MakeMKV metadata
+- Size differences are usually minimal (few MB)
+- Test each index to find the correct language version
+- Once identified, note the correct index for future use
 
 ## Audio/subtitle language handling (English preference)
 When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
