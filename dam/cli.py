@@ -79,7 +79,21 @@ def check(
     else:
         warning(".env not found. Run: cp .env.sample .env")
 
-    # Summary - Dependencies check first
+    # API keys
+    heading("API keys")
+    api_missing = missing_api_keys()
+    all_api_keys = ["ACOUSTID_API_KEY", "GENIUS_API_TOKEN", "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "TMDB_API_KEY", "OMDB_API_KEY"]
+    
+    for k in all_api_keys:
+        if k in api_missing:
+            console.print(f" ⚠ {k} (not configured)")
+        else:
+            console.print(f" ✓ {k}")
+    
+    if not api_missing:
+        success("All API keys configured.")
+
+    # Summary - After all checks are complete
     console.print()
     required_missing = [d for d in missing if not d.optional]
     if not required_missing and not py_missing:
@@ -94,17 +108,6 @@ def check(
         total = len(required_missing) + len(py_missing)
         console.print(f"[warning]{total} required item(s) missing.[/]")
         console.print()
-
-    # API keys - after dependencies check
-    heading("API keys")
-    api_missing = missing_api_keys()
-    if api_missing:
-        for k in api_missing:
-            console.print(f"  [warning]⚠[/] {k} — not configured")
-        if not required_missing and not py_missing:
-            info("Run [bold]dam config[/] to set up API keys interactively.")
-    else:
-        success("All API keys configured.")
 
     # Offer to install
     if install and missing:
