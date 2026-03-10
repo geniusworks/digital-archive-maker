@@ -95,6 +95,10 @@ def check(
     if not required_missing and not py_missing:
         console.print("[success]All required dependencies are satisfied![/]")
         console.print()
+        console.print("[dim]💡 Next steps:[/]")
+        console.print("[dim]   • CLI: Use 'dam' commands for media processing[/]")
+        console.print("[dim]   • GUI: Run 'cd gui && npm start' for desktop app[/]")
+        console.print()
     else:
         total = len(required_missing) + len(py_missing)
         console.print(f"[warning]{total} required item(s) missing.[/]")
