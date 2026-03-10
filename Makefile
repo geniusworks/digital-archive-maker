@@ -51,20 +51,33 @@ install-deps:
 	@echo "[global]" > venv/pip.conf
 	@echo "break-system-packages = true" >> venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
-	@printf "  → Upgrading pip... " && \
+	@echo "  → Upgrading pip..." && \
 	./venv/bin/python -m pip install --upgrade pip --quiet && \
-	echo "✓" && \
-	printf "  → Installing requirements... " && \
+	echo "  ✓" && \
+	echo "  → Installing requirements..." && \
 	./venv/bin/python -m pip install -r requirements.txt --quiet && \
-	echo "✓" && \
-	printf "  → Installing media-archive-maker... " && \
+	echo "  ✓" && \
+	echo "  → Installing media-archive-maker..." && \
 	./venv/bin/python -m pip install -e . --quiet && \
-	echo "✓" && \
+	echo "  ✓" && \
 	echo "" && \
 	echo "Virtual environment ready. Activate with: source venv/bin/activate" && \
 	echo "Package installed as 'dam' command. Running setup check..." && \
 	echo "" && \
 	./venv/bin/python -m dam.cli check
+	@echo ""
+	@echo "Installing GUI dependencies (Node.js/Electron)..."
+	@if ! command -v node >/dev/null 2>&1; then \
+		echo "Installing Node.js..."; \
+		brew install node || true; \
+	else \
+		echo "Node.js already installed"; \
+	fi
+	@echo "Installing GUI npm packages..."
+	@cd gui && npm install --silent
+	@echo "✓ GUI dependencies installed"
+	@echo ""
+	@echo "Setup complete! Use 'dam' for CLI or 'cd gui && npm start' for GUI"
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"
