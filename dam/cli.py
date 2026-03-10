@@ -94,9 +94,11 @@ def check(
     required_missing = [d for d in missing if not d.optional]
     if not required_missing and not py_missing:
         console.print("[success]All required dependencies are satisfied![/]")
+        console.print()
     else:
         total = len(required_missing) + len(py_missing)
         console.print(f"[warning]{total} required item(s) missing.[/]")
+        console.print()
 
     # Offer to install
     if install and missing:
@@ -106,6 +108,7 @@ def check(
             success(f"Installed {n_installed} package(s).")
         if n_skipped:
             info(f"{n_skipped} item(s) need manual installation (see above).")
+        console.print()
 
 
 # ── dam config ─────────────────────────────────────────────────────────────
