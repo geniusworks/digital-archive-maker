@@ -33,6 +33,7 @@ help:
 	@echo "  install-test-deps  Install test dependencies"
 
 install-deps:
+	@echo ""
 	@echo "Installing audio/CD ripping tools via Homebrew..."
 	@for p in abcde flac imagemagick jq curl wget ffmpeg; do \
 		if ! brew list $$p >/dev/null 2>&1; then \
@@ -50,15 +51,15 @@ install-deps:
 	@echo "[global]" > venv/pip.conf
 	@echo "break-system-packages = true" >> venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
-	@echo "  → Upgrading pip..." && \
+	@printf "  → Upgrading pip... " && \
 	./venv/bin/python -m pip install --upgrade pip --quiet && \
-	echo "  ✓" && \
-	echo "  → Installing requirements..." && \
+	echo "✓" && \
+	printf "  → Installing requirements... " && \
 	./venv/bin/python -m pip install -r requirements.txt --quiet && \
-	echo "  ✓" && \
-	echo "  → Installing media-archive-maker..." && \
+	echo "✓" && \
+	printf "  → Installing media-archive-maker... " && \
 	./venv/bin/python -m pip install -e . --quiet && \
-	echo "  ✓" && \
+	echo "✓" && \
 	echo "" && \
 	echo "Virtual environment ready. Activate with: source venv/bin/activate" && \
 	echo "Package installed as 'dam' command. Running setup check..." && \
