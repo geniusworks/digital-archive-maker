@@ -45,10 +45,6 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 -️ **Organizes everything** — Creates a browsable, searchable library structure
 - 📱 **Integrates with media servers** — Works seamlessly with Jellyfin, Plex, and Emby
 
-**Key Principles:**
-- **High-quality archival** — Preserves original quality while optimizing for modern use
-- **Media server ready** — Prepares files with metadata and organization for Jellyfin/Plex/Emby
-
 The result: Your entire media collection becomes instantly accessible from any device, searchable by any criteria, and safely backed up on your own hardware—no subscriptions required.
 
 ---
