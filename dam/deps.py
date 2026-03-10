@@ -199,7 +199,7 @@ def check_all(
     missing: list[Dependency] = []
 
     if verbose:
-        heading("Checking dependencies")
+        heading("Checking system dependencies")
 
     for dep in deps:
         ok = dep.is_installed()
@@ -217,7 +217,7 @@ def check_all(
             if not is_ok and dep.optional:
                 detail += " (optional)"
             rows.append((dep.name, status, detail))
-        status_table(rows, title="System Dependencies")
+        status_table(rows)
 
     return installed, missing
 
