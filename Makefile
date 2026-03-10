@@ -50,9 +50,16 @@ install-deps:
 	@echo "[global]" > venv/pip.conf
 	@echo "break-system-packages = true" >> venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
-	@./venv/bin/python -m pip install --upgrade pip
-	@./venv/bin/python -m pip install -r requirements.txt
-	@./venv/bin/python -m pip install -e .
+	@echo -n "  → Upgrading pip... "
+	@./venv/bin/python -m pip install --upgrade pip --quiet
+	@echo "✓"
+	@echo -n "  → Installing requirements... "
+	@./venv/bin/python -m pip install -r requirements.txt --quiet
+	@echo "✓"
+	@echo -n "  → Installing media-archive-maker... "
+	@./venv/bin/python -m pip install -e . --quiet
+	@echo "✓"
+	@echo ""
 	@echo "Virtual environment ready. Activate with: source venv/bin/activate"
 	@echo "Package installed as 'dam' command. Try: dam check"
 
