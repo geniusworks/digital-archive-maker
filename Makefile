@@ -35,23 +35,16 @@ help:
 install-deps:
 	@echo ""
 	@echo "Installing audio/CD ripping tools via Homebrew..."
-	@for p in abcde flac imagemagick jq curl wget ffmpeg; do \
+	@for p in abcde flac imagemagick jq curl wget ffmpeg node; do \
 		if ! brew list $$p >/dev/null 2>&1; then \
-		  echo "brew install $$p"; brew install $$p || true; \
+			echo "brew install $$p"; brew install $$p || true; \
 		else \
-		  echo "Already installed: $$p"; \
+			echo "Already installed: $$p"; \
 		fi; \
 	  done
-	@echo "Installing GUI dependencies (Node.js/Electron)..."
-	@if ! command -v node >/dev/null 2>&1; then \
-		echo "Installing Node.js..."; \
-		brew install node || true; \
-	else \
-		echo "Node.js already installed"; \
-	fi
 	@echo "Installing GUI npm packages..."
-	@cd gui && npm install --silent
-	@echo "✓ GUI dependencies installed"
+	@cd gui && npm install --progress=false
+	@echo "✓ GUI dependencies installed (including Electron)"
 	@echo "Installing Python deps from requirements.txt..."
 	@if [ ! -d "venv" ]; then \
 		echo "Creating virtual environment..."; \
