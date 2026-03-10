@@ -527,6 +527,13 @@ rm "/Users/martin/Movies/Rips/Movies/Finding Dory (2016)/Finding Dory (2016).mp4
 make rip-movie TITLE="Finding Dory" YEAR=2011
 ```
 
+**⚠️ Limitation**: If you need to change which title/language was ripped, you must delete the MKV files first:
+```bash
+# Wrong language? Delete MKV and re-rip with TITLE_INDEX
+rm "/Users/martin/Movies/Rips/Blurays/Finding Dory (2016)"/*.mkv
+make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0
+```
+
 ### What Gets Preserved
 - **MKV files**: Never deleted unless you manually remove them
 - **Subtitle files** (.sup, .srt): Preserved and reused
@@ -601,16 +608,23 @@ Some Blu-ray discs (especially Disney/Pixar) use "seamless branching" to store m
 
 **Problem**: MakeMKV reports all titles as the same language (e.g., "eng") even when they contain different language versions.
 
-**Solution**: Use `TITLE_INDEX` for manual selection:
+**Solution**: Use `TITLE_INDEX` for manual selection **BEFORE ripping**:
 
 ```bash
-# See all available titles with precise sizes
+# First, delete any existing MKV files if wrong language was ripped
+rm "/Users/martin/Movies/Rips/Blurays/Finding Dory (2016)"/*.mkv
+
+# Then use TITLE_INDEX to select correct title during ripping
 make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0
 
 # Try different indices to find the correct language
 make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1
 make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2
 ```
+
+**⚠️ Important**: `TITLE_INDEX` only works during disc ripping, not with existing MKV files. If you already have the wrong language MKV:
+1. Delete the incorrect MKV files
+2. Re-run with `TITLE_INDEX` specified
 
 The script will display:
 ```
@@ -627,6 +641,7 @@ Selected title: 8 (23.953 GB, index 0)
 - Size differences are usually minimal (few MB)
 - Test each index to find the correct language version
 - Once identified, note the correct index for future use
+- **TITLE_INDEX controls which title gets ripped from the disc**
 
 ## Audio/subtitle language handling (English preference)
 When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
