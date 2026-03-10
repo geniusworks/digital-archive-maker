@@ -169,7 +169,7 @@ graph TD
 ```
 
 ```bash
-make rip-movie TITLE="The Goonies" YEAR=1985 TYPE=bluray
+make rip-movie TITLE="Adventure Movie" YEAR=1985 TYPE=bluray
 ```
 **Result:** MP4 + external SRT subtitles
 
@@ -192,7 +192,7 @@ graph TD
 ```
 
 ```bash
-BURN_SUBTITLES=true make rip-movie TITLE="Amélie" YEAR=2001 TYPE=bluray
+BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2001 TYPE=bluray
 ```
 **Result:** MP4 with burned subtitles + external SRT
 
@@ -211,7 +211,7 @@ graph TD
 ```
 
 ```bash
-make rip-movie TITLE="Silent Running" YEAR=1972 TYPE=bluray
+make rip-movie TITLE="Classic Sci-Fi" YEAR=1972 TYPE=bluray
 ```
 **Result:** Compressed MP4 + external SRT (if >10GB)
 
@@ -456,13 +456,13 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
 
 - **Rip both long titles in one pass**. Increase `MINLENGTH` so short extras are skipped while the main features are kept. Example:
   ```bash
-  MINLENGTH=3000 make rip-video TYPE=dvd TITLE="Psycho Double Feature" YEAR=1985
+  MINLENGTH=3000 make rip-video TYPE=dvd TITLE="Horror Double Feature" YEAR=1985
   ```
-  This writes every qualifying `.mkv` to `${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)/` for later processing.
+  This writes every qualifying `.mkv` to `${LIBRARY_ROOT}/DVDs/Horror Double Feature (1985)/` for later processing.
 
 - **Identify which MKV is which**. Durations usually match published runtimes. From the staging folder:
   ```bash
-  cd "${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)"
+  cd "${LIBRARY_ROOT}/DVDs/Horror Double Feature (1985)"
   for f in *.mkv; do
     echo "== $f =="
     ffprobe -v error -show_entries format=duration:format_tags=title -of json "$f"
@@ -478,24 +478,24 @@ Some discs ship with two full movies or a mini-series. Use these tips when rippi
     --audio-copy-mask ac3,eac3,dts --audio-fallback aac
   )
 
-  mkdir -p "${LIBRARY_ROOT}/Movies/Psycho III (1986)"
+  mkdir -p "${LIBRARY_ROOT}/Movies/Horror Film III (1986)"
   HandBrakeCLI \
     -i "A3_t00.mkv" \
-    -o "${LIBRARY_ROOT}/Movies/Psycho III (1986)/Psycho III (1986).mp4" \
+    -o "${LIBRARY_ROOT}/Movies/Horror Film III (1986)/Horror Film III (1986).mp4" \
     "${HB_OPTS[@]}"
   ```
-  Repeat for the second feature (e.g., `Psycho IV The Beginning (1990)`), adjusting input filenames and target folders.
+  Repeat for the second feature (e.g., `Horror Film IV The Beginning (1990)`), adjusting input filenames and target folders.
 
 - **Backfill subtitles per film**. After encoding, call the helper twice, pointing `SRC_DIR` to the shared staging folder but `DST_DIR` to each movie folder:
   ```bash
   make backfill-subs \
-    SRC_DIR="${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)" \
-    DST_DIR="${LIBRARY_ROOT}/Movies/Psycho III (1986)" \
+    SRC_DIR="${LIBRARY_ROOT}/DVDs/Horror Double Feature (1985)" \
+    DST_DIR="${LIBRARY_ROOT}/Movies/Horror Film III (1986)" \
     INPLACE=yes DEFAULT=yes
 
   make backfill-subs \
-    SRC_DIR="${LIBRARY_ROOT}/DVDs/Psycho Double Feature (1985)" \
-    DST_DIR="${LIBRARY_ROOT}/Movies/Psycho IV The Beginning (1990)" \
+    SRC_DIR="${LIBRARY_ROOT}/DVDs/Horror Double Feature (1985)" \
+    DST_DIR="${LIBRARY_ROOT}/Movies/Horror Film IV The Beginning (1990)" \
     INPLACE=yes DEFAULT=yes
   ```
 
@@ -508,7 +508,7 @@ If you've already ripped MKV files, the script automatically skips MakeMKV:
 
 ```bash
 # Works with existing MKV files - no disc scanning
-make rip-movie TITLE="Finding Dory" YEAR=2011
+make rip-movie TITLE="Movie Title" YEAR=2011
 ```
 
 The script will:
@@ -521,17 +521,17 @@ If you have an MKV and generated subtitles, but want to re-encode the MP4:
 
 ```bash
 # Delete the MP4 but keep MKV and .sup files
-rm "/Users/martin/Movies/Rips/Movies/Finding Dory (2016)/Finding Dory (2016).mp4"
+rm "/Users/martin/Movies/Rips/Movies/Movie Title (2016)/Movie Title (2016).mp4"
 
 # Re-run - will skip disc scanning and re-encode from MKV
-make rip-movie TITLE="Finding Dory" YEAR=2011
+make rip-movie TITLE="Movie Title" YEAR=2011
 ```
 
 **⚠️ Limitation**: If you need to change which title/language was ripped, you must delete the MKV files first:
 ```bash
 # Wrong language? Delete MKV and re-rip with TITLE_INDEX
-rm "/Users/martin/Movies/Rips/Blurays/Finding Dory (2016)"/*.mkv
-make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0
+rm "/Users/martin/Movies/Rips/Blurays/Movie Title (2016)"/*.mkv
+make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=0
 ```
 
 ### What Gets Preserved
@@ -612,14 +612,14 @@ Some Blu-ray discs (especially Disney/Pixar) use "seamless branching" to store m
 
 ```bash
 # First, delete any existing MKV files if wrong language was ripped
-rm "/Users/martin/Movies/Rips/Blurays/Finding Dory (2016)"/*.mkv
+rm "/Users/martin/Movies/Rips/Blurays/Movie Title (2016)"/*.mkv
 
 # Then use TITLE_INDEX to select correct title during ripping
-make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0
+make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=0
 
 # Try different indices to find the correct language
-make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1
-make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2
+make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=1
+make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=2
 ```
 
 **⚠️ Important**: `TITLE_INDEX` only works during disc ripping, not with existing MKV files. If you already have the wrong language MKV:
