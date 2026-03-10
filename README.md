@@ -64,7 +64,7 @@ source venv/bin/activate  # activate the virtual environment
 *If you prefer not to use `make`, create the venv manually:*
 ```bash
 python3 -m venv venv
-echo "break-system-packages = true" > venv/pip.conf  # Configure for modern Python
+echo -e "[global]\nbreak-system-packages = true" > venv/pip.conf  # Configure for modern Python
 source venv/bin/activate
 pip install -r requirements.txt
 pip install -e .

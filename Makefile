@@ -47,7 +47,8 @@ install-deps:
 		python3 -m venv venv; \
 	fi
 	@echo "Configuring virtual environment for modern Python (PEP 668 compatibility)..."
-	@echo "break-system-packages = true" > venv/pip.conf
+	@echo "[global]" > venv/pip.conf
+	@echo "break-system-packages = true" >> venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
 	@./venv/bin/python -m pip install --upgrade pip
 	@./venv/bin/python -m pip install -r requirements.txt
