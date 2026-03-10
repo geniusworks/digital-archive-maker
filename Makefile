@@ -43,7 +43,7 @@ install-deps:
 		fi; \
 	  done
 	@echo "Installing GUI npm packages..."
-	@cd gui && npm install --progress=false
+	@cd gui && npm install --silent
 	@echo "✓ GUI dependencies installed (including Electron)"
 	@echo "Installing Python deps from requirements.txt..."
 	@if [ ! -d "venv" ]; then \
