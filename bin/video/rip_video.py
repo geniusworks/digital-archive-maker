@@ -1205,15 +1205,26 @@ def main() -> int:
                                     t[2] for t in titles if t[0] == main_title_id
                                 )
 
-                                size_desc = (
-                                    "largest"
-                                    if args.title_index == 0
-                                    else f"{args.title_index + 1}{'st' if args.title_index == 1 else 'nd' if args.title_index == 2 else 'rd' if args.title_index == 3 else 'th'} largest"
-                                )
+                                # Show all available titles with their sizes for manual selection
+                                print(f"\nAvailable titles (sorted by size):")
+                                for i, (tid, size_gb) in enumerate(title_sizes):
+                                    marker = "👉" if i == args.title_index else "   "
+                                    print(f"{marker} Title {tid}: {size_gb:.3f} GB (index {i})")
+
                                 print(
-                                    f"Selected {size_desc} title: {main_title_id} ({title_sizes[args.title_index][1]} GB)"
+                                    f"\nSelected title: {main_title_id} ({title_sizes[args.title_index][1]:.3f} GB, index {args.title_index})"
                                 )
                             else:
+                                # No title_index specified and multiple same-duration titles
+                                # Warn user and suggest using TITLE_INDEX
+                                print(f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:")
+                                for i, (tid, seconds, duration, _) in enumerate(same_duration_titles):
+                                    print(f"   Title {tid}: {duration}")
+                                print(f"\n💡 Use TITLE_INDEX to select a specific title:")
+                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # First")
+                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Second")
+                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Third")
+                                print(f"\n🔄 Defaulting to first title (may not be desired language version)")
                                 (
                                     main_title_id,
                                     main_duration,
