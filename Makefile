@@ -50,18 +50,20 @@ install-deps:
 	@echo "[global]" > venv/pip.conf
 	@echo "break-system-packages = true" >> venv/pip.conf
 	@echo "Activating virtual environment and installing packages..."
-	@echo -n "  → Upgrading pip... "
-	@./venv/bin/python -m pip install --upgrade pip --quiet
-	@echo "✓"
-	@echo -n "  → Installing requirements... "
-	@./venv/bin/python -m pip install -r requirements.txt --quiet
-	@echo "✓"
-	@echo -n "  → Installing media-archive-maker... "
-	@./venv/bin/python -m pip install -e . --quiet
-	@echo "✓"
-	@echo ""
-	@echo "Virtual environment ready. Activate with: source venv/bin/activate"
-	@echo "Package installed as 'dam' command. Try: dam check"
+	@echo "  → Upgrading pip..." && \
+	./venv/bin/python -m pip install --upgrade pip --quiet && \
+	echo "  ✓" && \
+	echo "  → Installing requirements..." && \
+	./venv/bin/python -m pip install -r requirements.txt --quiet && \
+	echo "  ✓" && \
+	echo "  → Installing media-archive-maker..." && \
+	./venv/bin/python -m pip install -e . --quiet && \
+	echo "  ✓" && \
+	echo "" && \
+	echo "Virtual environment ready. Activate with: source venv/bin/activate" && \
+	echo "Package installed as 'dam' command. Running setup check..." && \
+	echo "" && \
+	./venv/bin/python -m dam.cli check
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"
