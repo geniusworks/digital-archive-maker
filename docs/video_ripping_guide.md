@@ -643,6 +643,37 @@ Selected title: 8 (23.953 GB, index 0)
 - Once identified, note the correct index for future use
 - **TITLE_INDEX controls which title gets ripped from the disc**
 
+### ✅ Manual Verification (Recommended)
+
+Always verify your ripped content, especially for seamlessly branched discs:
+
+**Quick Language Check**:
+```bash
+# Check audio language in final MP4
+ffprobe -v error -select_streams a:0 -show_entries stream_tags=language -of csv=p=0 "movie.mp4"
+
+# Sample a few seconds to verify language
+ffplay -ss 00:05:00 -t 00:00:10 "movie.mp4"
+```
+
+**Complete Verification Workflow**:
+1. **During Ripping**: Watch for the title selection output and note which index was chosen
+2. **After MKV**: Sample 30 seconds from beginning, middle, and end
+3. **After MP4**: Verify audio language and subtitle functionality
+4. **Before Archiving**: Do a full playback check of critical scenes
+
+**Red Flags to Watch For**:
+- Wrong spoken language (French instead of English)
+- Mismatched subtitles (subs don't match audio)
+- Audio/video sync issues
+- Missing subtitle tracks
+
+**When to Re-rip**:
+- Wrong language version detected
+- Corrupted playback
+- Missing subtitle tracks
+- Poor video quality
+
 ## Audio/subtitle language handling (English preference)
 When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
 
