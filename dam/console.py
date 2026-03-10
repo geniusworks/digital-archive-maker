@@ -64,8 +64,8 @@ def kv(key: str, value: str, indent: int = 2) -> None:
 
 def status_table(rows: list[tuple[str, str, str]], title: str = "") -> None:
     """Print a status table: [(name, status_emoji, detail), ...]."""
-    table = Table(title=title, show_header=False, box=None, padding=(0, 2))
-    table.add_column("Status", width=3)
+    table = Table(title=title, show_header=False, box=None, padding=(0, 1))
+    table.add_column("Status", width=2)
     table.add_column("Item", style="white")
     table.add_column("Detail", style="muted")
     for name, status, detail in rows:
