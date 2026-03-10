@@ -85,7 +85,6 @@ def check(
     if api_missing:
         for k in api_missing:
             console.print(f"  [warning]⚠[/] {k} — not configured")
-        info("Run [bold]dam config[/] to set up API keys interactively.")
     else:
         success("All API keys configured.")
 
@@ -95,9 +94,10 @@ def check(
     if not required_missing and not py_missing:
         console.print("[success]All required dependencies are satisfied![/]")
         console.print()
-        console.print("[dim]💡 Next steps:[/]")
-        console.print("[dim]   • CLI: Use 'dam' commands for media processing[/]")
-        console.print("[dim]   • GUI: Run 'cd gui && npm start' for desktop app[/]")
+        console.print("💡 Next steps:")
+        console.print("   • Run 'dam config' to set up API keys interactively")
+        console.print("   • CLI: Use 'dam' commands for media processing")
+        console.print("   • GUI: Run 'cd gui && npm start' for desktop app")
         console.print()
     else:
         total = len(required_missing) + len(py_missing)
