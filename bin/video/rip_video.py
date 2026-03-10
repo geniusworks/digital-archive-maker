@@ -1172,16 +1172,20 @@ def main() -> int:
                                     (
                                         line
                                         for line in info_res.stdout.split("\n")
-                                        if f"TINFO:{title_id},10," in line
+                                        if f"TINFO:{title_id},11," in line
                                     ),
                                     None,
                                 )
                                 if size_line:
+                                    # Parse exact bytes string like "25717678080"
                                     size_str = size_line.split(",")[3].strip('"')
-                                    # Parse size string like "19.0 GB" or "23.8 GB"
-                                    if "GB" in size_str:
-                                        size_gb = float(size_str.replace(" GB", ""))
+                                    try:
+                                        size_bytes = int(size_str)
+                                        # Convert to GB for display, but keep precision
+                                        size_gb = size_bytes / (1024**3)
                                         title_sizes.append((title_id, size_gb))
+                                    except ValueError:
+                                        pass
 
                             if title_sizes:
                                 # Sort by size (largest first) and pick by index
