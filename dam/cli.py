@@ -96,7 +96,7 @@ def check(
         console.print()
         console.print("💡 Next steps:")
         console.print("   • Run 'dam config' to set up API keys interactively")
-        console.print("   • CLI: Use 'dam' commands for media processing")
+        console.print("   • CLI: Use 'dam' commands for media processing ('dam --help' for commands)")
         console.print("   • GUI: Run 'cd gui && npm start' for desktop app")
         console.print()
     else:
