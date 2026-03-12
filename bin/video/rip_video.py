@@ -1139,18 +1139,20 @@ def main() -> int:
                         print(f"  → No titles found with language {LANG_VIDEO.upper()}, using all titles")
 
                 if titles:
-                    # Sort by duration (longest first) and pick the main
-                    # feature
+                    # Detect seamless branching: multiple titles with same duration and similar sizes
+                    # Sort by duration (longest first) and pick the main feature
                     titles.sort(key=lambda x: x[1], reverse=True)
 
-                    # If multiple titles have same duration (within 1 minute),
-                    # pick the larger one
+                    # If multiple titles have same duration (within 1 minute), detect seamless branching
                     if len(titles) > 1:
                         longest_duration = titles[0][1]
                         same_duration_titles = [
                             t for t in titles if abs(t[1] - longest_duration) <= 60
                         ]
 
+                        # Detect seamless branching: 3+ titles with identical duration
+                        is_seamless_branching = len(same_duration_titles) >= 3
+                        
                         # Get sizes for size-based selection when title_index > 0
                         # or when there are same-duration titles
                         if args.title_index > 0 or len(same_duration_titles) > 1:
@@ -1188,8 +1190,14 @@ def main() -> int:
                                         pass
 
                             if title_sizes:
-                                # Sort by size (largest first) and pick by index
-                                title_sizes.sort(key=lambda x: x[1], reverse=True)
+                                if is_seamless_branching:
+                                    # For seamless branching, use natural title order (0, 1, 2...)
+                                    # instead of size sorting for more predictable results
+                                    title_sizes.sort(key=lambda x: x[0])  # Sort by title_id
+                                    print(f"🔄 Seamless branching detected, using natural title order")
+                                else:
+                                    # For non-seamless discs, sort by size (largest first)
+                                    title_sizes.sort(key=lambda x: x[1], reverse=True)
 
                                 # Validate title_index is within range
                                 if args.title_index >= len(title_sizes):
@@ -1206,7 +1214,11 @@ def main() -> int:
                                 )
 
                                 # Show all available titles with their sizes for manual selection
-                                print(f"\nAvailable titles (sorted by size):")
+                                if is_seamless_branching:
+                                    print(f"\nAvailable titles (natural order for seamless branching):")
+                                else:
+                                    print(f"\nAvailable titles (sorted by size):")
+                                    
                                 for i, (tid, size_gb) in enumerate(title_sizes):
                                     marker = "👉" if i == args.title_index else "   "
                                     print(f"{marker} Title {tid}: {size_gb:.3f} GB (index {i})")
@@ -1221,15 +1233,25 @@ def main() -> int:
                                 for i, (tid, seconds, duration, _) in enumerate(same_duration_titles):
                                     print(f"   Title {tid}: {duration}")
                                 print(f"\n💡 Use TITLE_INDEX to select a specific title:")
-                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # First")
-                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Second")
-                                print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Third")
-                                print(f"\n🔄 Defaulting to first title (may not be desired language version)")
-                                (
-                                    main_title_id,
-                                    main_duration,
-                                    main_duration_str,
-                                ) = titles[0][:3]
+                                
+                                if is_seamless_branching:
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)")
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Title 1")
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Title 2")
+                                    print(f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)")
+                                    # For seamless branching, find Title 0 specifically
+                                    title_0 = next((t for t in titles if t[0] == 0), titles[0])
+                                    main_title_id, main_duration, main_duration_str = title_0[:3]
+                                else:
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # Largest")
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Second largest")
+                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Third largest")
+                                    print(f"\n🔄 Defaulting to first title (may not be desired language version)")
+                                    (
+                                        main_title_id,
+                                        main_duration,
+                                        main_duration_str,
+                                    ) = titles[0][:3]
                         else:
                             (
                                 main_title_id,
