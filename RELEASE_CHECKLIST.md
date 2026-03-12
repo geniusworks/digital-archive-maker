@@ -247,8 +247,15 @@ Current `docs/` has overlapping files. Target structure:
 
 ---
 
-## F. Visual Polish & Delight
+## F. User Experience & Documentation
 
+### F1. User Stories & Persona Integration
+- [x] **Create User Story Inventory**: Document 5 core user stories with complete workflows
+- [ ] **Integrate User Stories into README**: Add persona-based narrative showing real use cases
+- [ ] **Add User Journey Section**: Show how different personas use specific features
+- [ ] **Create Use Case Examples**: Practical scenarios for each media type
+
+### F2. Visual Polish & Delight
 - [ ] Create project logo (or refine existing `assets/logo.png`)
 - [ ] Add GIF demo of CD ripping workflow (terminal recording)
 - [ ] Add terminal screenshots showing beautiful output
