@@ -98,7 +98,14 @@ skip_glob = ["_archive/*", "_install/*", "venv/*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --tb=short"
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--verbose --tb=short"
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (may require external tools)",
+    "slow: Slow tests (network calls, large files)"
+]
 
 [tool.mypy]
 python_version = "3.9"
