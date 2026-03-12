@@ -20,7 +20,7 @@ from mutagen.mp4 import MP4, MP4StreamInfoError
 load_dotenv()
 
 # Configuration
-MUSIC_VIDEOS_ROOT = Path(os.getenv("LIBRARY_ROOT", "/Volumes/Data/Media/Library")) / "Videos/Music"
+MUSIC_VIDEOS_ROOT = Path(os.getenv("LIBRARY_ROOT") or "/Library") / "Videos/Music"
 VERBOSE = True
 DRY_RUN = False
 

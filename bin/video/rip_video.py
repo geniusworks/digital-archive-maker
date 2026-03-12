@@ -973,7 +973,7 @@ def main() -> int:
 
     # Defaults
     library_root = Path(
-        get_env_str("LIBRARY_ROOT", "/Volumes/Data/Media/Library") or "/Volumes/Data/Media/Library"
+        get_env_str("LIBRARY_ROOT") or "/Library"
     )
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
 

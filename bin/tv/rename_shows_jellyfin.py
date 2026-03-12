@@ -340,8 +340,8 @@ def main():
     )
     parser.add_argument(
         "--root",
-        default="/Volumes/Data/Media/Library/Shows",
-        help="Shows root folder (default: /Volumes/Data/Media/Library/Shows)",
+        default="/Library/Shows",
+        help="Shows root folder (requires LIBRARY_ROOT or --root)",
     )
     parser.add_argument(
         "--show",
