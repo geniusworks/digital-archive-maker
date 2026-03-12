@@ -15,7 +15,7 @@
 | **Community Infra** | ✅ Complete | Issue templates, PR template, CI workflow |
 | **README / QUICKSTART** | ✅ Solid | Redesigned hero page, badges, Quick Start guide |
 | **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
-| **Code Quality** | 🟡 Needs polish | Naming inconsistency, no shared library, some stale scripts |
+| **Code Quality** | ✅ Mostly Complete | Shared library, type hints, comprehensive tests, professional polish |
 | **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
 | **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings (runs from repo) |
 | **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
@@ -227,13 +227,14 @@ Current `docs/` has overlapping files. Target structure:
 ### E1. Important for Professional Release
 - [x] Add `--help` with clear usage examples to every script
 - [x] Ensure every script checks for required tools before running → `dam.deps` module + `dam check`
-- [ ] Add type hints to critical public functions
+- [x] Add type hints to critical public functions
 - [x] Extract shared patterns into `dam/` package (config, deps, keys, console)
 - [x] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
 
 ### E2. Testing
 - [ ] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
-- [ ] Add tests for: `download_lyrics`, `tag-explicit-mb`, `rip_video` (mock-based) - **Priority: Medium**
+- [x] Add tests for: `download_lyrics`, `tag-explicit-mb` (mock-based)
+- [ ] Add tests for: `rip_video` (mock-based) - **Priority: Low**
   - Mock makemkvcon output for seamless branching detection
   - Test natural title order vs size sorting logic
   - Test TITLE_INDEX selection and validation

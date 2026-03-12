@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+from typing import Optional, Dict, List
 
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3NoHeaderError
@@ -17,7 +18,7 @@ MPAA_TAG = "©rat"
 UNKNOWN_VALUE = "Unknown"
 
 
-def _normalize_text(value):
+def _normalize_text(value: Optional[str]) -> str:
     if value is None:
         return ""
     s = str(value)
@@ -29,7 +30,7 @@ def _normalize_text(value):
     return s
 
 
-def _override_field_matches(rule_val, actual_val):
+def _override_field_matches(rule_val: str, actual_val: str) -> bool:
     if rule_val == "*":
         return True
     if any(ch in rule_val for ch in ["*", "?", "["]):
@@ -37,7 +38,7 @@ def _override_field_matches(rule_val, actual_val):
     return rule_val == actual_val
 
 
-def _load_explicit_overrides(repo_root):
+def _load_explicit_overrides(repo_root: str) -> List[Dict]:
     overrides_file = os.path.join(repo_root, "log", "explicit", "explicit_overrides.csv")
     overrides = []
     if not os.path.exists(overrides_file):
@@ -85,7 +86,7 @@ def _load_explicit_overrides(repo_root):
     return overrides
 
 
-def _resolve_override(overrides, artist_norm, album_norm, title_norm):
+def _resolve_override(overrides: List[Dict], artist_norm: str, album_norm: str, title_norm: str) -> Optional[str]:
     best = None
     best_score = (-1, -1)
     for rule in overrides or []:
