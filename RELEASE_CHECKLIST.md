@@ -397,6 +397,28 @@ git branch -m main
   - [ ] No silent failures or cryptic error messages
   - [ ] Consistent feedback for all user actions
 
+### J4. GUI Critical Features for v1.0
+- [ ] **Git History Security**: Clear git history to avoid secrets/PII exposure
+  - [ ] Review entire git history for sensitive data
+  - [ ] Consider squash-to-single-commit or fresh repository
+  - [ ] Document git history cleaning procedure
+- [ ] **Operation Cancellation**: Consistent cancel/interrupt functionality
+  - [ ] Add cancel button for all long-running operations
+  - [ ] Implement graceful shutdown equivalent to CTRL+C
+  - [ ] Ensure proper cleanup and user messaging on cancellation
+  - [ ] Test cancellation during disc ripping, encoding, and tagging
+- [ ] **Workflow Progress Indicators**: Clear position in workflow
+  - [ ] Show current step and overall progress for multi-step operations
+  - [ ] Display estimated time remaining for long operations
+  - [ ] Visual indicators for completed vs. pending steps
+  - [ ] Implement after workflow optimization is complete
+- [ ] **File/Folder Interaction**: User-friendly source/target selection
+  - [ ] Add folder browse buttons instead of manual path entry
+  - [ ] Implement file dialogs for source media selection
+  - [ ] Add "Open in Finder/Explorer" buttons for target locations
+  - [ ] Consider drag-and-drop support for source files/folders
+  - [ ] Validate selected paths before operation starts
+
 ### I4. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
 - [ ] Consider PyInstaller or similar for creating truly standalone app
