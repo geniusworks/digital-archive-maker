@@ -8,7 +8,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 <div align="center">
 
-[![License](https://img.shields.io/github/license/geniusworks/media-archive-maker?style=for-the-badge&label=License&labelColor=444444&color=007ec6)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/github/license/geniusworks/media-archive-maker?style=for-the-badge&label=License&labelColor=444444&color=007ec6)](https://opensource.org/licenses/GPL-2.0)
 [![Version](https://img.shields.io/github/v/release/geniusworks/media-archive-maker?style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg?style=for-the-badge&label=Platform&labelColor=444444&color=999999)](https://www.apple.com/macos/)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg?style=for-the-badge&label=Python&labelColor=444444&color=3776AB)](https://www.python.org/downloads/)

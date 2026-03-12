@@ -8,7 +8,7 @@ version = "0.9.0"
 # NOTE: Bump to 1.0.0 for public release
 description = "Physical media to digital library automation - CD/DVD/Blu-ray ripping, tagging, and sync"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "GPL-2.0-or-later"}
 requires-python = ">=3.9"
 authors = [
     {name = "Martin Diekhoff"}

@@ -1,7 +1,7 @@
 Digital Archive Maker
 Copyright (c) 2026 Martin Diekhoff
 
-This project is licensed under the MIT License. See LICENSE for details.
+This project is licensed under the GNU General Public License v2.0 or later. See LICENSE for details.
 
 ================================================================================
 THIRD-PARTY SOFTWARE
@@ -75,5 +75,5 @@ PYTHON DEPENDENCIES
 ================================================================================
 
 This project uses Python packages listed in requirements.txt and
-requirements-test.txt. All are permissively licensed (MIT, BSD, Apache 2.0,
-or PSF). Run `pip-licenses` for a full dependency license report.
+requirements-test.txt. Most are permissively licensed (MIT, BSD, Apache 2.0,
+or PSF), but mutagen is GPLv2+. Run `pip-licenses` for a full dependency license report.

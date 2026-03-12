@@ -44,7 +44,8 @@
 
 ### A3. Dependency & Packaging
 - [x] Audit all Python deps for license compatibility (MIT project; all deps should be permissive)
-- [ ] Reconcile mutagen GPLv2+ licensing conflict (replace with MIT-compatible or document GPL requirement)
+- [x] Reconcile mutagen GPLv2+ licensing conflict (decision: accept GPL, plan split architecture later)
+- [x] Update project license from MIT to GPLv2+ in LICENSE and pyproject.toml
 - [ ] Bump `pyproject.toml` version to `1.0.0` at release time
 - [x] Ensure `make install-deps` + `make install-video-deps` is truly one-command on a fresh Mac
 - [ ] Test full clone → install → rip-cd workflow on a clean macOS machine
