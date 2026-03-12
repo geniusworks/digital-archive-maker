@@ -20,6 +20,14 @@ You can expect a response within 7 days.
 - Secrets accidentally committed to the repository
 - Dependencies with known critical vulnerabilities
 
+## Security Scanning
+
+This project undergoes regular security scanning:
+- **PII/Secrets scans** using git-secrets before releases
+- **Dependency audits** for license compatibility and vulnerabilities
+- **Environment isolation** - sensitive data in .env (gitignored)
+- **No hardcoded credentials** in tracked files
+
 ## What Doesn't Qualify
 
 - Issues with third-party tools (MakeMKV, HandBrake, etc.)
