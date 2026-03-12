@@ -96,7 +96,7 @@ For seamless media management, add this function to your `~/.zshrc`:
 ```bash
 media() {
     local VENV_PATH="$HOME/venvs/media"
-    local REPO_PATH="$HOME/Herd/media-archive-maker"
+    local REPO_PATH="$HOME/Herd/digital-archive-maker"
     
     case "${1:-help}" in
         "sync"|"master-sync")
