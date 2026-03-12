@@ -418,6 +418,14 @@ git branch -m main
   - [ ] Add "Open in Finder/Explorer" buttons for target locations
   - [ ] Consider drag-and-drop support for source files/folders
   - [ ] Validate selected paths before operation starts
+- [ ] **Graceful Degradation**: Handle missing dependencies elegantly
+  - [ ] Verify graceful handling when MakeMKV is not available
+  - [ ] Check behavior when HandBrakeCLI is missing
+  - [ ] Test with missing abcde (CD ripping tool)
+  - [ ] Verify fallback behavior for missing API keys
+  - [ ] Ensure clear error messages with installation guidance
+  - [ ] Provide one-click dependency installation where possible
+  - [ ] Document which features require which dependencies
 
 ### I4. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
