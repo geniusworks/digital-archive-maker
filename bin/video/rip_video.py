@@ -353,8 +353,7 @@ def interactive_subtitle_prompt(
         # Preferred audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
 
-    print(f"\n🎬 {source_name}\n")
-    print("=" * 50 + "\n")
+    # Header already printed earlier during disc analysis
 
     # Video analysis - show all video streams (multiple per language version)
     if video_streams:
@@ -1084,6 +1083,8 @@ def main() -> int:
     if not mkvs:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
+            print("\n🎬 Disc Analysis (Main Feature)")
+            print("=" * 50 + "\n")
             print("Scanning for main feature...")
             print("  → Primary: Longest duration")
             print("  → Secondary: Largest file size if durations similar (±1 min)")
