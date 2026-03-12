@@ -8,7 +8,7 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie rip-movie-all optimize-mp4 fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all
+.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie rip-movie-all optimize-mp4 fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all test-pipeline
 
 help:
 	@echo "Available targets:"
@@ -30,6 +30,8 @@ help:
 	@echo "  test                Run all tests"
 	@echo "  test-unit           Run unit tests only"
 	@echo "  test-integration    Run integration tests only"
+	@echo "  test-coverage       Run tests with coverage report"
+	@echo "  test-pipeline       Run local CI pipeline test (mirrors GitHub Actions)"
 	@echo "  install-test-deps  Install test dependencies"
 
 install-deps:
@@ -184,3 +186,7 @@ test-integration:
 test-coverage:
 	@echo "Running tests with coverage..."
 	@python3 -m pytest tests/ --cov=bin --cov-report=term-missing --cov-report=html --cov-fail-under=70
+
+test-pipeline:
+	@echo "Running local pipeline test (mirrors GitHub Actions CI)..."
+	@./test-pipeline-local.sh
