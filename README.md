@@ -59,26 +59,10 @@ The result: Your entire media collection becomes instantly accessible from any d
 
 ### 💿 Hardware Requirements
 
-#### **For CD Ripping:**
-- **Any CD/DVD drive** (internal or external USB)
-- **External USB CD/DVD drive** works fine (~$20-30)
-- **No special requirements** - standard drives work
-
-#### **For DVD Ripping:**
-- **DVD drive** (internal SuperDrive or external USB)
-- **External USB DVD drive** (~$25-40)
-- **Slot-loading or tray-loading** both supported
-
-#### **For Blu-ray Ripping:**
-- **Blu-ray drive** required for Blu-ray discs
-- **External USB Blu-ray drive** (~$60-100)
-- **Internal Blu-ray drive** if Mac supports it
-- **4K Blu-ray** requires compatible drive
-
-#### **Recommended Setup:**
-- **External USB Blu-ray drive** - handles all formats
-- **USB 3.0+ connection** - faster data transfer
-- **Bus-powered** - no separate power adapter needed
+- **CD ripping**: Any CD/DVD drive (internal or external USB)
+- **DVD ripping**: DVD drive (internal SuperDrive or external USB)
+- **Blu-ray ripping**: Blu-ray drive required for Blu-ray discs
+- **All formats**: External USB Blu-ray drive recommended for universal compatibility
 
 ### 📦 Software Dependencies
 - **Homebrew** (auto-installed by setup script)
