@@ -75,7 +75,7 @@ def main():
     ], "All tests with coverage")
     
     if success:
-        print("\n🎉 All tests passed!")
+        print("\n✅ All tests passed!")
         print("Coverage report generated in htmlcov/index.html")
     else:
         print("\n❌ Some tests failed!")

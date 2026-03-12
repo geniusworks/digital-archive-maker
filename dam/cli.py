@@ -86,9 +86,9 @@ def check(
     
     for k in all_api_keys:
         if k in api_missing:
-            console.print(f" ⚠ {k} (not configured)")
+            console.print(f" ⚠️ {k} (not configured)")
         else:
-            console.print(f" ✓ {k}")
+            console.print(f" ✅ {k}")
     
     if not api_missing:
         success("All API keys configured.")
