@@ -31,7 +31,9 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 **The Problem:** Your CDs, DVDs, and Blu-rays sit on shelves, collecting dust. They're difficult to browse, can't be searched, and only work when you have the physical disc and player. Your favorite music and movies are trapped in plastic boxes.
 
-**The Solution:** Digital Archive Maker liberates your media by:
+**The Reality:** Traditional digitization is frustrating. You wrestle with dozens of tools that don't talk to each other: MakeMKV for discs, HandBrake for encoding, MusicBrainz for metadata, various taggers, and manual folder organization. Each step requires technical knowledge, and mistakes mean re-ripping or hours of manual cleanup.
+
+**The Solution:** Digital Archive Maker unifies this chaos into a single, automated workflow:
 - **Extracting** high-quality digital files from physical discs
 - **Organizing** everything with proper names, metadata, and artwork  
 - **Tagging** each item with rich details from online databases
