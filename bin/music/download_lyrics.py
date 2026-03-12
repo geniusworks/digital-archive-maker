@@ -1648,6 +1648,23 @@ def main():
         print(f"📁 Processing directory: {path}")
         downloader.process_directory(path, args.recursive, args.force)
 
+    # Print summary and return appropriate exit code
+    stats = downloader.stats
+    print(f"\n📊 Summary:")
+    print(f"  Albums with new lyrics: {stats['albums_with_new_lyrics']}")
+    print(f"  Albums with no new lyrics: {stats['albums_no_new_lyrics']}")
+    print(f"  Files skipped (existing lyrics): {stats['files_skipped_existing_lyrics']}")
+    print(f"  Files skipped (previously failed): {stats['files_skipped_previously_failed']}")
+    print(f"  Files with no lyrics found: {stats['files_no_lyrics_found']}")
+    
+    # Return appropriate exit code
+    if stats['albums_with_new_lyrics'] > 0:
+        return 0  # Success (found lyrics for some albums)
+    elif stats['albums_no_new_lyrics'] > 0:
+        return 2  # Partial success (processed albums but no new lyrics)
+    else:
+        return 1  # Complete failure (no albums processed or all failed)
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -575,6 +575,14 @@ def main():
     print(f"  Failed: {failed_count}")
     print(f"  Total: {len(problematic_files)}")
 
+    # Return appropriate exit code
+    if failed_count == 0:
+        return 0  # Success
+    elif fixed_count > 0:
+        return 2  # Partial success (some fixed, some failed)
+    else:
+        return 1  # Complete failure (none fixed)
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
