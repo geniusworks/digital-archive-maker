@@ -231,7 +231,11 @@ Current `docs/` has overlapping files. Target structure:
 
 ### E2. Testing
 - [ ] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
-- [ ] Add tests for: `download_lyrics`, `tag-explicit-mb`, `rip_video` (mock-based)
+- [ ] Add tests for: `download_lyrics`, `tag-explicit-mb`, `rip_video` (mock-based) - **Priority: Medium**
+  - Mock makemkvcon output for seamless branching detection
+  - Test natural title order vs size sorting logic
+  - Test TITLE_INDEX selection and validation
+  - Note: Hardware-dependent, complex mocking required
 - [ ] Target: 70%+ coverage for core scripts
 
 ### E3. CI / Pre-commit
