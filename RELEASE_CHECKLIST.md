@@ -426,6 +426,13 @@ git branch -m main
   - [ ] Ensure clear error messages with installation guidance
   - [ ] Provide one-click dependency installation where possible
   - [ ] Document which features require which dependencies
+- [ ] **Community & Support Strategy**: Plan user engagement approach
+  - [ ] Decide whether to host own community vs. point to existing forums
+  - [ ] Consider recommending established forums (MakeMKV, HandBrake, Jellyfin/Plex)
+  - [ ] Evaluate pros/cons of GitHub Discussions vs. existing communities
+  - [ ] Plan moderation capacity if hosting own community
+  - [ ] Document community guidelines and code of conduct
+  - [ ] Consider creating FAQ for common cross-tool questions
 
 ### I4. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
