@@ -131,7 +131,9 @@ echo "🔧 Checking script imports..."
 scripts_to_test=("dam/cli.py" "dam/config.py" "dam/deps.py")
 for script in "${scripts_to_test[@]}"; do
     if [ -f "$script" ]; then
-        if $VENV_PYTHON -c "import sys; sys.path.insert(0, '.'); import importlib.util; spec = importlib.util.spec_from_file_location('test', '$script'); module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)" 2>/dev/null; then
+        # Convert file path to module name for proper import
+        module_name=$(echo "$script" | sed 's/\.py$//' | sed 's/\//./g')
+        if $VENV_PYTHON -c "import sys; sys.path.insert(0, '.'); import $module_name" 2>/dev/null; then
             print_status "$script imports OK"
         else
             print_error "$script failed to import"
