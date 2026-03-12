@@ -257,7 +257,51 @@ Current `docs/` has overlapping files. Target structure:
 
 ---
 
-## G. Release Execution
+## G. Pre-Release Verification (Run Before Every Tag)
+
+### G1. Quality Assurance Checklist
+- [ ] **Code Quality Pipeline**: Run `scripts/test-pipeline.sh` - must pass with 0 errors
+- [ ] **All Tests Passing**: 95+ tests must pass (check pytest coverage)
+- [ ] **No Critical Linting**: Zero E9/F63/F7/F82 errors
+- [ ] **Clean Git Status**: No uncommitted changes in working directory
+- [ ] **Documentation Links**: Verify all internal links in README and docs work
+- [ ] **Environment Variables**: Cross-check `.env.sample` with all script requirements
+- [ ] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
+
+### G2. Release Content Preparation
+- [ ] **Update CHANGELOG.md**: Add new version section with:
+  - New features and improvements
+  - Bug fixes
+  - Breaking changes (if any)
+  - Migration notes (if needed)
+- [ ] **Version Bump**: Update `pyproject.toml` version (X.Y.Z format)
+- [ ] **Tag Message**: Prepare release tag description:
+  ```bash
+  git tag -a v1.0.0 -m "Release v1.0.0
+
+  Features:
+  - Complete CD/DVD/Blu-ray ripping pipeline
+  - TV show and music video metadata management
+  - Music library sync with explicit tagging
+  - Comprehensive test suite (95 tests)
+  - Professional code quality standards
+
+  Installation:
+  pip install -r requirements.txt
+  make install-video-deps  # For DVD/Blu-ray support
+  "
+  ```
+
+### G3. Final Sanity Checks
+- [ ] **Fresh Install Test**: Clone repo to temp directory, run install, test basic workflow
+- [ ] **README Rendering**: View README on GitHub preview before release
+- [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
+- [ ] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
+- [ ] **Git History**: Review recent commits for any sensitive information
+
+---
+
+## H. Release Execution
 
 ### Pre-Release Final Steps
 - [x] Complete items in sections A–C above
@@ -285,9 +329,23 @@ git branch -m main
 
 ---
 
-## I. GUI App Polish (Electron)
+## I. Post-Release Tasks
 
-### I1. App Icon & Branding
+### I1. Immediate Post-Release
+- [ ] Monitor issues for first-user feedback
+- [ ] Set up GitHub Discussions if community grows
+- [ ] Optional: announcement post (HN, Reddit, media server forums)
+
+### I2. Maintenance Planning
+- [ ] Create v1.0.1 milestone for any quick fixes
+- [ ] Plan v1.1.0 features based on early feedback
+- [ ] Document any known issues in GitHub Issues
+
+---
+
+## J. GUI App Polish (Electron)
+
+### J1. App Icon & Branding
 - [ ] Create 1024×1024 app icon in `gui/assets/`
   - `gui/assets/icon.icns` (macOS format)
   - `gui/assets/icon.png` (source PNG)
@@ -295,12 +353,12 @@ git branch -m main
 - [ ] Update `gui/package.json` to reference icon for window title bar
 - [ ] Test icon displays correctly in Dock and About menu
 
-### I2. Desktop Launcher (Optional)
+### J2. Desktop Launcher (Optional)
 - [ ] Create a double-clickable launcher script or Automator app
 - [ ] Document launcher creation in gui/README.md
 - [ ] Consider creating a simple `.command` file for easy double-click launch
 
-### I3. GUI UX Improvements & Reliability Testing
+### J3. GUI UX Improvements & Reliability Testing
 - [ ] Add confirmation dialogs for all destructive operations
   - [ ] Include "Don't ask again" checkbox for frequent operations
   - [ ] Clear messaging about what will happen before execution
