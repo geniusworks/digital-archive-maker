@@ -1139,7 +1139,9 @@ class LyricsDownloader:
         # In retry mode, if lyrics already exist, remove from failed log and skip
         if self.retry_failed and self._has_lyrics(file_path):
             indent_str = "    " if indent else ""
-            print(f"{indent_str}✅ Lyrics already exist, removing from failed log: {file_path.name}")
+            print(
+                f"{indent_str}✅ Lyrics already exist, removing from failed log: {file_path.name}"
+            )
             self._remove_failed_lookup(artist, title)
             # Also check for mapped artist name
             search_artist = self.artist_mappings.get(artist, artist)
@@ -1656,11 +1658,11 @@ def main():
     print(f"  Files skipped (existing lyrics): {stats['files_skipped_existing_lyrics']}")
     print(f"  Files skipped (previously failed): {stats['files_skipped_previously_failed']}")
     print(f"  Files with no lyrics found: {stats['files_no_lyrics_found']}")
-    
+
     # Return appropriate exit code
-    if stats['albums_with_new_lyrics'] > 0:
+    if stats["albums_with_new_lyrics"] > 0:
         return 0  # Success (found lyrics for some albums)
-    elif stats['albums_no_new_lyrics'] > 0:
+    elif stats["albums_no_new_lyrics"] > 0:
         return 2  # Partial success (processed albums but no new lyrics)
     else:
         return 1  # Complete failure (no albums processed or all failed)

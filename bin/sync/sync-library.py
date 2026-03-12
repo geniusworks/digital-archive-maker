@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 import subprocess
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3NoHeaderError
@@ -86,7 +86,9 @@ def _load_explicit_overrides(repo_root: str) -> List[Dict]:
     return overrides
 
 
-def _resolve_override(overrides: List[Dict], artist_norm: str, album_norm: str, title_norm: str) -> Optional[str]:
+def _resolve_override(
+    overrides: List[Dict], artist_norm: str, album_norm: str, title_norm: str
+) -> Optional[str]:
     best = None
     best_score = (-1, -1)
     for rule in overrides or []:

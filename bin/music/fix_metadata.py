@@ -15,6 +15,7 @@ Arguments:
     --force    Overwrite all tags with derived values
     --verbose  Print detailed info per file
 """
+
 # Run in virtual environment:
 #   python3 -m venv ~/mutagen-env
 #   source ~/mutagen-env/bin/activate

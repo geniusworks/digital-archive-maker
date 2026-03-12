@@ -8,6 +8,7 @@ Validates:
 
 By default the script scans the CDs directory under LIBRARY_ROOT.
 """
+
 from __future__ import annotations
 
 import argparse

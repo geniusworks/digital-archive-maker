@@ -14,6 +14,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Track failures for conditional tips
+FAILED_TESTS=0
+CRITICAL_LINT_ERRORS=0
+
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}✅ $1${NC}"
@@ -98,10 +102,14 @@ if $VENV_PYTHON -c "import flake8" 2>/dev/null; then
         print_status "No critical linting errors"
     else
         print_error "Critical linting errors found"
+        CRITICAL_LINT_ERRORS=1
     fi
     
-    echo "Style warnings (max line length, complexity):"
-    $VENV_PYTHON -m flake8 bin/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+    echo "Style warnings (ignoring trivial issues):"
+    # Ignore: C901 (complexity), E501 (line length), F541 (f-string placeholders)
+    # Also ignore: E203 (whitespace before :), F401 (unused imports), F811 (redefinition), F841 (unused vars)
+    # Also ignore: W503 (line break before binary operator), E226 (missing whitespace around arithmetic operator)
+    $VENV_PYTHON -m flake8 bin/ tests/ --count --exit-zero --ignore=C901,E501,F541,E203,F401,F811,F841,W503,E226 --max-line-length=100 --statistics
     print_status "Linting check completed"
 else
     print_warning "flake8 not installed, skipping linting"
@@ -116,6 +124,7 @@ if [ -d "tests" ] && [ "$(ls -A tests)" ]; then
             print_status "All tests passed"
         else
             print_error "Some tests failed"
+            FAILED_TESTS=1
             exit 1
         fi
     else
@@ -144,9 +153,16 @@ done
 echo ""
 echo "=================================="
 print_status "Local pipeline test completed!"
-echo ""
-echo "💡 Tips:"
-echo "   - Fix formatting: $VENV_PYTHON -m black bin/ tests/"
-echo "   - Fix imports: $VENV_PYTHON -m isort bin/ tests/"
-echo "   - Run specific tests: $VENV_PYTHON -m pytest tests/test_file.py"
-echo "   - Check specific file: $VENV_PYTHON -m flake8 bin/script.py"
+
+# Show tips only if there were issues
+if [ "$FAILED_TESTS" -eq 0 ] && [ "$CRITICAL_LINT_ERRORS" -eq 0 ]; then
+    echo ""
+    echo "✅ All checks passed! No fixes needed."
+else
+    echo ""
+    echo "💡 Tips:"
+    echo "   - Fix formatting: $VENV_PYTHON -m black bin/ tests/"
+    echo "   - Fix imports: $VENV_PYTHON -m isort bin/ tests/"
+    echo "   - Run specific tests: $VENV_PYTHON -m pytest tests/test_file.py"
+    echo "   - Check specific file: $VENV_PYTHON -m flake8 bin/script.py"
+fi

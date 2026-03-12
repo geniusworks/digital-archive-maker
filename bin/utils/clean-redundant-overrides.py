@@ -11,6 +11,7 @@ overrides file (since it's redundant).
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 OVERRIDES_FILE = Path("config/movie_rating_overrides.json")

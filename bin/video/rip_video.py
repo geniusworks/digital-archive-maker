@@ -598,13 +598,15 @@ def analyze_mkv_streams(mkv_path: Path) -> tuple[list, list, list]:
             if line.strip():
                 parts = line.split(",")
                 if len(parts) >= 3:
-                    video_streams.append({
-                        "index": parts[0],
-                        "codec": parts[1],
-                        "width": parts[2] if len(parts) > 2 else "unknown",
-                        "height": parts[3] if len(parts) > 3 else "unknown",
-                        "language": parts[4] if len(parts) > 4 and parts[4] else "und",
-                    })
+                    video_streams.append(
+                        {
+                            "index": parts[0],
+                            "codec": parts[1],
+                            "width": parts[2] if len(parts) > 2 else "unknown",
+                            "height": parts[3] if len(parts) > 3 else "unknown",
+                            "language": parts[4] if len(parts) > 4 and parts[4] else "und",
+                        }
+                    )
 
         # Get audio streams
         audio_res = _run(
@@ -972,9 +974,7 @@ def main() -> int:
     load_dotenv(repo_root)
 
     # Defaults
-    library_root = Path(
-        get_env_str("LIBRARY_ROOT") or "/Library"
-    )
+    library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
 
     # Encoding settings (faster defaults)
@@ -1088,7 +1088,7 @@ def main() -> int:
                 # 9)
                 titles = []
                 lines = info_res.stdout.split("\n")
-                
+
                 # Build a map of title_id -> video language
                 # MakeMKV stores video language in TINFO field 28
                 title_video_lang = {}
@@ -1102,7 +1102,7 @@ def main() -> int:
                             lang = parts[3].strip('"')
                             if lang and len(lang) == 2:  # ISO 639-2 language code
                                 title_video_lang[int(title_id)] = lang.lower()
-                
+
                 for line in lines:
                     # Look for duration info (field 9)
                     if line.startswith("TINFO:") and ",9," in line:
@@ -1131,12 +1131,16 @@ def main() -> int:
 
                 # Filter titles by preferred video language if LANG_VIDEO is set and titles have language info
                 if LANG_VIDEO and any(t[3] for t in titles):  # t[3] is video_lang
-                    preferred_titles = [t for t in titles if t[3] and matches_language(t[3], LANG_VIDEO)]
+                    preferred_titles = [
+                        t for t in titles if t[3] and matches_language(t[3], LANG_VIDEO)
+                    ]
                     if preferred_titles:
                         print(f"  → Preferring video language: {LANG_VIDEO.upper()}")
                         titles = preferred_titles
                     else:
-                        print(f"  → No titles found with language {LANG_VIDEO.upper()}, using all titles")
+                        print(
+                            f"  → No titles found with language {LANG_VIDEO.upper()}, using all titles"
+                        )
 
                 if titles:
                     # Detect seamless branching: multiple titles with same duration and similar sizes
@@ -1152,7 +1156,7 @@ def main() -> int:
 
                         # Detect seamless branching: 3+ titles with identical duration
                         is_seamless_branching = len(same_duration_titles) >= 3
-                        
+
                         # Get sizes for size-based selection when title_index > 0
                         # or when there are same-duration titles
                         if args.title_index > 0 or len(same_duration_titles) > 1:
@@ -1194,7 +1198,9 @@ def main() -> int:
                                     # For seamless branching, use natural title order (0, 1, 2...)
                                     # instead of size sorting for more predictable results
                                     title_sizes.sort(key=lambda x: x[0])  # Sort by title_id
-                                    print(f"🔄 Seamless branching detected, using natural title order")
+                                    print(
+                                        f"🔄 Seamless branching detected, using natural title order"
+                                    )
                                 else:
                                     # For non-seamless discs, sort by size (largest first)
                                     title_sizes.sort(key=lambda x: x[1], reverse=True)
@@ -1215,10 +1221,12 @@ def main() -> int:
 
                                 # Show all available titles with their sizes for manual selection
                                 if is_seamless_branching:
-                                    print(f"\nAvailable titles (natural order for seamless branching):")
+                                    print(
+                                        f"\nAvailable titles (natural order for seamless branching):"
+                                    )
                                 else:
                                     print(f"\nAvailable titles (sorted by size):")
-                                    
+
                                 for i, (tid, size_gb) in enumerate(title_sizes):
                                     marker = "👉" if i == args.title_index else "   "
                                     print(f"{marker} Title {tid}: {size_gb:.3f} GB (index {i})")
@@ -1229,41 +1237,67 @@ def main() -> int:
                             else:
                                 # No title_index specified and multiple same-duration titles
                                 # Warn user and suggest using TITLE_INDEX
-                                print(f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:")
-                                for i, (tid, seconds, duration, _) in enumerate(same_duration_titles):
+                                print(
+                                    f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:"
+                                )
+                                for i, (tid, seconds, duration, _) in enumerate(
+                                    same_duration_titles
+                                ):
                                     print(f"   Title {tid}: {duration}")
                                 print(f"\n💡 Use TITLE_INDEX to select a specific title:")
-                                
+
                                 if is_seamless_branching:
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)")
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Title 1")
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Title 2")
-                                    print(f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)")
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                    )
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
+                                    )
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
+                                    )
+                                    print(
+                                        f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                    )
                                     # For seamless branching, find Title 0 specifically
                                     title_0 = next((t for t in titles if t[0] == 0), titles[0])
                                     main_title_id, main_duration, main_duration_str = title_0[:3]
                                 else:
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=0  # Largest")
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=1  # Second largest")
-                                    print(f"   make rip-movie TITLE=\"Finding Dory\" YEAR=2011 TITLE_INDEX=2  # Third largest")
-                                    print(f"\n🔄 Defaulting to first title (may not be desired language version)")
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Largest'
+                                    )
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Second largest'
+                                    )
+                                    print(
+                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Third largest'
+                                    )
+                                    print(
+                                        f"\n🔄 Defaulting to first title (may not be desired language version)"
+                                    )
                                     (
                                         main_title_id,
                                         main_duration,
                                         main_duration_str,
-                                    ) = titles[0][:3]
+                                    ) = titles[
+                                        0
+                                    ][:3]
                         else:
                             (
                                 main_title_id,
                                 main_duration,
                                 main_duration_str,
-                            ) = titles[0][:3]
+                            ) = titles[
+                                0
+                            ][:3]
                     else:
                         (
                             main_title_id,
                             main_duration,
                             main_duration_str,
-                        ) = titles[0][:3]
+                        ) = titles[
+                            0
+                        ][:3]
 
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
