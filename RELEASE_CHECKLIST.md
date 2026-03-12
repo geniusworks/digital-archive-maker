@@ -45,7 +45,7 @@
 ### A3. Dependency & Packaging
 - [ ] Audit all Python deps for license compatibility (MIT project; all deps should be permissive)
 - [ ] Bump `pyproject.toml` version to `1.0.0` at release time
-- [ ] Ensure `make install-deps` + `make install-video-deps` is truly one-command on a fresh Mac
+- [x] Ensure `make install-deps` + `make install-video-deps` is truly one-command on a fresh Mac
 - [ ] Test full clone → install → rip-cd workflow on a clean macOS machine
 
 ---
@@ -249,7 +249,7 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] Create project logo (or refine existing `assets/logo.png`)
 - [ ] Add GIF demo of CD ripping workflow (terminal recording)
 - [ ] Add terminal screenshots showing beautiful output
-- [ ] Test README rendering on GitHub before release
+- [x] Test README rendering on GitHub before release
 - [ ] Consistent emoji language across docs (already partially done)
 
 ---
