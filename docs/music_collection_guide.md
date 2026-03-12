@@ -50,15 +50,15 @@ The Makefile auto-loads `.env` so abcde sees `LIBRARY_ROOT`. Alternative (direct
 #### Step 2: Fix Missing Metadata (NEW!)
 ```bash
 # Scan for metadata issues:
-python3 bin/music/fix-missing-metadata.py --scan "/Volumes/Data/Media/Library/CDs"
+python3 bin/music/fix-missing-metadata.py --scan "${LIBRARY_ROOT}/CDs"
 
 # Fix all issues:
-python3 bin/music/fix-missing-metadata.py --fix "/Volumes/Data/Media/Library/CDs"
+python3 bin/music/fix-missing-metadata.py --fix "${LIBRARY_ROOT}/CDs"
 ```
 
 #### Step 3: Tag Explicit Content
 ```bash
-python3 bin/music/tag-explicit-mb.py "/Volumes/Data/Media/Library/CDs"
+python3 bin/music/tag-explicit-mb.py "${LIBRARY_ROOT}/CDs"
 ```
 
 **Output:** Creates definitive list of all explicit tracks in `log/explicit/explicit_tracks_current.csv`
@@ -66,22 +66,22 @@ python3 bin/music/tag-explicit-mb.py "/Volumes/Data/Media/Library/CDs"
 #### Step 4: Download Lyrics (NEW!)
 ```bash
 # Smart album-by-album processing (recommended):
-media lyrics "/Volumes/Data/Media/Library/CDs" --recursive
+media lyrics "${LIBRARY_ROOT}/CDs" --recursive
 
 # Clear all failed lookups (retry everything):
-media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --clear-failed
+media lyrics "${LIBRARY_ROOT}/CDs" --recursive --clear-failed
 
 # Retry only previously failed tracks (useful after rate limits reset):
-media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --retry-failed
+media lyrics "${LIBRARY_ROOT}/CDs" --recursive --retry-failed
 
 # Add a track to permanent skip list (e.g., classical, instrumental):
 media lyrics --add-to-skip "Classical Escape" "Brandenburg concerto No1 in F major"
 
 # Force overwrite existing lyrics:
-media lyrics "/Volumes/Data/Media/Library/CDs" --recursive --force
+media lyrics "${LIBRARY_ROOT}/CDs" --recursive --force
 
 # Or use the script directly:
-python3 bin/music/download_lyrics.py "/Volumes/Data/Media/Library/CDs" --recursive
+python3 bin/music/download_lyrics.py "${LIBRARY_ROOT}/CDs" --recursive
 ```
 
 ### 🧠 Intelligent Artist Variation System
@@ -136,7 +136,7 @@ The lyrics downloader includes advanced artist name matching to maximize success
 #### Step 5: Sync to Jellyfin
 ```bash
 python3 bin/sync/sync-library.py \
-  --src "/Volumes/Data/Media/Library/CDs" \
+  --src "${LIBRARY_ROOT}/CDs" \
   --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
   --delete
@@ -208,7 +208,7 @@ python3 bin/sync/sync-library.py \
 
 #### Step 1: Identify and Organize Track
 ```bash
-python3 bin/music/fix_track.py /path/to/loose-track.mp3 --target "/Volumes/Data/Media/Library/Music"
+python3 bin/music/fix_track.py /path/to/loose-track.mp3 --target "${LIBRARY_ROOT}/Music"
 ```
 
 #### Step 2: Fix Metadata
@@ -233,19 +233,19 @@ python3 bin/video/fix_music_videos_mapped.py "/path/to/music/videos"
 
 #### Step 2: Standardize Filenames
 ```bash
-python3 bin/video/standardize_music_video_filenames.py "/Volumes/Data/Media/Library/Videos/Music"
+python3 bin/video/standardize_music_video_filenames.py "${LIBRARY_ROOT}/Videos/Music"
 ```
 
 #### Step 3: Fix Metadata
 ```bash
-python3 bin/video/scan_music_video_metadata.py "/Volumes/Data/Media/Library/Videos/Music" --fix
+python3 bin/video/scan_music_video_metadata.py "${LIBRARY_ROOT}/Videos/Music" --fix
 ```
 
 #### Step 4: Sync to Jellyfin (Videos Section)
 ```bash
 # Music videos sync to Videos/Music, not Music library
 python3 bin/sync/sync-library.py \
-  --src "/Volumes/Data/Media/Library/Videos" \
+  --src "${LIBRARY_ROOT}/Videos" \
   --dest "jellyfin@server:/mnt/media/Videos"
 ```
 
@@ -263,21 +263,21 @@ python3 bin/sync/master-sync.py
 sync_jobs:
   # Clean CD library to Jellyfin
   - name: "cd-library-to-jellyfin"
-    src: "/Volumes/Data/Media/Library/CDs"
+    src: "${LIBRARY_ROOT}/CDs"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
     
   # Digital library to Jellyfin
   - name: "digital-library-to-jellyfin"
-    src: "/Volumes/Data/Media/Library/Music"
+    src: "${LIBRARY_ROOT}/Music"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
     
   # Music videos to Jellyfin Videos
   - name: "music-videos-to-jellyfin"
-    src: "/Volumes/Data/Media/Library/Videos"
+    src: "${LIBRARY_ROOT}/Videos"
     dest: "jellyfin@server:/mnt/media/Videos"
     media: "videos"
 ```
@@ -373,7 +373,7 @@ python3 bin/music/fix-missing-metadata.py --fix "/path/to/music"
 ### Bulk Operations
 ```bash
 # Process entire library at once
-python3 bin/music/fix-missing-metadata.py --fix "/Volumes/Data/Media/Library/Music" --recursive
+python3 bin/music/fix-missing-metadata.py --fix "${LIBRARY_ROOT}/Music" --recursive
 
 # Dry run to preview changes
 python3 bin/music/fix-missing-metadata.py --fix "/path/to/music" --dry-run --verbose

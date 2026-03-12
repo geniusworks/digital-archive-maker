@@ -8,11 +8,11 @@ This guide outlines recommended folder structures and filenames so your media se
 ---
 
 ## Library roots
-- Music library root: `/Volumes/Data/Media/Library/CDs`
+- Music library root: `${LIBRARY_ROOT}/CDs`
 - Video library root (examples):
-  - Movies: `/Volumes/Data/Media/Library/Movies`
-  - TV: `/Volumes/Data/Media/Library/TV`
-  - Disc backups (raw MKV/MP4 by title or date): `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/DVDs` and `${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/Blurays`
+  - Movies: `${LIBRARY_ROOT}/Movies`
+  - TV: `${LIBRARY_ROOT}/TV`
+  - Disc backups (raw MKV/MP4 by title or date): `${LIBRARY_ROOT}/DVDs` and `${LIBRARY_ROOT}/Blurays`
 
 Note: `LIBRARY_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
 
@@ -23,7 +23,7 @@ Use the title-named (preferred when Title/Year are known) or date-based folders 
 ## Music naming (albums)
 Recommended structure (matches `abcde` config in this repo):
 ```
-/Volumes/Data/Media/Library/CDs/
+${LIBRARY_ROOT}/CDs/
   Artist/
     Album/
       01 - Track Title.flac
@@ -110,7 +110,7 @@ This repo provides intelligent sync capabilities that respect explicit content t
 #### Single library sync
 ```bash
 python3 bin/sync/sync-library.py \
-  --src "/Volumes/Data/Media/Library/CDs" \
+  --src "${LIBRARY_ROOT}/CDs" \
   --dest "jellyfin@server:/mnt/media/Music" \
   --exclude-explicit \
   --exclude-unknown
@@ -133,19 +133,19 @@ global:
 
 sync_jobs:
   - name: "clean-cd-library"
-    src: "/Volumes/Data/Media/Library/CDs"
+    src: "${LIBRARY_ROOT}/CDs"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
     
   - name: "clean-digital-library"
-    src: "/Volumes/Data/Media/Library/Music"
+    src: "${LIBRARY_ROOT}/Music"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true
     exclude_unknown: true
-
+    
   - name: "clean-movies-library"
-    src: "/Volumes/Data/Media/Library/Movies"
+    src: "${LIBRARY_ROOT}/Movies"
     dest: "jellyfin@server:/mnt/media/Movies"
     media: "movies"
     max_mpaa: "PG-13"
@@ -186,7 +186,7 @@ python3 bin/sync/master-sync.py  # Will clean up orphaned folders
 ## Movie naming
 Follow Plex/Jellyfin recommendations:
 ```
-/Volumes/Data/Media/Library/Movies/
+${LIBRARY_ROOT}/Movies/
   Movie Name (Year)/
     Movie Name (Year).mp4
     Movie Name (Year).nfo   # optional
@@ -199,7 +199,7 @@ Follow Plex/Jellyfin recommendations:
 
 ## TV series naming
 ```
-/Volumes/Data/Media/Library/TV/
+${LIBRARY_ROOT}/TV/
   Show Name/
     Season 01/
       Show Name - S01E01 - Episode Title.mp4

@@ -273,7 +273,7 @@ For more control over the process:
    # If using the repo script/Makefile, the staging folder will prefer
   # Title (Year) when provided/prompted; otherwise it falls back to a date.
   STAMP=$(date "+%Y-%m-%d")
-  OUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/$DISCDIR/$STAMP"
+  OUTDIR="${LIBRARY_ROOT}/$DISCDIR/$STAMP"
   mkdir -p "$OUTDIR"
    ```
 
@@ -869,13 +869,13 @@ If you need all tracks, explicitly use `--force-all-tracks`.
 - For Plex/Jellyfin/Emby, follow their naming conventions for movies and TV episodes to enable scraper metadata.
 
 ## Recommended naming for media servers
-- Movies:
+-- Movies:
   ```
-  /Volumes/Data/Media/Library/Movies/Movie Name (Year)/Movie Name (Year).mp4
+  ${LIBRARY_ROOT}/Movies/Movie Name (Year)/Movie Name (Year).mp4
   ```
-- TV:
+-- TV:
   ```
-  /Volumes/Data/Media/Library/TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
+  ${LIBRARY_ROOT}/TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
   ```
 
 See **[Media Server Setup](media_server_setup.md)** for more complete examples and tips.

@@ -88,8 +88,8 @@ Current `docs/` has overlapping files. Target structure:
 ### B3. Fix Known Doc Bugs
 - [x] `media_server_setup.md` lines 86-101: broken/duplicated markdown code block for `metaflac` examples
 - [x] Verify all `bin/music/fix_missing_metadata.py` references → actual file is `fix-missing-metadata.py` (kebab-case)
-- [ ] Ensure every doc links back to QUICKSTART.md for prereqs
-- [ ] Replace hardcoded `/Volumes/Data/Media/...` paths with `${LIBRARY_ROOT}/...` where possible
+- [x] Ensure every doc links back to QUICKSTART.md for prereqs
+- [x] Replace hardcoded `/Volumes/Data/Media/...` paths with `${LIBRARY_ROOT}/...` where possible
 
 ---
 
