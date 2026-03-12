@@ -523,6 +523,7 @@ def interactive_subtitle_prompt(
                 sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
                 sys.stdout.flush()
                 print("⚠️  Operation cancelled")
+                print()  # Add newline before exit
                 sys.exit(0)
 
             sys.stdout.write(f"\rContinuing with default in {remaining}s...")
@@ -539,6 +540,7 @@ def interactive_subtitle_prompt(
                             sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
                             sys.stdout.flush()
                             print("⚠️  Operation cancelled")
+                            print()  # Add newline before exit
                             sys.exit(0)
                         if key in [opt[0] for opt in options]:
                             choice = key
@@ -555,6 +557,7 @@ def interactive_subtitle_prompt(
                     sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
                     sys.stdout.flush()
                     print("⚠️  Operation cancelled")
+                    print()  # Add newline before exit
                     sys.exit(0)
 
             # Check if we already have a choice
