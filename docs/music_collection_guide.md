@@ -49,15 +49,21 @@ The Makefile auto-loads `.env` so abcde sees `LIBRARY_ROOT`. Alternative (direct
 
 #### Step 2: Fix Missing Metadata (NEW!)
 ```bash
-# Scan for metadata issues:
-python3 bin/music/fix-missing-metadata.py --scan "${LIBRARY_ROOT}/CDs"
+# Unified CLI (recommended):
+dam tag fix-metadata --scan "${LIBRARY_ROOT}/CDs"
+dam tag fix-metadata --fix "${LIBRARY_ROOT}/CDs"
 
-# Fix all issues:
+# Direct script:
+python3 bin/music/fix-missing-metadata.py --scan "${LIBRARY_ROOT}/CDs"
 python3 bin/music/fix-missing-metadata.py --fix "${LIBRARY_ROOT}/CDs"
 ```
 
 #### Step 3: Tag Explicit Content
 ```bash
+# Unified CLI (recommended):
+dam tag explicit "${LIBRARY_ROOT}/CDs"
+
+# Direct script:
 python3 bin/music/tag-explicit-mb.py "${LIBRARY_ROOT}/CDs"
 ```
 
@@ -65,23 +71,26 @@ python3 bin/music/tag-explicit-mb.py "${LIBRARY_ROOT}/CDs"
 
 #### Step 4: Download Lyrics (NEW!)
 ```bash
-# Smart album-by-album processing (recommended):
-media lyrics "${LIBRARY_ROOT}/CDs" --recursive
+# Unified CLI (recommended):
+dam tag lyrics "${LIBRARY_ROOT}/CDs" --recursive
 
 # Clear all failed lookups (retry everything):
-media lyrics "${LIBRARY_ROOT}/CDs" --recursive --clear-failed
+dam tag lyrics "${LIBRARY_ROOT}/CDs" --recursive --clear-failed
 
 # Retry only previously failed tracks (useful after rate limits reset):
-media lyrics "${LIBRARY_ROOT}/CDs" --recursive --retry-failed
+dam tag lyrics "${LIBRARY_ROOT}/CDs" --recursive --retry-failed
+
+# Makefile shortcut:
+make lyrics
+
+# Direct script:
+python3 bin/music/download_lyrics.py "${LIBRARY_ROOT}/CDs" --recursive
 
 # Add a track to permanent skip list (e.g., classical, instrumental):
-media lyrics --add-to-skip "Classical Escape" "Brandenburg concerto No1 in F major"
+dam tag lyrics --add-to-skip "Classical Escape" "Brandenburg concerto No1 in F major"
 
 # Force overwrite existing lyrics:
-media lyrics "${LIBRARY_ROOT}/CDs" --recursive --force
-
-# Or use the script directly:
-python3 bin/music/download_lyrics.py "${LIBRARY_ROOT}/CDs" --recursive
+dam tag lyrics "${LIBRARY_ROOT}/CDs" --recursive --force
 ```
 
 ### 🧠 Intelligent Artist Variation System

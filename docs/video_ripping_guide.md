@@ -9,17 +9,21 @@ Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with p
 
 ## 🎬 Quick Start
 
-**For all video processing, use the unified command:**
+**For all video processing, use the unified CLI:**
 
 ```bash
 # English films (DVD or Blu-ray)
-make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
+dam rip video --title "Movie Title" --year 2023 --type bluray
 
 # Foreign films with subtitle burning
-BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
+dam rip video --title "Foreign Film" --year 2023 --type bluray --burn-subtitles
 
 # Process existing MKV files
+dam rip video --title "Movie Title" --year 2023 --type bluray
+
+# Makefile shortcuts (still available)
 make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
+BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
 ```
 
 ---

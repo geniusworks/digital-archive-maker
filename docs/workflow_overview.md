@@ -1,12 +1,12 @@
 # Workflow Overview (Disc → Digital Archive)
 
-This repository is organized around three primary workflows:
+This repository provides a unified CLI (`dam`) for three primary workflows:
 
 - **Audio CDs → FLAC library → tagging → optional sync to a server**
 - **DVD/Blu-ray → MP4 library → subtitles/organization → server-ready layout**
 - **Music Videos → organize → standardize → sync with other video content**
 
-Each step links to the detailed guide or script.
+Each step uses the `dam` command or links to detailed guides.
 
 📖 **For the complete music pipeline from ALL sources to Jellyfin, see `docs/music_collection_guide.md`**
 
@@ -84,8 +84,9 @@ flowchart LR
 
 ### A1) Rip CD to FLAC (MusicBrainz + cover + playlist)
 - Guide: `docs/music_collection_guide.md` (Source 1: Audio CDs)
-- Typical command:
-  - `make rip-cd`
+- Commands:
+  - `dam rip cd` (unified CLI)
+  - `make rip-cd` (Makefile shortcut)
 
 Output (default):
 - `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac`
@@ -93,13 +94,17 @@ Output (default):
 - `Album.m3u8`
 
 ### A2) Normalize/fix an existing album folder (optional)
-- Helper: `bin/music/fix_album.py`
+- Commands:
+  - `dam tag fix-album` (unified CLI)
+  - `bin/music/fix_album.py` (direct script)
   - Renames tracks to `NN - Title.flac`
   - Rebuilds playlist
   - Fixes tags and cover art
 
 ### A3) Tag explicit content (per-track)
-- Script: `bin/music/tag-explicit-mb.py`
+- Commands:
+  - `dam tag explicit` (unified CLI)
+  - `bin/music/tag-explicit-mb.py` (direct script)
 - Writes per-track tag: `EXPLICIT=Yes|No|Unknown`
 
 Debug options:
@@ -114,7 +119,9 @@ Artifacts:
 - `./log/explicit/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`, if enabled)
 
 ### A4) Sync to a destination server while excluding explicit/unknown (optional)
-- Script: `bin/sync/sync-library.py`
+- Commands:
+  - `dam sync` (unified CLI)
+  - `bin/sync/sync-library.py` (direct script)
 - Excludes are driven by the `EXPLICIT` tag:
   - `--exclude-explicit` skips `EXPLICIT=Yes`
   - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
@@ -140,6 +147,7 @@ flowchart LR
 ### B1) Rip discs to staging (MKV/MP4)
 - Guide: `docs/video_ripping_guide.md`
 - Commands:
+  - `dam rip video` (unified CLI)
   - `make rip-video` (staging)
   - `make rip-movie TITLE="Movie Name" YEAR=1999` (organize main feature)
 - Features: Automatic disc scanning, interactive subtitle processing prompt before ripping, automatic compression for large MKVs.
@@ -156,7 +164,9 @@ flowchart LR
   - Backfilling English soft subs into existing MP4s
 
 ### B4) Tag movie metadata and ratings (optional)
-- Scripts:
+- Commands:
+  - `dam tag metadata` (unified CLI)
+  - `dam tag ratings` (unified CLI)
   - `bin/video/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
   - `bin/video/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache
 
@@ -176,21 +186,24 @@ flowchart LR
 ```
 
 ### C1) Organize music videos into artist folders
-- Script: `bin/video/fix_music_videos.py` — Uses MusicBrainz/AcoustID to identify and organize videos
+- Commands:
+  - `dam tag music-videos` (unified CLI)
+  - `bin/video/fix_music_videos.py` — Uses MusicBrainz/AcoustID to identify and organize videos
 - Output: `${LIBRARY_ROOT}/Videos/Music/Artist/Title.mp4`
 
 ### C2) Standardize filenames and metadata (optional)
-- **Filename standardization:** `bin/video/standardize_music_video_filenames.py`
+- Commands:
+  - `dam tag standardize` (unified CLI)
+  - **Filename standardization:** `bin/video/standardize_music_video_filenames.py`
+  - **Metadata scanning:** `bin/video/scan_music_video_metadata.py`
   - Ensures all files follow `{artist} - {title}.mp4` format
   - Handles both MP4 and MP3 files
   - Uses existing metadata or falls back to directory/filename parsing
-- **Metadata scanning:** `bin/video/scan_music_video_metadata.py`
-  - Scans for missing artist/title metadata
-  - Updates files using parsed filename information
-  - Supports dry-run and force update modes
 
 ### C3) Sync to server alongside other video content
-- Configuration: `bin/sync/sync-config.yaml`
+- Commands:
+  - `dam sync` (unified CLI)
+  - Configuration: `bin/sync/sync-config.yaml`
 - Destination: `/mnt/media/Videos` (syncs entire Videos directory including Music subfolder)
 - No rating filtering applied to music videos
 - Integrated with master sync orchestration
