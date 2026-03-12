@@ -39,8 +39,8 @@
 ### A2. Directory Cleanup
 - [x] Remove empty `explicit/` directory (no `.gitkeep`, no purpose)
 - [x] Verify `_archive/` and `_install/` remain gitignored (local-only; not shipped)
-- [ ] Add `.gitkeep` to `log/` and `cache/` if not already present
-- [ ] Confirm `config/` ships only `.gitkeep` (user-specific overrides stay local)
+- [x] Add `.gitkeep` to `log/` and `cache/` if not already present
+- [x] Confirm `config/` ships only `.gitkeep` (user-specific overrides stay local)
 
 ### A3. Dependency & Packaging
 - [ ] Audit all Python deps for license compatibility (MIT project; all deps should be permissive)
@@ -223,11 +223,11 @@ Current `docs/` has overlapping files. Target structure:
 ## E. Code Quality & Polish
 
 ### E1. Important for Professional Release
-- [ ] Add `--help` with clear usage examples to every script
+- [x] Add `--help` with clear usage examples to every script
 - [x] Ensure every script checks for required tools before running → `dam.deps` module + `dam check`
 - [ ] Add type hints to critical public functions
 - [x] Extract shared patterns into `dam/` package (config, deps, keys, console)
-- [ ] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
+- [x] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
 
 ### E2. Testing
 - [ ] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
@@ -240,7 +240,7 @@ Current `docs/` has overlapping files. Target structure:
 
 ### E3. CI / Pre-commit
 - [x] Add pre-commit hooks config: `black`, `isort`, `flake8`, trailing whitespace, end-of-file, check-yaml
-- [ ] Ensure CI runs on PR (already have `.github/workflows/ci.yml`)
+- [x] Ensure CI runs on PR (already have `.github/workflows/ci.yml`)
 
 ---
 
