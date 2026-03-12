@@ -341,7 +341,7 @@ def main():
     parser.add_argument(
         "--root",
         default="/Volumes/Data/Media/Library/Shows",
-        help="Shows root folder",
+        help="Shows root folder (default: /Volumes/Data/Media/Library/Shows)",
     )
     parser.add_argument(
         "--show",

@@ -964,7 +964,7 @@ def main() -> int:
         "--title-index",
         type=int,
         default=0,
-        help="Select title by size ranking (0=largest, 1=2nd largest, etc.)",
+        help="Select title by index (0=Title 0, 1=Title 1, etc.). For seamless branching discs, uses natural title order.",
     )
     args = parser.parse_args()
 
