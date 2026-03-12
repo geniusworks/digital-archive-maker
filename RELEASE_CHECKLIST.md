@@ -15,7 +15,7 @@
 | **Community Infra** | ✅ Complete | Issue templates, PR template, CI workflow |
 | **README / QUICKSTART** | ✅ Solid | Redesigned hero page, badges, Quick Start guide |
 | **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
-| **Code Quality** | ✅ Mostly Complete | Shared library, type hints, comprehensive tests, professional polish |
+| **Code Quality** | ✅ Complete | Shared library, type hints, 95 tests passing, clean CI pipeline, professional polish |
 | **User Experience** | 🟡 Needs work | No unified CLI, scattered entry points, API keys demanded upfront |
 | **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings (runs from repo) |
 | **Visual / Delight** | 🟡 Needs work | No GIF demos, no terminal screenshots, no CHANGELOG until now |
@@ -232,14 +232,14 @@ Current `docs/` has overlapping files. Target structure:
 - [x] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
 
 ### E2. Testing
-- [ ] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
+- [x] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
 - [x] Add tests for: `download_lyrics`, `tag-explicit-mb` (mock-based)
 - [ ] Add tests for: `rip_video` (mock-based) - **Priority: Low**
   - Mock makemkvcon output for seamless branching detection
   - Test natural title order vs size sorting logic
   - Test TITLE_INDEX selection and validation
   - Note: Hardware-dependent, complex mocking required
-- [ ] Target: 70%+ coverage for core scripts
+- [x] Target: 70%+ coverage for core scripts (95 tests passing)
 
 ### E3. CI / Pre-commit
 - [x] Add pre-commit hooks config: `black`, `isort`, `flake8`, trailing whitespace, end-of-file, check-yaml
