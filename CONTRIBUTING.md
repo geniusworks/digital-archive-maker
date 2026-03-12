@@ -258,6 +258,40 @@ We love feature suggestions! Please include:
 
 ---
 
+## 🎨 Style Guide
+
+### **Emoji Language Standard**
+For consistency across the project, please follow our emoji standards:
+
+#### **Status Indicators:**
+```
+✅ Success/Complete/OK
+❌ Error/Failure/Missing
+⚠️ Warning/Optional/Caution
+```
+
+#### **Feature Categories:**
+```
+🎵 Music/Audio Content
+📀 Physical Media (CD/DVD/Blu-ray)
+🏷️ Tagging/Metadata
+📺 Video/TV Content
+🎬 Movies/Film
+⚙️ Settings/Configuration
+```
+
+#### **Actions & Processes:**
+```
+🚀 Start/Run/Execute
+🔧 Fix/Configure/Tools
+💡 Tips/Information
+🔍 Check/Search/Inspect
+```
+
+**Emoji Standards**: Use consistent status indicators (✅❌⚠️), feature categories (🎵📀🏷️), and actions (🚀🔧💡) throughout the project.
+
+---
+
 ## Recognition
 
 Contributors will be recognized in:
