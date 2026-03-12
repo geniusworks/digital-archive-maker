@@ -189,4 +189,4 @@ test-coverage:
 
 test-pipeline:
 	@echo "Running local pipeline test (mirrors GitHub Actions CI)..."
-	@./test-pipeline-local.sh
+	@./scripts/test-pipeline.sh
