@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Martin Diekhoff
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 """Dependency checker and guided installer.
 
 Checks for required system tools (Homebrew packages, apps) and Python

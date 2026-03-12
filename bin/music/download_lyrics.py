@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Martin Diekhoff
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 """
 Lyrics Downloader for Music Library
 ==================================

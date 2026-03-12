@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Martin Diekhoff
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 """Centralised configuration loader.
 
 Reads settings from (in priority order):
