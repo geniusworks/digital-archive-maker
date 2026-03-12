@@ -66,7 +66,7 @@ After cleanup, root should contain only **standard GitHub files**:
 | `DISCLAIMER.md` | Legal protections | ✅ Keep |
 | `CODE_OF_CONDUCT.md` | Community standards | ✅ Keep |
 | `SECURITY.md` | Vulnerability reporting | ✅ Keep |
-| `LICENSE` | MIT license | ✅ Keep |
+| `LICENSE` | GPLv2+ license | ✅ Keep |
 | `NOTICE` | Third-party attribution | ✅ Keep |
 | ~~`TODO.md`~~ | ~~594-line planning doc~~ | ❌ Delete (absorbed here) |
 | ~~`IMPROVEMENTS.md`~~ | ~~256-line changelog/roadmap~~ | ❌ Delete (absorbed into CHANGELOG.md) |
