@@ -252,7 +252,7 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] Add GIF demo of CD ripping workflow (terminal recording)
 - [ ] Add terminal screenshots showing beautiful output
 - [x] Test README rendering on GitHub before release
-- [ ] Consistent emoji language across docs (already partially done)
+- [x] Consistent emoji language across docs (standardized status indicators and feature emojis)
 
 ---
 
