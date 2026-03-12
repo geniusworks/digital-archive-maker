@@ -257,7 +257,10 @@ Current `docs/` has overlapping files. Target structure:
 
 ---
 
-## G. Pre-Release Verification (Run Before Every Tag)
+## G. Pre-Release Verification (Run Before EVERY Version Tag)
+
+> **IMPORTANT**: This section applies to ALL releases - v1.0.0, v1.0.1, v1.1.0, v2.0.0, etc.
+> Run this complete checklist before tagging any version for public release.
 
 ### G1. Quality Assurance Checklist
 - [ ] **Code Quality Pipeline**: Run `scripts/test-pipeline.sh` - must pass with 0 errors
@@ -277,7 +280,8 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **Version Bump**: Update `pyproject.toml` version (X.Y.Z format)
 - [ ] **Tag Message**: Prepare release tag description:
   ```bash
-  git tag -a v1.0.0 -m "Release v1.0.0
+  # Example for v1.0.0 - customize for each version
+  git tag -a vX.Y.Z -m "Release vX.Y.Z
 
   Features:
   - Complete CD/DVD/Blu-ray ripping pipeline
@@ -298,6 +302,12 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
 - [ ] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
 - [ ] **Git History**: Review recent commits for any sensitive information
+
+> **Versioning Guidelines**:
+> - **Patch releases** (X.Y.Z+1): Bug fixes, no breaking changes
+> - **Minor releases** (X.Y+1.0): New features, backward compatible
+> - **Major releases** (X+1.0.0): Breaking changes, major new features
+> - Always run this full checklist regardless of release type
 
 ---
 
