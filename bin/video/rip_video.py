@@ -520,7 +520,9 @@ def interactive_subtitle_prompt(
         for remaining in range(timeout_seconds, 0, -1):
             # Check for global cancellation
             if CANCELLED:
-                print("\n⚠️  Operation cancelled")
+                sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
+                sys.stdout.flush()
+                print("⚠️  Operation cancelled")
                 sys.exit(0)
 
             sys.stdout.write(f"\rContinuing with default in {remaining}s...")
@@ -534,7 +536,9 @@ def interactive_subtitle_prompt(
                         key = sys.stdin.read(1)
                         # Check for Ctrl+C (ETX character in raw mode)
                         if key == "\x03":
-                            print("\n⚠️  Operation cancelled")
+                            sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
+                            sys.stdout.flush()
+                            print("⚠️  Operation cancelled")
                             sys.exit(0)
                         if key in [opt[0] for opt in options]:
                             choice = key
@@ -548,7 +552,9 @@ def interactive_subtitle_prompt(
                             sys.stdout.flush()
                             break
                 except KeyboardInterrupt:
-                    print("\nOperation cancelled.")
+                    sys.stdout.write("\r" + " " * 50 + "\r")  # Clear the countdown line
+                    sys.stdout.flush()
+                    print("⚠️  Operation cancelled")
                     sys.exit(0)
 
             # Check if we already have a choice
