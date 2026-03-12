@@ -260,7 +260,7 @@ Current `docs/` has overlapping files. Target structure:
 
 ### Pre-Release Final Steps
 - [x] Complete items in sections A–C above
-- [ ] Run full PII / secrets scan on all tracked files
+- [x] Run full PII / secrets scan on all tracked files
 - [ ] Test every documented workflow on a clean macOS system
 - [ ] Verify README renders correctly on GitHub
 - [ ] Bump version to `1.0.0` in `pyproject.toml`
