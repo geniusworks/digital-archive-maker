@@ -10,7 +10,7 @@ set -euo pipefail
 #   ./bluray_to_mp4.zsh [movie-title] [year] [output-dir]
 #   
 #   Examples:
-#     ./bluray_to_mp4.zsh "The Matrix" 1999 "/Volumes/Data/Media/Library/Movies"  ← Full control
+#     ./bluray_to_mp4.zsh "The Matrix" 1999 "${LIBRARY_ROOT}/Movies"  ← Full control
 #     ./bluray_to_mp4.zsh "The Matrix" 1999     ← Manual title + year (default output dir)
 #     ./bluray_to_mp4.zsh "The Matrix"          ← Manual title only (default output dir)
 #     ./bluray_to_mp4.zsh 1999                   ← Auto-detect title + manual year (default output dir)

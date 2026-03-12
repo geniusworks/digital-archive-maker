@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Standardize music video filenames to consistent format: {artist} - {title}.mp4
-Processes all files in /Volumes/Data/Media/Library/Videos/Music and its subdirectories.
+Processes all files in ${LIBRARY_ROOT}/Videos/Music and its subdirectories.
 """
 
 import os
@@ -20,7 +20,7 @@ from mutagen.mp4 import MP4, MP4StreamInfoError
 load_dotenv()
 
 # Configuration
-MUSIC_VIDEOS_ROOT = Path("/Volumes/Data/Media/Library/Videos/Music")
+MUSIC_VIDEOS_ROOT = Path(os.getenv("LIBRARY_ROOT", "/Volumes/Data/Media/Library")) / "Videos/Music"
 VERBOSE = True
 DRY_RUN = False
 

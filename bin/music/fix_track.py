@@ -11,7 +11,7 @@ import musicbrainzngs
 from mutagen import File
 
 # ===== CONFIG =====
-TARGET_DIR = "/Volumes/Data/Media/Library/Music"
+TARGET_DIR = os.getenv("LIBRARY_ROOT", "/Volumes/Data/Media/Library") + "/Music"
 ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY", "")
 musicbrainzngs.set_useragent("FixTrackScript", "1.0", "testing@example.com")
 

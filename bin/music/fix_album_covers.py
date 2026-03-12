@@ -5,8 +5,8 @@ Fetch missing cover art for albums using MusicBrainz and Cover Art Archive.
 Usage:
     python3 fix_album_covers.py [/path/to/album/or/library]
     Examples:
-        python3 fix_album_covers.py /Volumes/Data/Media/Library/CDs       # full scan
-        python3 fix_album_covers.py /Volumes/Data/Media/Library/CDs/U2/The Joshua Tree  # specific album
+        python3 fix_album_covers.py ${LIBRARY_ROOT}/CDs       # full scan
+        python3 fix_album_covers.py ${LIBRARY_ROOT}/CDs/U2/The Joshua Tree  # specific album
     Defaults to current directory if no argument is given.
 """
 
