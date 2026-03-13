@@ -649,22 +649,25 @@ make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=2
 
 The script will display:
 ```
-🔄 Seamless branching detected, using natural title order
+Title index 1 specified, checking all title sizes...
 
-Available titles (natural order for seamless branching):
-👉 Title 0: 23.953 GB (index 0)
-   Title 1: 23.953 GB (index 1)  
-   Title 2: 23.953 GB (index 2)
+Available titles (sorted by size):
+   Index 0: Title 0 (23.953 GB)
+👉 Index 1: Title 2 (19.219 GB)
+   Index 2: Title 3 (0.648 GB)
+   Index 3: Title 1 (0.483 GB)
 
-Selected title: 0 (23.953 GB, index 0)
+Found main feature: Title 2 (1:26:51)
+Skipping 3 shorter tracks
 ```
 
 **Tips**:
 - **Seamless branching detected**: Script automatically identifies multi-language discs
-- **Natural title order**: `TITLE_INDEX=0` now selects Title 0 (usually main feature)
-- **Predictable selection**: No more size-based sorting confusion for seamless branching
+- **Natural title order**: `TITLE_INDEX=0` selects Title 0 (usually main feature)
+- **Size-based sorting**: For non-seamless discs, titles are sorted by size (largest first)
+- **Clear selection**: 👉 pointer shows which title is selected
 - All titles may appear identical in MakeMKV metadata
-- Size differences are usually minimal (few MB)
+- Size differences help identify different content versions
 - Test each index to find the correct language version
 - Once identified, note the correct index for future use
 - **TITLE_INDEX controls which title gets ripped from the disc**

@@ -473,7 +473,7 @@ def interactive_subtitle_prompt(
     for i, stream in enumerate(main_audio):
         lang = stream.get("language", "und")
         codec = stream.get("codec", "unknown")
-        marker = " 👉" if i == best_audio_index else "   "
+        marker = "👉" if i == best_audio_index else "  "
 
         # Show channel count if available
         channels = stream.get("channels", "")
@@ -482,9 +482,7 @@ def interactive_subtitle_prompt(
         else:
             track_info = f"{lang.upper()} ({codec})"
 
-        # Add note for the selected track
-        if i == best_audio_index and len(main_audio) > 1:
-            track_info += " ← SELECTED"
+        # Note: 👉 pointer already indicates selection, no need for extra text
 
         print(f"{marker} Track {i}: {track_info}")
 
@@ -559,7 +557,7 @@ def interactive_subtitle_prompt(
 
     print("Available Options:\n")
     for key, action, description in options:
-        marker = " 👉" if action == default_action else "   "
+        marker = "👉" if action == default_action else "  "
         print(f"{marker} {key}) {description}")
 
     print(
@@ -1216,7 +1214,7 @@ def main() -> int:
     parser.add_argument(
         "--title-index",
         type=int,
-        default=0,
+        default=None,
         help="Select title by index (0=Title 0, 1=Title 1, etc.). For seamless branching discs, uses natural title order.",
     )
     args = parser.parse_args()
@@ -1227,6 +1225,16 @@ def main() -> int:
     # Defaults
     library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
+    
+    # Handle TITLE_INDEX from environment variable if not specified via command line
+    if args.title_index is None:
+        title_index_env = get_env_str("TITLE_INDEX")
+        if title_index_env:
+            try:
+                args.title_index = int(title_index_env)
+            except ValueError:
+                print(f"⚠️  Invalid TITLE_INDEX '{title_index_env}', must be an integer")
+                args.title_index = None
 
     # Encoding settings (faster defaults)
     # Higher number = lower quality but faster
@@ -1423,10 +1431,15 @@ def main() -> int:
                         # Detect seamless branching: 3+ titles with identical duration
                         is_seamless_branching = len(same_duration_titles) >= 3
 
-                        # Get sizes for size-based selection when title_index > 0
+                        # Get sizes for size-based selection when title_index is specified
                         # or when there are same-duration titles
-                        if args.title_index > 0 or len(same_duration_titles) > 1:
-                            if args.title_index > 0:
+                        should_check_sizes = (
+                            args.title_index is not None or  # title_index explicitly specified
+                            len(same_duration_titles) > 1  # Multiple same-duration titles
+                        )
+                        
+                        if should_check_sizes:
+                            if args.title_index is not None:
                                 print(
                                     f"Title index {args.title_index} specified, checking all title sizes..."
                                 )
@@ -1471,35 +1484,83 @@ def main() -> int:
                                     # For non-seamless discs, sort by size (largest first)
                                     title_sizes.sort(key=lambda x: x[1], reverse=True)
 
-                                # Validate title_index is within range
-                                if args.title_index >= len(title_sizes):
-                                    print(
-                                        f"❌ Title index {args.title_index} out of range (only {len(title_sizes)} titles available)"
-                                    )
-                                    print(f"  → Available titles: 0-{len(title_sizes)-1}")
-                                    return 1
+                                # Use title selection logic when title_index is specified
+                                if args.title_index is not None:
+                                    # Validate title_index is within range
+                                    if args.title_index >= len(title_sizes):
+                                        print(
+                                            f"❌ Title index {args.title_index} out of range (only {len(title_sizes)} titles available)"
+                                        )
+                                        print(f"  → Available titles: 0-{len(title_sizes)-1}")
+                                        return 1
 
-                                main_title_id = title_sizes[args.title_index][0]
-                                main_duration = next(t[1] for t in titles if t[0] == main_title_id)
-                                main_duration_str = next(
-                                    t[2] for t in titles if t[0] == main_title_id
-                                )
-
-                                # Show all available titles with their sizes for manual selection
-                                if is_seamless_branching:
-                                    print(
-                                        f"\nAvailable titles (natural order for seamless branching):"
+                                    main_title_id = title_sizes[args.title_index][0]
+                                    main_duration = next(t[1] for t in titles if t[0] == main_title_id)
+                                    main_duration_str = next(
+                                        t[2] for t in titles if t[0] == main_title_id
                                     )
+
+                                    # Show all available titles with their sizes for manual selection
+                                    if is_seamless_branching:
+                                        print(
+                                            f"\nAvailable titles (natural order for seamless branching):"
+                                        )
+                                    else:
+                                        print(f"\nAvailable titles (sorted by size):")
+
+                                    for i, (tid, size_gb) in enumerate(title_sizes):
+                                        marker = "👉" if i == args.title_index else "  "
+                                        print(f"{marker} Index {i}: Title {tid} ({size_gb:.3f} GB)")
                                 else:
-                                    print(f"\nAvailable titles (sorted by size):")
+                                    # No title_index specified and multiple same-duration titles
+                                    # Warn user and suggest using TITLE_INDEX
+                                    print(
+                                        f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:"
+                                    )
+                                    for i, (tid, seconds, duration, _) in enumerate(
+                                        same_duration_titles
+                                    ):
+                                        print(f"   Title {tid}: {duration}")
+                                    print(f"\n💡 Use TITLE_INDEX to select a specific title:")
 
-                                for i, (tid, size_gb) in enumerate(title_sizes):
-                                    marker = "👉" if i == args.title_index else "   "
-                                    print(f"{marker} Title {tid}: {size_gb:.3f} GB (index {i})")
-
-                                print(
-                                    f"\nSelected title: {main_title_id} ({title_sizes[args.title_index][1]:.3f} GB, index {args.title_index})"
-                                )
+                                    if is_seamless_branching:
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                        )
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
+                                        )
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
+                                        )
+                                        print(
+                                            f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                        )
+                                        (
+                                            main_title_id,
+                                            main_duration,
+                                            main_duration_str,
+                                        ) = title_0[:3]
+                                    else:
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Largest'
+                                        )
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Second largest'
+                                        )
+                                        print(
+                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Third largest'
+                                        )
+                                        print(
+                                            f"\n🔄 Defaulting to first title (may not be desired language version)"
+                                        )
+                                        (
+                                            main_title_id,
+                                            main_duration,
+                                            main_duration_str,
+                                        ) = titles[
+                                            0
+                                        ][:3]
                             else:
                                 # No title_index specified and multiple same-duration titles
                                 # Warn user and suggest using TITLE_INDEX
@@ -1567,6 +1628,7 @@ def main() -> int:
 
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
+                    print()
 
                     # Show interactive prompt BEFORE ripping starts
                     # First, get full disc info to analyze streams
