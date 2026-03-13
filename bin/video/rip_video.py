@@ -1614,12 +1614,18 @@ def main() -> int:
                             str(outdir),
                         ]
                         print(f"  → Running: {' '.join(cmd)}")
-                        result = _run(cmd, capture=True)
-                        print(f"  ✓ MakeMKV output: {result.stdout.strip()}")
+                        print()  # Blank line before spinner
+                        spinner = show_spinner("Ripping with MakeMKV...")
+                        try:
+                            result = _run(cmd, capture=True)
+                            stop_spinner(spinner, f"✓ MakeMKV output: {result.stdout.strip()}")
+                        except Exception as e:
+                            stop_spinner(spinner, f"✗ MakeMKV failed: {e}")
+                            raise
                         if result.stderr:
                             print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
                     except KeyboardInterrupt:
-                        print(f"\n❌ Rip cancelled by user")
+                        stop_spinner(spinner, "⚠️  Rip cancelled by user")
                         print(f"   → Cleaning up partial files...")
                         # Clean up any partial files
                         for partial_file in outdir.glob(f"*t{main_title_id:02d}*"):
@@ -1802,6 +1808,8 @@ def main() -> int:
 
         else:
             print("Ripping all tracks (forced)...")
+            print()  # Blank line before spinner
+            spinner = show_spinner("Ripping all tracks with MakeMKV...")
             try:
                 _run(
                     [
@@ -1813,17 +1821,22 @@ def main() -> int:
                         f"--minlength={minlength}",
                     ]
                 )
-                print(f"✓ Successfully ripped all tracks (forced)")
+                stop_spinner(spinner, "✓ Successfully ripped all tracks (forced)")
             except subprocess.CalledProcessError as e:
-                print(f"✗ MakeMKV failed to rip all tracks (forced): {e}")
+                stop_spinner(spinner, f"✗ MakeMKV failed to rip all tracks (forced): {e}")
                 print(f"  → Trying backup method for problematic disc...")
 
                 # Try backup method for problematic discs
                 backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
                 print(f"  → Running backup: {' '.join(backup_cmd)}")
-                backup_result = _run(backup_cmd, capture=True)
-                # Last 200 chars
-                print(f"  ✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+                print()  # Blank line before spinner
+                backup_spinner = show_spinner("Creating backup with MakeMKV...")
+                try:
+                    backup_result = _run(backup_cmd, capture=True)
+                    stop_spinner(backup_spinner, f"✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+                except Exception as backup_e:
+                    stop_spinner(backup_spinner, f"✗ Backup failed: {backup_e}")
+                    raise
 
                 # Now rip ALL titles from backup (don't rely on title ID
                 # mapping)
@@ -1836,15 +1849,20 @@ def main() -> int:
                     f"--minlength={minlength}",
                 ]
                 print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
+                print()  # Blank line before spinner
+                backup_rip_spinner = show_spinner("Ripping from backup with MakeMKV...")
                 try:
                     backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                    print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                    stop_spinner(backup_rip_spinner, f"✓ Backup rip output: {backup_rip_result.stdout.strip()}")
                     print(f"  ✓ Successfully ripped using backup method")
                 except subprocess.CalledProcessError as e3:
-                    print(f"  ✗ Backup rip also failed: {e3}")
+                    stop_spinner(backup_rip_spinner, f"✗ Backup rip also failed: {e3}")
                     print(f"  ❌ This disc appears to be unreadable or heavily protected")
                     print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
                     return 1  # Exit gracefully
+                except Exception as e3:
+                    stop_spinner(backup_rip_spinner, f"✗ Backup rip error: {e3}")
+                    raise
 
         # Eject disc if requested (default: true for disc rips)
         # Note: Don't eject here - HandBrake fallback may need the disc
