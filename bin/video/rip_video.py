@@ -1988,8 +1988,12 @@ def main() -> int:
 
         # Eject disc after all ripping attempts complete (including HandBrake fallback)
         if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
+            # Ensure any spinner is stopped before ejecting
+            if CURRENT_SPINNER:
+                stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
             print("Disc rip complete, ejecting...")
             eject_disc()
+            print()  # Blank line after ejection for clean spacing
 
     # Filter for main feature only (largest file) unless forcing all tracks
     if not force_all_tracks and len(mkvs) > 1:
