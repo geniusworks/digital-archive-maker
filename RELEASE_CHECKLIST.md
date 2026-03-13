@@ -459,7 +459,128 @@ git branch -m main
   - [ ] Document community guidelines and code of conduct
   - [ ] Consider creating FAQ for common cross-tool questions
 
-### I4. Future Standalone Packaging (Post-v1.0)
+### I4. Future Configuration Extensions (Post-v1.0)
+
+#### **🎯 Tier 1: High Impact, Low Complexity**
+- [ ] **VIDEO_QUALITY_PROFILE**: Simplified preset system
+  - [ ] Add `VIDEO_QUALITY_PROFILE=balanced|quality|speed|storage`
+  - [ ] Map presets to HandBrake settings (HB_QUALITY, HB_PRESET, HB_TUNE)
+  - [ ] Update documentation with preset descriptions
+  - [ ] Test preset combinations for different use cases
+- [ ] **AUDIO_OUTPUT_FORMAT**: Audio format flexibility
+  - [ ] Add `AUDIO_OUTPUT_FORMAT=flac|mp3|ogg|m4a|wav`
+  - [ ] Update .abcde.conf to use environment variable
+  - [ ] Test format compatibility across devices
+  - [ ] Document storage vs. quality trade-offs
+- [ ] **REENCODE_THRESHOLD**: User-controlled compression strategy
+  - [ ] Add `REENCODE_THRESHOLD=5GB|10GB|off|auto`
+  - [ ] Update logic to use configurable threshold
+  - [ ] Test with various file sizes and quality settings
+  - [ ] Document impact on storage and quality
+
+#### **🥈 Tier 2: Medium Impact, Medium Complexity**
+- [ ] **VIDEO_CONTAINER**: Container choice flexibility
+  - [ ] Add `VIDEO_CONTAINER=mp4|mkv|both`
+  - [ ] Implement MKV output option for archival users
+  - [ ] Add "both" option to generate MP4 + MKV
+  - [ ] Update documentation with compatibility notes
+- [ ] **VIDEO_RESOLUTION**: Resolution control for storage management
+  - [ ] Add `VIDEO_RESOLUTION=source|1080p|720p|480p|auto`
+  - [ ] Implement HandBrake resolution settings
+  - [ ] Add auto-detection based on source and storage constraints
+  - [ ] Test quality impact of resolution reduction
+- [ ] **PARALLEL_ENCODING**: Performance optimization
+  - [ ] Add `PARALLEL_ENCODING=true|false`
+  - [ ] Add `MAX_PARALLEL_JOBS=2|4|auto`
+  - [ ] Implement concurrent processing for multiple files
+  - [ ] Add CPU usage monitoring and throttling
+
+#### **🥉 Tier 3: High Impact, High Complexity**
+- [ ] **VIDEO_CODEC**: Advanced codec options
+  - [ ] Add `VIDEO_CODEC=h264|h265|av1|auto`
+  - [ ] Implement codec compatibility checking
+  - [ ] Add device capability detection
+  - [ ] Create fallback strategies for unsupported devices
+- [ ] **AUDIO_MULTI_OUTPUT**: Multi-format generation
+  - [ ] Add `AUDIO_MULTI_OUTPUT=true|false`
+  - [ ] Add `AUDIO_FORMATS=flac,mp3,ogg`
+  - [ ] Implement concurrent encoding to multiple formats
+  - [ ] Add storage impact calculation and warnings
+- [ ] **HDR_PRESERVATION**: Future-proofing for 4K content
+  - [ ] Add `VIDEO_HDR_PRESERVE=true|false|auto`
+  - [ ] Implement HDR detection and preservation
+  - [ ] Add HDR compatibility checking
+  - [ ] Document HDR requirements and limitations
+
+#### **🔧 Implementation Strategy**
+- [ ] **Phase 1**: Implement Tier 1 extensions (quick wins)
+  - [ ] Add environment variables to .env.sample
+  - [ ] Update configuration loading logic
+  - [ ] Add validation and error handling
+  - [ ] Update documentation and help text
+- [ ] **Phase 2**: Implement Tier 2 extensions (enhanced control)
+  - [ ] Extend HandBrake integration for new options
+  - [ ] Add parallel processing infrastructure
+  - [ ] Implement resolution and container options
+  - [ ] Add comprehensive testing suite
+- [ ] **Phase 3**: Implement Tier 3 extensions (advanced features)
+  - [ ] Add codec compatibility framework
+  - [ ] Implement multi-format processing pipelines
+  - [ ] Add HDR and advanced video features
+  - [ ] Create advanced user documentation
+
+#### **🎯 User Scenario Configurations**
+- [ ] **Storage-Constrained User Profile**
+  - [ ] Create `AUDIO_OUTPUT_FORMAT=mp3` preset
+  - [ ] Create `VIDEO_QUALITY_PROFILE=storage` preset
+  - [ ] Create `REENCODE_THRESHOLD=5GB` preset
+  - [ ] Add storage usage calculator
+- [ ] **Quality Enthusiast Profile**
+  - [ ] Create `VIDEO_QUALITY_PROFILE=quality` preset
+  - [ ] Create `REENCODE_THRESHOLD=off` preset
+  - [ ] Create `VIDEO_CONTAINER=mkv` preset
+  - [ ] Add quality verification tools
+- [ ] **Speed-Focused User Profile**
+  - [ ] Create `VIDEO_QUALITY_PROFILE=speed` preset
+  - [ ] Create `PARALLEL_ENCODING=true` preset
+  - [ ] Create `REENCODE_THRESHOLD=20GB` preset
+  - [ ] Add performance monitoring
+- [ ] **Family Setup Profile**
+  - [ ] Create `VIDEO_QUALITY_PROFILE=balanced` preset
+  - [ ] Create `QUALITY_VERIFICATION=true` preset
+  - [ ] Add content filtering options
+  - [ ] Add multi-device optimization
+
+#### **📊 Configuration Impact Analysis**
+- [ ] **Storage Impact Calculator**
+  - [ ] Add tool to estimate storage needs based on settings
+  - [ ] Create comparison tables for different configurations
+  - [ ] Add recommendations based on available storage
+  - [ ] Implement storage usage warnings
+- [ ] **Quality Impact Assessment**
+  - [ ] Add quality verification tools
+  - [ ] Create before/after comparisons
+  - [ ] Add quality metrics and thresholds
+  - [ ] Implement quality loss detection
+- [ ] **Compatibility Matrix**
+  - [ ] Create device compatibility database
+  - [ ] Add compatibility checking for user configurations
+  - [ ] Generate compatibility reports
+  - [ ] Add device-specific recommendations
+
+#### **🔮 Future Considerations**
+- [ ] **AI-Assisted Configuration**
+  - [ ] Analyze user's hardware and storage
+  - [ ] Recommend optimal settings automatically
+  - [ ] Learn from user preferences over time
+  - [ ] Add configuration optimization suggestions
+- [ ] **Cloud Configuration Sync**
+  - [ ] Allow configuration backup to cloud
+  - [ ] Sync settings across multiple installations
+  - [ ] Add configuration templates and sharing
+  - [ ] Implement configuration versioning
+
+### I5. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
 - [ ] Consider PyInstaller or similar for creating truly standalone app
 - [ ] Evaluate trade-offs: bundle size vs. user convenience
