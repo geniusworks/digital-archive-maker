@@ -334,7 +334,12 @@ def interactive_subtitle_prompt(
         for s in main_subs
     )
     preferred_pgs_subs = any(
-        s.get("codec") in ["hdmv_pgs_subtitle", "s_vobsub"]
+        s.get("codec") == "hdmv_pgs_subtitle"
+        and matches_language(s.get("language", ""), LANG_SUBTITLES)
+        for s in main_subs
+    )
+    preferred_vob_subs = any(
+        s.get("codec") == "dvd_subtitle"
         and matches_language(s.get("language", ""), LANG_SUBTITLES)
         for s in main_subs
     )
@@ -346,12 +351,17 @@ def interactive_subtitle_prompt(
             default_action = "burn_subs"
         elif preferred_pgs_subs:
             default_action = "burn_pgs_subs"
+        elif preferred_vob_subs:
+            default_action = "burn_vob_subs"
     elif has_preferred_audio and preferred_text_subs:
         # Preferred audio + soft subs → extract SRT (preferred)
         default_action = "extract_srt"
     elif has_preferred_audio and preferred_pgs_subs and not preferred_text_subs:
         # Preferred audio + PGS subs (no soft subs) → extract PGS for OCR
         default_action = "extract_pgs_ocr"
+    elif has_preferred_audio and preferred_vob_subs and not preferred_text_subs:
+        # Preferred audio + VOB subs (no soft subs) → extract VOB for conversion
+        default_action = "extract_vob_convert"
 
     # Header already printed earlier during disc analysis
 
@@ -483,6 +493,12 @@ def interactive_subtitle_prompt(
         if has_foreign_audio:
             available_actions.append(("burn_pgs_subs", "MP4 + Burn image subtitles"))
 
+    # VOB subtitles (DVD subtitles, can be converted to SRT)
+    if preferred_vob_subs:
+        available_actions.append(("extract_vob_convert", "MP4 + Convert DVD subtitles"))
+        if has_foreign_audio:
+            available_actions.append(("burn_vob_subs", "MP4 + Burn DVD subtitles"))
+
     # Always available as fallback
     available_actions.append(("standard_mp4", "MP4 (no subtitles)"))
 
@@ -579,6 +595,7 @@ def interactive_subtitle_prompt(
         "has_foreign_audio": has_foreign_audio,
         "preferred_text_subs": preferred_text_subs,
         "preferred_pgs_subs": preferred_pgs_subs,
+        "preferred_vob_subs": preferred_vob_subs,
         "subtitle_streams": main_subs,
     }
 
@@ -743,6 +760,112 @@ def extract_pgs_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
         print(f"  ⚠️  Could not extract PGS subtitles: {e}")
 
     return extracted_files
+
+
+def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
+    """Extract English VOB subtitles to .sub/.idx files for conversion"""
+    extracted_files = []
+
+    try:
+        sub_res = _run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "s",
+                "-show_entries",
+                "stream=index,codec_name:stream_tags=language",
+                "-of",
+                "csv=p=0",
+                str(mkv_path),
+            ],
+            capture=True,
+        )
+
+        vob_streams = []
+        for line in sub_res.stdout.strip().split("\n"):
+            if line.strip():
+                parts = line.split(",")
+                if len(parts) >= 3 and "dvd_subtitle" in parts[1].lower():
+                    vob_streams.append(
+                        {
+                            "index": parts[0],
+                            "codec": parts[1],
+                            "language": parts[2] if parts[2] else "und",
+                        }
+                    )
+
+        for stream in vob_streams:
+            if matches_language(stream["language"], LANG_AUDIO):
+                # VOB subtitles need to be extracted as .sub/.idx pair
+                sub_path = output_dir / f"{mkv_path.stem}.en.sub"
+                idx_path = output_dir / f"{mkv_path.stem}.en.idx"
+                print(f"  → Extracting English VOB subtitles to {sub_path.name}")
+
+                extract_cmd = [
+                    "ffmpeg",
+                    "-i",
+                    str(mkv_path),
+                    "-map",
+                    f"0:{stream['index']}",
+                    "-c",
+                    "copy",
+                    str(sub_path),
+                    "-y",
+                ]
+                _run(extract_cmd)
+                
+                # Check if both .sub and .idx files were created
+                if sub_path.exists():
+                    extracted_files.append(sub_path)
+                    if idx_path.exists():
+                        extracted_files.append(idx_path)
+                    print(f"  ✓ VOB subtitles extracted: {sub_path.name}")
+                else:
+                    print(f"  ⚠️  VOB subtitle extraction failed")
+
+    except subprocess.CalledProcessError as e:
+        print(f"  ⚠️  Could not extract VOB subtitles: {e}")
+
+    return extracted_files
+
+
+def convert_vob_to_srt(sub_files: list[Path], output_dir: Path) -> list[Path]:
+    """Convert VOB subtitles (.sub/.idx) to SRT format"""
+    srt_files = []
+    
+    try:
+        for sub_file in sub_files:
+            if sub_file.suffix == '.sub':
+                base_name = sub_file.stem
+                srt_path = output_dir / f"{base_name}.srt"
+                
+                print(f"  → Converting VOB subtitles to SRT: {srt_path.name}")
+                
+                # Use ffmpeg to convert VOB to SRT
+                convert_cmd = [
+                    "ffmpeg",
+                    "-i",
+                    str(sub_file),
+                    "-f",
+                    "srt",
+                    str(srt_path),
+                    "-y",
+                ]
+                
+                _run(convert_cmd)
+                
+                if srt_path.exists():
+                    srt_files.append(srt_path)
+                    print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
+                else:
+                    print(f"  ⚠️  VOB→SRT conversion failed")
+                    
+    except subprocess.CalledProcessError as e:
+        print(f"  ⚠️  Could not convert VOB to SRT: {e}")
+    
+    return srt_files
 
 
 def extract_subtitles_to_srt(mkv_path: Path, output_dir: Path) -> list[Path]:
@@ -1889,6 +2012,15 @@ def main() -> int:
                         "--subtitle-burned",
                     ]
                     print(f"  ⚠️  BURNING English PGS subtitles (user choice)")
+            elif action == "burn_vob_subs" and subtitle_config["preferred_vob_subs"]:
+                # Burn English VOB subtitles
+                if eng_image_idx >= 0:
+                    hb_sub_opts = [
+                        "--subtitle",
+                        str(eng_image_hb_track),
+                        "--subtitle-burned",
+                    ]
+                    print(f"  ⚠️  BURNING English VOB subtitles (user choice)")
             elif action == "extract_srt" and subtitle_config["preferred_text_subs"]:
                 # Extract text subtitles to SRT
                 print(f"  → Extracting English text subtitles to SRT (user choice)")
@@ -1899,6 +2031,22 @@ def main() -> int:
                     print(f"  ✓ Extracted {len(pgs_files)} PGS file(s) for future OCR")
                 else:
                     print(f"  ⚠️  No PGS files extracted")
+            elif action == "extract_vob_convert":
+                # Extract VOB subtitles and convert to SRT
+                vob_files = extract_vob_subtitles(mkv, outdir)
+                if vob_files:
+                    print(f"  ✓ Extracted {len(vob_files)} VOB file(s) for conversion")
+                    # Convert VOB to SRT
+                    srt_files = convert_vob_to_srt(vob_files, outdir)
+                    if srt_files:
+                        print(f"  ✓ Converted {len(srt_files)} VOB→SRT file(s)")
+                        # Add SRT files to subtitle list for MP4 embedding
+                        for srt_file in srt_files:
+                            print(f"  → SRT ready for embedding: {srt_file.name}")
+                    else:
+                        print(f"  ⚠️  VOB→SRT conversion failed")
+                else:
+                    print(f"  ⚠️  No VOB files extracted")
             elif action == "no_subs":
                 print(f"  → Skipping all subtitle processing (user choice)")
             else:
@@ -1991,11 +2139,13 @@ def main() -> int:
                         print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
                     else:
                         print("  ⚠️  No text subtitles extracted")
-                elif action in ["burn_subs", "burn_pgs_subs"]:
+                elif action in ["burn_subs", "burn_pgs_subs", "burn_vob_subs"]:
                     # Already handled in HandBrake options
                     print(f"  ✓ Subtitles burned into video")
                 elif action == "extract_pgs_ocr":
                     print(f"  ✓ PGS extraction completed (OCR not yet implemented)")
+                elif action == "extract_vob_convert":
+                    print(f"  ✓ VOB subtitle conversion completed")
                 else:
                     print(f"  → No subtitle extraction (user choice)")
             else:
