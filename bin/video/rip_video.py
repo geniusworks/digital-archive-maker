@@ -103,8 +103,9 @@ def stop_spinner(spinner_thread, final_message: str = None):
         if final_message:
             print(f"\r  {final_message}")
         else:
-            # Clear the spinner line
+            # Clear the spinner line and ensure clean newline
             print("\r  ", end='', flush=True)
+            print()  # Ensure clean newline after clearing spinner
 
 
 def check_virtual_environment() -> None:
@@ -2053,6 +2054,9 @@ def main() -> int:
             # Ensure any spinner is stopped before ejecting
             if CURRENT_SPINNER:
                 stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
+                # Small delay to ensure spinner cleanup is complete
+                import time
+                time.sleep(0.1)
             print("Disc rip complete, ejecting...")
             eject_disc()
             print()  # Blank line after ejection for clean spacing
@@ -2336,6 +2340,9 @@ def main() -> int:
         print(f"  → Input exists: {mkv.exists()}")
         print(f"  → Output exists: {mp4_path.exists()}")
         print()  # Blank line before spinner
+        # Small delay to ensure no spinner overlap from previous operations
+        import time
+        time.sleep(0.1)
         spinner = show_spinner("Encoding with HandBrake...")
         
         try:
