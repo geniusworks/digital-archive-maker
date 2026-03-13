@@ -580,7 +580,82 @@ git branch -m main
   - [ ] Add configuration templates and sharing
   - [ ] Implement configuration versioning
 
-### I5. Future Standalone Packaging (Post-v1.0)
+### I5. Storage Management & Cleanup (Post-v1.0)
+
+#### **🗑️ MKV File Cleanup Strategy**
+- [ ] **MKV Cleanup Option**: User-controlled removal of original MKV files after successful MP4 encoding
+  - [ ] Add `CLEANUP_MKV_AFTER_ENCODING=true|false|prompt` environment variable
+  - [ ] Implement validation checks before deletion (MP4 exists, quality verification)
+  - [ ] Add user confirmation prompt for safety (default behavior)
+  - [ ] Create backup/undo mechanism for accidental deletions
+  - [ ] Document storage savings vs. archival flexibility trade-offs
+
+#### **📊 Storage Impact Analysis**
+- [ ] **Storage Usage Calculator**: Show users space savings from MKV cleanup
+  - [ ] Calculate total MKV storage usage in library
+  - [ ] Estimate potential space savings from cleanup
+  - [ ] Show before/after storage projections
+  - [ ] Add recommendations based on available storage
+- [ ] **Storage Monitoring**: Alert users when MKV files consume excessive space
+  - [ ] Monitor MKV vs. MP4 ratio in library
+  - [ ] Alert when MKV storage exceeds configurable threshold (e.g., 200GB)
+  - [ ] Provide cleanup recommendations and storage optimization tips
+
+#### **🔒 Safety & Validation Framework**
+- [ ] **Quality Verification**: Ensure MP4 files are valid before MKV deletion
+  - [ ] Implement MP4 file integrity checks
+  - [ ] Verify audio/video tracks are complete
+  - [ ] Check metadata preservation and accuracy
+  - [ ] Validate subtitle and chapter information
+- [ ] **User Validation Window**: Allow users to review before cleanup
+  - [ ] Show list of MKV files proposed for deletion
+  - [ ] Display corresponding MP4 files for verification
+  - [ ] Allow selective cleanup (delete some, keep others)
+  - [ ] Provide preview of storage savings
+
+#### **🎯 User Workflow Integration**
+- [ ] **Post-Encoding Cleanup Prompt**: Offer cleanup after successful encoding
+  - [ ] Prompt user after each successful video encoding
+  - [ ] Show storage impact and recommendations
+  - [ ] Allow "remember my choice" for future encodings
+  - [ ] Add "cleanup all" option for batch processing
+- [ ] **Library Maintenance Mode**: Periodic cleanup recommendations
+  - [ ] Add `dam cleanup-mkv` command for manual cleanup
+  - [ ] Implement scheduled cleanup reminders
+  - [ ] Create storage optimization reports
+  - [ ] Add "safe cleanup" vs. "aggressive cleanup" modes
+
+#### **⚙️ Configuration Options**
+- [ ] **Cleanup Behavior Settings**
+  - [ ] `CLEANUP_MKV_AFTER_ENCODING=prompt|auto|never`
+  - [ ] `CLEANUP_MKV_DELAY_DAYS=7` (wait period before deletion)
+  - [ ] `CLEANUP_MKV_VERIFY_QUALITY=true` (quality verification before deletion)
+  - [ ] `CLEANUP_MKV_BACKUP=false` (create backup before deletion)
+- [ ] **Storage Threshold Settings**
+  - [ ] `MKV_STORAGE_ALERT_GB=200` (alert when MKV storage exceeds this)
+  - [ ] `MKV_STORAGE_RATIO_THRESHOLD=0.5` (alert when MKV:MP4 ratio exceeds this)
+  - [ ] `STORAGE_OPTIMIZATION_REMINDERS=true` (periodic cleanup reminders)
+
+#### **🔮 Advanced Cleanup Features**
+- [ ] **Smart Cleanup Intelligence**
+  - [ ] Analyze user viewing patterns to keep frequently accessed MKVs
+  - [ ] Identify MKVs with special features not preserved in MP4
+  - [ ] Prioritize cleanup of duplicate or redundant MKV files
+  - [ ] Learn from user cleanup preferences over time
+- [ **Selective Cleanup Strategies**
+  - [ ] Keep MKVs for movies, cleanup for TV episodes
+  - [ ] Keep MKVs with multiple audio tracks, cleanup simple ones
+  - [ ] Keep MKVs with special features, cleanup basic rips
+  - [ ] Allow user-defined cleanup rules and exceptions
+
+#### **📋 Implementation Considerations**
+- [ ] **Safety First**: Default to "prompt" mode, never auto-delete without confirmation
+- [ ] **Transparency**: Clear communication about what's being deleted and why
+- [ **Recoverability**: Provide undo mechanism or backup strategy
+- [ ] **User Education**: Explain storage benefits vs. archival trade-offs
+- [ ] **Gradual Rollout**: Start with prompts and recommendations, add automation later
+
+### I6. Future Standalone Packaging (Post-v1.0)
 - [ ] Research bundling Python environment with Electron app
 - [ ] Consider PyInstaller or similar for creating truly standalone app
 - [ ] Evaluate trade-offs: bundle size vs. user convenience
