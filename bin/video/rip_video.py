@@ -2352,7 +2352,7 @@ def main() -> int:
                     # Continue without optimization - file should still be
                     # usable
 
-    print(f"\nDone: {outdir}\n")
+    print(f"\n🎉 Done: {outdir}\n")
 
     return 0
 
