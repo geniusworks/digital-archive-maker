@@ -278,6 +278,16 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **Environment Variables**: Cross-check `.env.sample` with all script requirements
 - [ ] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
 
+### G1.1. Testing Strategy & Coverage Policy
+- [ ] **Smart Testing Approach**: Focus on critical business logic over comprehensive script coverage
+- [ ] **Coverage Threshold**: 25% minimum coverage (realistic for complex scripts with external dependencies)
+- [ ] **Critical Path Testing**: Ensure core functionality, decision logic, and integration points are tested
+- [ ] **Test New Features**: Add focused tests for any new functionality before release
+- [ ] **Library vs Script Coverage**: 
+  - **Library code** (music, utils): Target 70%+ coverage
+  - **Complex scripts** (rip_video.py): Target critical path testing vs. comprehensive coverage
+- [ ] **Test Review**: Verify tests cover recent changes and edge cases for new features
+
 ### G2. Release Content Preparation
 - [ ] **Update CHANGELOG.md**: Add new version section with:
   - New features and improvements

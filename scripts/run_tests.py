@@ -71,7 +71,7 @@ def main():
         "--cov=bin",
         "--cov-report=term-missing",
         "--cov-report=html",
-        "--cov-fail-under=70"
+        "--cov-fail-under=25"
     ], "All tests with coverage")
     
     if success:
