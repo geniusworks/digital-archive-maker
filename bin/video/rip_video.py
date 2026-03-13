@@ -1967,7 +1967,9 @@ def main() -> int:
             except Exception as hb_error:
                 print(f"\n❌ HandBrake fallback failed")
                 print(f"   → Error: {hb_error}")
+                print(f"")
                 print(f"   → This disc may be CSS-protected or damaged")
+                print(f"")
                 print(f"   → Try cleaning the disc or using a different ripping tool")
                 return 1
 
