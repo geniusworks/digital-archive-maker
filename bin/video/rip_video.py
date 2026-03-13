@@ -39,6 +39,7 @@ LANG_VIDEO = normalize_language_code(os.getenv("LANG_VIDEO", "en"))
 
 # Global flag for graceful cancellation
 CANCELLED = False
+CURRENT_SPINNER = None
 
 
 def signal_handler(signum, frame):
@@ -61,6 +62,11 @@ def show_spinner(message: str, duration: float = None):
     import itertools
     import threading
     import time
+    global CURRENT_SPINNER
+    
+    # Stop any existing spinner before starting a new one
+    if CURRENT_SPINNER:
+        stop_spinner(CURRENT_SPINNER)
     
     spinner_chars = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
     
@@ -74,11 +80,13 @@ def show_spinner(message: str, duration: float = None):
     spin_thread = threading.Thread(target=spin)
     spin_thread.daemon = True
     spin_thread.start()
+    CURRENT_SPINNER = spin_thread
     
     if duration:
         time.sleep(duration)
         spin.stop = True
         spin_thread.join()
+        CURRENT_SPINNER = None
         print(f"\r  ✓ {message}")
     
     return spin_thread
@@ -86,9 +94,12 @@ def show_spinner(message: str, duration: float = None):
 
 def stop_spinner(spinner_thread, final_message: str = None):
     """Stop spinner thread and print final message."""
+    global CURRENT_SPINNER
     if spinner_thread:
         spinner_thread.stop = True
         spinner_thread.join(timeout=0.5)
+        if spinner_thread == CURRENT_SPINNER:
+            CURRENT_SPINNER = None
         if final_message:
             print(f"\r  {final_message}")
         else:
