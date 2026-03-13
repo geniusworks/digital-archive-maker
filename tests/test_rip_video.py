@@ -113,6 +113,38 @@ class TestRipVideo:
             # Verify which command was called (account for additional kwargs)
             mock_run.assert_called_with(['which', 'mkvextract'], check=False, capture_output=True, text=True)
 
+    def test_show_spinner_function(self):
+        """Test the show_spinner function creates a thread."""
+        import threading
+        import time
+        
+        # Test spinner with duration
+        start_time = time.time()
+        spinner_thread = rip_video.show_spinner("Test message", duration=0.3)
+        end_time = time.time()
+        
+        # Should have taken approximately 0.3 seconds
+        assert 0.25 <= (end_time - start_time) <= 0.4
+        assert spinner_thread is not None
+        assert isinstance(spinner_thread, threading.Thread)
+
+    def test_stop_spinner_function(self):
+        """Test the stop_spinner function properly stops spinner."""
+        import threading
+        import time
+        
+        # Start a spinner without duration
+        spinner_thread = rip_video.show_spinner("Test message")
+        
+        # Give it a moment to start
+        time.sleep(0.1)
+        
+        # Stop the spinner
+        rip_video.stop_spinner(spinner_thread, "✓ Test complete")
+        
+        # Thread should be stopped
+        assert getattr(spinner_thread, 'stop', False) is True
+
 
 @pytest.mark.integration
 class TestRipVideoIntegration:

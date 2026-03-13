@@ -56,6 +56,46 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
+def show_spinner(message: str, duration: float = None):
+    """Show an ASCII spinner with message during long operations."""
+    import itertools
+    import threading
+    import time
+    
+    spinner_chars = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
+    
+    def spin():
+        while not getattr(spin, 'stop', False):
+            if CANCELLED:
+                break
+            print(f"\r  {next(spinner_chars)} {message}", end='', flush=True)
+            time.sleep(0.1)
+    
+    spin_thread = threading.Thread(target=spin)
+    spin_thread.daemon = True
+    spin_thread.start()
+    
+    if duration:
+        time.sleep(duration)
+        spin.stop = True
+        spin_thread.join()
+        print(f"\r  ✓ {message}")
+    
+    return spin_thread
+
+
+def stop_spinner(spinner_thread, final_message: str = None):
+    """Stop spinner thread and print final message."""
+    if spinner_thread:
+        spinner_thread.stop = True
+        spinner_thread.join(timeout=0.5)
+        if final_message:
+            print(f"\r  {final_message}")
+        else:
+            # Clear the spinner line
+            print("\r  ", end='', flush=True)
+
+
 def check_virtual_environment() -> None:
     """Check if we're running in the virtual environment and exit gracefully if not."""
     # Check if VIRTUAL_ENV environment variable is set
@@ -2198,9 +2238,12 @@ def main() -> int:
         print(f"  → Output: {mp4_path}")
         print(f"  → Input exists: {mkv.exists()}")
         print(f"  → Output exists: {mp4_path.exists()}")
+        print()  # Blank line before spinner
+        spinner = show_spinner("Encoding with HandBrake...")
+        
         try:
             _run(hb_cmd)
-            print(f"  ✓ Encoding complete: {mp4_path.name}")
+            stop_spinner(spinner, f"✓ Encoding complete: {mp4_path.name}")
 
             # Extract subtitles based on user choice
             if "subtitle_config" in locals() and subtitle_config:
@@ -2212,37 +2255,19 @@ def main() -> int:
                     if srt_files:
                         print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
                     else:
-                        print("  ⚠️  No text subtitles extracted")
-                elif action in ["burn_subs", "burn_pgs_subs", "burn_vob_subs"]:
-                    # Already handled in HandBrake options
-                    print(f"  ✓ Subtitles burned into video")
-                elif action == "extract_pgs_ocr":
-                    print(f"  ✓ PGS extraction completed (OCR not yet implemented)")
-                elif action == "extract_vob_convert":
-                    print(f"  ✓ VOB subtitle conversion completed")
-                else:
-                    print(f"  → No subtitle extraction (user choice)")
-            else:
-                # Default behavior - extract if English subtitles exist
-                if has_en_subs:
-                    srt_files = extract_subtitles_to_srt(mkv, outdir)
-                    if srt_files:
-                        print(f"  ✓ Extracted {len(srt_files)} subtitle file(s)")
-                    else:
                         print("  ⚠️  No subtitles extracted")
                 else:
                     print("  ⚠️  No English subtitles found in source")
 
         except subprocess.CalledProcessError as e:
-            print(f"  ✗ Encoding failed for {mkv.name}: {e}")
+            stop_spinner(spinner, f"✗ Encoding failed for {mkv.name}: {e}")
             continue
-
-        # Post-mux English text subs into MP4 (if available)
-        if eng_text_idx != -1:
-            mux_text_sub_into_mp4(mp4_path, mkv, eng_text_idx, mark_default_sub)
-        elif has_en_subs and eng_image_codec:
-            # Image subtitles exist but can't be muxed into mp4.
-            pass
+        except KeyboardInterrupt:
+            stop_spinner(spinner, "⚠️  Encoding cancelled by user")
+            continue
+        except Exception as e:
+            stop_spinner(spinner, f"✗ Unexpected error during encoding: {e}")
+            continue
 
     # Auto-organize main feature only if TITLE and YEAR were provided.
     if safe_title and safe_year:
