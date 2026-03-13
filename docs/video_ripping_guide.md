@@ -12,10 +12,10 @@ Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with p
 **For all video processing, use the unified CLI:**
 
 ```bash
-# English films (DVD or Blu-ray)
+# Preferred language films (DVD or Blu-ray)
 dam rip video --title "Movie Title" --year 2023 --type bluray
 
-# Foreign films with subtitle burning
+# Non-preferred language films with subtitle burning
 dam rip video --title "Foreign Film" --year 2023 --type bluray --burn-subtitles
 
 # Process existing MKV files
@@ -23,7 +23,7 @@ dam rip video --title "Movie Title" --year 2023 --type bluray
 
 # Makefile shortcuts (still available)
 make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
-BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
+BURN_SUBTITLES=true make rip-movie TITLE="Non-Preferred Language Film" YEAR=2023 TYPE=bluray
 ```
 
 ---
@@ -32,10 +32,10 @@ BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023 TYPE=bluray
 
 | Scenario | Input | Output | Subtitles | Use Case |
 |----------|-------|--------|-----------|----------|
-| **English DVD** | DVD disc | MP4 + SRT | External SRT | English DVDs |
-| **English Blu-ray** | Blu-ray disc | MP4 + SRT | External SRT | English Blu-rays |
-| **Foreign DVD** | DVD disc | MP4 (burned) + SRT | Burned + External | Foreign DVDs |
-| **Foreign Blu-ray** | Blu-ray disc | MP4 (burned) + SRT | Burned + External | Foreign Blu-rays |
+| **Preferred Language DVD** | DVD disc | MP4 + SRT | External SRT | DVDs with user's preferred audio language |
+| **Preferred Language Blu-ray** | Blu-ray disc | MP4 + SRT | External SRT | Blu-rays with user's preferred audio language |
+| **Foreign Language DVD** | DVD disc | MP4 (burned) + SRT | Burned + External | DVDs with non-preferred audio language |
+| **Foreign Language Blu-ray** | Blu-ray disc | MP4 (burned) + SRT | Burned + External | Blu-rays with non-preferred audio language |
 | **Existing MKV** | MKV file | MP4 + SRT | External SRT | Already ripped |
 | **Large MKV** | Uncompressed MKV | Compressed MP4 + SRT | External SRT | Re-compression needed |
 
@@ -576,12 +576,12 @@ The system handles all ISO 639-1 and ISO 639-2 language codes, including:
 ### Track Selection Logic
 
 **Audio tracks**: 
-- Most channels among preferred language (5.1 > 2.0 > stereo)
+- Most channels among preferred language (from LANG_AUDIO) (5.1 > 2.0 > stereo)
 - Falls back to first track if no preferred language
 
 **Subtitle tracks**:
 - Text subtitles preferred over image subtitles  
-- First matching track of preferred format
+- First matching track of preferred format and language (from LANG_SUBTITLES)
 
 **Video tracks** (seamlessly branched discs):
 - Uses LANG_VIDEO preference when available
@@ -683,20 +683,20 @@ ffplay -ss 00:05:00 -t 00:00:10 "movie.mp4"
 - Missing subtitle tracks
 - Poor video quality
 
-## Audio/subtitle language handling (English preference)
-When the default audio track is not English, the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
+## Audio/subtitle language handling (User preference based)
+When the default audio track is not in your preferred language (from `.env` settings), the helper script uses `AUDIO_SUBS_POLICY` to determine behavior (no prompts).
 
-To guarantee inclusion when available, the script post-muxes any English text-based subtitles (SubRip/ASS/SSA/Text/WebVTT) from the source MKV into the final MP4 after encoding. This requires `ffmpeg` (for both `ffmpeg` and `ffprobe`) and `jq`.
+To guarantee inclusion when available, the script post-muxes any preferred language text-based subtitles (SubRip/ASS/SSA/Text/WebVTT) from the source MKV into the final MP4 after encoding. This requires `ffmpeg` (for both `ffmpeg` and `ffprobe`) and `jq`.
 
 - Non-interactive or to override the default policy, use `AUDIO_SUBS_POLICY`:
   ```bash
-  # Prefer English audio if present; else English subs if present; else keep
+  # Prefer preferred language audio if present; else preferred language subs if present; else keep
   AUDIO_SUBS_POLICY=prefer-audio make rip-movie TITLE="Movie" YEAR=1999
 
-  # Prefer adding English subtitles if present; else prefer English audio if present; else keep
+  # Prefer adding preferred language subtitles if present; else preferred language audio if present; else keep
   AUDIO_SUBS_POLICY=prefer-subs make rip-movie TITLE="Movie" YEAR=1999
 
-  # Force burn-in of English image-based subtitles (overrides auto-burn)
+  # Force burn-in of preferred language image-based subtitles (overrides auto-burn)
   AUDIO_SUBS_POLICY=prefer-burned make rip-movie TITLE="Movie" YEAR=1999
 
   # Keep streams as-is (no prompt, no auto-burn)
@@ -704,15 +704,15 @@ To guarantee inclusion when available, the script post-muxes any English text-ba
   ```
 
 Notes:
-- **Automatic burn-in**: For DVDs with non-English default audio and English image-based subtitles (VobSub/PGS) but no text-based English subs, the script automatically burns in the English subtitles. This ensures captions are always visible without manual intervention.
+- **Automatic burn-in**: For DVDs with non-preferred language default audio and preferred language image-based subtitles (VobSub/PGS) but no text-based preferred language subs, the script automatically burns in the preferred language subtitles. This ensures captions are always visible without manual intervention.
 - Default policy is `keep` (prompt when interactive; auto-burn applies when non-interactive if conditions are met).
-- Set `AUDIO_SUBS_POLICY=prefer-audio` to automatically pick English audio (fallback to English subs), `prefer-subs` to prioritize soft subs, `prefer-burned` to force burn-in even when text subs exist, or `keep` to suppress both prompts and auto-burn.
+- Set `AUDIO_SUBS_POLICY=prefer-audio` to automatically pick preferred language audio (fallback to preferred language subs), `prefer-subs` to prioritize soft subs, `prefer-burned` to force burn-in even when text subs exist, or `keep` to suppress both prompts and auto-burn.
 
 Implementation details:
-- English audio selection uses HandBrakeCLI options: `--audio-lang-list eng --first-audio`.
-- English text-based subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
-- English image-based subtitles (VobSub/PGS) are automatically burned into the video during encode with `--subtitle N --subtitle-burned` when conditions are met (non-English audio, no soft subs available). This makes captions permanently visible.
-  - **Track numbering**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, not by ffprobe's stream index. The script correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams.
+- Preferred language audio selection uses HandBrakeCLI options: `--audio-lang-list [LANG] --first-audio` where [LANG] comes from your `LANG_AUDIO` setting.
+- Preferred language text-based subtitles are muxed into the MP4 after encode (copy video/audio, `-c:s mov_text`). If you choose subtitles, the track is marked default; otherwise it is included but not defaulted.
+- Preferred language image-based subtitles (VobSub/PGS) are automatically burned into the video during encode with `--subtitle N --subtitle-burned` when conditions are met (non-preferred language audio, no soft subs available). This makes captions permanently visible.
+  - **Track numbering**: HandBrake numbers subtitle tracks sequentially (1, 2, 3...) based on their position in the file, not by ffprobe's stream index. The script correctly calculates the HandBrake track number by finding the position of the preferred language subtitle among all subtitle streams.
 - **Manual OCR fallback**: If auto-burn is disabled or fails, the script will extract image-based subtitles and provide guidance for manual OCR using tools like Subtitle Edit. Use the `vobsub-to-srt` helper for placeholder SRT creation.
 
 ## MP4 Streaming Compliance and Repair
