@@ -77,7 +77,13 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 - **English films:** External SRT files (auto-extracted for soft subs)
 - **Foreign films:** Option to burn subtitles or extract externally
 - **PGS subtitles:** Option to burn or extract for OCR
-- **Jellyfin ready:** Auto-detected subtitle files
+
+### ✅ Enhanced User Experience
+- **Visual progress:** ASCII spinners during MakeMKV ripping and HandBrake encoding
+- **Interactive prompts:** ENTER key accepts default selections, countdown timers
+- **Status feedback:** Clear messages for each step, no silent periods
+- **Celebratory completion:** 🎉 emoji when workflows finish successfully
+- **Jellyfin ready:** `.en.srt` and `.en.sup` files work perfectly with Jellyfin
 
 ### ✅ Resume Processing
 - **Skip disc scanning:** If MKV files exist, skips MakeMKV step

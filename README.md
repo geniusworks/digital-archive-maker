@@ -136,7 +136,7 @@ cd gui && npm start
 
 Optional: Run the test suite to confirm everything works:
 ```bash
-make test  # Runs all 81 tests
+make test  # Runs all 104 tests with comprehensive coverage
 ```
 
 See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
