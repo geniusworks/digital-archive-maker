@@ -864,7 +864,8 @@ Could not determine main feature, ripping all tracks...
    - Unusual disc structure
 
 🔧 Suggestions:
-   - Try using --force-all-tracks if you want all content
+   - Use `make rip-movie-all` to rip all tracks
+   - Set `FORCE_ALL_TRACKS=true` environment variable
    - Check the disc manually for the main feature
    - Use a different ripping tool for this disc
 
@@ -884,7 +885,10 @@ The script will **never** automatically rip all tracks as a fallback. This preve
 - Wasted time and disk space
 - Unexpected content in your library
 
-If you need all tracks, explicitly use `--force-all-tracks`.
+If you need all tracks, use one of these methods:
+- `make rip-movie-all TITLE="Movie" YEAR=1999` (recommended)
+- `FORCE_ALL_TRACKS=true make rip-movie TITLE="Movie" YEAR=1999`
+- `./venv/bin/python bin/video/rip_video.py --force-all-tracks`
 
 ---
 
