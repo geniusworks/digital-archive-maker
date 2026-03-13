@@ -27,27 +27,27 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 ## About
 
-**Digital Archive Maker** transforms your physical media collection into a organized digital library. 
+**Digital Archive Maker** transforms your physical media collection into an organized digital library you can stream anywhere.
 
-**The Problem:** Your CDs, DVDs, and Blu-rays sit on shelves, collecting dust. They're difficult to browse, can't be searched, and only work when you have the physical disc and player. Your favorite music and movies are trapped in plastic boxes.
+**The Problem:** Your CDs, DVDs, and Blu-rays sit on shelves, collecting dust. They're difficult to browse and can't be searched.
 
-**The Reality:** Traditional digitization is frustrating. You wrestle with dozens of tools that don't talk to each other: MakeMKV for discs, HandBrake for encoding, MusicBrainz for metadata, various taggers, and manual folder organization. Each step requires technical knowledge, and mistakes mean re-ripping or hours of manual cleanup.
+**The Reality:** Traditional digitization requires wrestling with dozens of tools that don't talk to each other.
 
-**The Solution:** Digital Archive Maker unifies this chaos into a single, automated workflow:
-- **Extracting** high-quality digital files from physical discs
-- **Organizing** everything with proper names, metadata, and artwork  
-- **Tagging** each item with rich details from online databases
-- **Structuring** files in a way that media servers understand
-- **Syncing** your entire library to devices you actually use
+**The Solution:** Digital Archive Maker automates everything:
+- **Extract** high-quality digital files from physical discs
+- **Organize** everything with names, metadata, and artwork  
+- **Tag** each item with rich details from online databases
+- **Structure** files for media servers like Jellyfin and Plex
+- **Sync** your library to devices you actually use
 
 **What it does:**
-- 🎵 **Digitizes CDs** — Creates lossless FLAC files with complete album info and cover art
-- 📀 **Preserves DVDs & Blu-rays** — Extracts movies with correct audio tracks and subtitles
-- 🏷️ **Enriches metadata** — Adds artist bios, movie descriptions, genre tags, and ratings
--️ **Organizes everything** — Creates a browsable, searchable library structure
-- 📱 **Integrates with media servers** — Works seamlessly with Jellyfin, Plex, and Emby
+- 🎵 **CDs to FLAC** — Lossless audio with album art and metadata
+- 📀 **DVDs/Blu-rays to MP4** — High-quality video with subtitles
+- 🏷️ **Rich metadata** — Artist bios, movie descriptions, genres, ratings
+-️ **Smart organization** — Browsable, searchable library structure
+- 📱 **Media server ready** — Works with Jellyfin, Plex, and Emby
 
-The result: Your entire media collection becomes instantly accessible from any device, searchable by any criteria, and safely backed up on your own hardware—no subscriptions required.
+**Your result:** Instant access to your entire media collection from any device, searchable by any criteria—no subscriptions required.
 
 ---
 
@@ -80,19 +80,13 @@ The result: Your entire media collection becomes instantly accessible from any d
 ```bash
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
-make install-deps        # creates venv, auto-configures pip, installs everything
+make install-deps        # creates venv and installs everything
 source venv/bin/activate  # activate the virtual environment
 ```
 
-*The `make install-deps` command now handles PEP 668 compatibility automatically by configuring the virtual environment.*
-
-*If you prefer not to use `make`, create the venv manually:*
+**GUI Option:** For a graphical interface:
 ```bash
-python3 -m venv venv
-echo -e "[global]\nbreak-system-packages = true" > venv/pip.conf  # Configure for modern Python
-source venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
+cd gui && npm start
 ```
 
 **Step 2: Configure** (interactive wizard)
@@ -127,11 +121,6 @@ dam rip video
 dam sync
 ```
 
-**GUI Option:** For a graphical interface, launch the desktop app:
-```bash
-cd gui && npm start
-```
-
 ## Verify Installation
 
 Optional: Run the test suite to confirm everything works:
@@ -148,30 +137,30 @@ See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
 ## Core Features
 
 ### 🎵 Music
-| What it does | How it works |
-|--------------|-------------|
-| **Rips CDs** | Saves as FLAC (lossless quality) with album art |
-| **Finds metadata** | Looks up album names, track titles, artists automatically |
-| **Tags explicit content** | Marks songs that may not be family-friendly |
-| **Adds genres** | Organizes by genre (rock, jazz, classical, etc.) |
-| **Fetches lyrics** | Downloads song lyrics when available |
-| **Fixes missing info** | Fills in gaps if something's missing |
+| Feature | How it works |
+|---------|-------------|
+| **CD ripping** | Saves as FLAC with album art |
+| **Metadata** | Automatic album/track/artist lookup |
+| **Content tags** | Marks explicit content |
+| **Genres** | Organizes by musical style |
+| **Lyrics** | Downloads when available |
+| **Gap filling** | Fixes missing information |
 
 ### 📀 Video
-| What it does | How it works |
-|--------------|-------------|
-| **Rips DVDs & Blu-rays** | Extracts video while preserving quality |
-| **Handles subtitles** | Detects and includes the right language |
-| **Burns in subtitles** | Embeds subtitles permanently if needed |
-| **Organizes movies** | Names files and adds descriptions automatically |
-| **Handles TV shows** | Groups episodes by season |
+| Feature | How it works |
+|---------|-------------|
+| **DVD/Blu-ray ripping** | Extracts video while preserving quality |
+| **Subtitle handling** | Detects and includes the right language |
+| **Subtitle burning** | Embeds subtitles when needed |
+| **Movie organization** | Names files and adds descriptions |
+| **TV show support** | Groups episodes by season |
 
 ### 🔄 Library Management
-| What it does | How it works |
-|--------------|-------------|
-| **Syncs your library** | Keeps multiple copies in sync |
-| **Filters content** | Can exclude explicit content for family-friendly devices |
-| **Creates playlists** | Auto-generates playlists for easy browsing |
+| Feature | How it works |
+|---------|-------------|
+| **Library sync** | Keeps multiple copies in sync |
+| **Content filtering** | Excludes explicit content for family devices |
+| **Playlists** | Auto-generates for easy browsing |
 
 ---
 
@@ -202,25 +191,6 @@ dam sync --dry-run       # Preview without changes
 The `dam` CLI wraps the underlying scripts and handles dependency checks and API key
 onboarding automatically. You can still use `make` targets and individual scripts directly —
 see [Documentation](docs/) for details.
-
----
-
-## What You Need
-
-**Just a Mac** — This runs on any Mac with macOS. You'll need Homebrew (free package manager) installed.
-
-Run `dam check --install` and the tool will install everything it can automatically. For the rest:
-
-- **MakeMKV** — Required for ripping DVDs/Blu-rays. Download from [makemkv.com](https://www.makemkv.com/).
-- **API keys** — Optional but recommended. Run `dam config` and you'll be walked through each one:
-
-| Service | Why | How to get it |
-|---------|-----|---------------|
-| Spotify | More accurate explicit content detection | Free at developer.spotify.com |
-| TMDb | Better movie/TV descriptions | Free at themoviedb.org |
-| Genius | Song lyrics when available | Free at genius.com/developers |
-
-API keys are requested only when you use a feature that needs them — you're never blocked upfront.
 
 ---
 
@@ -262,26 +232,6 @@ media-archive-maker/
 
 ---
 
-## Common Issues
-
-**"abcde not found" / "HandBrakeCLI not found"**
-```bash
-dam check --install      # auto-installs all Homebrew dependencies
-```
-
-**"MakeMKV not found"**
-Download from [makemkv.com](https://www.makemkv.com/) and install the app, then run `dam check`.
-
-**"No disc found"**
-Make sure the disc is inserted. If using an external drive, give it a moment to mount.
-
-**"API errors"**
-Run `dam config` to re-enter your API keys, or check `.env` directly.
-
-Still stuck? Check the [docs](docs/) or open an issue.
-
----
-
 ## Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
@@ -293,7 +243,7 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 This software is for **personal backup of media you legally own**. Users are solely responsible for compliance with applicable copyright laws in their jurisdiction.
 
 - **No decryption code is included** — External tools (MakeMKV) must be obtained and licensed separately
-- **No copyrighted content is downloaded** — Metadata lookups use authorized public APIs
+- **Metadata uses authorized APIs** — Song lyrics may be downloaded when available
 - **For personal use only** — See [DISCLAIMER.md](DISCLAIMER.md) for full terms
 
 ---
