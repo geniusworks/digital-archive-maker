@@ -407,6 +407,13 @@ git branch -m main
   - [ ] Implement graceful shutdown equivalent to CTRL+C
   - [ ] Ensure proper cleanup and user messaging on cancellation
   - [ ] Test cancellation during disc ripping, encoding, and tagging
+  - [ ] **Enhanced CLI Ctrl+C Support**: Comprehensive interrupt handling across all workflows
+    - [ ] Add top-level try/except wrapper around main() function for graceful Ctrl+C
+    - [ ] Ensure Ctrl+C works during all phases: disc detection, ripping, encoding, organization
+    - [ ] Implement proper cleanup of temporary files and partial operations on interrupt
+    - [ ] Add consistent cancellation messaging across all script entry points
+    - [ ] Test Ctrl+C behavior during MakeMKV ripping, HandBrake encoding, and file operations
+    - [ ] Verify signal handler integration with subprocess calls and external tools
 - [ ] **Workflow Progress Indicators**: Clear position in workflow
   - [ ] Show current step and overall progress for multi-step operations
   - [ ] Display estimated time remaining for long operations

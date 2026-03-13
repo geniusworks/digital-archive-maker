@@ -512,7 +512,7 @@ def interactive_subtitle_prompt(
         print(f"{marker} {key}) {description}")
 
     print(
-        f"\nPress 1-{len(options)} to select (default: {next(k for k, a, _ in options if a == default_action)})"
+        f"\nPress 1-{len(options)} to select, ENTER for default (default: {next(k for k, a, _ in options if a == default_action)})"
     )
     print()  # Empty line for countdown
 
@@ -557,7 +557,19 @@ def interactive_subtitle_prompt(
                             print("⚠️  Operation cancelled")
                             print()  # Add newline before exit
                             sys.exit(0)
-                        if key in [opt[0] for opt in options]:
+                        # Check for ENTER key (carriage return in raw mode)
+                        elif key == "\r" or key == "\n":
+                            choice = default_key
+                            # Clear the countdown line and reset cursor position
+                            sys.stdout.write("\r" + " " * 50 + "\r")
+                            sys.stdout.flush()
+                            print(f"Selected default option {choice}")
+                            print()  # Blank line before separator
+                            # Ensure cursor is at start of line for next output
+                            sys.stdout.write("\r")
+                            sys.stdout.flush()
+                            break
+                        elif key in [opt[0] for opt in options]:
                             choice = key
                             # Clear the countdown line and reset cursor position
                             sys.stdout.write("\r" + " " * 50 + "\r")
@@ -1198,6 +1210,7 @@ def main() -> int:
     require_command("HandBrakeCLI")
     require_command("ffprobe")
     require_command("ffmpeg")
+    require_command("mkvextract")
 
     safe_title = sanitize_title(title_raw) if title_raw else ""
     safe_year = sanitize_year(year_raw) if year_raw else ""
