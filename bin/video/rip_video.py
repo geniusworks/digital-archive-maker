@@ -1546,60 +1546,92 @@ def main() -> int:
                         )
 
                 if titles:
-                    # Detect seamless branching: multiple titles with same duration and similar sizes
-                    # Sort by duration (longest first) and pick the main feature
-                    titles.sort(key=lambda x: x[1], reverse=True)
+                    # Improved main feature detection using size and duration heuristics
+                    # Sort by size (largest first) as primary indicator of main feature
+                    titles.sort(key=lambda x: x[3], reverse=True)
 
-                    # If multiple titles have same duration (within 1 minute), detect seamless branching
-                    if len(titles) > 1:
-                        longest_duration = titles[0][1]
-                        same_duration_titles = [
-                            t for t in titles if abs(t[1] - longest_duration) <= 60
-                        ]
-
-                        # Detect seamless branching: 3+ titles with identical duration
-                        is_seamless_branching = len(same_duration_titles) >= 3
-
-                        # Get sizes for size-based selection when title_index is specified
-                        # or when there are same-duration titles
-                        should_check_sizes = (
-                            args.title_index is not None  # title_index explicitly specified
-                            or len(same_duration_titles) > 1  # Multiple same-duration titles
+                    # Filter candidates using percentage-based thresholds
+                    # This eliminates special features, trailers, and minor content
+                    def is_main_feature_candidate(title_data, all_titles):
+                        title_id, duration_seconds, duration_str, size_bytes = title_data
+                        
+                        # Get the longest duration and largest size from ALL titles
+                        longest_duration = max(t[1] for t in all_titles)
+                        largest_size = max(t[3] for t in all_titles)
+                        
+                        # Calculate ratios
+                        size_ratio = size_bytes / largest_size
+                        duration_ratio = duration_seconds / longest_duration
+                        
+                        # Percentage-based thresholds
+                        MIN_SIZE_RATIO = 0.75  # At least 75% of largest size
+                        MIN_DURATION_RATIO = 0.4  # At least 40% of longest duration
+                        
+                        return (
+                            size_ratio >= MIN_SIZE_RATIO and
+                            duration_ratio >= MIN_DURATION_RATIO
                         )
 
-                        if should_check_sizes:
-                            if args.title_index is not None:
-                                print(
-                                    f"Title index {args.title_index} specified, checking all title sizes..."
-                                )
-                            else:
-                                print(
-                                    f"Found {len(same_duration_titles)} titles with similar duration, checking sizes..."
-                                )
+                    # Filter titles to only main feature candidates
+                    candidates = [
+                        t for t in titles 
+                        if is_main_feature_candidate(t, titles)
+                    ]
 
-                            # Get file sizes for all titles (or same-duration ones)
-                            title_sizes = []
-                            titles_to_check = titles  # Check all titles when index specified
+                    # Detect seamless branching only among qualified candidates
+                    if len(candidates) >= 3:
+                        longest_duration = candidates[0][1]
+                        same_duration_candidates = [
+                            t for t in candidates 
+                            if abs(t[1] - longest_duration) <= 30  # Tighter 30-second window
+                        ]
+                        is_seamless_branching = len(same_duration_candidates) >= 3
+                    else:
+                        is_seamless_branching = False
 
-                            for title_id, _, _, _ in titles_to_check:
-                                size_line = next(
-                                    (
-                                        line
-                                        for line in info_res.stdout.split("\n")
-                                        if f"TINFO:{title_id},11," in line
-                                    ),
-                                    None,
-                                )
-                                if size_line:
-                                    # Parse exact bytes string like "25717678080"
-                                    size_str = size_line.split(",")[3].strip('"')
-                                    try:
-                                        size_bytes = int(size_str)
-                                        # Convert to GB for display, but keep precision
-                                        size_gb = size_bytes / (1024**3)
-                                        title_sizes.append((title_id, size_gb))
-                                    except ValueError:
-                                        pass
+                    # For backward compatibility with existing logic
+                    same_duration_titles = candidates if is_seamless_branching else candidates
+
+                    # Get sizes for size-based selection when title_index is specified
+                    # or when there are same-duration titles
+                    should_check_sizes = (
+                        args.title_index is not None  # title_index explicitly specified
+                        or len(same_duration_titles) > 1  # Multiple same-duration titles
+                    )
+
+                    if should_check_sizes:
+                        if args.title_index is not None:
+                            print(
+                                f"Title index {args.title_index} specified, checking all title sizes..."
+                            )
+                        else:
+                            print(
+                                f"Found {len(same_duration_titles)} titles with similar duration, checking sizes..."
+                            )
+
+                        # Get file sizes for all titles (or same-duration ones)
+                        title_sizes = []
+                        titles_to_check = titles  # Check all titles when index specified
+
+                        for title_id, _, _, _ in titles_to_check:
+                            size_line = next(
+                                (
+                                    line
+                                    for line in info_res.stdout.split("\n")
+                                    if f"TINFO:{title_id},11," in line
+                                ),
+                                None,
+                            )
+                            if size_line:
+                                # Parse exact bytes string like "25717678080"
+                                size_str = size_line.split(",")[3].strip('"')
+                                try:
+                                    size_bytes = int(size_str)
+                                    # Convert to GB for display, but keep precision
+                                    size_gb = size_bytes / (1024**3)
+                                    title_sizes.append((title_id, size_gb))
+                                except ValueError:
+                                    pass
 
                             if title_sizes:
                                 if is_seamless_branching:
@@ -1719,45 +1751,21 @@ def main() -> int:
                                     print(
                                         f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
                                     )
-                                    # For seamless branching, find Title 0 specifically
-                                    title_0 = next((t for t in titles if t[0] == 0), titles[0])
-                                    main_title_id, main_duration, main_duration_str = title_0[:3]
-                                else:
-                                    print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Largest'
-                                    )
-                                    print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Second largest'
-                                    )
-                                    print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Third largest'
-                                    )
-                                    print(
-                                        f"\n🔄 Defaulting to first title (may not be desired language version)"
-                                    )
-                                    (
-                                        main_title_id,
-                                        main_duration,
-                                        main_duration_str,
-                                    ) = titles[
-                                        0
-                                    ][:3]
+                                    # Use improved candidate-based selection
+                            if candidates:
+                                # Select the largest candidate (already sorted by size)
+                                main_title_id, main_duration, main_duration_str = candidates[0][:3]
+                                print(f"  → Selected main feature: Title {main_title_id} ({main_duration_str})")
+                            else:
+                                # Fallback: no candidates met criteria, use largest file
+                                main_title_id, main_duration, main_duration_str = titles[0][:3]
+                                print(f"  → No clear main feature found, using largest: Title {main_title_id}")
                         else:
-                            (
-                                main_title_id,
-                                main_duration,
-                                main_duration_str,
-                            ) = titles[
-                                0
-                            ][:3]
+                            # No size checking needed, use the largest (already sorted by size)
+                            main_title_id, main_duration, main_duration_str = titles[0][:3]
                     else:
-                        (
-                            main_title_id,
-                            main_duration,
-                            main_duration_str,
-                        ) = titles[
-                            0
-                        ][:3]
+                        # No candidates and no size checking, use largest
+                        main_title_id, main_duration, main_duration_str = titles[0][:3]
 
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
