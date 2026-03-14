@@ -13,9 +13,9 @@ def run_command(cmd, description):
     print(f"\n{'='*60}")
     print(f"Running: {description}")
     print(f"Command: {' '.join(cmd)}")
-    print('='*60)
+    print("=" * 60)
     print()
-    
+
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         print(result.stdout)
@@ -32,7 +32,7 @@ def run_command(cmd, description):
 def main():
     """Run all tests."""
     print()
-    
+
     # Check test dependencies are installed
     print("Checking test dependencies...")
     try:
@@ -40,41 +40,41 @@ def main():
         import pytest_cov
         import pytest_mock
         import requests_mock
+
         print("✅ All test dependencies are available")
     except ImportError as e:
         print(f"❌ Missing test dependency: {e}")
         print("Install with: pip install -r requirements-test.txt")
         sys.exit(1)
-    
+
     # Run different test suites
     success = True
-    
+
     # Unit tests (fast)
-    success &= run_command([
-        sys.executable, "-m", "pytest",
-        "tests/",
-        "-m", "unit",
-        "-v"
-    ], "Unit tests")
-    
+    success &= run_command(
+        [sys.executable, "-m", "pytest", "tests/", "-m", "unit", "-v"], "Unit tests"
+    )
+
     # Integration tests (may require external tools)
-    success &= run_command([
-        sys.executable, "-m", "pytest",
-        "tests/",
-        "-m", "integration",
-        "-v"
-    ], "Integration tests")
-    
+    success &= run_command(
+        [sys.executable, "-m", "pytest", "tests/", "-m", "integration", "-v"], "Integration tests"
+    )
+
     # All tests with coverage
-    success &= run_command([
-        sys.executable, "-m", "pytest",
-        "tests/",
-        "--cov=bin",
-        "--cov-report=term-missing",
-        "--cov-report=html",
-        "--cov-fail-under=25"
-    ], "All tests with coverage")
-    
+    success &= run_command(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/",
+            "--cov=bin",
+            "--cov-report=term-missing",
+            "--cov-report=html",
+            "--cov-fail-under=25",
+        ],
+        "All tests with coverage",
+    )
+
     if success:
         print("\n✅ All tests passed!")
         print("Coverage report generated in htmlcov/index.html")

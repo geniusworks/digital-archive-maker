@@ -91,17 +91,24 @@ def check(
     # API keys
     heading("API keys (highly recommended)")
     api_missing = missing_api_keys()
-    all_api_keys = ["ACOUSTID_API_KEY", "GENIUS_API_TOKEN", "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "TMDB_API_KEY", "OMDB_API_KEY"]
-    
+    all_api_keys = [
+        "ACOUSTID_API_KEY",
+        "GENIUS_API_TOKEN",
+        "SPOTIFY_CLIENT_ID",
+        "SPOTIFY_CLIENT_SECRET",
+        "TMDB_API_KEY",
+        "OMDB_API_KEY",
+    ]
+
     for k in all_api_keys:
         if k in api_missing:
             console.print(f" ⚠️ {k} (not configured yet)")
         else:
             console.print(f" ✅ {k}")
-    
+
     if not api_missing:
         success("All API keys configured.")
-    
+
     # Next steps - After all checks are complete
     console.print()
     if not required_missing and not py_missing:
@@ -160,9 +167,7 @@ def config(
     # Library root
     current_root = get("LIBRARY_ROOT", "/Volumes/Data/Media/Library")
     console.print(f"\n  Current library root: [key]{current_root}[/]")
-    new_root = console.input(
-        "  Enter new library root (or press Enter to keep current): "
-    ).strip()
+    new_root = console.input("  Enter new library root (or press Enter to keep current): ").strip()
     if new_root and new_root != current_root:
         _update_env_value(env_path, "LIBRARY_ROOT", new_root)
         success(f"Library root set to {new_root}")
@@ -185,41 +190,47 @@ def rip_cd():
     """Rip an audio CD to FLAC using abcde."""
     banner()
     _ensure_deps(["abcde", "flac"])
-    
+
     # Check for abcde configuration
     import os
     import shutil
+
     abcde_config = os.path.expanduser("~/.abcde.conf")
     sample_config = os.path.join(os.getcwd(), ".abcde.conf.sample")
-    
+
     if not os.path.exists(abcde_config):
         if os.path.exists(sample_config):
             info("Setting up abcde configuration...")
-            
+
             # Read MusicBrainz setting from user's .env (default to enabled)
             from dam.config import get
+
             musicbrainz_setting = get("MUSICBRAINZ_LOOKUP", "true").lower()
-            
+
             # Read sample config
-            with open(sample_config, 'r') as f:
+            with open(sample_config, "r") as f:
                 config_content = f.read()
-            
+
             # Set MusicBrainz based on user's .env configuration
             if musicbrainz_setting in ("true", "1", "yes"):
                 # User has MusicBrainz enabled (default)
-                config_content = config_content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=y")
+                config_content = config_content.replace(
+                    "MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=y"
+                )
                 success_msg = "✓ Created ~/.abcde.conf"
                 info_msg = "  • MusicBrainz lookup enabled (per your MUSICBRAINZ_LOOKUP setting)"
             else:
                 # User explicitly disabled MusicBrainz
-                config_content = config_content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=n")
+                config_content = config_content.replace(
+                    "MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=n"
+                )
                 success_msg = "✓ Created ~/.abcde.conf"
                 info_msg = "  • MusicBrainz lookup disabled (per your MUSICBRAINZ_LOOKUP setting)"
-            
+
             # Write the customized config
-            with open(abcde_config, 'w') as f:
+            with open(abcde_config, "w") as f:
                 f.write(config_content)
-            
+
             success(success_msg)
             info(info_msg)
             info("  • Using LIBRARY_ROOT from your .env file")
@@ -228,13 +239,13 @@ def rip_cd():
             warning("abcde configuration sample not found:")
             warning(f"  • {sample_config}")
             warning("\nContinuing with abcde defaults...")
-    
+
     # Check for CD and prompt user to insert if needed
     import subprocess
     import time
-    
+
     heading("Ripping CD")
-    
+
     # Check if any CD/DVD is inserted
     try:
         result = subprocess.run(
@@ -242,18 +253,18 @@ def rip_cd():
             shell=True,
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
         )
-        
+
         if result.returncode != 0 or not result.stdout.strip():
             warning("No CD detected in drive")
             info("Please insert a CD and press ENTER to continue...")
             info("(Waiting 30 seconds for CD detection...)")
-            
+
             # Countdown with periodic checks and ENTER detection
             import select
             import sys
-            
+
             for i in range(30, 0, -1):
                 try:
                     check_result = subprocess.run(
@@ -261,24 +272,24 @@ def rip_cd():
                         shell=True,
                         capture_output=True,
                         text=True,
-                        timeout=5
+                        timeout=5,
                     )
                     if check_result.returncode == 0 and check_result.stdout.strip():
                         success(f"✓ CD detected!")
                         break
                 except:
                     pass
-                
+
                 # Show countdown
                 if i % 5 == 0 or i <= 5:
                     info(f"  {i} seconds remaining...")
-                
+
                 # Check for ENTER key press (wait 1 second max)
                 if select.select([sys.stdin], [], [], 1)[0]:
                     sys.stdin.readline()
                     info("  Continuing anyway...")
                     break
-                
+
                 time.sleep(0.1)  # Small delay to prevent CPU spinning
             else:
                 # After 30 seconds, check one more time
@@ -287,7 +298,7 @@ def rip_cd():
                     shell=True,
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
                 )
                 if final_check.returncode != 0 or not final_check.stdout.strip():
                     error("No CD detected after 30 seconds")
@@ -295,16 +306,16 @@ def rip_cd():
                     return
         else:
             success("✓ CD detected in drive")
-            
+
     except Exception:
         # If disk detection fails, just proceed anyway
         warning("Could not check for CD - proceeding anyway")
-    
+
     info("Running abcde...")
     try:
         _run_script_or_make("rip-cd")
     except (SystemExit, typer.Exit) as e:
-        exit_code = getattr(e, 'exit_code', getattr(e, 'code', 1))
+        exit_code = getattr(e, "exit_code", getattr(e, "code", 1))
         if exit_code == 2:  # abcde failed, likely due to MusicBrainz issues
             # MusicBrainz is mandatory - provide immediate guidance
             error("MusicBrainz compatibility issue detected")
@@ -351,7 +362,7 @@ def rip_video(
     heading("Ripping video disc")
     cmd_parts = ["make"]
     if title and year:
-        cmd_parts += ["rip-movie", f'TITLE="{title}"', f'YEAR={year}']
+        cmd_parts += ["rip-movie", f'TITLE="{title}"', f"YEAR={year}"]
     else:
         cmd_parts.append("rip-video")
 
@@ -403,7 +414,9 @@ def tag_genres(
 @tag_app.command("lyrics")
 def tag_lyrics(
     path: str = typer.Argument(..., help="Path to music library."),
-    recursive: bool = typer.Option(True, "--recursive/--no-recursive", help="Process subdirectories."),
+    recursive: bool = typer.Option(
+        True, "--recursive/--no-recursive", help="Process subdirectories."
+    ),
 ):
     """Download song lyrics via Genius."""
     banner()
@@ -513,7 +526,7 @@ def _update_env_value(env_path: Path, key: str, value: str) -> None:
     import re
 
     content = env_path.read_text() if env_path.exists() else ""
-    pattern = re.compile(rf'^{re.escape(key)}\s*=.*$', re.MULTILINE)
+    pattern = re.compile(rf"^{re.escape(key)}\s*=.*$", re.MULTILINE)
     replacement = f'{key}="{value}"'
 
     if pattern.search(content):

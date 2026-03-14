@@ -24,9 +24,9 @@ from dam.console import console, error, heading, info, kv, status_table, success
 class DepKind(str, Enum):
     BREW = "brew"
     CASK = "cask"
-    APP = "app"          # macOS .app bundle (manual install)
-    PYTHON = "python"    # pip package
-    LINK = "link"        # symlink from an app bundle into PATH
+    APP = "app"  # macOS .app bundle (manual install)
+    PYTHON = "python"  # pip package
+    LINK = "link"  # symlink from an app bundle into PATH
 
 
 @dataclass
@@ -39,8 +39,8 @@ class Dependency:
     install_hint: str = ""
     check_cmd: Optional[str] = None  # shell command whose exit-0 means present
     brew_name: Optional[str] = None  # override for `brew install <name>`
-    app_path: Optional[str] = None   # e.g. /Applications/MakeMKV.app
-    url: Optional[str] = None        # download URL for manual installs
+    app_path: Optional[str] = None  # e.g. /Applications/MakeMKV.app
+    url: Optional[str] = None  # download URL for manual installs
     required_for: list[str] = field(default_factory=list)  # e.g. ["music", "video"]
     optional: bool = False
 
@@ -53,7 +53,7 @@ class Dependency:
                     shell=True,
                     capture_output=True,
                     timeout=10,
-                    check=True  # This will raise CalledProcessError for non-zero exit codes
+                    check=True,  # This will raise CalledProcessError for non-zero exit codes
                 )
                 return True
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):

@@ -26,35 +26,35 @@ class TestRipVideo:
         """Test that VOB subtitles default to extract_vob_convert action."""
         # Test the core logic directly without mocking
         # Simulate the condition: has_preferred_audio and preferred_vob_subs and not preferred_text_subs
-        
+
         # Simulate English audio present
         has_preferred_audio = True
-        
+
         # Simulate English VOB subtitles present, no text subtitles
         preferred_vob_subs = True
         preferred_text_subs = False
-        
+
         # This is the exact condition from rip_video.py line 362-364
         if has_preferred_audio and preferred_vob_subs and not preferred_text_subs:
             default_action = "extract_vob_convert"
         else:
             default_action = "unknown"
-        
+
         assert default_action == "extract_vob_convert"
 
     def test_interactive_subtitle_prompt_default_action_burn_vob(self):
         """Test that foreign audio + VOB subtitles defaults to burn_vob_subs."""
         # Test the core logic directly without mocking
         # Simulate the condition: not has_preferred_audio and has_foreign_audio and preferred_vob_subs
-        
+
         # Simulate foreign audio (no preferred audio)
         has_preferred_audio = False
         has_foreign_audio = True
-        
+
         # Simulate English VOB subtitles present, no text subtitles
         preferred_vob_subs = True
         preferred_text_subs = False
-        
+
         # This is the exact condition from rip_video.py lines 349-355
         if not has_preferred_audio and has_foreign_audio:
             if preferred_text_subs:
@@ -65,7 +65,7 @@ class TestRipVideo:
                 default_action = "unknown"
         else:
             default_action = "unknown"
-        
+
         assert default_action == "burn_vob_subs"
 
     def test_seconds_to_srt_time_conversion(self):
@@ -76,7 +76,7 @@ class TestRipVideo:
         # Account for floating point precision
         result = rip_video._seconds_to_srt_time(61.123)
         assert result in ["00:01:01,123", "00:01:01,122"]  # Allow for precision
-        
+
         # Test larger values (account for floating point precision)
         result_large = rip_video._seconds_to_srt_time(3661.999)
         assert result_large in ["01:01:01,999", "01:01:01,998"]  # Allow for precision
@@ -87,15 +87,15 @@ class TestRipVideo:
         # Mock data with VOB subtitles
         preferred_vob_subs = True
         has_foreign_audio = False
-        
+
         available_actions = []
-        
+
         # VOB subtitles (DVD subtitles, can be converted to SRT or burned)
         if preferred_vob_subs:
             available_actions.append(("extract_vob_convert", "MP4 + Convert DVD subtitles"))
             if has_foreign_audio:
                 available_actions.append(("burn_vob_subs", "MP4 + Burn DVD subtitles"))
-        
+
         # Should have the VOB convert option
         assert any(action == "extract_vob_convert" for action, _ in available_actions)
         assert ("extract_vob_convert", "MP4 + Convert DVD subtitles") in available_actions
@@ -103,26 +103,28 @@ class TestRipVideo:
     def test_require_command_mkvextract(self):
         """Test that mkvextract is properly required."""
         # Test that require_command function works with mkvextract
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Mock which command to return zero exit code (command found)
             mock_run.return_value.returncode = 0
-            
+
             # Should not raise an exception for mkvextract
             rip_video.require_command("mkvextract")
-            
+
             # Verify which command was called (account for additional kwargs)
-            mock_run.assert_called_with(['which', 'mkvextract'], check=False, capture_output=True, text=True)
+            mock_run.assert_called_with(
+                ["which", "mkvextract"], check=False, capture_output=True, text=True
+            )
 
     def test_show_spinner_function(self):
         """Test the show_spinner function creates a thread."""
         import threading
         import time
-        
+
         # Test spinner with duration
         start_time = time.time()
         spinner_thread = rip_video.show_spinner("Test message", duration=0.3)
         end_time = time.time()
-        
+
         # Should have taken approximately 0.3 seconds
         assert 0.25 <= (end_time - start_time) <= 0.4
         assert spinner_thread is not None
@@ -132,18 +134,18 @@ class TestRipVideo:
         """Test the stop_spinner function properly stops spinner."""
         import threading
         import time
-        
+
         # Start a spinner without duration
         spinner_thread = rip_video.show_spinner("Test message")
-        
+
         # Give it a moment to start
         time.sleep(0.1)
-        
+
         # Stop the spinner
         rip_video.stop_spinner(spinner_thread, "✓ Test complete")
-        
+
         # Thread should be stopped
-        assert getattr(spinner_thread, 'stop', False) is True
+        assert getattr(spinner_thread, "stop", False) is True
 
 
 @pytest.mark.integration
@@ -152,10 +154,10 @@ class TestRipVideoIntegration:
 
     def test_require_command_missing(self):
         """Test require_command function with missing command."""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Mock which command to return non-zero exit code (command not found)
             mock_run.return_value.returncode = 1
-            
+
             try:
                 rip_video.require_command("nonexistent_command_xyz")
                 assert False, "Should have raised RuntimeError"
@@ -165,9 +167,9 @@ class TestRipVideoIntegration:
 
     def test_require_command_exists(self):
         """Test require_command function with existing command."""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Mock which command to return zero exit code (command found)
             mock_run.return_value.returncode = 0
-            
+
             # Should not raise an exception
             rip_video.require_command("python3")  # python3 should exist

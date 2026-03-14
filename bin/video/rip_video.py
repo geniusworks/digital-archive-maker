@@ -62,19 +62,20 @@ def show_spinner(message: str, duration: float = None):
     import itertools
     import threading
     import time
+
     global CURRENT_SPINNER
 
     # Stop any existing spinner before starting a new one
     if CURRENT_SPINNER:
         stop_spinner(CURRENT_SPINNER)
 
-    spinner_chars = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
+    spinner_chars = itertools.cycle(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
 
     def spin():
-        while not getattr(spin, 'stop', False):
+        while not getattr(spin, "stop", False):
             if CANCELLED:
                 break
-            print(f"\r  {next(spinner_chars)} {message}", end='', flush=True)
+            print(f"\r  {next(spinner_chars)} {message}", end="", flush=True)
             time.sleep(0.1)
 
     spin_thread = threading.Thread(target=spin)
@@ -104,7 +105,7 @@ def stop_spinner(spinner_thread, final_message: str = None):
             print(f"\r  {final_message}")
         else:
             # Clear the spinner line and ensure clean newline
-            print("\r  ", end='', flush=True)
+            print("\r  ", end="", flush=True)
             print()  # Ensure clean newline after clearing spinner
 
 
@@ -188,7 +189,9 @@ def is_makemkv_available() -> bool:
     return is_command_available("makemkvcon")
 
 
-def handbrake_dvd_rip(disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None) -> None:
+def handbrake_dvd_rip(
+    disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None
+) -> None:
     """Rip DVD directly using HandBrake CLI when MakeMKV is not available.
 
     This provides a fallback for users who don't have MakeMKV installed.
@@ -204,7 +207,14 @@ def handbrake_dvd_rip(disc_type: str, outdir: Path, title_raw: str | None, year_
 
     # Find DVD device
     dvd_device = None
-    for device in ["/dev/rdisk1", "/dev/disk1", "/dev/rdisk2", "/dev/disk2", "/dev/rdisk3", "/dev/disk3"]:
+    for device in [
+        "/dev/rdisk1",
+        "/dev/disk1",
+        "/dev/rdisk2",
+        "/dev/disk2",
+        "/dev/rdisk3",
+        "/dev/disk3",
+    ]:
         if Path(device).exists():
             dvd_device = device
             break
@@ -480,8 +490,7 @@ def interactive_subtitle_prompt(
         for s in main_subs
     )
     preferred_vob_subs = any(
-        s.get("codec") == "dvd_subtitle"
-        and matches_language(s.get("language", ""), LANG_SUBTITLES)
+        s.get("codec") == "dvd_subtitle" and matches_language(s.get("language", ""), LANG_SUBTITLES)
         for s in main_subs
     )
 
@@ -967,7 +976,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                         "tracks",
                         str(mkv_path),
                         f"{stream['index']}:{temp_dir / mkv_path.stem}_sub",
-                        "-q"
+                        "-q",
                     ]
                     _run(extract_cmd)
 
@@ -1003,8 +1012,8 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
 
                         if srt_content:
                             # Write SRT file
-                            with open(srt_path, 'w', encoding='utf-8') as f:
-                                f.write('\n'.join(srt_content))
+                            with open(srt_path, "w", encoding="utf-8") as f:
+                                f.write("\n".join(srt_content))
 
                             extracted_files.append(srt_path)
                             print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
@@ -1015,6 +1024,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                 finally:
                     # Clean up temporary frames
                     import shutil
+
                     if temp_dir.exists():
                         shutil.rmtree(temp_dir)
 
@@ -1043,7 +1053,7 @@ def convert_vob_to_srt(sub_files: list[Path], output_dir: Path) -> list[Path]:
 
     try:
         for sub_file in sub_files:
-            if sub_file.suffix == '.sub':
+            if sub_file.suffix == ".sub":
                 base_name = sub_file.stem
                 srt_path = output_dir / f"{base_name}.srt"
 
@@ -1553,8 +1563,8 @@ def main() -> int:
                         # Get sizes for size-based selection when title_index is specified
                         # or when there are same-duration titles
                         should_check_sizes = (
-                            args.title_index is not None or  # title_index explicitly specified
-                            len(same_duration_titles) > 1  # Multiple same-duration titles
+                            args.title_index is not None  # title_index explicitly specified
+                            or len(same_duration_titles) > 1  # Multiple same-duration titles
                         )
 
                         if should_check_sizes:
@@ -1614,7 +1624,9 @@ def main() -> int:
                                         return 1
 
                                     main_title_id = title_sizes[args.title_index][0]
-                                    main_duration = next(t[1] for t in titles if t[0] == main_title_id)
+                                    main_duration = next(
+                                        t[1] for t in titles if t[0] == main_title_id
+                                    )
                                     main_duration_str = next(
                                         t[2] for t in titles if t[0] == main_title_id
                                     )
@@ -2025,7 +2037,9 @@ def main() -> int:
                 backup_spinner = show_spinner("Creating backup with MakeMKV...")
                 try:
                     backup_result = _run(backup_cmd, capture=True)
-                    stop_spinner(backup_spinner, f"✓ Backup output: {backup_result.stdout.strip()[-200:]}")
+                    stop_spinner(
+                        backup_spinner, f"✓ Backup output: {backup_result.stdout.strip()[-200:]}"
+                    )
                 except Exception as backup_e:
                     stop_spinner(backup_spinner, f"✗ Backup failed: {backup_e}")
                     raise
@@ -2045,7 +2059,10 @@ def main() -> int:
                 backup_rip_spinner = show_spinner("Ripping from backup with MakeMKV...")
                 try:
                     backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                    stop_spinner(backup_rip_spinner, f"✓ Backup rip output: {backup_rip_result.stdout.strip()}")
+                    stop_spinner(
+                        backup_rip_spinner,
+                        f"✓ Backup rip output: {backup_rip_result.stdout.strip()}",
+                    )
                     print(f"  ✓ Successfully ripped using backup method")
                 except subprocess.CalledProcessError as e3:
                     stop_spinner(backup_rip_spinner, f"✗ Backup rip also failed: {e3}")
@@ -2174,6 +2191,7 @@ def main() -> int:
                 stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
                 # Small delay to ensure spinner cleanup is complete
                 import time
+
                 time.sleep(0.1)
             print("Disc rip complete, ejecting...")
             eject_disc()
@@ -2460,6 +2478,7 @@ def main() -> int:
         print()  # Blank line before spinner
         # Small delay to ensure no spinner overlap from previous operations
         import time
+
         time.sleep(0.1)
         spinner = show_spinner("Encoding with HandBrake...")
 

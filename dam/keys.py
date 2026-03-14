@@ -16,7 +16,6 @@ from typing import Optional
 
 from dam.console import console, error, info, success, warning
 
-
 # Human-friendly metadata for each key
 _KEY_INFO: dict[str, dict[str, str]] = {
     "ACOUSTID_API_KEY": {
@@ -110,7 +109,9 @@ def require_key(
 
     # Basic sanity check
     if len(value) < 8:
-        warning("That looks too short for an API key. Saving anyway — you can fix it in .env later.")
+        warning(
+            "That looks too short for an API key. Saving anyway — you can fix it in .env later."
+        )
 
     # Set in current process
     os.environ[key_name] = value
@@ -182,7 +183,7 @@ def _save_key_to_env(key_name: str, value: str, env_path: Path) -> None:
     content = env_path.read_text()
 
     # Check if key already exists (possibly commented or placeholder)
-    pattern = re.compile(rf'^{re.escape(key_name)}\s*=.*$', re.MULTILINE)
+    pattern = re.compile(rf"^{re.escape(key_name)}\s*=.*$", re.MULTILINE)
     if pattern.search(content):
         content = pattern.sub(f'{key_name}="{value}"', content)
     else:
