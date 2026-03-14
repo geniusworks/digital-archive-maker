@@ -114,7 +114,7 @@ dam sync
 ## Core Features
 
 ### 🎵 Music
-| Feature | How it works |
+| **Feature** | **How it works** |
 |---------|-------------|
 | **CD ripping** | Saves as FLAC with album art |
 | **Metadata** | Automatic album/track/artist lookup |
@@ -124,7 +124,7 @@ dam sync
 | **Gap filling** | Fixes missing information |
 
 ### 📀 Video
-| Feature | How it works |
+| **Feature** | **How it works** |
 |---------|-------------|
 | **DVD/Blu-ray ripping** | Extracts video while preserving quality |
 | **Subtitle handling** | Detects and includes the right language |
@@ -133,7 +133,7 @@ dam sync
 | **TV show support** | Groups episodes by season |
 
 ### 🔄 Library Management
-| Feature | How it works |
+| **Feature** | **How it works** |
 |---------|-------------|
 | **Library sync** | Keeps multiple copies in sync |
 | **Content filtering** | Excludes explicit content for family devices |
