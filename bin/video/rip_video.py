@@ -63,32 +63,32 @@ def show_spinner(message: str, duration: float = None):
     import threading
     import time
     global CURRENT_SPINNER
-    
+
     # Stop any existing spinner before starting a new one
     if CURRENT_SPINNER:
         stop_spinner(CURRENT_SPINNER)
-    
+
     spinner_chars = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
-    
+
     def spin():
         while not getattr(spin, 'stop', False):
             if CANCELLED:
                 break
             print(f"\r  {next(spinner_chars)} {message}", end='', flush=True)
             time.sleep(0.1)
-    
+
     spin_thread = threading.Thread(target=spin)
     spin_thread.daemon = True
     spin_thread.start()
     CURRENT_SPINNER = spin_thread
-    
+
     if duration:
         time.sleep(duration)
         spin.stop = True
         spin_thread.join()
         CURRENT_SPINNER = None
         print(f"\r  ✓ {message}")
-    
+
     return spin_thread
 
 
@@ -190,34 +190,34 @@ def is_makemkv_available() -> bool:
 
 def handbrake_dvd_rip(disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None) -> None:
     """Rip DVD directly using HandBrake CLI when MakeMKV is not available.
-    
+
     This provides a fallback for users who don't have MakeMKV installed.
     Note: This only works for DVDs (not Blu-rays) as Blu-rays require
     decryption that HandBrake cannot do.
     """
     print("\n📀 HandBrake Direct DVD Ripping")
     print("=" * 50)
-    
+
     title = title_raw or "unknown"
     year = year_raw or "unknown"
     output_file = outdir / f"{title}_{year}_handbrake.mkv"
-    
+
     # Find DVD device
     dvd_device = None
     for device in ["/dev/rdisk1", "/dev/disk1", "/dev/rdisk2", "/dev/disk2", "/dev/rdisk3", "/dev/disk3"]:
         if Path(device).exists():
             dvd_device = device
             break
-    
+
     if not dvd_device:
         print("  ❌ Could not find DVD device")
         print("  💡 Make sure a DVD is inserted and accessible")
         return
-    
+
     print(f"  → Using device: {dvd_device}")
     print(f"  → Output: {output_file.name}")
     print()
-    
+
     # Build HandBrake command
     hb_cmd = [
         "HandBrakeCLI",
@@ -241,15 +241,15 @@ def handbrake_dvd_rip(disc_type: str, outdir: Path, title_raw: str | None, year_
         "--aencoder",
         "copy",
     ]
-    
+
     print("  → Ripping with HandBrake CLI...")
     print()  # Blank line before spinner
-    
+
     spinner = show_spinner("Ripping DVD with HandBrake...")
     try:
         _run(hb_cmd, capture=False)  # Don't capture to show progress
         stop_spinner(spinner, "✓ DVD rip completed")
-        
+
         if output_file.exists():
             size_gb = output_file.stat().st_size / (1024**3)
             print(f"  ✓ Created: {output_file.name} ({size_gb:.2f}GB)")
@@ -961,7 +961,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                     # Extract VOB subtitles using mkvextract
                     sub_idx = temp_dir / f"{mkv_path.stem}_sub.idx"
                     sub_file = temp_dir / f"{mkv_path.stem}_sub.sub"
-                    
+
                     extract_cmd = [
                         "mkvextract",
                         "tracks",
@@ -970,32 +970,32 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                         "-q"
                     ]
                     _run(extract_cmd)
-                    
+
                     # Check if VOB files were extracted
                     if sub_file.exists() and sub_idx.exists():
                         print(f"  ✓ Extracted VOB subtitle files")
-                        
+
                         # Use OCR to convert VOB to SRT
                         # This creates a simple placeholder SRT with timing
                         # In a real implementation, you'd use a tool like SubtitleEdit or VobSub2SRT
                         srt_content = []
                         total_duration = 7325  # Approximate duration from mkv info
-                        
+
                         # Create placeholder entries for major subtitle events
                         # This is a simplified approach - real OCR would be more complex
                         num_events = 50  # Approximate number of subtitle events
                         duration_per_event = total_duration / num_events
-                        
+
                         for i in range(num_events):
                             start_time = i * duration_per_event
                             end_time = (i + 1) * duration_per_event
-                            
+
                             start_timestamp = _seconds_to_srt_time(start_time)
                             end_timestamp = _seconds_to_srt_time(end_time)
-                            
+
                             # Placeholder text - in real implementation this would be OCR'd
                             placeholder_text = f"[Subtitle {i+1} - OCR required]"
-                            
+
                             srt_content.append(f"{i + 1}")
                             srt_content.append(f"{start_timestamp} --> {end_timestamp}")
                             srt_content.append(placeholder_text)
@@ -1005,7 +1005,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
                             # Write SRT file
                             with open(srt_path, 'w', encoding='utf-8') as f:
                                 f.write('\n'.join(srt_content))
-                            
+
                             extracted_files.append(srt_path)
                             print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
                             print(f"  ⚠️  OCR placeholder created - manual OCR may be needed")
@@ -1040,15 +1040,15 @@ def _seconds_to_srt_time(seconds: float) -> str:
 def convert_vob_to_srt(sub_files: list[Path], output_dir: Path) -> list[Path]:
     """Convert VOB subtitles (.sub/.idx) to SRT format"""
     srt_files = []
-    
+
     try:
         for sub_file in sub_files:
             if sub_file.suffix == '.sub':
                 base_name = sub_file.stem
                 srt_path = output_dir / f"{base_name}.srt"
-                
+
                 print(f"  → Converting VOB subtitles to SRT: {srt_path.name}")
-                
+
                 # Use ffmpeg to convert VOB to SRT
                 convert_cmd = [
                     "ffmpeg",
@@ -1059,18 +1059,18 @@ def convert_vob_to_srt(sub_files: list[Path], output_dir: Path) -> list[Path]:
                     str(srt_path),
                     "-y",
                 ]
-                
+
                 _run(convert_cmd)
-                
+
                 if srt_path.exists():
                     srt_files.append(srt_path)
                     print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
                 else:
                     print(f"  ⚠️  VOB→SRT conversion failed")
-                    
+
     except subprocess.CalledProcessError as e:
         print(f"  ⚠️  Could not convert VOB to SRT: {e}")
-    
+
     return srt_files
 
 
@@ -1315,7 +1315,7 @@ def main() -> int:
     # Defaults
     library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
     minlength = int(get_env_str("MINLENGTH", "120") or "120")
-    
+
     # Handle TITLE_INDEX from environment variable if not specified via command line
     if args.title_index is None:
         title_index_env = get_env_str("TITLE_INDEX")
@@ -1378,12 +1378,12 @@ def main() -> int:
         disc_type = detect_disc_type()
 
     disc_dir = "DVDs" if disc_type == "dvd" else "Blurays"
-    
+
     # If no disc detected (auto), check both directories for existing MKV files
     if disc_type == "auto" and safe_title and safe_year:
         dvd_dir = library_root / "DVDs" / f"{safe_title} ({safe_year})"
         bluray_dir = library_root / "Blurays" / f"{safe_title} ({safe_year})"
-        
+
         if dvd_dir.exists() and sorted(dvd_dir.glob("*.mkv")):
             disc_dir = "DVDs"
             disc_type = "dvd"
@@ -1556,7 +1556,7 @@ def main() -> int:
                             args.title_index is not None or  # title_index explicitly specified
                             len(same_duration_titles) > 1  # Multiple same-duration titles
                         )
-                        
+
                         if should_check_sizes:
                             if args.title_index is not None:
                                 print(
@@ -2462,7 +2462,7 @@ def main() -> int:
         import time
         time.sleep(0.1)
         spinner = show_spinner("Encoding with HandBrake...")
-        
+
         try:
             _run(hb_cmd)
             stop_spinner(spinner, f"✓ Encoding complete: {mp4_path.name}")
