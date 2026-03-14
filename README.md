@@ -62,7 +62,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 - **CD, DVD, and/or Blu-ray drive** (internal or USB)
 
 ### 📦 Software
-- **MakeMKV** (optional, for DVD/Blu-ray) requires manual download from makemkv.com (free beta available)
+- **Optional**: MakeMKV (for DVD/Blu-ray) requires manual download from makemkv.com (free beta available)
 - **Everything else is installed automatically** by `make install-deps`
 
 ---
