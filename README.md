@@ -80,18 +80,12 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 ```bash
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
-make install-deps        # creates venv and installs everything
-source venv/bin/activate  # activate the virtual environment
+make install-deps        # creates venv, installs everything, and shows next steps
 ```
 
-**GUI Option:** For a graphical interface:
+**Step 2: Configure** (choose one)
 ```bash
-cd gui && npm start
-```
-
-**Step 2: Configure** (interactive wizard)
-```bash
-dam config                # sets library path, walks you through API keys
+dam config                # interactive wizard (recommended)
 ```
 
 Or manually:
@@ -100,23 +94,22 @@ cp .env.sample .env
 # Edit .env with your paths and optional API keys
 ```
 
-**Step 3: Check your setup**
+**GUI Option:** For a graphical interface:
 ```bash
-dam check                 # verifies tools, Python packages, and API keys
-dam check --install       # auto-installs missing Homebrew dependencies
+cd gui && npm start
 ```
 
-**Step 4: Rip a CD**
+**Step 3: Rip a CD**
 ```bash
 dam rip cd
 ```
 
-**Step 5: Rip a DVD/Blu-ray**
+**Step 4: Rip a DVD/Blu-ray**
 ```bash
 dam rip video
 ```
 
-**Step 6: Sync to your media server**
+**Step 5: Sync to your media server**
 ```bash
 dam sync
 ```
