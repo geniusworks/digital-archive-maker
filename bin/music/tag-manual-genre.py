@@ -106,7 +106,7 @@ def process_file(
     if write_flac_tags(flac_path, new_tags):
         return "updated"
     else:
-        print(f"    ❌ Failed to update genre")
+        print("    ❌ Failed to update genre")
         return "failed"
 
 
@@ -152,7 +152,7 @@ def main():
     is_valid, final_genre = validate_genre(args.genre)
     if not is_valid:
         print(f"❌ Invalid genre: '{final_genre}'")
-        print(f"Use --list-genres to see all valid genres")
+        print("Use --list-genres to see all valid genres")
         sys.exit(1)
 
     # Check path exists

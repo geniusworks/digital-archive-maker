@@ -237,14 +237,14 @@ def update_video_metadata(
         mp4 = MP4(str(file_path))
 
         # Update title
-        if "©nam" in mp4:
-            current_title = mp4["©nam"][0]
+        if "nam" in mp4:
+            current_title = mp4["nam"][0]
         else:
             current_title = ""
 
         # Update artist
-        if "©ART" in mp4:
-            current_artist = mp4["©ART"][0]
+        if "ART" in mp4:
+            current_artist = mp4["ART"][0]
         else:
             current_artist = ""
 
@@ -252,7 +252,7 @@ def update_video_metadata(
         needs_update = (current_title != title) or (current_artist != artist)
         if not needs_update:
             if VERBOSE:
-                print(f"  Metadata already correct")
+                print("  Metadata already correct")
             return True, False
 
         if dry_run:
@@ -262,8 +262,8 @@ def update_video_metadata(
             return True, True
 
         # Set metadata
-        mp4["©nam"] = [title]  # Title
-        mp4["©ART"] = [artist]  # Artist
+        mp4["nam"] = [title]  # Title
+        mp4["ART"] = [artist]  # Artist
 
         # Also set standard tags for compatibility
         mp4["TITLE"] = [title]
@@ -324,16 +324,16 @@ def process_video_file(
             artist = lookup_artist
             title = lookup_title
         else:
-            print(f" Artist mismatch, using folder name")
+            print(" Artist mismatch, using folder name")
     else:
-        print(f" No reliable lookup found")
-        print(f" Extracted title was: '{title}'")
+        print(" No reliable lookup found")
+        print(" Extracted title was: '{}'".format(title))
 
         if use_extracted and title and title != file_path.stem:
-            print(f" Using extracted title (risky mode)")
+            print(" Using extracted title (risky mode)")
             artist = artist_name
         else:
-            print(f" Skipping this file")
+            print(" Skipping this file")
             log_skipped_file(artist_name, file_path, title, "No reliable lookup found")
             return "skipped"
 
@@ -405,7 +405,7 @@ def scan_music_videos(
             video_files.extend(artist_folder.glob(ext))
 
         if not video_files:
-            print(f" No video files found")
+            print(" No video files found")
             continue
 
         for video_file in sorted(video_files):
@@ -474,7 +474,7 @@ def main():
         root_path, args.dry_run, args.force, args.use_extracted
     )
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     if args.dry_run:
         print(f"🔍 Would change {changed} files")
         print(f"✅ Already correct {unchanged} files")
@@ -485,7 +485,7 @@ def main():
         print(f"✅ Already correct {unchanged} files")
         if skipped > 0:
             print(f"⚠️  Skipped {skipped} files - see log: {SKIPPED_LOG}")
-            print(f"   Review skipped files for manual cleanup or to add overrides")
+            print("   Review skipped files for manual cleanup or to add overrides")
 
     if args.dry_run:
         print("💡 Run without --dry-run to apply changes")

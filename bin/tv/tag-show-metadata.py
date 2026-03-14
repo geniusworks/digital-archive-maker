@@ -746,7 +746,7 @@ def main():
                 # ep_data already created above from filename/local title
                 cache_dirty = True
                 if args.verbose:
-                    print(f"  Using filename-based episode data for IMDb show")
+                    print("  Using filename-based episode data for IMDb show")
             else:
                 ep_data = _tmdb_get_episode(cache, show_id, season, episode, language=args.language)
                 cache_dirty = True

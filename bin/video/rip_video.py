@@ -267,8 +267,8 @@ def handbrake_dvd_rip(
             print("  ⚠️  Output file not found (may have failed)")
     except subprocess.CalledProcessError as e:
         stop_spinner(spinner, f"✗ HandBrake failed: {e}")
-        print(f"  → This DVD may be CSS-protected or damaged")
-        print(f"  → Some commercial DVDs require MakeMKV for decryption")
+        print("  → This DVD may be CSS-protected or damaged")
+        print("  → Some commercial DVDs require MakeMKV for decryption")
         if hasattr(e, "stderr") and e.stderr:
             print(f"  → Error: {e.stderr.strip()[:200]}")
     except Exception as e:

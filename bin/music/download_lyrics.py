@@ -1412,7 +1412,7 @@ class LyricsDownloader:
             print(f"\n  Albums remaining: {remaining}")
 
         if self.rate_limit_failures >= MAX_RATE_LIMIT_FAILURES:
-            print(f"\n⚠️  Exited early due to rate limits. Run again later to continue.")
+            print("\n⚠️  Exited early due to rate limits. Run again later to continue.")
             sys.exit(1)
         elif remaining == 0:
             print("\n🎉 All albums processed!")
@@ -1561,7 +1561,7 @@ class LyricsDownloader:
             if processed < len(failed_tracks):
                 time.sleep(2)
 
-        print(f"\n📊 Retry Summary:")
+        print("\n📊 Retry Summary:")
         print(f"  Tracks processed: {processed}/{len(failed_tracks)}")
         print(f"  Lyrics found: {successful}")
         print(
@@ -1664,7 +1664,7 @@ def main():
 
     # Print summary and return appropriate exit code
     stats = downloader.stats
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"  Albums with new lyrics: {stats['albums_with_new_lyrics']}")
     print(f"  Albums with no new lyrics: {stats['albums_no_new_lyrics']}")
     print(f"  Files skipped (existing lyrics): {stats['files_skipped_existing_lyrics']}")

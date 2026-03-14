@@ -353,7 +353,7 @@ def process_m3u8(m3u8_path: Path, dry_run: bool = False, force: bool = False) ->
                     and (not artist or current_artist == artist)
                     and audio_file.name == new_filename
                 ):
-                    print(f"⏭️  Skipping (already correct)")
+                    print("⏭️  Skipping (already correct)")
                     continue
             except Exception:
                 pass  # Fall through to update if there's an error reading tags
@@ -430,7 +430,7 @@ def main():
         updated = process_m3u8(m3u8_file, args.dry_run, args.force)
         total_updated += updated
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     if args.dry_run:
         print(f"🔍 Would update {total_updated} files")
     else:

@@ -1290,9 +1290,9 @@ def main():
 
     if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
         if FORCE_EXIT_REQUESTED:
-            print(f"Script force-exited by user.")
+            print("Script force-exited by user.")
         else:
-            print(f"Script interrupted by user. Progress saved.")
+            print("Script interrupted by user. Progress saved.")
     elif args.dry_run:
         action = "Would update" if args.force else "Would update"
         print(f"\n{action} {updated_count} files")
