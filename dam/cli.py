@@ -103,6 +103,8 @@ def check(
         console.print("[success]All required dependencies are satisfied![/]")
         console.print()
         console.print("💡 Next steps:")
+        if not ensure_venv():
+            console.print("   • Activate virtual environment: source venv/bin/activate")
         console.print("   • Run 'dam config' to set up API keys interactively")
         console.print("   • CLI: Use 'dam' commands for media processing (try 'dam --help')")
         console.print("   • GUI: Run 'cd gui && npm start' for desktop app")
@@ -299,50 +301,29 @@ def rip_cd():
     info("Running abcde...")
     try:
         _run_script_or_make("rip-cd")
-    except SystemExit as e:
-        if e.code == 2:  # abcde failed, likely due to MusicBrainz issues
-            # Try to automatically fix Perl module issues
-            try:
-                import subprocess
-                warning("Attempting to fix MusicBrainz compatibility...")
-                
-                # Force reinstall the Audio::CD module for current Perl version
-                result = subprocess.run(
-                    "cpan -f -i Audio::CD 2>/dev/null",
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=120
-                )
-                
-                if result.returncode == 0:
-                    success("✓ Fixed MusicBrainz compatibility")
-                    info("Retrying CD rip...")
-                    _run_script_or_make("rip-cd")
-                else:
-                    # If automatic fix fails, disable MusicBrainz and retry
-                    warning("Auto-fix failed, disabling MusicBrainz lookup...")
-                    
-                    # Update abcde config to disable MusicBrainz
-                    abcde_config = os.path.expanduser("~/.abcde.conf")
-                    if os.path.exists(abcde_config):
-                        with open(abcde_config, 'r') as f:
-                            content = f.read()
-                        content = content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=n")
-                        with open(abcde_config, 'w') as f:
-                            f.write(content)
-                        success("✓ Disabled MusicBrainz lookup")
-                        info("Retrying CD rip...")
-                        _run_script_or_make("rip-cd")
-                    else:
-                        raise
-                        
-            except (subprocess.TimeoutExpired, Exception):
-                # If everything fails, let the user know
-                warning("Unable to resolve MusicBrainz compatibility automatically")
-                info("The CD can still be ripped with basic metadata:")
-                info("  Try: dam rip cd again")
-                raise
+    except (SystemExit, typer.Exit) as e:
+        exit_code = getattr(e, 'exit_code', getattr(e, 'code', 1))
+        if exit_code == 2:  # abcde failed, likely due to MusicBrainz issues
+            # MusicBrainz is mandatory - provide immediate guidance
+            error("MusicBrainz compatibility issue detected")
+            error("MusicBrainz is required for CD ripping")
+            info("")
+            info("This is a known issue with the old Audio::CD Perl module.")
+            info("The module is incompatible with modern macOS/Perl versions.")
+            info("")
+            info("Workaround options:")
+            info("  1. Use system Perl (may work better):")
+            info("     /usr/bin/perl -MCPAN -e 'install Audio::CD'")
+            info("  2. Try manual compilation:")
+            info("     cd /tmp && cpan -g Audio::CD && cd Audio-CD-*")
+            info("     perl Makefile.PL && make && make install")
+            info("  3. Alternative: Use cd-paranoia directly:")
+            info("     abcde can work without MusicBrainz if needed")
+            info("")
+            info("Note: This is a legacy compatibility issue with Perl modules.")
+            info("")
+            info("After fixing, run: dam rip cd")
+            raise typer.Exit(code=2)
         else:
             raise
 
