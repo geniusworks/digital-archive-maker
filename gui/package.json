@@ -1,5 +1,5 @@
 {
-  "name": "media-archive-maker",
+  "name": "digital-archive-maker",
   "version": "0.9.0",
   "description": "Physical media → digital library automation",
   "main": "src/main.js",
@@ -23,8 +23,8 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "works.genius.media-archive-maker",
-    "productName": "Media Archive Maker",
+    "appId": "works.genius.digital-archive-maker",
+    "productName": "Digital Archive Maker",
     "mac": {
       "category": "public.app-category.utilities",
       "target": [

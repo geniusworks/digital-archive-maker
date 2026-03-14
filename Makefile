@@ -62,7 +62,7 @@ install-deps:
 	printf "  → Installing requirements... " && \
 	./venv/bin/python -m pip install -r requirements.txt --quiet && \
 	echo "✓" && \
-	printf "  → Installing media-archive-maker... " && \
+	printf "  → Installing digital-archive-maker... " && \
 	./venv/bin/python -m pip install -e . --quiet && \
 	echo "✓" && \
 	echo "" && \
@@ -175,7 +175,7 @@ uninstall:
 	@echo "Removing Digital Archive Maker..."
 	@if [ -d "venv" ]; then \
 		echo "  • Uninstalling Python package..."; \
-		./venv/bin/pip uninstall -y media-archive-maker 2>/dev/null || true; \
+		./venv/bin/pip uninstall -y digital-archive-maker 2>/dev/null || true; \
 		echo "  • Removing virtual environment..."; \
 		rm -rf venv; \
 		echo "✓ Uninstall complete"; \

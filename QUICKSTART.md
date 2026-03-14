@@ -1,4 +1,4 @@
-# Media Archive Maker - Quick Start Guide
+# Digital Archive Maker - Quick Start Guide
 
 Get from zero to ripping your first CD in under 10 minutes.
 
@@ -11,8 +11,8 @@ Get from zero to ripping your first CD in under 10 minutes.
 ## 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/geniusworks/media-archive-maker.git
-cd media-archive-maker
+git clone https://github.com/geniusworks/digital-archive-maker.git
+cd digital-archive-maker
 
 # Install system dependencies (audio/CD tools) — this creates the venv
 make install-deps
@@ -23,9 +23,8 @@ make install-video-deps
 # Note: MakeMKV requires manual installation from https://www.makemkv.com/download/
 # After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
-# Activate the virtual environment and install the dam CLI
+# Activate the virtual environment (shown in Next steps after install)
 source venv/bin/activate
-pip install -e .
 ```
 
 *If you prefer not to use `make`, create the venv manually:*
@@ -70,7 +69,6 @@ GENIUS_API_TOKEN="your_genius_token"
 ### Verify your setup
 ```bash
 dam check                 # shows status of all tools, packages, and API keys
-dam check --install       # auto-installs missing Homebrew dependencies
 ```
 
 ### MakeMKV Configuration (Important for Subtitles)
@@ -95,21 +93,21 @@ For seamless media management, add this function to your `~/.zshrc`:
 
 ```bash
 media() {
-    local VENV_PATH="$HOME/venvs/media"
-    local REPO_PATH="$HOME/Herd/digital-archive-maker"
+    local VENV_PATH="$HOME/venvs/digital-archive"
+    local REPO_PATH="${LIBRARY_ROOT:-$HOME/digital-archive-maker}"
     
     case "${1:-help}" in
-        "sync"|"master-sync")
+        "sync")
             source "$VENV_PATH/bin/activate"
-            python3 "$REPO_PATH/bin/sync/master-sync.py"
+            dam sync
             ;;
-        "bluray")
-            shift
-            "$REPO_PATH/bin/video/bluray_to_mp4.zsh" "$@"
+        "cd")
+            source "$VENV_PATH/bin/activate"
+            dam rip cd
             ;;
-        "repair")
-            shift
-            "$REPO_PATH/bin/video/repair_mp4.sh" "$@"
+        "video")
+            source "$VENV_PATH/bin/activate"
+            dam rip video
             ;;
         "lyrics")
             shift
@@ -118,11 +116,11 @@ media() {
             ;;
         "help"|*)
             echo "Media Management Commands:"
-            echo "  media sync          - Run master sync"
-            echo "  media bluray <args> - Run Blu-ray rip"
-            echo "  media repair <file> - Repair MP4 file"
-            echo "  media lyrics <path> - Download lyrics for music (smart processing)"
-            echo "  media help          - Show this help"
+            echo "  media sync    - Sync media library"
+            echo "  media cd     - Rip a CD"
+            echo "  media video  - Rip DVD/Blu-ray"
+            echo "  media lyrics - Download lyrics for music"
+            echo "  media help   - Show this help"
             ;;
     esac
 }
@@ -140,17 +138,14 @@ Now you can use simple commands:
 # Sync your media library
 media sync
 
-# Rip a Blu-ray with custom output
-media bluray "Movie Title" 2024 "/path/to/output"
+# Rip a CD
+media cd
 
-# Repair an MP4 file
-media repair "movie.mp4"
+# Rip a DVD/Blu-ray
+media video
 
-# Download lyrics for music library (smart processing)
+# Download lyrics for music library
 media lyrics "/path/to/music" --recursive
-
-# Clear all failed lookups (retry everything)
-media lyrics "/path/to/music" --recursive --clear-failed
 ```
 
 This will:
