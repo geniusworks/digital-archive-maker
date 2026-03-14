@@ -25,7 +25,7 @@ sync_jobs:
      exclude_explicit: true
      exclude_unknown: true
 
-   - name: "digital-library"
+   - name: "digital-archive"
      src: "/path/to/your/source/digital"
      dest: "/path/to/your/destination/digital"
      exclude_explicit: true

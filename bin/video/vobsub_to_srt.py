@@ -13,7 +13,7 @@ Usage:
 
 Example:
     cd "/path/to/movie/folder"
-    python3 ~/Herd/digital-library/bin/video/vobsub_to_srt.py .backfill_ocr_12345.idx
+    python3 /path/to/digital-archive-maker/bin/video/vobsub_to_srt.py .backfill_ocr_12345.idx
     mv .backfill_ocr_12345.srt "Movie Title (Year).en.srt"
 
 What this script does:

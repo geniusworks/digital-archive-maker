@@ -172,6 +172,7 @@ install-test-deps:
 	@./venv/bin/python -m pip install -r requirements-test.txt
 
 test:
+	@echo ""
 	@echo "Running all tests..."
 	@./venv/bin/python scripts/run_tests.py
 

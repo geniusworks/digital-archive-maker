@@ -84,7 +84,7 @@ MAX_RATE_LIMIT_FAILURES = 5  # exit after this many real Genius 429 failures in 
 MAX_FALLBACK_ACCESS_FAILURES = 50  # exit after this many consecutive lyrics.ovh access failures
 GENIUS_SEARCH_TIMEOUT = 30  # hard timeout (seconds) for a single Genius search
 ALBUM_COOLDOWN = 15  # seconds to pause between albums with new downloads
-USER_AGENT = "Digital-Library-Lyrics-Downloader/1.0"
+USER_AGENT = "Digital-Archive-Maker-Lyrics-Downloader/1.0"
 
 
 class LyricsDownloader:

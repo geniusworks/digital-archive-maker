@@ -277,8 +277,8 @@ sync_jobs:
     exclude_explicit: true
     exclude_unknown: true
     
-  # Digital library to Jellyfin
-  - name: "digital-library-to-jellyfin"
+  # Digital archive to Jellyfin
+  - name: "digital-archive-to-jellyfin"
     src: "${LIBRARY_ROOT}/Music"
     dest: "jellyfin@server:/mnt/media/Music"
     exclude_explicit: true

@@ -82,29 +82,31 @@ def check(
     else:
         warning(".env not found. Run: cp .env.sample .env")
 
+    # Summary - After dependency checks are complete
+    console.print()
+    required_missing = [d for d in missing if not d.optional]
+    if not required_missing and not py_missing:
+        console.print("[success]All required dependencies are satisfied![/]")
+
     # API keys
-    heading("API keys")
+    heading("API keys (highly recommended)")
     api_missing = missing_api_keys()
     all_api_keys = ["ACOUSTID_API_KEY", "GENIUS_API_TOKEN", "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "TMDB_API_KEY", "OMDB_API_KEY"]
     
     for k in all_api_keys:
         if k in api_missing:
-            console.print(f" ⚠️ {k} (not configured)")
+            console.print(f" ⚠️ {k} (not configured yet)")
         else:
             console.print(f" ✅ {k}")
     
     if not api_missing:
         success("All API keys configured.")
-
-    # Summary - After all checks are complete
+    
+    # Next steps - After all checks are complete
     console.print()
-    required_missing = [d for d in missing if not d.optional]
     if not required_missing and not py_missing:
-        console.print("[success]All required dependencies are satisfied![/]")
-        console.print()
         console.print("💡 Next steps:")
-        if not ensure_venv():
-            console.print("   • Activate virtual environment: source venv/bin/activate")
+        console.print("   • Activate virtual environment: 'source venv/bin/activate'")
         console.print("   • Run 'dam config' to set up API keys interactively")
         console.print("   • CLI: Use 'dam' commands for media processing (try 'dam --help')")
         console.print("   • GUI: Run 'cd gui && npm start' for desktop app")

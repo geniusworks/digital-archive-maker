@@ -14,6 +14,7 @@ def run_command(cmd, description):
     print(f"Running: {description}")
     print(f"Command: {' '.join(cmd)}")
     print('='*60)
+    print()
     
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -29,10 +30,10 @@ def run_command(cmd, description):
 
 
 def main():
-    """Main test runner."""
-    repo_root = Path(__file__).parent.parent
+    """Run all tests."""
+    print()
     
-    # Check if test dependencies are installed
+    # Check test dependencies are installed
     print("Checking test dependencies...")
     try:
         import pytest
@@ -77,6 +78,7 @@ def main():
     if success:
         print("\n✅ All tests passed!")
         print("Coverage report generated in htmlcov/index.html")
+        print()
     else:
         print("\n❌ Some tests failed!")
         sys.exit(1)

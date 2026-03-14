@@ -148,7 +148,7 @@ Select option [1-3, default=1]:
 
 **Success Pattern:**
 ```
-/Users/martin/Movies/Rips/
+${LIBRARY_ROOT}/
 ├── Blurays/Movie Title (Year)/          # Source files
 │   └── Movie Title (Year).mkv           # Original rip
 └── Movies/Movie Title (Year)/           # Final destination
@@ -531,7 +531,7 @@ If you have an MKV and generated subtitles, but want to re-encode the MP4:
 
 ```bash
 # Delete the MP4 but keep MKV and .sup files
-rm "/Users/martin/Movies/Rips/Movies/Movie Title (2016)/Movie Title (2016).mp4"
+rm "${LIBRARY_ROOT}/Movies/Movie Title (2016)/Movie Title (2016).mp4"
 
 # Re-run - will skip disc scanning and re-encode from MKV
 make rip-movie TITLE="Movie Title" YEAR=2011
@@ -540,7 +540,7 @@ make rip-movie TITLE="Movie Title" YEAR=2011
 **⚠️ Limitation**: If you need to change which title/language was ripped, you must delete the MKV files first:
 ```bash
 # Wrong language? Delete MKV and re-rip with TITLE_INDEX
-rm "/Users/martin/Movies/Rips/Blurays/Movie Title (2016)"/*.mkv
+rm "${LIBRARY_ROOT}/Blurays/Movie Title (2016)"/*.mkv
 make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=0
 ```
 
@@ -633,7 +633,7 @@ Some Blu-ray discs (especially Disney/Pixar) use "seamless branching" to store m
 
 ```bash
 # First, delete any existing MKV files if wrong language was ripped
-rm "/Users/martin/Movies/Rips/Blurays/Movie Title (2016)"/*.mkv
+rm "${LIBRARY_ROOT}/Blurays/Movie Title (2016)"/*.mkv
 
 # Then use TITLE_INDEX to select correct title during ripping
 make rip-movie TITLE="Movie Title" YEAR=2011 TITLE_INDEX=0
