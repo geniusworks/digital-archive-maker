@@ -170,6 +170,7 @@ CORE_DEPS: list[Dependency] = [
         url="https://www.makemkv.com/download/",
         install_hint="Download from https://www.makemkv.com/download/ and drag to Applications",
         required_for=["video"],
+        optional=True,
     ),
     # Symlink from MakeMKV bundle
     Dependency(
@@ -179,6 +180,7 @@ CORE_DEPS: list[Dependency] = [
         check_cmd="which makemkvcon",
         install_hint="Run: sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon",
         required_for=["video"],
+        optional=True,
     ),
 ]
 

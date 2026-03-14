@@ -49,7 +49,8 @@ BURN_SUBTITLES=true make rip-movie TITLE="Other Language Film" YEAR=2023 TYPE=bl
   ```
   This installs: HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, and links makemkvcon.
 
-- Install MakeMKV manually:
+- **MakeMKV is optional for DVDs**: If MakeMKV is not installed, the script will automatically use HandBrake CLI directly for DVD ripping. Blu-ray ripping still requires MakeMKV due to encryption.
+- Install MakeMKV manually (optional, for full functionality):
   - Download: https://www.makemkv.com/download/
   - Drag `MakeMKV.app` to `/Applications`
   - The `make install-video-deps` command will link the CLI automatically

@@ -177,6 +177,95 @@ def require_command(cmd: str) -> None:
         raise RuntimeError(f"Missing required command: {cmd}")
 
 
+def is_command_available(cmd: str) -> bool:
+    """Check if a command is available without raising an error."""
+    res = _run(["which", cmd], check=False)
+    return res.returncode == 0
+
+
+def is_makemkv_available() -> bool:
+    """Check if MakeMKV CLI is available."""
+    return is_command_available("makemkvcon")
+
+
+def handbrake_dvd_rip(disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None) -> None:
+    """Rip DVD directly using HandBrake CLI when MakeMKV is not available.
+    
+    This provides a fallback for users who don't have MakeMKV installed.
+    Note: This only works for DVDs (not Blu-rays) as Blu-rays require
+    decryption that HandBrake cannot do.
+    """
+    print("\n📀 HandBrake Direct DVD Ripping")
+    print("=" * 50)
+    
+    title = title_raw or "unknown"
+    year = year_raw or "unknown"
+    output_file = outdir / f"{title}_{year}_handbrake.mkv"
+    
+    # Find DVD device
+    dvd_device = None
+    for device in ["/dev/rdisk1", "/dev/disk1", "/dev/rdisk2", "/dev/disk2", "/dev/rdisk3", "/dev/disk3"]:
+        if Path(device).exists():
+            dvd_device = device
+            break
+    
+    if not dvd_device:
+        print("  ❌ Could not find DVD device")
+        print("  💡 Make sure a DVD is inserted and accessible")
+        return
+    
+    print(f"  → Using device: {dvd_device}")
+    print(f"  → Output: {output_file.name}")
+    print()
+    
+    # Build HandBrake command
+    hb_cmd = [
+        "HandBrakeCLI",
+        "-i",
+        dvd_device,
+        "-o",
+        str(output_file),
+        "-t",
+        "1",  # First title
+        "--min-duration",
+        str(minlength),  # Use configured minimum length
+        "--preset",
+        "Fast 1080p30",
+        "--encoder",
+        "x264",
+        "--quality",
+        "20",
+        "--audio-lang-list",
+        LANG_AUDIO,
+        "--first-audio",
+        "--aencoder",
+        "copy",
+    ]
+    
+    print("  → Ripping with HandBrake CLI...")
+    print()  # Blank line before spinner
+    
+    spinner = show_spinner("Ripping DVD with HandBrake...")
+    try:
+        _run(hb_cmd, capture=False)  # Don't capture to show progress
+        stop_spinner(spinner, "✓ DVD rip completed")
+        
+        if output_file.exists():
+            size_gb = output_file.stat().st_size / (1024**3)
+            print(f"  ✓ Created: {output_file.name} ({size_gb:.2f}GB)")
+        else:
+            print("  ⚠️  Output file not found (may have failed)")
+    except subprocess.CalledProcessError as e:
+        stop_spinner(spinner, f"✗ HandBrake failed: {e}")
+        print(f"  → This DVD may be CSS-protected or damaged")
+        print(f"  → Some commercial DVDs require MakeMKV for decryption")
+        if hasattr(e, "stderr") and e.stderr:
+            print(f"  → Error: {e.stderr.strip()[:200]}")
+    except Exception as e:
+        stop_spinner(spinner, f"✗ Error: {e}")
+        print(f"  → Unexpected error during ripping")
+
+
 def load_dotenv(repo_root: Path) -> None:
     env_path = repo_root / ".env"
     if not env_path.exists():
@@ -1266,7 +1355,16 @@ def main() -> int:
     preferred_audio_codec = get_env_str("PREFERRED_AUDIO_CODEC", "").lower().strip()
     preferred_subtitle_type = get_env_str("PREFERRED_SUBTITLE_TYPE", "").lower().strip()
 
-    require_command("makemkvcon")
+    # Check if MakeMKV is available (optional for DVD ripping)
+    makemkv_available = is_makemkv_available()
+    if not makemkv_available:
+        print("⚠️  MakeMKV not found - will use HandBrake fallback for DVD ripping")
+        print("   → For Blu-ray ripping, MakeMKV is required")
+        print("   → Install from https://www.makemkv.com/download/ for full functionality")
+        print()
+
+    # Only require MakeMKV if it's available (Blu-ray requires it)
+    # For DVDs without MakeMKV, we'll use HandBrake fallback
     require_command("HandBrakeCLI")
     require_command("ffprobe")
     require_command("ffmpeg")
@@ -1336,14 +1434,34 @@ def main() -> int:
             return 1
 
         print(f"  ✓ Detected {detected_type.upper()} disc")
-        # Probe disc access early (best-effort)
-        _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
+
+        # Handle MakeMKV availability
+        used_handbrake_fallback = False
+        if not makemkv_available:
+            if detected_type == "bluray":
+                print("  ❌ Blu-ray ripping requires MakeMKV")
+                print("  💡 Install from https://www.makemkv.com/download/")
+                return 1
+            # For DVDs without MakeMKV, use HandBrake fallback directly
+            print("  → Using HandBrake fallback (MakeMKV not available)")
+            outdir.mkdir(parents=True, exist_ok=True)
+            handbrake_dvd_rip(disc_type, outdir, title_raw, year_raw)
+            mkvs = sorted(outdir.glob("*.mkv"))
+            if not mkvs:
+                print("  ❌ HandBrake fallback failed to create output")
+                return 1
+            # Skip the rest of MakeMKV-specific code
+            used_handbrake_fallback = True
+            disc_type = detected_type
+        else:
+            # Probe disc access early (best-effort)
+            _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
 
     # NOW create the output directory (only after we know we have a disc or
     # files)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    if not mkvs:
+    if not mkvs and not used_handbrake_fallback:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
             print("\n🎬 Disc Analysis (Main Feature)")

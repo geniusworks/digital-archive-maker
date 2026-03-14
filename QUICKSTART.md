@@ -20,7 +20,8 @@ make install-deps
 # Install video ripping dependencies (DVD/Blu-ray support)
 make install-video-deps
 
-# Note: MakeMKV requires manual installation from https://www.makemkv.com/download/
+# Note: MakeMKV is optional for DVD ripping - the script will use HandBrake fallback
+# For full functionality (including Blu-ray), install MakeMKV from https://www.makemkv.com/download/
 # After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
 # Activate the virtual environment (shown in Next steps after install)

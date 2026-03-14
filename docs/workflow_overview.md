@@ -151,6 +151,7 @@ flowchart LR
   - `make rip-video` (staging)
   - `make rip-movie TITLE="Movie Name" YEAR=1999` (organize main feature)
 - Features: Automatic disc scanning, interactive subtitle processing prompt before ripping, automatic compression for large MKVs.
+- **MakeMKV is optional for DVDs**: If MakeMKV is not installed, the script will automatically use HandBrake CLI directly for DVD ripping. Blu-ray ripping still requires MakeMKV due to encryption.
 
 ### B2) Organize into a server-friendly layout
 - Guide: `docs/media_server_setup.md`
