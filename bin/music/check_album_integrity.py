@@ -186,7 +186,10 @@ def download_cover_image(album: Path, dry_run: bool = False) -> bool:
         q_album = urllib.parse.quote(album_name)
 
         # Query MusicBrainz API
-        mb_url = f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}%20release:{q_album}&fmt=json&limit=1"
+        mb_url = (
+            f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
+            f"%20release:{q_album}&fmt=json&limit=1"
+        )
 
         response = requests.get(mb_url, timeout=30)
         response.raise_for_status()
@@ -333,7 +336,7 @@ def check_cover(
             # Skip if _cover.jpg already exists
             if temp_cover.exists():
                 if dry_run:
-                    print(f"  Would skip: _cover.jpg already exists")
+                    print("  Would skip: _cover.jpg already exists")
                 return None
             if download_cover_image(album, dry_run=dry_run):
                 return None  # Downloaded or would be downloaded successfully
@@ -402,7 +405,7 @@ def check_cover(
                 # Skip if _cover.jpg already exists
                 if temp_cover.exists():
                     if dry_run:
-                        print(f"  Would skip: _cover.jpg already exists")
+                        print("  Would skip: _cover.jpg already exists")
                     return None
                 if download_cover_image(album, dry_run=dry_run):
                     return None  # Downloaded or would be downloaded successfully

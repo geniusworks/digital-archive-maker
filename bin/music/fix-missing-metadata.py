@@ -24,9 +24,7 @@ from typing import Dict, List, Tuple
 # Support multiple audio formats
 try:
     import musicbrainzngs
-    import requests
     from mutagen.flac import FLAC
-    from mutagen.id3 import ID3NoHeaderError
     from mutagen.mp3 import MP3
     from mutagen.mp4 import MP4
 

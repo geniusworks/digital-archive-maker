@@ -4,7 +4,6 @@ Fix missing track numbers in FLAC files.
 Usage: python3 fix-track-numbers.py /path/to/album/directory
 """
 
-import os
 import re
 import sys
 from pathlib import Path
