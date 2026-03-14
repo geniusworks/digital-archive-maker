@@ -1288,7 +1288,7 @@ class LyricsDownloader:
             if result is True:  # Only count actual new downloads
                 files_successful += 1
 
-        print(f"\n📊 Summary:")
+        print("\n📊 Summary:")
         print(f"  Files processed: {files_processed}")
         print(f"  Lyrics downloaded: {files_successful}")
         print(

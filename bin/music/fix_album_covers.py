@@ -18,7 +18,6 @@ import sys
 import tempfile
 import urllib.parse
 from pathlib import Path
-from typing import Optional
 
 
 def require_command(cmd: str) -> None:

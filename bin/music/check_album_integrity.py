@@ -274,7 +274,8 @@ def resize_cover_image(cover_path: Path, dry_run: bool = False) -> bool:
         width_height = get_image_size(cover_path)
         if width_height:
             print(
-                f"  Would fix: {cover_path.name} (resize from {width_height[0]}x{width_height[1]} to 1000x1000)"
+                f"  Would fix: {cover_path.name} (resize from {width_height[0]}x"
+                f"{width_height[1]} to 1000x1000)"
             )
         else:
             print(f"  Would fix: {cover_path.name} (resize to 1000x1000)")
@@ -378,14 +379,19 @@ def check_cover(
                 else:
                     if dry_run:
                         print(
-                            f"  Would skip: {cover.name} (aspect ratio {aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
+                            f"  Would skip: {cover.name} (aspect ratio {aspect_ratio:.3f} outside "
+                            f"{size_tolerance}% tolerance)"
                         )
-                    return f"cover.jpg is {width_height[0]}x{width_height[1]} (aspect ratio {aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
+                    return (
+                    f"cover.jpg is {width_height[0]}x{width_height[1]} (aspect ratio {aspect_ratio:.3f} "
+                    f"outside {size_tolerance}% tolerance)"
+                )
             else:
                 # Case 3: Undersized or other covers - skip resizing
                 if dry_run:
                     print(
-                        f"  Would skip: {cover.name} (size {width_height[0]}x{width_height[1]} outside tolerance)"
+                        f"  Would skip: {cover.name} (size {width_height[0]}x"
+                        f"{width_height[1]} outside tolerance)"
                     )
                 return f"cover.jpg is {width_height[0]}x{width_height[1]} (expected 1000x1000, outside tolerance)"
         elif get_covers:
