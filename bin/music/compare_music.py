@@ -50,7 +50,7 @@ def is_album_match(path_album: str, lib_album: str, min_prefix_chars: int = 5) -
 
 def list_files_fast(folder):
     """Recursively list files using os.scandir.
-    
+
     Excludes ignored extensions, returns set of relpaths.
     """
     out = set()

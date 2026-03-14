@@ -320,7 +320,8 @@ class LyricsDownloader:
         if self.fallback_access_failures >= MAX_FALLBACK_ACCESS_FAILURES:
             if not self.shutdown_requested:
                 print(
-                    f"\n⛔ {self.fallback_access_failures} consecutive access failures from fallback service."
+                    f"\n⛔ {self.fallback_access_failures} consecutive access failures "
+                    f"from fallback service."
                 )
                 print("   lyrics.ovh appears to be down or rate-limiting us.")
                 print("   Stopping to avoid wasting time. Try again later.")
@@ -357,7 +358,8 @@ class LyricsDownloader:
             self.genius_cooldown_until = current_time + 3600
             mins_remaining = 60
             print(
-                f"{indent_str}⚠️ Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). Pausing Genius for {mins_remaining} min..."
+                f"{indent_str}⚠️ Genius hourly limit reached ({GENIUS_HOURLY_LIMIT}/hour). "
+                f"Pausing Genius for {mins_remaining} min..."
             )
             return False
 
@@ -632,7 +634,8 @@ class LyricsDownloader:
                 elif "429" in str(e) or "1015" in str(e) or "rate limit" in error_msg:
                     self.rate_limit_failures += 1
                     print(
-                        f"{indent_str}⚠️ Rate limit hit ({self.rate_limit_failures}/{MAX_RATE_LIMIT_FAILURES})"
+                        f"{indent_str}⚠️ Rate limit hit ({self.rate_limit_failures}/"
+                        f"{MAX_RATE_LIMIT_FAILURES})"
                     )
 
                     if self._check_rate_limit_exit():
@@ -656,7 +659,8 @@ class LyricsDownloader:
                     retry_count += 1
                     if retry_count <= max_retries:
                         print(
-                            f"{indent_str}🔄 Retry {retry_count}/{max_retries} for {artist} - {title}"
+                            f"{indent_str}🔄 Retry {retry_count}/{max_retries} for "
+                            f"{artist} - {title}"
                         )
                         time.sleep(5)
                     else:
@@ -997,7 +1001,7 @@ class LyricsDownloader:
                     sep_index = artist.lower().find(sep.lower())
                     if sep_index != -1:
                         part1 = artist[:sep_index].strip()
-                        part2 = artist[sep_index + len(sep) :].strip()
+                        part2 = artist[sep_index + len(sep):].strip()
                         variations.append((part1, clean_title))
                         variations.append((part2, clean_title))
 
@@ -1005,7 +1009,7 @@ class LyricsDownloader:
                         if sep.lower() in [" and ", " + ", " & "]:
                             for variant in and_variants:
                                 if variant.lower() != sep.lower():
-                                    # Create the alternative artist name with different "and" variant
+                                    # Create alternative artist name with different "and" variant
                                     alt_artist = f"{part1}{variant}{part2}"
                                     variations.append((alt_artist, clean_title))
 
@@ -1031,7 +1035,8 @@ class LyricsDownloader:
         """Try alternative artist names if the original fails.
 
         Returns:
-            (lyrics, successful_artist, success) - lyrics if found, the artist name that worked, success flag
+            (lyrics, successful_artist, success) - lyrics if found,
+            the artist name that worked, success flag
         """
         variations = self._get_artist_variations(artist, title)
 
@@ -1121,7 +1126,8 @@ class LyricsDownloader:
                 if self._is_skip_lookup(var_artist, var_title):
                     indent_str = "    " if indent else ""
                     print(
-                        f"{indent_str}⏭️ Skipping {file_path.name} (variation {var_artist} - {var_title} in skip list)"
+                        f"{indent_str}⏭️ Skipping {file_path.name} (variation "
+                        f"{var_artist} - {var_title} in skip list)"
                     )
                     self.stats["files_skipped_previously_failed"] += 1
                     return None
@@ -1224,7 +1230,8 @@ class LyricsDownloader:
             if ovh_api_unavailable and not genius_actually_searched:
                 self.fallback_access_failures += 1
                 print(
-                    f"{result_indent}ℹ️ lyrics.ovh access failure ({self.fallback_access_failures}/{MAX_FALLBACK_ACCESS_FAILURES})"
+                    f"{result_indent}ℹ️ lyrics.ovh access failure ({self.fallback_access_failures}/"
+                    f"{MAX_FALLBACK_ACCESS_FAILURES})"
                 )
                 if self._check_fallback_access_exit():
                     return False
@@ -1333,7 +1340,7 @@ class LyricsDownloader:
                 and not self.retry_failed
                 and self._album_has_complete_lyrics(album_dir, audio_extensions)
             ):
-                print(f"    ⏭️ Skipping album (already has complete lyrics)")
+                print("    ⏭️ Skipping album (already has complete lyrics)")
                 self.stats["albums_skipped_complete"] += 1
                 continue
 
@@ -1350,10 +1357,11 @@ class LyricsDownloader:
             # If entire album failed due to rate limits, exit immediately
             if files_processed > 0 and quota_failures == files_processed:
                 print(
-                    f"\n⚠️  Entire album failed due to rate limits ({quota_failures}/{files_processed} songs)."
+                    f"\n⚠️  Entire album failed due to rate limits ({quota_failures}/"
+                    f"{files_processed} songs)."
                 )
-                print(f"   Stopping to avoid further API pressure.")
-                print(f"   Progress has been saved. Try again later when quotas reset.")
+                print("   Stopping to avoid further API pressure.")
+                print("   Progress has been saved. Try again later when quotas reset.")
                 break
 
             # Check for rate limit exit
@@ -1374,30 +1382,26 @@ class LyricsDownloader:
                 try:
                     time.sleep(ALBUM_COOLDOWN)
                 except KeyboardInterrupt:
-                    print(f"\n⏹️  Interrupted during cooldown. Progress saved.")
+                    print("\n⏹️  Interrupted during cooldown. Progress saved.")
                     break
             else:
                 self.stats["albums_no_new_lyrics"] += 1
-                print(f"    ℹ️ No new lyrics for this album")
+                print("    ℹ️ No new lyrics for this album")
 
-        print(f"\n📊 Final Summary:")
+        print("\n📊 Final Summary:")
         print(f"  Albums scanned: {albums_processed}/{len(album_dirs)}")
         print(f"  Albums with new lyrics: {albums_with_changes}")
         print(f"  Total files processed: {total_files_processed}")
         print(f"  Total lyrics downloaded: {total_lyrics_downloaded}")
 
         # Detailed file statistics
-        print(f"\n📋 File Details:")
+        print("\n📋 File Details:")
         print(
             f"  Files skipped (lyrics already exist): {self.stats['files_skipped_existing_lyrics']}"
         )
-        print(
-            f"  Files skipped (previously failed): {self.stats['files_skipped_previously_failed']}"
-        )
-        print(f"  Files searched but no lyrics found: {self.stats['files_no_lyrics_found']}")
 
         # Album details
-        print(f"\n📁 Album Details:")
+        print("\n📁 Album Details:")
         print(f"  Albums with new lyrics: {self.stats['albums_with_new_lyrics']}")
         print(f"  Albums with no new lyrics: {self.stats['albums_no_new_lyrics']}")
         if self.stats["albums_skipped_complete"] > 0:
@@ -1411,7 +1415,7 @@ class LyricsDownloader:
             print(f"\n⚠️  Exited early due to rate limits. Run again later to continue.")
             sys.exit(1)
         elif remaining == 0:
-            print(f"\n🎉 All albums processed!")
+            print("\n🎉 All albums processed!")
 
     def _find_album_directories(self, directory: Path, audio_extensions: set) -> List[Path]:
         """Find all directories containing audio files (albums)."""
@@ -1446,7 +1450,11 @@ class LyricsDownloader:
     def _process_album(
         self, album_dir: Path, audio_extensions: set, force: bool
     ) -> Tuple[int, int, int]:
-        """Process a single album and return (files_processed, lyrics_downloaded, rate_limit_failures)."""
+        """Process a single album and return (files_processed, lyrics_downloaded,
+        rate_limit_failures).
+
+        Returns tuple of (files_processed, lyrics_downloaded, rate_limit_failures).
+        """
         files_processed = 0
         lyrics_downloaded = 0
         rate_limit_failures = 0
@@ -1522,10 +1530,11 @@ class LyricsDownloader:
             return
 
         # Sort by failure count (ascending)
-        failed_tracks.sort(key=lambda x: x[0])
+        failed_tracks.sort(key=lambda track: track[0])
 
         print(
-            f"📊 Found {len(failed_tracks)} failed tracks, prioritizing by failure count (least first)"
+            f"📊 Found {len(failed_tracks)} failed tracks, prioritizing by failure count "
+            f"(least first)"
         )
 
         # Process tracks in priority order
