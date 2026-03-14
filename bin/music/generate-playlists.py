@@ -14,7 +14,6 @@ from pathlib import Path
 
 try:
     from mutagen.flac import FLAC
-    from mutagen.id3 import ID3NoHeaderError
     from mutagen.mp3 import MP3
 
     MUTAGEN_AVAILABLE = True
@@ -170,7 +169,7 @@ def main():
 
     created_count, skipped_count = scan_directory(args.directory, args.dry_run)
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Playlists created: {created_count}")
     print(f"  Already existed: {skipped_count}")
 

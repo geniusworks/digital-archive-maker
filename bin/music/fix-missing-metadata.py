@@ -48,7 +48,7 @@ def has_track_number_prefix(title: str) -> bool:
     # More restrictive patterns that specifically indicate track numbers
     # These patterns require separators that clearly indicate track numbering
     patterns = [
-        r"^\d{1,2}\s*[-._]\s*",  # "01 - Title", "1. Title", "01_Title" (requires dash/dot/underscore)
+        r"^\d{1,2}\s*[-._]\s*",  # "01 - Title", "1. Title", "01_Title"
         r"^\d{2}\s*[-._]\s*",  # "12 - Title" (exactly 2 digits + separator)
         r"^\d{1,2}\s*-\s*",  # "01 - Title" (dash separator only)
     ]
