@@ -12,15 +12,14 @@ Usage:
 """
 
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 try:
     from mutagen.flac import FLAC
-    from mutagen.id3 import TALB, TCON, TIT2, TPE1, TRCK, ID3NoHeaderError
+    from mutagen.id3 import TALB, TIT2, TPE1, TRCK
     from mutagen.mp3 import MP3
 
     MUTAGEN_AVAILABLE = True

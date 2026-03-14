@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from dam.console import console, error, info, success, warning
+from dam.console import console, info, success, warning
 
 # Human-friendly metadata for each key
 _KEY_INFO: dict[str, dict[str, str]] = {
@@ -176,7 +176,7 @@ def _save_key_to_env(key_name: str, value: str, env_path: Path) -> None:
             import shutil
 
             shutil.copy2(sample, env_path)
-            info(f"Created .env from .env.sample")
+            info("Created .env from .env.sample")
         else:
             env_path.touch()
 

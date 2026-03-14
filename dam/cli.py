@@ -20,11 +20,10 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from rich.prompt import Confirm
 
 from dam import __version__
 from dam.config import REPO_ROOT, env_file_exists, get, missing_api_keys
-from dam.console import banner, console, error, heading, info, kv, success, warning
+from dam.console import banner, console, error, heading, info, success, warning
 from dam.deps import check_all, check_python_deps, ensure_venv, install_missing
 from dam.keys import onboard_keys
 
@@ -193,7 +192,6 @@ def rip_cd():
 
     # Check for abcde configuration
     import os
-    import shutil
 
     abcde_config = os.path.expanduser("~/.abcde.conf")
     sample_config = os.path.join(os.getcwd(), ".abcde.conf.sample")
@@ -275,7 +273,7 @@ def rip_cd():
                         timeout=5,
                     )
                     if check_result.returncode == 0 and check_result.stdout.strip():
-                        success(f"✓ CD detected!")
+                        success("✓ CD detected!")
                         break
                 except Exception:
                     pass

@@ -47,7 +47,10 @@ def query_musicbrainz(artist: str, album: str) -> dict:
     print(f"Searching MusicBrainz for {artist} - {album}...")
 
     # Query for releases
-    mb_url = f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}%20release:{q_album}&fmt=json&limit=1"
+    mb_url = (
+            f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
+            f"%20release:{q_album}&fmt=json&limit=1"
+        )
     try:
         result = subprocess.run(["curl", "-s", mb_url], capture_output=True, text=True, check=True)
         releases = json.loads(result.stdout)
@@ -181,7 +184,7 @@ def main():
         os.chdir(album_path)
 
         # Rename files and create playlist
-        playlist_file = rename_files_and_create_playlist(titles, album_path)
+        rename_files_and_create_playlist(titles, album_path)
 
         # Clean up old playlists
         clean_old_playlists(album_path)

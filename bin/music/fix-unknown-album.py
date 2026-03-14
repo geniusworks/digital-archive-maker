@@ -8,8 +8,10 @@ This script handles albums that were ripped without MusicBrainz data, resulting 
 - Outdated .m3u8 playlists
 
 Usage:
-    python3 bin/fix-unknown-album.py /path/to/unknown/album "Correct Artist" "Correct Album"
-    python3 bin/fix-unknown-album.py /path/to/unknown/album "Correct Artist" "Correct Album" --dry-run
+    python3 bin/fix-unknown-album.py /path/to/unknown/album "
+    Correct Artist" "Correct Album"
+    python3 bin/fix-unknown-album.py /path/to/unknown/album "
+    Correct Artist" "Correct Album" --dry-run
 """
 
 import argparse
@@ -261,7 +263,7 @@ def fix_unknown_album(
                 print(f"    TITLE: '{current_tags.get('title', '')}' -> '{title}'")
 
             if dry_run:
-                print(f"    [DRY RUN] Would update tags")
+                print("    [DRY RUN] Would update tags")
             else:
                 if write_flac_tags(flac_path, new_tags):
                     print(f"    Updated tags: {flac_path.name}")
@@ -283,7 +285,7 @@ def fix_unknown_album(
             else:
                 print(f"  Failed to update playlist: {m3u8_path.name}")
     else:
-        print(f"  No .m3u8 playlist found")
+        print("  No .m3u8 playlist found")
 
     # Step 4: Rename album folder (if needed)
     current_album_name = album_path.name
@@ -307,7 +309,8 @@ def fix_unknown_album(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Fix completely unknown album rips by renaming folders, files, and updating metadata"
+        description="Fix completely unknown album rips by renaming folders, "
+        "files, and updating metadata"
     )
     parser.add_argument("album_path", type=Path, help="Path to unknown album folder")
     parser.add_argument("artist", help="Correct artist name")

@@ -400,9 +400,9 @@ def main():
     cache = load_cache(cache_file)
 
     if use_musicbrainz:
-        print(f"🌐 MusicBrainz integration enabled")
+        print("🌐 MusicBrainz integration enabled")
     else:
-        print(f"📁 Using directory structure only (MusicBrainz disabled)")
+        print("📁 Using directory structure only (MusicBrainz disabled)")
     print(f"📁 Cache: {cache_file}")
 
     print(f"Scanning: {directory}")
@@ -470,7 +470,7 @@ def main():
         print(f"   Title:  {repr(current_title)} → {repr(final_title)}")
 
         if mb_metadata:
-            print(f"   🌐 MusicBrainz data available")
+            print("   🌐 MusicBrainz data available")
         print()
 
     if scan_mode or args.dry_run:
@@ -568,7 +568,7 @@ def main():
             print(f"   {', '.join(changes)}")
 
     print()
-    print(f"Summary:")
+    print("Summary:")
     print(f"  Fixed: {fixed_count}")
     print(f"  Failed: {failed_count}")
     print(f"  Total: {len(problematic_files)}")

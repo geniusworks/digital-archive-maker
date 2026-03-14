@@ -44,7 +44,7 @@ def optimize_mp4_for_streaming(mp4_path: Path, dry_run: bool = False) -> bool:
     print(f"🎬 Optimizing: {mp4_path.name}")
 
     if dry_run:
-        print(f"   (DRY RUN) Would optimize with ffmpeg faststart flags")
+        print("   (DRY RUN) Would optimize with ffmpeg faststart flags")
         return True
 
     try:
@@ -65,8 +65,8 @@ def optimize_mp4_for_streaming(mp4_path: Path, dry_run: bool = False) -> bool:
             str(temp_path),
         ]
 
-        print(f"   📦 Applying streaming optimization...")
-        result = run_cmd(cmd, check=True)
+        print("   📦 Applying streaming optimization...")
+        run_cmd(cmd, check=True)
 
         # Replace original file
         original_size = mp4_path.stat().st_size

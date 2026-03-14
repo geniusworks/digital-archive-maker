@@ -60,7 +60,10 @@ def process_album_dir(album_dir: Path) -> None:
     q_album = url_encode(album_name)
 
     # Query MusicBrainz
-    mb_url = f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}%20release:{q_album}&fmt=json&limit=1"
+    mb_url = (
+            f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
+            f"%20release:{q_album}&fmt=json&limit=1"
+        )
     try:
         result = subprocess.run(["curl", "-s", mb_url], capture_output=True, text=True, check=True)
         release_json = result.stdout
@@ -130,7 +133,8 @@ def scan_library(search_path: Path) -> None:
 
     # Otherwise, treat it as a library root / higher-level folder.
     else:
-        # It's a library root or higher-level folder — scan recursively for album dirs missing cover.jpg
+        # It's a library root or higher-level folder — scan recursively for
+        # album dirs missing cover.jpg
         print(f"📂 Scanning for albums missing cover.jpg under: {search_path}")
         found_any = False
 

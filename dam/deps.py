@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 
-from dam.console import console, error, heading, info, kv, status_table, success, warning
+from dam.console import console, heading, info, status_table, success, warning
 
 
 class DepKind(str, Enum):

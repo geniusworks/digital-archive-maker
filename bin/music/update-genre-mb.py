@@ -22,9 +22,7 @@ import ssl
 import sys
 import time
 import unicodedata
-import urllib.error
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 
 from mutagen.flac import FLAC
 
@@ -541,7 +539,7 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
             else:
                 _log(f"Failed after {max_retries} attempts: {e}")
                 raise
-        except Exception as e:
+        except Exception:
             signal.alarm(0)  # Cancel timeout on error
             # Non-network errors, don't retry
             raise
@@ -1090,7 +1088,7 @@ def update_file_genre(
                         print(f"    Removed invalid genre: {current_tags['genre']}")
                     return "updated"  # Count as updated since we removed a tag
                 else:
-                    print(f"    Failed to remove genre")
+                    print("    Failed to remove genre")
                     return False
             else:
                 print(f"    [DRY RUN] Would remove invalid genre: {current_tags['genre']}")
@@ -1119,7 +1117,7 @@ def update_file_genre(
         if write_flac_tags(flac_path, new_tags):
             return "updated"
         else:
-            print(f"    Failed to update genre")
+            print("    Failed to update genre")
             return False
 
 

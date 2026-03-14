@@ -235,7 +235,9 @@ def repair_album_tags(album_path: Path, dry_run: bool = False) -> int:
         # Read current tags
         current_tags = read_flac_tags(flac_path)
         print(
-            f"    Current: ARTIST='{current_tags.get('artist', '')}' ALBUM='{current_tags.get('album', '')}' TITLE='{current_tags.get('title', '')}'"
+            f"    Current: ARTIST='{current_tags.get('artist', '')}' "
+            f"ALBUM='{current_tags.get('album', '')}' "
+            f"TITLE='{current_tags.get('title', '')}'"
         )
 
         # Match to playlist track first to get expected title
@@ -341,9 +343,9 @@ def main():
         print(f"No FLAC files found in {album_path}")
         sys.exit(0)
 
-    print(f"{'='*60}")
-    print(f"FLAC Tag Repair")
-    print(f"{'='*60}")
+    print("=" * 60)
+    print("FLAC Tag Repair")
+    print("=" * 60)
     print(f"Album: {album_path}")
     print(f"Mode: {'DRY RUN' if args.dry_run else 'REPAIR'}")
 

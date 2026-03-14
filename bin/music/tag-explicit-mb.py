@@ -9,7 +9,6 @@ import json
 import logging
 import os
 import re
-import sys
 import time
 from pathlib import Path
 
@@ -634,7 +633,11 @@ def _is_itunes_collection_match(want_album_norm, cached_collection_name):
 
 
 def _itunes_track_key(artist, album, title):
-    return f"{_normalize_title(artist)}\n{_normalize_title(_normalize_album_for_search(album))}\n{_normalize_title(title)}"
+    return (
+            f"{_normalize_title(artist)}\n"
+            f"{_normalize_title(_normalize_album_for_search(album))}\n"
+            f"{_normalize_title(title)}"
+        )
 
 
 def _fetch_itunes_track_search(artist, album, title):
@@ -987,7 +990,8 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
         album_search = _normalize_album_for_search(album)
         title_norm = _normalize_title(title)
 
-        # --- SKIP_CACHED: skip if already processed (has tag or in cache) and no pending override ---
+        # --- SKIP_CACHED: skip if already processed (has tag or in cache) and no pending 
+        # override ---
         if SKIP_CACHED:
             override_val = _resolve_override(
                 overrides,
@@ -1001,10 +1005,12 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     continue
                 # Override doesn't match current tag — need to re-tag
             else:
-                # No override — skip if already tagged Yes/No, but NOT Unknown (need to check Unknown against overrides)
+                # No override — skip if already tagged Yes/No, but NOT Unknown 
+                # (need to check Unknown against overrides)
                 if prev_explicit_tag in {"Yes", "No"}:
                     continue
-                # For Unknown tags, only process if overrides file changed since last cache write
+                # For Unknown tags, only process if overrides file changed since last cache 
+                # write
                 if prev_explicit_tag == UNKNOWN_VALUE:
                     cache_mtime = cache.get("cache_mtime", 0)
                     if overrides_mtime and cache_mtime and overrides_mtime <= cache_mtime:
@@ -1366,12 +1372,15 @@ with open(EXPLICIT_PLAYLIST_FILE, "a", encoding="utf-8", newline="") as f:
     writer = csv.writer(f)
     # Only write header if file is empty
     if os.path.getsize(EXPLICIT_PLAYLIST_FILE) == 0:
-        writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
+        writer.writerow(
+            ["File", "Artist", "Album", "Title", "Explicit", "Source"]
+        )
     for track in sorted(explicit_tracks):
         writer.writerow(track)
 
 print(
-    f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to {EXPLICIT_PLAYLIST_FILE}"
+    f"Definitive explicit tracks list: {len(explicit_tracks)} tracks written to "
+    f"{EXPLICIT_PLAYLIST_FILE}"
 )
 
 # Build M3U playlist if enabled (legacy functionality)
@@ -1379,14 +1388,17 @@ if M3U_PLAYLIST_FILE:
     with open(M3U_PLAYLIST_FILE, "w", encoding="utf-8", newline="\n") as f:
         f.write("#EXTM3U\n")
         for track in sorted(explicit_tracks):
-            f.write(os.path.relpath(track[0], ROOT) + "\n")
+            f.write(
+                os.path.relpath(track[0], ROOT) + "\n"
+            )
     playlist_count = len(explicit_tracks)
 else:
     playlist_count = 0
 
 processed_count = stats.get("Yes", 0) + stats.get("No", 0) + stats.get("Unknown", 0)
 print(
-    f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} already tagged)"
+    f"Processed: {processed_count} tracks (skipped {len(all_flacs) - processed_count} "
+    f"already tagged)"
 )
 if args.verbose:
     print(f"Definitive explicit tracks: {len(explicit_tracks)} total EXPLICIT=Yes tracks")

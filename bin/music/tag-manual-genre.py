@@ -13,8 +13,6 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
-
 from mutagen.flac import FLAC
 
 # Import the same whitelist and validation functions from update-genre-mb.py

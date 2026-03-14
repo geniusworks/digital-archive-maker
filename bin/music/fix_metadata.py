@@ -9,7 +9,8 @@ Usage:
 
 Arguments:
     --path     Root directory to scan (default: current directory)
-    --dry-run  Show what would be changed, don't write anything (default behavior if --fix not specified)
+    --dry-run  Show what would be changed, don't write anything
+                (default behavior if --fix not specified)
     --trial    Alias for --dry-run
     --fix      Update mismatched metadata
     --force    Overwrite all tags with derived values
