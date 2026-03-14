@@ -1,6 +1,6 @@
 # Release Checklist: v1.0.0 Public Release
 
-> **Single source of truth** for everything needed to ship Media Archive Maker as a polished, delightful, public open-source tool.
+> **Single source of truth** for everything needed to ship Digital Archive Maker as a polished, delightful, public open-source tool.
 >
 > Target: a user who "just wants to digitize their physical media and watch it on Jellyfin" — while retaining power-user depth underneath.
 
@@ -666,7 +666,7 @@ git branch -m main
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                  MEDIA ARCHIVE MAKER                         │
+│                  DIGITAL ARCHIVE MAKER                        │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌────────┐  ┌────────┐  ┌──────────┐  ┌────────┐          │

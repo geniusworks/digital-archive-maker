@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Media Archive Maker Logo" width="320" />
+  <img src="assets/logo.png" alt="Digital Archive Maker Logo" width="320" />
 </p>
 
 <p align="center">

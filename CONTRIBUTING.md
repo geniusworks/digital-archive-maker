@@ -1,4 +1,4 @@
-# Contributing to Media Archive Maker
+# Contributing to Digital Archive Maker
 
 First off, thank you for considering contributing! 🎉
 
