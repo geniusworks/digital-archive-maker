@@ -53,24 +53,20 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 ## Requirements
 
-### 🖥️ System Requirements
-- **macOS 10.15+** (Catalina or newer)
-- **Python 3.9+** (automatically installed if needed)
+### 🖥️ What You Need
+- **macOS** (Catalina or newer)
 - **8GB+ RAM** recommended for video processing
-- **50GB+ free storage** for temporary processing space
+- **50GB+ free storage** for temporary files
 
-### 💿 Hardware Requirements
+### 💿 Hardware (for ripping)
+- **CDs**: Any CD/DVD drive
+- **DVDs**: DVD drive (built-in or USB)
+- **Blu-rays**: Blu-ray drive
+- **Universal**: External USB Blu-ray drive works for all formats
 
-- **CD ripping**: Any CD/DVD drive (internal or external USB)
-- **DVD ripping**: DVD drive (internal SuperDrive or external USB)
-- **Blu-ray ripping**: Blu-ray drive required for Blu-ray discs
-- **All formats**: External USB Blu-ray drive recommended for universal compatibility
-
-### 📦 Software Dependencies
-- **Homebrew** (auto-installed by setup script)
-- **MakeMKV** (free beta or paid license)
-- **HandBrakeCLI** (auto-installed)
-- **abcde** (auto-installed for CDs)
+### 📦 Software
+- **Everything else is installed automatically** by `make install-deps`
+- **MakeMKV** requires manual download from makemkv.com (free beta available)
 
 ---
 
