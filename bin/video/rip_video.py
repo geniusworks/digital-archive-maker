@@ -190,7 +190,7 @@ def is_makemkv_available() -> bool:
 
 
 def handbrake_dvd_rip(
-    disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None
+    disc_type: str, outdir: Path, title_raw: str | None, year_raw: str | None, minlength: int
 ) -> None:
     """Rip DVD directly using HandBrake CLI when MakeMKV is not available.
 
@@ -1455,7 +1455,7 @@ def main() -> int:
             # For DVDs without MakeMKV, use HandBrake fallback directly
             print("  → Using HandBrake fallback (MakeMKV not available)")
             outdir.mkdir(parents=True, exist_ok=True)
-            handbrake_dvd_rip(disc_type, outdir, title_raw, year_raw)
+            handbrake_dvd_rip(disc_type, outdir, title_raw, year_raw, minlength)
             mkvs = sorted(outdir.glob("*.mkv"))
             if not mkvs:
                 print("  ❌ HandBrake fallback failed to create output")
@@ -1667,6 +1667,8 @@ def main() -> int:
                                         print(
                                             f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
                                         )
+                                        # Get first title (title 0) for seamless branching
+                                        title_0 = titles[0]
                                         (
                                             main_title_id,
                                             main_duration,
@@ -2477,8 +2479,6 @@ def main() -> int:
         print(f"  → Output exists: {mp4_path.exists()}")
         print()  # Blank line before spinner
         # Small delay to ensure no spinner overlap from previous operations
-        import time
-
         time.sleep(0.1)
         spinner = show_spinner("Encoding with HandBrake...")
 
