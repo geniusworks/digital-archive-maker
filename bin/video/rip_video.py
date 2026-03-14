@@ -10,6 +10,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -61,7 +62,6 @@ def show_spinner(message: str, duration: float = None):
     """Show an ASCII spinner with message during long operations."""
     import itertools
     import threading
-    import time
 
     global CURRENT_SPINNER
 
@@ -2192,8 +2192,6 @@ def main() -> int:
             if CURRENT_SPINNER:
                 stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
                 # Small delay to ensure spinner cleanup is complete
-                import time
-
                 time.sleep(0.1)
             print("Disc rip complete, ejecting...")
             eject_disc()
