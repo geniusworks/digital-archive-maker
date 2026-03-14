@@ -155,7 +155,8 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
                     sys.stdout.write("\n")
                     sys.stdout.flush()
                     last_was_progress = False
-                # Keep the total internally for the progress bar, but the header line is noisy in quiet mode.
+                # Keep the total internally for the progress bar, but the header line is noisy 
+                # in quiet mode.
                 if label not in {
                     "Tagging movie metadata",
                     "Tagging movie ratings",
@@ -382,7 +383,8 @@ def parse_rsync_stats(output_text):
         else:
             # Try other rsync output formats
             patterns = [
-                r"^sent\s+([\d.,]+[KMG]T?)\s+bytes\s+received\s+[\d.,]+[KMG]T?\s+bytes.*([\d.,]+\s+bytes)?/sec",
+                r"^sent\s+([\d.,]+[KMG]T?)\s+bytes\s+received\s+[\d.,]+[KMG]T?\s+bytes.*"
+                r"([\d.,]+\s+bytes)?/sec",
                 r"^Total bytes sent:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
                 r"^Total file size:\s+([\d.,]+[KMG]T?)\s+bytes\s*$",
                 r"([\d.,]+[KMG]T?)\s+bytes.*transferred",
@@ -1038,12 +1040,12 @@ def run_sync_job(
                 print(f"DEBUG: Rsync output parsing issue for job '{job['name']}'")
                 print(f"DEBUG: Files copied reported: {job_stats.get('files_copied', 'unknown')}")
                 print(f"DEBUG: Bytes transferred detected: {bytes_transferred}")
-                print(f"DEBUG: Rsync stdout snippet:")
+                print("DEBUG: Rsync stdout snippet:")
                 # Show last 20 lines of rsync output for debugging
                 debug_lines = stdout_text.strip().split("\n")[-20:]
                 for line in debug_lines:
                     print(f"  {line}")
-                print(f"DEBUG: End of rsync output")
+                print("DEBUG: End of rsync output")
 
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, cmd, stdout_text)
@@ -1409,8 +1411,8 @@ def main():
     cleanup_success = run_global_cleanup(jobs, str(sync_script_path), global_opts, args.dry_run)
 
     # Summary
-    print(f"\n{'='*60}")
-    print(f"Sync Summary:")
+    print("\n" + "=" * 60)
+    print("Sync Summary:")
     print(f"  Total jobs: {total_count}")
     print(f"  Successful: {success_count}")
     print(f"  Failed: {total_count - success_count}")
@@ -1451,7 +1453,8 @@ def main():
             print(f"    Data transferred: {_format_bytes(b['bytes_transferred'])}")
             if b["bytes_sent"] or b["bytes_received"]:
                 print(
-                    f"    Network: sent {_format_bytes(b['bytes_sent'])}, received {_format_bytes(b['bytes_received'])}"
+                    f"    Network: sent {_format_bytes(b['bytes_sent'])}, "
+                    f"received {_format_bytes(b['bytes_received'])}"
                 )
             print(f"    Job time: {_format_duration(b['elapsed_seconds'])}")
 
@@ -1464,11 +1467,12 @@ def main():
         print(f"  Total data transferred: {_format_bytes(total_bytes)}")
         if total_sent or total_recv:
             print(
-                f"  Total network: sent {_format_bytes(total_sent)}, received {_format_bytes(total_recv)}"
+                f"  Total network: sent {_format_bytes(total_sent)}, "
+                f"received {_format_bytes(total_recv)}"
             )
         print(f"  Wall time: {_format_duration(run_elapsed)}")
 
-    print(f"{'='*60}")
+    print("=" * 60)
 
     return 0 if (success_count == total_count and cleanup_success) else 1
 

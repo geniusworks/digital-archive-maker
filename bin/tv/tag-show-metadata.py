@@ -116,7 +116,8 @@ def _extract_year_from_text(text):
 
 def _parse_jellyfin_episode_filename(filename):
     m = re.match(
-        r"^(?P<show>.+?)\s+-\s+S(?P<season>\d{2})E(?P<episode>\d{2})\s+-\s+(?P<title>.+)\.(?P<ext>mp4|m4v)$",
+        r"^(?P<show>.+?)\s+-\s+S(?P<season>\d{2})E(?P<episode>\d{2})\s+-\s+"
+            r"(?P<title>.+)\.(?P<ext>mp4|m4v)$",
         filename,
         re.IGNORECASE,
     )
@@ -330,7 +331,7 @@ def _get_omdb_show_data(imdb_id, language="en-US"):
             if data.get("Error"):
                 print(f"OMDb error: {data.get('Error')}")
             else:
-                print(f"OMDb: Not found or not a series/movie")
+                print("OMDb: Not found or not a series/movie")
             return None
     except Exception as e:
         print(f"OMDb lookup failed: {e}")
@@ -575,7 +576,8 @@ def main():
                     omdb_data = _get_omdb_show_data(manual_override["imdb_id"], args.language)
                     if omdb_data is None:
                         print(
-                            f"  Could not fetch IMDb data for {manual_override['imdb_id']} (from override)"
+                            f"  Could not fetch IMDb data for {manual_override['imdb_id']} "
+                            f"(from override)"
                         )
                         skipped += 1
                         continue
@@ -584,7 +586,8 @@ def main():
                     show_year_override = omdb_data.get("Year", "").split("–")[0]
                     if args.verbose:
                         print(
-                            f"  IMDb show (override): {show_name} ({show_year_override}) [id={manual_override['imdb_id']}]"
+                            f"  IMDb show (override): {show_name} ({show_year_override}) "
+                            f"[id={manual_override['imdb_id']}]"
                         )
 
                     episode_title = local_title or f"Episode {episode}"
@@ -610,7 +613,8 @@ def main():
                         if show_info:
                             if args.verbose:
                                 print(
-                                    f"  TMDb show (override): {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
+                                    f"  TMDb show (override): {show_info.get('name')} "
+                                    f"({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
                                 )
                     except Exception:
                         if args.verbose:
@@ -626,7 +630,8 @@ def main():
                             if local_title:
                                 if args.verbose:
                                     print(
-                                        f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})"
+                                        f"  No TMDb episode match for S{season:02d}E{episode:02d} "
+                                        f"({local_title})"
                                     )
                             else:
                                 if args.verbose:
@@ -652,7 +657,8 @@ def main():
                     show_info = _tmdb_get_json(f"/tv/{show_id}", {"language": args.language})
                     if show_info:
                         print(
-                            f"  TMDb show: {show_info.get('name')} ({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
+                            f"  TMDb show: {show_info.get('name')} "
+                            f"({show_info.get('first_air_date', 'unknown')}) [id={show_id}]"
                         )
                 except Exception:
                     print(f"  TMDb show: id={show_id}")

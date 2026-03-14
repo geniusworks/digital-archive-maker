@@ -11,8 +11,10 @@ Behavior:
 - Detects the first English text subtitle stream (subrip/ass/ssa/text/webvtt).
 - If no English text subs exist, attempts automatic OCR:
   - DVD (dvd_subtitle): extract VobSub (idx/sub), OCR via sub2srt + tesseract => SRT
-  - Blu-ray (hdmv_pgs_subtitle): extract PGS (.sup), convert to VobSub via bdsup2sub, OCR via sub2srt + tesseract => SRT
-- Muxes the resulting subtitle (text stream) into the MP4 as a soft subtitle (mov_text). By default, it is NOT marked default.
+  - Blu-ray (hdmv_pgs_subtitle): extract PGS (.sup), convert to VobSub via bdsup2sub, 
+  OCR via sub2srt + tesseract => SRT
+- Muxes the resulting subtitle (text stream) into the MP4 as a soft subtitle 
+  (mov_text). By default, it is NOT marked default.
 - Set DEFAULT=yes to mark the English subtitle track as default (players may auto-enable it).
 - Outputs a new file with suffix `.en-subs.mp4` next to the original by default.
 - Set INPLACE=yes to replace the original MP4 in-place (original backed up as .bak).
@@ -26,9 +28,8 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 
 def require_command(cmd: str) -> None:
@@ -283,7 +284,8 @@ def handle_image_subs_ocr(
                     print(f"  Index: {idx_path}")
                     print(f"  Subtitles: {sub_path}")
                     print(
-                        "Use these files with an OCR tool to create an SRT, then re-run this command."
+                        "Use these files with an OCR tool to create an SRT, "
+                        "then re-run this command."
                     )
                 else:
                     print("Extraction of VobSub files failed.")
@@ -372,7 +374,8 @@ def main():
     target_mp4 = determine_target_mp4(dst_dir)
     if not target_mp4:
         print(
-            f"Could not uniquely determine target MP4. Expected: {dst_dir.name}.mp4 or exactly one MP4 in {dst_dir}"
+            f"Could not uniquely determine target MP4. Expected: {dst_dir.name}.mp4 "
+            f"or exactly one MP4 in {dst_dir}"
         )
         return 1
 
@@ -404,7 +407,8 @@ def main():
             backup_path.write_bytes(target_mp4.read_bytes())
             target_mp4.write_bytes(out_path.read_bytes())
             print(
-                f"Replaced original MP4 with new file containing English subs. Backup at: {backup_path}"
+                f"Replaced original MP4 with new file containing English subs. "
+                f"Backup at: {backup_path}"
             )
         return 0
 

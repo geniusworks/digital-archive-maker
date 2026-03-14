@@ -428,7 +428,8 @@ def main():
             print("Dry run completed: no changes needed.")
         else:
             print(
-                f"Dry run completed: {planned_renames} rename(s), {planned_metadata_updates} metadata update(s) planned."
+                f"Dry run completed: {planned_renames} rename(s), "
+                f"{planned_metadata_updates} metadata update(s) planned."
             )
         return
 
@@ -462,7 +463,8 @@ def main():
                 errors += 1
 
     print(
-        f"All updates completed. Renamed: {performed_renames}. Metadata writes: {performed_metadata_writes}. Errors: {errors}."
+        f"All updates completed. Renamed: {performed_renames}. "
+        f"Metadata writes: {performed_metadata_writes}. Errors: {errors}."
     )
 
 

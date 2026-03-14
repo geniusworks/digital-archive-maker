@@ -579,7 +579,8 @@ def main():
                 # If we can't create it, that's okay - just continue
                 pass
 
-    # Exclude macOS .DS_Store and Icon files from all sync operations (Jellyfin/Ubuntu don't need them)
+    # Exclude macOS .DS_Store and Icon files from all sync operations 
+    # (Jellyfin/Ubuntu don't need them)
     patterns.append(".DS_Store")
     patterns.append("*/.DS_Store")
     patterns.append("Icon*")
@@ -666,7 +667,8 @@ def main():
         print(f"Scanned files: {total_flacs}")
         print(f"Excluded EXPLICIT=Yes: {excluded_yes} (exclude-explicit={args.exclude_explicit})")
         print(
-            f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} (exclude-unknown={args.exclude_unknown})"
+            f"Excluded EXPLICIT=Unknown/missing: {excluded_unknown} "
+            f"(exclude-unknown={args.exclude_unknown})"
         )
         if args.exclude_explicit:
             print(f"Overrides matched Yes: {override_yes_excluded}")
@@ -677,7 +679,8 @@ def main():
         print(f"Excluded MPAA above {max_mpaa}: {excluded_mpaa} (max-mpaa={args.max_mpaa})")
         print(f"Excluded NR/Unrated: {excluded_unrated} (exclude-unrated={args.exclude_unrated})")
         print(
-            f"Excluded Unknown/missing rating: {excluded_unknown} (exclude-unknown={args.exclude_unknown})"
+            f"Excluded Unknown/missing rating: {excluded_unknown} "
+            f"(exclude-unknown={args.exclude_unknown})"
         )
         print(f"Tag read errors treated as Unknown: {errors}")
     elif args.media == "shows":
@@ -708,7 +711,6 @@ def main():
 
 def _fix_destination_playlists(dest_root, exclude_patterns):
     """Fix .m3u8 playlists on destination to replace missing tracks with (skipped) placeholders"""
-    import re
 
     print("Fixing playlists on destination...")
     fixed_count = 0
