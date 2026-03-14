@@ -171,6 +171,25 @@ install-test-deps:
 	@echo "Installing test dependencies..."
 	@./venv/bin/python -m pip install -r requirements-test.txt
 
+uninstall:
+	@echo "Removing Digital Archive Maker..."
+	@if [ -d "venv" ]; then \
+		echo "  • Uninstalling Python package..."; \
+		./venv/bin/pip uninstall -y media-archive-maker 2>/dev/null || true; \
+		echo "  • Removing virtual environment..."; \
+		rm -rf venv; \
+		echo "✓ Uninstall complete"; \
+		echo ""; \
+		echo "Optional cleanup:"; \
+		echo "  • Remove Homebrew packages: brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss"; \
+		echo "  • Remove cache directory: rm -rf cache/"; \
+		echo "  • Remove log directory: rm -rf log/"; \
+		echo "  • Keep your .env file and media library"; \
+	else \
+		echo "  • No virtual environment found"; \
+		echo "  • Nothing to uninstall"; \
+	fi
+
 test:
 	@echo ""
 	@echo "Running all tests..."

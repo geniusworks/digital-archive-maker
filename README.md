@@ -114,15 +114,6 @@ dam rip video
 dam sync
 ```
 
-## Verify Installation
-
-Optional: Run the test suite to confirm everything works:
-```bash
-make test  # Runs all 104 tests with comprehensive coverage
-```
-
-See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
-
 📖 **[Full Quick Start Guide →](QUICKSTART.md)**
 
 ---
@@ -207,7 +198,7 @@ see [Documentation](docs/) for details.
 ## Project Structure
 
 ```
-media-archive-maker/
+digital-archive-maker/
 ├── dam/                # Shared library & unified CLI
 │   ├── cli.py          #   `dam` command entry point
 │   ├── config.py       #   Centralised configuration loader
@@ -221,10 +212,19 @@ media-archive-maker/
 │   ├── tv/             # TV show handling
 │   └── utils/          # Helper tools
 ├── docs/               # Detailed guides
-├── config/             # Configuration templates
+├── gui/                # Desktop application
+├── scripts/            # Utility scripts
+├── tests/              # Test suite
+├── assets/             # Project assets
 ├── cache/              # Temporary data
-├── tests/              # Tests
-└── Makefile            # Make targets (also usable directly)
+├── log/                # Log files
+├── config/             # Configuration templates
+├── .github/            # GitHub workflows
+├── requirements.txt     # Python dependencies
+├── pyproject.toml      # Python project configuration
+├── Makefile            # Build and utility targets
+├── .env.sample         # Environment variables template
+└── .abcde.conf.sample  # CD ripping configuration
 ```
 
 ---
@@ -244,6 +244,30 @@ This software is for **personal backup of media you legally own**. Users are sol
 - **For personal use only** — See [DISCLAIMER.md](DISCLAIMER.md) for full terms
 
 ---
+
+## Uninstall
+
+To remove Digital Archive Maker:
+```bash
+make uninstall  # Removes Python package and virtual environment
+```
+
+Optional cleanup (run manually if needed):
+```bash
+brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss
+rm -rf cache/ log/  # Remove cache and log directories
+```
+
+## Development
+
+### Testing
+
+For contributors: Run the test suite to verify everything works:
+```bash
+make test  # Runs all 104 tests with comprehensive coverage
+```
+
+See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
 
 ## Author
 
