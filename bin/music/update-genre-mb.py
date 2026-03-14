@@ -275,8 +275,6 @@ def signal_handler(signum, frame):
         # Second Ctrl+C - force exit
         FORCE_EXIT_REQUESTED = True
         print("\nForce exit requested. Terminating immediately...")
-        import os
-
         os._exit(1)
 
 
@@ -497,8 +495,6 @@ def retry_musicbrainz_call(func, *args, max_retries=4, base_delay=2, timeout=15)
         # Check for shutdown request before making API call
         if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:
             if FORCE_EXIT_REQUESTED:
-                import os
-
                 os._exit(1)
             _log("Shutdown requested, skipping API call")
             return None

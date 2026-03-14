@@ -277,7 +277,7 @@ def rip_cd():
                     if check_result.returncode == 0 and check_result.stdout.strip():
                         success(f"✓ CD detected!")
                         break
-                except:
+                except Exception:
                     pass
 
                 # Show countdown

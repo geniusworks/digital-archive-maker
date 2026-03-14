@@ -48,7 +48,7 @@ class Dependency:
         """Return True if this dependency is available."""
         if self.check_cmd:
             try:
-                result = subprocess.run(
+                subprocess.run(
                     self.check_cmd,
                     shell=True,
                     capture_output=True,

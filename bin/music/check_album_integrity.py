@@ -298,7 +298,7 @@ def resize_cover_image(cover_path: Path, dry_run: bool = False) -> bool:
 
     for cmd in magick_cmds:
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
             print(f"  Fixed: {cover_path.name} (resized to 1000x1000)")
             return True
         except (FileNotFoundError, subprocess.CalledProcessError):
