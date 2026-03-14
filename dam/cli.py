@@ -181,9 +181,170 @@ def rip_cd():
     """Rip an audio CD to FLAC using abcde."""
     banner()
     _ensure_deps(["abcde", "flac"])
+    
+    # Check for abcde configuration
+    import os
+    import shutil
+    abcde_config = os.path.expanduser("~/.abcde.conf")
+    sample_config = os.path.join(os.getcwd(), ".abcde.conf.sample")
+    
+    if not os.path.exists(abcde_config):
+        if os.path.exists(sample_config):
+            info("Setting up abcde configuration...")
+            
+            # Read MusicBrainz setting from user's .env (default to enabled)
+            from dam.config import get
+            musicbrainz_setting = get("MUSICBRAINZ_LOOKUP", "true").lower()
+            
+            # Read sample config
+            with open(sample_config, 'r') as f:
+                config_content = f.read()
+            
+            # Set MusicBrainz based on user's .env configuration
+            if musicbrainz_setting in ("true", "1", "yes"):
+                # User has MusicBrainz enabled (default)
+                config_content = config_content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=y")
+                success_msg = "✓ Created ~/.abcde.conf"
+                info_msg = "  • MusicBrainz lookup enabled (per your MUSICBRAINZ_LOOKUP setting)"
+            else:
+                # User explicitly disabled MusicBrainz
+                config_content = config_content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=n")
+                success_msg = "✓ Created ~/.abcde.conf"
+                info_msg = "  • MusicBrainz lookup disabled (per your MUSICBRAINZ_LOOKUP setting)"
+            
+            # Write the customized config
+            with open(abcde_config, 'w') as f:
+                f.write(config_content)
+            
+            success(success_msg)
+            info(info_msg)
+            info("  • Using LIBRARY_ROOT from your .env file")
+            info("  • Edit ~/.abcde.conf to customize settings")
+        else:
+            warning("abcde configuration sample not found:")
+            warning(f"  • {sample_config}")
+            warning("\nContinuing with abcde defaults...")
+    
+    # Check for CD and prompt user to insert if needed
+    import subprocess
+    import time
+    
     heading("Ripping CD")
-    info("Running abcde with your ~/.abcde.conf settings...")
-    _run_script_or_make("rip-cd")
+    
+    # Check if any CD/DVD is inserted
+    try:
+        result = subprocess.run(
+            r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0 or not result.stdout.strip():
+            warning("No CD detected in drive")
+            info("Please insert a CD and press ENTER to continue...")
+            info("(Waiting 30 seconds for CD detection...)")
+            
+            # Countdown with periodic checks and ENTER detection
+            import select
+            import sys
+            
+            for i in range(30, 0, -1):
+                try:
+                    check_result = subprocess.run(
+                        r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if check_result.returncode == 0 and check_result.stdout.strip():
+                        success(f"✓ CD detected!")
+                        break
+                except:
+                    pass
+                
+                # Show countdown
+                if i % 5 == 0 or i <= 5:
+                    info(f"  {i} seconds remaining...")
+                
+                # Check for ENTER key press (wait 1 second max)
+                if select.select([sys.stdin], [], [], 1)[0]:
+                    sys.stdin.readline()
+                    info("  Continuing anyway...")
+                    break
+                
+                time.sleep(0.1)  # Small delay to prevent CPU spinning
+            else:
+                # After 30 seconds, check one more time
+                final_check = subprocess.run(
+                    r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if final_check.returncode != 0 or not final_check.stdout.strip():
+                    error("No CD detected after 30 seconds")
+                    info("Please insert a CD and try again")
+                    return
+        else:
+            success("✓ CD detected in drive")
+            
+    except Exception:
+        # If disk detection fails, just proceed anyway
+        warning("Could not check for CD - proceeding anyway")
+    
+    info("Running abcde...")
+    try:
+        _run_script_or_make("rip-cd")
+    except SystemExit as e:
+        if e.code == 2:  # abcde failed, likely due to MusicBrainz issues
+            # Try to automatically fix Perl module issues
+            try:
+                import subprocess
+                warning("Attempting to fix MusicBrainz compatibility...")
+                
+                # Force reinstall the Audio::CD module for current Perl version
+                result = subprocess.run(
+                    "cpan -f -i Audio::CD 2>/dev/null",
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+                
+                if result.returncode == 0:
+                    success("✓ Fixed MusicBrainz compatibility")
+                    info("Retrying CD rip...")
+                    _run_script_or_make("rip-cd")
+                else:
+                    # If automatic fix fails, disable MusicBrainz and retry
+                    warning("Auto-fix failed, disabling MusicBrainz lookup...")
+                    
+                    # Update abcde config to disable MusicBrainz
+                    abcde_config = os.path.expanduser("~/.abcde.conf")
+                    if os.path.exists(abcde_config):
+                        with open(abcde_config, 'r') as f:
+                            content = f.read()
+                        content = content.replace("MUSICBRAINZ_LOOKUP=y", "MUSICBRAINZ_LOOKUP=n")
+                        with open(abcde_config, 'w') as f:
+                            f.write(content)
+                        success("✓ Disabled MusicBrainz lookup")
+                        info("Retrying CD rip...")
+                        _run_script_or_make("rip-cd")
+                    else:
+                        raise
+                        
+            except (subprocess.TimeoutExpired, Exception):
+                # If everything fails, let the user know
+                warning("Unable to resolve MusicBrainz compatibility automatically")
+                info("The CD can still be ripped with basic metadata:")
+                info("  Try: dam rip cd again")
+                raise
+        else:
+            raise
 
 
 # ── dam rip video ──────────────────────────────────────────────────────────

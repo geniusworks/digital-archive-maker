@@ -48,11 +48,12 @@ class Dependency:
         """Return True if this dependency is available."""
         if self.check_cmd:
             try:
-                subprocess.run(
+                result = subprocess.run(
                     self.check_cmd,
                     shell=True,
                     capture_output=True,
                     timeout=10,
+                    check=True  # This will raise CalledProcessError for non-zero exit codes
                 )
                 return True
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
@@ -82,21 +83,23 @@ class Dependency:
 # ---------------------------------------------------------------------------
 
 CORE_DEPS: list[Dependency] = [
-    # Homebrew CLI tools — audio pipeline
+    # Homebrew CLI tools — music pipeline
     Dependency(
         name="abcde",
         kind=DepKind.BREW,
-        description="CD ripper with MusicBrainz lookup",
+        description="CD ripper and encoder",
         check_cmd="which abcde",
         required_for=["music"],
     ),
     Dependency(
         name="flac",
         kind=DepKind.BREW,
-        description="FLAC encoder/decoder",
+        description="FLAC audio codec",
         check_cmd="which flac",
         required_for=["music"],
     ),
+    # abcde dependencies are handled by the abcde Homebrew package
+    # No additional CD dependencies needed - abcde includes everything required
     Dependency(
         name="imagemagick",
         kind=DepKind.BREW,

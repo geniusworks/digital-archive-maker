@@ -105,7 +105,7 @@ install-video-deps:
 	@echo "  - Use the vobsub-to-srt helper for placeholder SRT creation"
 
 rip-cd:
-	@echo "Ripping CD with abcde... (ensure ~/.abcde.conf is configured)"
+	@echo "Ripping CD with abcde..."
 	@abcde
 
 rip-video:
