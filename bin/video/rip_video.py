@@ -273,7 +273,7 @@ def handbrake_dvd_rip(
             print(f"  → Error: {e.stderr.strip()[:200]}")
     except Exception as e:
         stop_spinner(spinner, f"✗ Error: {e}")
-        print(f"  → Unexpected error during ripping")
+        print("  → Unexpected error during ripping")
 
 
 def load_dotenv(repo_root: Path) -> None:
@@ -982,7 +982,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
 
                     # Check if VOB files were extracted
                     if sub_file.exists() and sub_idx.exists():
-                        print(f"  ✓ Extracted VOB subtitle files")
+                        print("  ✓ Extracted VOB subtitle files")
 
                         # Use OCR to convert VOB to SRT
                         # This creates a simple placeholder SRT with timing
@@ -1017,9 +1017,9 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
 
                             extracted_files.append(srt_path)
                             print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
-                            print(f"  ⚠️  OCR placeholder created - manual OCR may be needed")
+                            print("  ⚠️  OCR placeholder created - manual OCR may be needed")
                     else:
-                        print(f"  ⚠️  VOB subtitle extraction failed")
+                        print("  ⚠️  VOB subtitle extraction failed")
 
                 finally:
                     # Clean up temporary frames
@@ -1033,7 +1033,7 @@ def extract_vob_subtitles(mkv_path: Path, output_dir: Path) -> list[Path]:
     except FileNotFoundError as e:
         missing_tool = str(e).split("'")[1] if "'" in str(e) else "OCR tool"
         print(f"  ⚠️  {missing_tool} not found - cannot convert VOB subtitles")
-        print(f"  💡 Install with: brew install tesseract")
+        print("  💡 Install with: brew install tesseract")
 
     return extracted_files
 
@@ -1076,7 +1076,7 @@ def convert_vob_to_srt(sub_files: list[Path], output_dir: Path) -> list[Path]:
                     srt_files.append(srt_path)
                     print(f"  ✓ VOB→SRT conversion complete: {srt_path.name}")
                 else:
-                    print(f"  ⚠️  VOB→SRT conversion failed")
+                    print("  ⚠️  VOB→SRT conversion failed")
 
     except subprocess.CalledProcessError as e:
         print(f"  ⚠️  Could not convert VOB to SRT: {e}")
@@ -1639,7 +1639,7 @@ def main() -> int:
                                     # instead of size sorting for more predictable results
                                     title_sizes.sort(key=lambda x: x[0])  # Sort by title_id
                                     print(
-                                        f"🔄 Seamless branching detected, using natural title order"
+                                        "🔄 Seamless branching detected, using natural title order"
                                     )
                                 else:
                                     # For non-seamless discs, sort by size (largest first)
@@ -1662,18 +1662,14 @@ def main() -> int:
                                     main_duration_str = next(
                                         t[2] for t in titles if t[0] == main_title_id
                                     )
+                                    
+                                    print("\nAvailable titles (natural order for seamless branching):")
+                                else:
+                                    print("\nAvailable titles (sorted by size):")
 
-                                    # Show all available titles with their sizes for manual selection
-                                    if is_seamless_branching:
-                                        print(
-                                            f"\nAvailable titles (natural order for seamless branching):"
-                                        )
-                                    else:
-                                        print(f"\nAvailable titles (sorted by size):")
-
-                                    for i, (tid, size_gb) in enumerate(title_sizes):
-                                        marker = "👉" if i == args.title_index else "  "
-                                        print(f"{marker} Index {i}: Title {tid} ({size_gb:.3f} GB)")
+                                for i, (tid, size_gb) in enumerate(title_sizes):
+                                    marker = "👉" if i == args.title_index else "  "
+                                    print(f"{marker} Index {i}: Title {tid} ({size_gb:.3f} GB)")
                                 else:
                                     # No title_index specified and multiple same-duration titles
                                     # Warn user and suggest using TITLE_INDEX
@@ -1684,42 +1680,25 @@ def main() -> int:
                                         same_duration_titles
                                     ):
                                         print(f"   Title {tid}: {duration}")
-                                    print(f"\n💡 Use TITLE_INDEX to select a specific title:")
+                                    print("\n💡 Use TITLE_INDEX to select a specific title:")
 
                                     if is_seamless_branching:
                                         print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
                                         )
                                         print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
                                         )
                                         print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
                                         )
                                         print(
-                                            f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                            "\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
                                         )
                                         # Get first title (title 0) for seamless branching
                                         title_0 = titles[0]
                                         (
                                             main_title_id,
-                                            main_duration,
-                                            main_duration_str,
-                                        ) = title_0[:3]
-                                    else:
-                                        print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Largest'
-                                        )
-                                        print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Second largest'
-                                        )
-                                        print(
-                                            f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Third largest'
-                                        )
-                                        print(
-                                            f"\n🔄 Defaulting to first title (may not be desired language version)"
-                                        )
-                                        (
                                             main_title_id,
                                             main_duration,
                                             main_duration_str,
@@ -1736,20 +1715,20 @@ def main() -> int:
                                     same_duration_titles
                                 ):
                                     print(f"   Title {tid}: {duration}")
-                                print(f"\n💡 Use TITLE_INDEX to select a specific title:")
+                                print("\n💡 Use TITLE_INDEX to select a specific title:")
 
                                 if is_seamless_branching:
                                     print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=0  # Title 0 (usually main feature)'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=1  # Title 1'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=2  # Title 2'
                                     )
                                     print(
-                                        f"\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                        "\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
                                     )
                                     # Use improved candidate-based selection
                             if candidates:
@@ -1796,8 +1775,8 @@ def main() -> int:
 
                     if all_preferred_audio and preferred_soft_subs:
                         # Simple case - skip prompt, just proceed with extraction
-                        print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
-                        print(f"  → Will automatically extract English soft subtitles to .srt file")
+                        print("\n🎬 Detected: English movie with English audio and soft subtitles")
+                        print("  → Will automatically extract English soft subtitles to .srt file")
                         subtitle_config = {
                             "action": "extract_srt",
                             "preferred_text_subs": True,
@@ -1840,7 +1819,7 @@ def main() -> int:
                             print(f"  ⚠ MakeMKV stderr: {result.stderr.strip()}")
                     except KeyboardInterrupt:
                         stop_spinner(spinner, "⚠️  Rip cancelled by user")
-                        print(f"   → Cleaning up partial files...")
+                        print("   → Cleaning up partial files...")
                         # Clean up any partial files
                         for partial_file in outdir.glob(f"*t{main_title_id:02d}*"):
                             try:
@@ -1862,10 +1841,10 @@ def main() -> int:
                                 print(
                                     f"  → Found existing MKV files: {[f.name for f in existing_files]}"
                                 )
-                                print(f"  → Using largest file as main feature")
+                                print("  → Using largest file as main feature")
                                 # Continue with existing files - skip backup
                             else:
-                                print(f"  → Trying backup method for problematic disc...")
+                                print("  → Trying backup method for problematic disc...")
 
                                 # Try backup method for problematic DVDs
                                 backup_cmd = [
@@ -1991,7 +1970,7 @@ def main() -> int:
                             print(f"  ✓ HandBrake succeeded: {hb_output.name}")
                             mkvs = [hb_output]
                         else:
-                            print(f"  ✗ HandBrake failed to create output")
+                            print("  ✗ HandBrake failed to create output")
                     except Exception as hb_error:
                         print(f"  ✗ HandBrake fallback failed: {hb_error}")
 
@@ -2038,7 +2017,7 @@ def main() -> int:
                 stop_spinner(spinner, "✓ Successfully ripped all tracks (forced)")
             except subprocess.CalledProcessError as e:
                 stop_spinner(spinner, f"✗ MakeMKV failed to rip all tracks (forced): {e}")
-                print(f"  → Trying backup method for problematic disc...")
+                print("  → Trying backup method for problematic disc...")
 
                 # Try backup method for problematic discs
                 backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
@@ -2073,11 +2052,11 @@ def main() -> int:
                         backup_rip_spinner,
                         f"✓ Backup rip output: {backup_rip_result.stdout.strip()}",
                     )
-                    print(f"  ✓ Successfully ripped using backup method")
+                    print("  ✓ Successfully ripped using backup method")
                 except subprocess.CalledProcessError as e3:
                     stop_spinner(backup_rip_spinner, f"✗ Backup rip also failed: {e3}")
-                    print(f"  ❌ This disc appears to be unreadable or heavily protected")
-                    print(f"  💡 Try cleaning the disc or using a different Blu-ray drive")
+                    print("  ❌ This disc appears to be unreadable or heavily protected")
+                    print("  💡 Try cleaning the disc or using a different Blu-ray drive")
                     return 1  # Exit gracefully
                 except Exception as e3:
                     stop_spinner(backup_rip_spinner, f"✗ Backup rip error: {e3}")
@@ -2097,14 +2076,14 @@ def main() -> int:
                     size_mb = f.stat().st_size / (1024 * 1024)
                     print(f"     {f.name} ({size_mb:.1f}MB)")
             else:
-                print(f"     No files found!")
+                print("     No files found!")
         except Exception as e:
             print(f"     Error listing files: {e}")
 
         mkvs = sorted(outdir.glob("*.mkv"))
         if not mkvs:
-            print(f"  ❌ No MKV files created after ripping - something went wrong")
-            print(f"\n🔄 Trying HandBrake CLI as fallback...")
+            print("  ❌ No MKV files created after ripping - something went wrong")
+            print("\n🔄 Trying HandBrake CLI as fallback...")
 
             # Try HandBrake CLI directly from disc
             try:
@@ -2181,15 +2160,15 @@ def main() -> int:
                     print(f"  ✓ HandBrake succeeded: {hb_output.name}")
                     mkvs = [hb_output]
                 else:
-                    print(f"  ✗ HandBrake failed to create output")
+                    print("  ✗ HandBrake failed to create output")
                     return 1
             except Exception as hb_error:
-                print(f"\n❌ HandBrake fallback failed")
-                print(f"   → Error: {hb_error}")
-                print(f"")
-                print(f"   → This disc may be CSS-protected or damaged")
-                print(f"")
-                print(f"   → Try cleaning the disc or using a different ripping tool")
+                print("\n❌ HandBrake fallback failed")
+                print("   → Error: {}".format(hb_error))
+                print("")
+                print("   → This disc may be CSS-protected or damaged")
+                print("")
+                print("   → Try cleaning the disc or using a different ripping tool")
                 return 1
 
         print(f"  ✓ Found {len(mkvs)} MKV file(s) after ripping")
