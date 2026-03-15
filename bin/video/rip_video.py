@@ -1667,7 +1667,7 @@ def main() -> int:
                                 # Update titles list with size information
                                 # Create a mapping of title_id -> size_gb
                                 size_map = {tid: size_gb for tid, size_gb in title_sizes}
-                                
+
                                 # Update each title with its size
                                 updated_titles = []
                                 for title in titles:
@@ -1675,18 +1675,30 @@ def main() -> int:
                                     if title_id in size_map:
                                         # Replace size_bytes placeholder with actual size
                                         if len(title) >= 5:
-                                            updated_title = (title[0], title[1], title[2], title[3], int(size_map[title_id] * (1024**3)))
+                                            updated_title = (
+                                                title[0],
+                                                title[1],
+                                                title[2],
+                                                title[3],
+                                                int(size_map[title_id] * (1024**3)),
+                                            )
                                         else:
-                                            updated_title = (title[0], title[1], title[2], title[3], int(size_map[title_id] * (1024**3)))
+                                            updated_title = (
+                                                title[0],
+                                                title[1],
+                                                title[2],
+                                                title[3],
+                                                int(size_map[title_id] * (1024**3)),
+                                            )
                                         updated_titles.append(updated_title)
                                     else:
                                         updated_titles.append(title)
-                                
+
                                 titles = updated_titles
-                                
+
                                 # Now sort titles by size (largest first) for proper candidate selection
                                 titles.sort(key=lambda x: x[4] if len(x) > 4 else 0, reverse=True)
-                                
+
                                 if is_seamless_branching:
                                     # For seamless branching, use natural title order (0, 1, 2...)
                                     # instead of size sorting for more predictable results
@@ -1887,24 +1899,24 @@ def main() -> int:
                         try:
                             result = _run(cmd, capture=True)
                             stop_spinner(spinner, f"✓ MakeMKV output: {result.stdout.strip()}")
-                            
+
                             # Wait for any remaining MakeMKV processes to finish
                             import subprocess
                             import time
-                            
+
                             # Check for remaining MakeMKV processes and wait for them to finish
                             max_wait_time = 10  # Maximum 10 seconds wait
                             check_interval = 0.1  # Check every 100ms
                             elapsed = 0
-                            
+
                             while elapsed < max_wait_time:
                                 try:
                                     # Use pgrep to check for MakeMKV processes
                                     proc_result = subprocess.run(
-                                        ["pgrep", "-f", "makemkvcon"], 
-                                        capture_output=True, 
-                                        text=True, 
-                                        timeout=1
+                                        ["pgrep", "-f", "makemkvcon"],
+                                        capture_output=True,
+                                        text=True,
+                                        timeout=1,
                                     )
                                     if proc_result.returncode != 0:  # No processes found
                                         break
@@ -1913,7 +1925,7 @@ def main() -> int:
                                 except (subprocess.TimeoutExpired, FileNotFoundError):
                                     # pgrep not available or timeout, assume no processes
                                     break
-                            
+
                         except Exception as e:
                             stop_spinner(spinner, f"✗ MakeMKV failed: {e}")
                             raise
