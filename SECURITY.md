@@ -9,10 +9,13 @@ This project consists of local automation scripts for personal media management.
 If you discover a security issue:
 
 1. **Do not** open a public GitHub issue
-2. **Email** the maintainer directly (see GitHub profile)
+2. **Choose one of these methods:**
+   - **GitHub Security Advisory**: Use "Report a vulnerability" button on GitHub
+   - **Private Issue**: Create issue with `[SECURITY]` prefix (will be made private)
+   - **Draft PR**: Create draft PR with `[SECURITY]` in title and "DO NOT MERGE" in description
 3. **Include** a description of the issue and steps to reproduce
 
-You can expect a response within 7 days.
+This is a hobby project maintained in spare time. Response times will vary based on availability.
 
 ## What Qualifies
 
