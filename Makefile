@@ -1,4 +1,4 @@
-# Common tasks for the digital library project
+# Common tasks for Digital Archive Maker
 
 SHELL := /bin/sh
 

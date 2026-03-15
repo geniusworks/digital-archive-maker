@@ -34,6 +34,8 @@ def main():
 
     # Check test dependencies are installed
     print("Checking test dependencies...")
+    print()
+
     try:
         import pytest  # noqa
         import pytest_cov  # noqa
@@ -76,10 +78,11 @@ def main():
 
     if success:
         print("\n✅ All tests passed!")
-        print("Coverage report generated in htmlcov/index.html")
+        print("\nCoverage report generated in htmlcov/index.html")
         print()
     else:
         print("\n❌ Some tests failed!")
+        print()
         sys.exit(1)
 
 
