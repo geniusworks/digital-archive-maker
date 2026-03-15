@@ -361,6 +361,44 @@ Current `docs/` has overlapping files. Target structure:
     - Gap: Users must run scripts manually for TV show workflow
     - **Process-Once Analysis**: Should TV show processing be a complete workflow with automatic metadata?
     - Decision: Add integrated CLI commands OR document manual workflow clearly
+  - [ ] **TV Show Ripping Experience Testing**: Test end-to-end TV show workflow for UX quality
+    - **Setup Test**: Create test TV show directory with various naming patterns
+    - **Organization Test**: Run `rename_shows_jellyfin.py` with --dry-run and verify planned changes
+    - **Metadata Test**: Run `tag-show-metadata.py` and verify proper metadata tagging
+    - **Edge Cases Test**: Test with special characters, season directories, flat structures
+    - **Error Handling Test**: Verify graceful handling of malformed filenames or missing metadata
+    - **Documentation Review**: Ensure TV show workflow is clearly documented for users
+  - [ ] **Explicit Lyrics Experience Testing**: Test lyrics download and explicit tagging workflow
+    - **Setup Test**: Create test music library with mixed explicit/clean content
+    - **Lyrics Download Test**: Run `download_lyrics.py` and verify proper .lrc file creation
+    - **Explicit Tagging Test**: Run `tag-explicit-mb.py` and verify accurate explicit detection
+    - **Integration Test**: Test lyrics + explicit tagging workflow together
+    - **Edge Cases Test**: Test with instrumental tracks, various languages, metadata edge cases
+    - **User Choice Test**: Verify user can override automatic explicit detection when needed
+    - **Documentation Review**: Ensure explicit content workflow is clearly explained
+  - [ ] **Sync Configuration Experience Testing**: Test sync settings configuration before library sync
+    - **GUI Configuration Test**: Verify GUI provides clear interface for sync settings
+      - MPAA rating filters (G, PG, PG-13, R, NC-17)
+      - Explicit content filters (exclude explicit tracks, exclude unknown)
+      - Source/destination path configuration
+      - Delete mode settings (safe vs. aggressive deletion)
+    - **CLI Configuration Test**: Verify sync-config.yaml is clearly documented and editable
+      - Test configuration file validation and error messages
+      - Test with various filter combinations
+      - Test dry-run mode shows what will be filtered
+    - **Preview Experience Test**: Test sync preview shows filtering results clearly
+      - Verify users can see what content will be excluded before sync
+      - Test preview shows file counts and sizes for filtered content
+      - Test preview is easy to understand for non-technical users
+    - **Override Configuration Test**: Test explicit override configuration (config/explicit_overrides.csv)
+      - Verify users can manually override automatic explicit detection
+      - Test override file format validation and error handling
+      - Test overrides work correctly during sync filtering
+    - **Error Handling Test**: Test graceful handling of invalid sync settings
+      - Invalid paths, missing directories, permission issues
+      - Invalid rating values, malformed filter settings
+      - Clear error messages and recovery guidance
+    - **Documentation Review**: Ensure sync configuration is clearly documented with examples
   - [ ] **User Experience Documentation**: Update README and guides to clarify:
     - What `dam` commands provide automatically (current state)
     - What enhanced processing requires manual script execution (current gaps)
