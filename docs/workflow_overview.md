@@ -3,7 +3,7 @@
 This repository provides a unified CLI (`dam`) for three primary workflows:
 
 - **🎵 Audio CDs → FLAC library → tagging → optional sync to a server**
-- **🎬 DVD/Blu-ray → MP4 library → subtitles/organization → server-ready layout**
+- **🎬 Movie discs → MP4 library → subtitles/organization → server-ready layout**
 - **🎥 Music Videos → organize → standardize → sync with other video content**
 
 Each step uses the `dam` command or links to detailed guides.
@@ -132,11 +132,11 @@ Output (default):
 
 ---
 
-## Workflow B: DVD/Blu-ray → MP4s → organize/subtitles → server
+## Workflow B: Movie discs → MP4s → organize/subtitles → server
 
 ```mermaid
 flowchart LR
-    A[📀 DVD/Blu-ray] --> B[MakeMKV Scan]
+    A[📀 Movie disc] --> B[MakeMKV Scan]
     B --> C[Interactive Prompt]
     C --> D[Rip MKV]
     D --> E[HandBrakeCLI]

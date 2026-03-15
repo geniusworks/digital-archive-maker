@@ -1,6 +1,6 @@
-# Video Disc Ripping Guide
+# Movie Disc Ripping Guide
 
-Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with proper metadata and organization.
+Complete workflow for ripping movie discs to high-quality MP4 files with proper metadata and organization.
 
 > **Prerequisites:** Follow the [Quick Start Guide](../QUICKSTART.md) for initial setup.  
 > **Before running Python scripts:** Activate virtual environment with `source venv/bin/activate`
@@ -12,7 +12,7 @@ Complete workflow for ripping DVDs and Blu-rays to high-quality MP4 files with p
 **For all video processing, use the unified CLI:**
 
 ```bash
-# My language films (DVD or Blu-ray)
+# My language films (movie disc)
 dam rip video --title "Movie Title" --year 2023 --type bluray
 
 # Other language films with subtitle burning
@@ -49,7 +49,7 @@ BURN_SUBTITLES=true make rip-movie TITLE="Other Language Film" YEAR=2023 TYPE=bl
   ```
   This installs: HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, and links makemkvcon.
 
-- **MakeMKV is optional for DVDs**: If MakeMKV is not installed, the script will automatically use HandBrake CLI directly for DVD ripping. Blu-ray ripping still requires MakeMKV due to encryption.
+- **MakeMKV is not required for DVDs**: If MakeMKV is not installed, the script will automatically use HandBrake CLI directly for DVD ripping. Blu-ray ripping still requires MakeMKV due to encryption.
 - Install MakeMKV manually (optional, for full functionality):
   - Download: https://www.makemkv.com/download/
   - Drag `MakeMKV.app` to `/Applications`
@@ -62,7 +62,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 ## 🎯 Key Features
 
 ### ✅ Universal MP4 Output
-- **DVD and Blu-ray:** Both output to MP4 format
+- **Movie discs:** Both output to MP4 format
 - **External SRT subtitles:** Jellyfin-compatible
 - **Foreign film support:** Optional subtitle burning
 - **Streaming optimization:** Web-ready files
@@ -141,7 +141,7 @@ Select option [1-3, default=1]:
 ### Options Explained
 - **Soft subtitles:** External .srt files that can be toggled on/off in players
 - **Hard subtitles:** Burned into video permanently, always visible
-- **PGS:** Image-based subtitles (common on Blu-rays)
+- **PGS:** Image-based subtitles (common on movie discs)
 
 ---
 
@@ -161,7 +161,7 @@ ${LIBRARY_ROOT}/
 
 ## 🚨 Common Scenarios
 
-### English Film (DVD or Blu-ray)
+### English Film (Movie disc)
 
 ```mermaid
 graph TD
@@ -335,7 +335,7 @@ make rip-movie TYPE=dvd TITLE="Movie Name" YEAR=1999    # explicit type
 ```
 
 - **Smart track selection**: Automatically focuses on the largest file (main feature) for faster ripping
-- **Smart disc ripping**: Only rips the main feature from Blu-ray discs (skips extras during initial read)
+- **Smart disc ripping**: Only rips the main feature from movie discs (skips extras during initial read)
 - The script picks the largest MP4 as the main feature and moves it to:
   - `${LIBRARY_ROOT}/Movies/Movie Name (1999)/Movie Name (1999).mp4`
 - Extras/previews remain in the title-named (if Title/Year known) or date-stamped staging folder under `${LIBRARY_ROOT}/DVDs/` or `${LIBRARY_ROOT}/Blurays/`.
@@ -350,7 +350,7 @@ FORCE_ALL_TRACKS=true make rip-movie TITLE="Movie Name" YEAR=1999
 ```
 
 ### How Smart Disc Ripping Works
-The script now intelligently analyzes Blu-ray discs before ripping:
+The script now intelligently analyzes movie discs before ripping:
 
 1. **Disc Analysis**: Scans all titles and their durations
 2. **Main Feature Detection**: Identifies the longest track (typically the main movie)
@@ -364,7 +364,7 @@ Found main feature: Title 0 (02:18:45)
 Skipping 7 shorter tracks
 ```
 
-This approach can reduce disc reading time by **60-80%** for typical Blu-ray movies.
+This approach can reduce disc reading time by **60-80%** for typical movie discs.
 
 ### Encoding Speed Options
 Control encoding speed vs quality with environment variables:
@@ -626,7 +626,7 @@ The interactive prompt shows which tracks will be selected:
 
 ### 🚨 Seamless Branching Discs
 
-Some Blu-ray discs (especially Disney/Pixar) use "seamless branching" to store multiple language versions of the same movie:
+Some movie discs (especially Disney/Pixar) use "seamless branching" to store multiple language versions of the same movie:
 
 **Problem**: MakeMKV reports all titles as the same language (e.g., "eng") even when they contain different language versions.
 
@@ -924,7 +924,7 @@ See **[Media Server Setup](media_server_setup.md)** for more complete examples a
 
 **Fix**: The script now uses `ENG_IMAGE_HB_TRACK` which correctly calculates the HandBrake track number by finding the position of the English subtitle among all subtitle streams (1-indexed).
 
-**Impact**: Auto-burn now works correctly for all DVD/Blu-ray configurations.
+**Impact**: Auto-burn now works correctly for all movie disc configurations.
 
 ### Missing thumbnails in Jellyfin/Plex
 **Issue**: Some video files don't show thumbnail images in media servers.
