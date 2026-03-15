@@ -97,74 +97,7 @@ dam rip video
 
 Follow the prompts to select title and configure encoding.
 
-## 5. (Optional) Convenience Aliases
-
-For seamless media management, add this function to your `~/.zshrc`:
-
-```bash
-media() {
-    local VENV_PATH="$HOME/venvs/digital-archive"
-    local REPO_PATH="${LIBRARY_ROOT:-$HOME/digital-archive-maker}"
-    
-    case "${1:-help}" in
-        "sync")
-            source "$VENV_PATH/bin/activate"
-            dam sync
-            ;;
-        "cd")
-            source "$VENV_PATH/bin/activate"
-            dam rip cd
-            ;;
-        "video")
-            source "$VENV_PATH/bin/activate"
-            dam rip video
-            ;;
-        "lyrics")
-            shift
-            source "$VENV_PATH/bin/activate"
-            python3 "$REPO_PATH/bin/music/download_lyrics.py" "$@"
-            ;;
-        "help"|*)
-            echo "Media Management Commands:"
-            echo "  media sync    - Sync media library"
-            echo "  media cd     - Rip a CD"
-            echo "  media video  - Rip movie disc"
-            echo "  media lyrics - Download lyrics for music"
-            echo "  media help   - Show this help"
-            ;;
-    esac
-}
-```
-
-Then reload your shell:
-
-```bash
-source ~/.zshrc
-```
-
-Now you can use simple commands:
-
-```bash
-# Sync your media library
-media sync
-
-# Rip a CD
-media cd
-
-# Rip a movie disc
-media video
-
-# Download lyrics for music library
-media lyrics "/path/to/music" --recursive
-```
-
-This will:
-1. Detect the disc and look up metadata on MusicBrainz
-2. Rip to FLAC with proper tags
-3. Fetch cover art
-4. Organize into your library
-
-## 6. (Optional) Run Tests
+## 5. (Optional) Run Tests
 
 Verify your installation with the test suite:
 ```bash
