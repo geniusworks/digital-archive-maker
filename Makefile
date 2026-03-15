@@ -39,13 +39,13 @@ install-deps:
 	@./venv/bin/python scripts/show_banner.py
 	@echo ""
 	@echo "Installing tools..."
-	@for p in abcde flac imagemagick jq curl wget ffmpeg node; do \
-		if ! brew list $$p >/dev/null 2>&1; then \
-			echo "brew install $$p"; brew install $$p || true; \
-		else \
-			echo "Already installed: $$p"; \
-		fi; \
-	  done
+	@if command -v brew >/dev/null 2>&1; then \
+		brew bundle --quiet; \
+	else \
+		echo "Homebrew not found. Installing..." && \
+		/bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
+		brew bundle --quiet; \
+	fi
 	@echo "Installing GUI npm packages..."
 	@cd gui && npm install --silent
 	@echo "✓ GUI dependencies installed (including Electron)"

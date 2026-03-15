@@ -262,6 +262,16 @@ Current `docs/` has overlapping files. Target structure:
 - [x] Test README rendering on GitHub before release
 - [x] Consistent emoji language across docs (standardized status indicators and feature emojis)
 
+### F3. Workflow Documentation Enhancement
+- [ ] **Add Integrated Workflow Flowcharts**: Include finalized flowcharts in `docs/workflow_overview.md`
+  - [ ] **Current State Flowcharts**: Show fragmented user journeys with manual script requirements
+  - [ ] **Proposed Integrated Flowcharts**: Display "process once, done forever" complete workflows
+  - [ ] **Comparative Analysis**: Include integration gap summary and user experience impact
+  - [ ] **Implementation Roadmap**: Add phased integration strategy with success metrics
+  - [ ] **Technical Considerations**: Document integration challenges and mitigation strategies
+  - **Prerequisite**: Complete CLI enhancements identified in CLI Enhancement Review (Section G3)
+  - **Goal**: Provide visual documentation of current limitations and future integrated workflows
+
 ---
 
 ## G. Pre-Release Verification (Run Before EVERY Version Tag)
@@ -326,6 +336,40 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
 - [ ] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
 - [ ] **Git History**: Review recent commits for any sensitive information
+- [ ] **CLI Enhancement Review**: Assess user experience gap between basic CLI and enhanced processing
+  - [ ] **"Process Once, Done Forever" Philosophy Review**: Users may only process each disc once - maximize integrated value
+    - **Principle**: Every disc processing should include all reasonable enhancements automatically
+    - **Goal**: Users should get the "best possible" result from a single command without needing follow-up processing
+    - **Standard**: Extra features should be integrated into main workflows, not left as separate manual steps
+  - [ ] **Music Workflow Gap**: Review `dam rip cd` vs. manual script requirements
+    - Current: Basic ripping with MusicBrainz metadata
+    - Gap: Quality validation, metadata repair, organization, lyrics, explicit tagging require manual scripts
+    - **Process-Once Analysis**: Should CD ripping automatically include quality checks, metadata repair, and lyrics fetching?
+    - Decision: Document current limitation OR integrate key enhancements into `dam rip cd` workflow
+  - [ ] **Video Workflow Gap**: Review `dam rip video` vs. metadata enhancement needs
+    - Current: Complete ripping pipeline with subtitle handling
+    - Gap: Rich metadata, ratings, subtitle backfilling require manual scripts
+    - **Process-Once Analysis**: Should video ripping automatically fetch TMDb metadata and ratings during the process?
+    - Decision: Document current limitation OR integrate metadata enhancement into `dam rip video` workflow
+  - [ ] **TV Workflow Gap**: Review missing CLI integration for TV show processing
+    - Current: No CLI wrappers for TV show organization and metadata
+    - Gap: Users must run scripts manually for TV show workflow
+    - **Process-Once Analysis**: Should TV show processing be a complete workflow with automatic metadata?
+    - Decision: Add integrated CLI commands OR document manual workflow clearly
+  - [ ] **User Experience Documentation**: Update README and guides to clarify:
+    - What `dam` commands provide automatically (current state)
+    - What enhanced processing requires manual script execution (current gaps)
+    - **Process-Once Standard**: Clear guidance on getting the "best possible" result from each disc
+    - Step-by-step workflows for complete library processing (if manual steps remain)
+  - [ ] **Integration Priority Assessment**: For each workflow gap, evaluate:
+    - **User Impact**: How many users would benefit from integrated enhancement?
+    - **Technical Complexity**: Feasibility of integrating into main workflow
+    - **Processing Time Impact**: Would integration significantly slow down the main workflow?
+    - **API Reliability**: Are external services (TMDb, Genius, etc.) reliable enough for automatic integration?
+    - **Decision**: Integrate now vs. document for future enhancement vs. leave as manual optional
+  - [ ] **Future Roadmap Note**: Add CLI enhancement opportunities to backlog for post-v1.0 development
+    - Prioritize enhancements that support "process once, done forever" philosophy
+    - Focus on high-impact, low-complexity integrations that maximize user value
 
 > **Versioning Guidelines**:
 > - **Patch releases** (X.Y.Z+1): Bug fixes, no breaking changes
@@ -666,6 +710,82 @@ git branch -m main
 - [ ] Research bundling Python environment with Electron app
 - [ ] Consider PyInstaller or similar for creating truly standalone app
 - [ ] Evaluate trade-offs: bundle size vs. user convenience
+
+### I7. Episodic & Serial Disc Handling (Post-v1.0)
+
+#### **🎯 Problem Statement**
+Current video ripping pipeline is optimized for single-feature movie discs. TV show season discs and serial content (multiple episodes per disc) need enhanced handling for:
+
+- **Multi-track ripping**: User may want to rip all qualifying episodes from season discs
+- **Naming collision avoidance**: Prevent MP4 filename conflicts when multiple episodes share same title
+- **Episode organization**: Proper season/episode naming and metadata integration
+
+#### **🔧 Proposed Enhancements**
+
+##### **Multi-Episode Detection & Handling**
+- [ ] **Season Disc Detection**: Automatically identify TV show season discs vs. movie discs
+  - [ ] Use disc title patterns (e.g., "Season 1", "Complete Series")
+  - [ ] Analyze title durations and quantity (multiple similar-length titles)
+  - [ ] Check TMDb for TV show metadata during disc analysis
+
+- [ ] **Batch Episode Ripping**: Enhanced `rip-movie-all` behavior for episodic content
+  - [ ] Prompt user: "Detected TV show season disc with X episodes. Rip all episodes?"
+  - [ ] Allow selective episode ripping (choose specific episodes)
+  - [ ] Maintain current single-episode workflow for movie discs
+
+##### **Enhanced Naming Scheme for Episodes**
+- [ ] **Numerical Suffix System**: Prevent MP4 filename collisions
+  ```
+  Current: Movie Name (Year)/Movie Name (Year).mp4
+  Proposed: Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4
+  ```
+
+- [ ] **Episode Metadata Integration**: Proper season/episode tagging
+  - [ ] Fetch episode-level metadata from TMDb
+  - [ ] Add season/episode numbers to filename and metadata
+  - [ ] Maintain compatibility with Jellyfin/Plex naming conventions
+
+##### **User Experience Improvements**
+- [ ] **Smart Title Handling**: Use provided title as base, add episode identifiers
+  - [ ] Example: "Friends (1994)" → "Friends - S01E01 - Pilot.mp4"
+  - [ ] Preserve user-provided title in season folder name
+  - [ ] Auto-detect episode numbers from disc titles or metadata
+
+- [ ] **Configuration Options**: User control over episodic disc behavior
+  - [ ] `EPISODIC_AUTO_DETECT=true|false` - Automatic season disc detection
+  - [ ] `EPISODIC_NAMING_PATTERN` - Custom episode naming templates
+  - [ ] `EPISODIC_RIP_ALL=true|false|prompt` - Default behavior for multi-episode discs
+
+#### **📋 Implementation Considerations**
+
+##### **Backward Compatibility**
+- [ ] **Existing Movie Workflow**: Ensure no breaking changes to current movie disc handling
+- [ ] **CLI Flag Addition**: Add `--episodic` flag for explicit episodic disc processing
+- [ ] **Graceful Fallback**: Default to current behavior if episodic detection fails
+
+##### **Technical Challenges**
+- [ ] **Disc Title Parsing**: Reliable detection of episodic content vs. anthology movies
+- [ ] **Episode Number Mapping**: Map disc titles to correct season/episode numbers
+- [ ] **Metadata Correlation**: Match disc content with TMDb episode data
+- [ ] **File Organization**: Integrate with existing TV show directory structure
+
+##### **User Guidance & Documentation**
+- [ ] **Workflow Documentation**: Update video ripping guide for episodic content
+- [ ] **CLI Help**: Add episodic options to `dam rip video --help`
+- [ ] **Error Messages**: Clear guidance when episodic detection is ambiguous
+
+#### **🎯 Success Criteria**
+- [ ] Users can successfully rip entire TV show season discs with proper episode organization
+- [ ] No MP4 filename collisions when multiple episodes share base title
+- [ ] Enhanced naming integrates seamlessly with existing TV show workflow
+- [ ] Backward compatibility maintained for all existing movie disc use cases
+- [ ] Clear user guidance for episodic vs. movie disc handling
+
+#### **📊 Priority Assessment**
+- **Impact**: High - Addresses common use case for TV show collectors
+- **Complexity**: Medium - Builds on existing ripping infrastructure
+- **Risk**: Low - Can be implemented as enhancements without breaking changes
+- **Timeline**: Post-v1.0 - Not critical for initial release but important for completeness
 
 ---
 

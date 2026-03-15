@@ -1,10 +1,10 @@
-# Workflow Overview (Disc → Digital Archive)
+# Workflow Overview (Physical Media → Digital Archive)
 
 This repository provides a unified CLI (`dam`) for three primary workflows:
 
-- **Audio CDs → FLAC library → tagging → optional sync to a server**
-- **DVD/Blu-ray → MP4 library → subtitles/organization → server-ready layout**
-- **Music Videos → organize → standardize → sync with other video content**
+- **🎵 Audio CDs → FLAC library → tagging → optional sync to a server**
+- **🎬 DVD/Blu-ray → MP4 library → subtitles/organization → server-ready layout**
+- **🎥 Music Videos → organize → standardize → sync with other video content**
 
 Each step uses the `dam` command or links to detailed guides.
 
@@ -20,6 +20,7 @@ flowchart TB
         CD[Audio CD]
         DVD[DVD]
         BR[Blu-ray]
+        MV[Music Videos]
     end
 
     subgraph PROCESS["⚙️ Processing"]
@@ -32,6 +33,7 @@ flowchart TB
     subgraph METADATA["🏷️ Metadata Sources"]
         MB[MusicBrainz]
         TMDB[TMDb]
+        OMDB[OMDb]
         SPOT[Spotify]
         ITUNES[iTunes]
     end
@@ -40,6 +42,7 @@ flowchart TB
         MUSIC["/Library/CDs"]
         MOVIES["/Library/Movies"]
         SHOWS["/Library/Shows"]
+        VIDEOS["/Library/Videos"]
     end
 
     subgraph SERVER["🖥️ Media Server"]
@@ -49,22 +52,27 @@ flowchart TB
     CD --> RIP
     DVD --> RIP
     BR --> RIP
+    MV --> ORG
+
     RIP --> TAG
     TAG --> ORG
     ORG --> QA
 
     MB -.-> TAG
     TMDB -.-> TAG
+    OMDB -.-> TAG
     SPOT -.-> TAG
     ITUNES -.-> TAG
 
     QA --> MUSIC
     QA --> MOVIES
     QA --> SHOWS
+    QA --> VIDEOS
 
     MUSIC -->|rsync + filter| JELLY
     MOVIES -->|rsync + filter| JELLY
     SHOWS -->|rsync + filter| JELLY
+    VIDEOS -->|rsync + filter| JELLY
 ```
 
 ---
@@ -75,11 +83,12 @@ flowchart TB
 flowchart LR
     A[🎵 Audio CD] --> B[abcde + MusicBrainz]
     B --> C[FLAC + cover.jpg + .m3u8]
-    C --> D[tag-explicit-mb.py]
-    D --> E[EXPLICIT tags]
-    E --> F{Sync?}
-    F -->|exclude explicit| G[🖥️ Family Server]
-    F -->|all content| H[🖥️ Full Server]
+    C --> D[Enhance Metadata]
+    D --> E[Tag Explicit Content]
+    E --> F[Download Lyrics]
+    F --> G{Sync?}
+    G -->|exclude explicit| H[🖥️ Family Server]
+    G -->|all content| I[🖥️ Full Server]
 ```
 
 ### A1) Rip CD to FLAC (MusicBrainz + cover + playlist)
@@ -101,24 +110,19 @@ Output (default):
   - Rebuilds playlist
   - Fixes tags and cover art
 
-### A3) Tag explicit content (per-track)
+### A3) Download lyrics (optional)
+- Commands:
+  - `dam tag lyrics` (unified CLI)
+  - `bin/music/download_lyrics.py` (direct script)
+- Fetches lyrics from Genius API (falls back to free sources if no key)
+
+### A4) Tag explicit content (optional)
 - Commands:
   - `dam tag explicit` (unified CLI)
   - `bin/music/tag-explicit-mb.py` (direct script)
 - Writes per-track tag: `EXPLICIT=Yes|No|Unknown`
 
-Debug options:
-- `EXPLICIT_DRY_RUN=1` (no writes)
-- `EXPLICIT_MAX_TRACKS=500` (limit scanning)
-
-Artifacts:
-- `./log/explicit/explicit_tagging_run.log` - Tracks processed during this run
-- `./log/explicit/explicit_tracks_current.csv` - **Definitive list of ALL EXPLICIT=Yes tracks**
-- `./log/explicit/explicit_tagging_cache.json` - Performance cache
-- `./log/explicit/explicit_tagging_errors.log` - API errors only
-- `./log/explicit/Explicit.m3u8` (playlist of tracks tagged `EXPLICIT=Yes`, if enabled)
-
-### A4) Sync to a destination server while excluding explicit/unknown (optional)
+### A5) Sync to a destination server while excluding explicit/unknown (optional)
 - Commands:
   - `dam sync` (unified CLI)
   - `bin/sync/sync-library.py` (direct script)
@@ -137,8 +141,8 @@ flowchart LR
     C --> D[Rip MKV]
     D --> E[HandBrakeCLI]
     E --> F[MP4 + subtitles]
-    F --> G[tag-movie-metadata.py]
-    G --> H[Tagged MP4]
+    F --> G[Tag Metadata]
+    G --> H[Tag Ratings]
     H --> I{Rating Filter}
     I -->|≤PG-13| J[🖥️ Family Server]
     I -->|all ratings| K[🖥️ Full Server]
@@ -173,7 +177,32 @@ flowchart LR
 
 ---
 
-## Workflow C: Music Videos → organize → standardize → sync
+## Workflow C: TV Shows → organize → metadata → server
+
+```mermaid
+flowchart LR
+    A[📺 TV Shows] --> B[rename_shows_jellyfin.py]
+    B --> C[Jellyfin Format]
+    C --> D[tag-show-metadata.py]
+    D --> E[TMDb Metadata]
+    E --> F[🖥️ Media Server]
+```
+
+### C1) Organize TV shows into Jellyfin-compatible format
+- Commands:
+  - `bin/tv/rename_shows_jellyfin.py` (direct script)
+- Output: `.../TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.ext`
+- Handles various input formats and normalizes to Jellyfin naming conventions
+
+### C2) Tag TV show metadata (optional)
+- Commands:
+  - `bin/tv/tag-show-metadata.py` (direct script)
+- Fetches show metadata from TMDb
+- Adds proper series/season/episode metadata
+
+---
+
+## Workflow D: Music Videos → organize → standardize → sync
 
 ```mermaid
 flowchart LR
@@ -186,13 +215,13 @@ flowchart LR
     G --> H[🖥️ Media Server]
 ```
 
-### C1) Organize music videos into artist folders
+### D1) Organize music videos into artist folders
 - Commands:
   - `dam tag music-videos` (unified CLI)
   - `bin/video/fix_music_videos.py` — Uses MusicBrainz/AcoustID to identify and organize videos
 - Output: `${LIBRARY_ROOT}/Videos/Music/Artist/Title.mp4`
 
-### C2) Standardize filenames and metadata (optional)
+### D2) Standardize filenames and metadata (optional)
 - Commands:
   - `dam tag standardize` (unified CLI)
   - **Filename standardization:** `bin/video/standardize_music_video_filenames.py`
@@ -201,7 +230,7 @@ flowchart LR
   - Handles both MP4 and MP3 files
   - Uses existing metadata or falls back to directory/filename parsing
 
-### C3) Sync to server alongside other video content
+### D3) Sync to server alongside other video content
 - Commands:
   - `dam sync` (unified CLI)
   - Configuration: `bin/sync/sync-config.yaml`

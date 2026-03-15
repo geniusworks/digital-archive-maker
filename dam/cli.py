@@ -100,7 +100,7 @@ def check(
     for k in all_api_keys:
         if k in api_missing:
             purpose = _KEY_INFO.get(k, {}).get("purpose", "unknown purpose")
-            console.print(f" ⚠️ {k} (for {purpose})")
+            console.print(f" ⚠️ {k} - {purpose}")
         else:
             console.print(f" ✅ {k}")
 
