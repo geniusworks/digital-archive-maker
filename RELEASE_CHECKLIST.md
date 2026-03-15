@@ -311,6 +311,11 @@ Current `docs/` has overlapping files. Target structure:
   - Bug fixes
   - Breaking changes (if any)
   - Migration notes (if needed)
+- [ ] **Final QUICKSTART.md Review**: After all workflows are fully streamlined, update QUICKSTART.md to reflect final integrated user experience
+  - Review all CLI command examples and ensure they match final workflow state
+  - Update any remaining manual script references to integrated CLI commands
+  - Ensure consistency with any workflow optimizations completed during release prep
+  - Verify all examples work with the final integrated user experience
 - [ ] **Version Bump**: Update `pyproject.toml` version (X.Y.Z format)
 - [ ] **Tag Message**: Prepare release tag description:
   ```bash
