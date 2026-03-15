@@ -1552,6 +1552,24 @@ def main() -> int:
                             except ValueError:
                                 continue
 
+                # Populate real size data immediately from already-available info output.
+                # TINFO:X,11,0,"bytes" contains exact file size in bytes.
+                # This must happen before candidate filtering, which requires size ratios.
+                for i, title in enumerate(titles):
+                    size_line = next(
+                        (l for l in lines if l.startswith(f"TINFO:{title[0]},11,")),
+                        None,
+                    )
+                    if size_line:
+                        size_str = size_line.split(",")[3].strip('"')
+                        try:
+                            titles[i] = (title[0], title[1], title[2], title[3], int(size_str))
+                        except ValueError:
+                            pass
+
+                # Sort by size (largest first) so candidate filtering and fallbacks are correct
+                titles.sort(key=lambda x: x[4], reverse=True)
+
                 # Filter titles by preferred video language if LANG_VIDEO is set
                 # and titles have language info
                 if LANG_VIDEO and any(t[3] for t in titles):  # t[3] is video_lang
@@ -1664,41 +1682,6 @@ def main() -> int:
                                     pass
 
                             if title_sizes:
-                                # Update titles list with size information
-                                # Create a mapping of title_id -> size_gb
-                                size_map = {tid: size_gb for tid, size_gb in title_sizes}
-
-                                # Update each title with its size
-                                updated_titles = []
-                                for title in titles:
-                                    title_id = title[0]
-                                    if title_id in size_map:
-                                        # Replace size_bytes placeholder with actual size
-                                        if len(title) >= 5:
-                                            updated_title = (
-                                                title[0],
-                                                title[1],
-                                                title[2],
-                                                title[3],
-                                                int(size_map[title_id] * (1024**3)),
-                                            )
-                                        else:
-                                            updated_title = (
-                                                title[0],
-                                                title[1],
-                                                title[2],
-                                                title[3],
-                                                int(size_map[title_id] * (1024**3)),
-                                            )
-                                        updated_titles.append(updated_title)
-                                    else:
-                                        updated_titles.append(title)
-
-                                titles = updated_titles
-
-                                # Now sort titles by size (largest first) for proper candidate selection
-                                titles.sort(key=lambda x: x[4] if len(x) > 4 else 0, reverse=True)
-
                                 if is_seamless_branching:
                                     # For seamless branching, use natural title order (0, 1, 2...)
                                     # instead of size sorting for more predictable results
