@@ -507,7 +507,8 @@ For more information, see the script header documentation.""",
                 info = result["info"]
                 print(f"📁 {result['path'].name}")
                 print(
-                    f"   📹 {info.get('video_codec', '?')} ({info.get('video_width', '?')}x{info.get('video_height', '?')})"
+                    f"   📹 {info.get('video_codec', '?')} "
+                    f"({info.get('video_width', '?')}x{info.get('video_height', '?')})"
                 )
                 print(f"   💾 {info.get('size_mb', '?')} MB")
                 print(f"   ⏱️  {info.get('duration', '?')} sec")

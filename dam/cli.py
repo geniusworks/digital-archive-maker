@@ -246,7 +246,8 @@ def rip_cd():
     # Check if any CD/DVD is inserted
     try:
         result = subprocess.run(
-            r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+            r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|"
+            r"DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
             shell=True,
             capture_output=True,
             text=True,
@@ -265,7 +266,8 @@ def rip_cd():
             for i in range(30, 0, -1):
                 try:
                     check_result = subprocess.run(
-                        r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+                        r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|"
+                        r"DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
                         shell=True,
                         capture_output=True,
                         text=True,
@@ -291,7 +293,8 @@ def rip_cd():
             else:
                 # After 30 seconds, check one more time
                 final_check = subprocess.run(
-                    r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
+                    r"diskutil list | grep -E 'CD_partition_scheme|CD_DA|"
+                    r"DVD_partition_scheme|DVD_ROM' | grep -v 'Virtual'",
                     shell=True,
                     capture_output=True,
                     text=True,

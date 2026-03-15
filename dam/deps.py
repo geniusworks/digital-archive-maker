@@ -178,7 +178,10 @@ CORE_DEPS: list[Dependency] = [
         kind=DepKind.LINK,
         description="MakeMKV CLI (linked from app bundle)",
         check_cmd="which makemkvcon",
-        install_hint="Run: sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon /usr/local/bin/makemkvcon",
+        install_hint=(
+            "Run: sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/makemkvcon "
+            "/usr/local/bin/makemkvcon"
+        ),
         required_for=["video"],
         optional=True,
     ),

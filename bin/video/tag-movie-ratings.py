@@ -517,7 +517,8 @@ def main():
         print("Using OMDb API")
     else:
         print(
-            "No TMDB_API_KEY or OMDB_API_KEY set; API lookups disabled (override/cache/existing tags only)"
+            "No TMDB_API_KEY or OMDB_API_KEY set; API lookups disabled "
+            "(override/cache/existing tags only)"
         )
 
     if args.media == "movies":
@@ -653,7 +654,8 @@ def main():
                 if DRY_RUN:
                     try:
                         print(
-                            f"  Would update rating: {existing_rating or 'None'} → {new_rating} ({source})"
+                            f"  Would update rating: {existing_rating or 'None'} "
+                            f"→ {new_rating} ({source})"
                         )
                     except BrokenPipeError:
                         sys.exit(0)
@@ -664,7 +666,8 @@ def main():
                     if success:
                         try:
                             print(
-                                f"  Updated rating: {existing_rating or 'None'} → {new_rating} ({source})"
+                                f"  Updated rating: {existing_rating or 'None'} "
+                                f"→ {new_rating} ({source})"
                             )
                         except BrokenPipeError:
                             sys.exit(0)
@@ -688,7 +691,8 @@ def main():
                     if rating_console_lines < MAX_RATING_CONSOLE_LINES:
                         try:
                             print(
-                                f"RATING={new_rating}: {_format_display_title(title, year)} ({source})"
+                                f"RATING={new_rating}: {_format_display_title(title, year)} "
+                                f"({source})"
                             )
                             rating_console_lines += 1
                         except BrokenPipeError:
