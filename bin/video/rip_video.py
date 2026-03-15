@@ -1637,10 +1637,7 @@ def main() -> int:
 
                     # Display title info when multiple candidates
                     # or title_index is specified
-                    if (
-                        args.title_index is not None
-                        or len(candidates) > 1
-                    ):
+                    if args.title_index is not None or len(candidates) > 1:
                         if args.title_index is not None:
                             print(
                                 f"Title index {args.title_index} "
@@ -1655,16 +1652,11 @@ def main() -> int:
                             )
 
                         # Build display list from populated sizes
-                        title_sizes = [
-                            (t[0], t[4] / (1024**3))
-                            for t in titles
-                        ]
+                        title_sizes = [(t[0], t[4] / (1024**3)) for t in titles]
                         if is_seamless_branching:
                             title_sizes.sort(key=lambda x: x[0])
                         else:
-                            title_sizes.sort(
-                                key=lambda x: x[1], reverse=True
-                            )
+                            title_sizes.sort(key=lambda x: x[1], reverse=True)
 
                         if args.title_index is not None:
                             if args.title_index >= len(title_sizes):
@@ -1674,60 +1666,33 @@ def main() -> int:
                                     f"range (only "
                                     f"{len(title_sizes)} available)"
                                 )
-                                print(
-                                    f"  → Available titles: "
-                                    f"0-{len(title_sizes) - 1}"
-                                )
+                                print(f"  → Available titles: " f"0-{len(title_sizes) - 1}")
                                 return 1
 
                             label = (
-                                "natural order for seamless "
-                                "branching"
+                                "natural order for seamless " "branching"
                                 if is_seamless_branching
                                 else "sorted by size"
                             )
-                            print(
-                                f"\nAvailable titles ({label}):"
-                            )
-                            for i, (tid, sgb) in enumerate(
-                                title_sizes
-                            ):
-                                m = (
-                                    "👉"
-                                    if i == args.title_index
-                                    else "  "
-                                )
-                                print(
-                                    f"{m} Index {i}: Title {tid}"
-                                    f" ({sgb:.3f} GB)"
-                                )
+                            print(f"\nAvailable titles ({label}):")
+                            for i, (tid, sgb) in enumerate(title_sizes):
+                                m = "👉" if i == args.title_index else "  "
+                                print(f"{m} Index {i}: Title {tid}" f" ({sgb:.3f} GB)")
 
                             sel = title_sizes[args.title_index]
                             main_title_id = sel[0]
-                            main_duration = next(
-                                t[1] for t in titles
-                                if t[0] == main_title_id
-                            )
-                            main_duration_str = next(
-                                t[2] for t in titles
-                                if t[0] == main_title_id
-                            )
+                            main_duration = next(t[1] for t in titles if t[0] == main_title_id)
+                            main_duration_str = next(t[2] for t in titles if t[0] == main_title_id)
                         else:
                             # Show candidates and mark the
                             # auto-selected one
                             auto_tid = candidates[0][0]
-                            print(
-                                "\nCandidate titles "
-                                "(sorted by size):"
-                            )
+                            print("\nCandidate titles " "(sorted by size):")
                             for i, t in enumerate(candidates):
                                 tid = t[0]
                                 sgb = t[4] / (1024**3)
                                 m = "👉" if tid == auto_tid else "  "
-                                print(
-                                    f"{m} Index {i}: Title {tid}"
-                                    f" ({sgb:.3f} GB, {t[2]})"
-                                )
+                                print(f"{m} Index {i}: Title {tid}" f" ({sgb:.3f} GB, {t[2]})")
 
                             print(
                                 f"\n⚠️  {len(candidates)} titles"
@@ -1735,16 +1700,9 @@ def main() -> int:
                                 f"auto-selecting Index 0"
                             )
 
-                            title_env = os.getenv(
-                                "TITLE", "unknown"
-                            )
-                            year_env = os.getenv(
-                                "YEAR", "unknown"
-                            )
-                            print(
-                                "\n💡 To override, use "
-                                "TITLE_INDEX:"
-                            )
+                            title_env = os.getenv("TITLE", "unknown")
+                            year_env = os.getenv("YEAR", "unknown")
+                            print("\n💡 To override, use " "TITLE_INDEX:")
                             for i in range(len(candidates)):
                                 print(
                                     f"   make rip-movie "
@@ -1755,9 +1713,7 @@ def main() -> int:
 
                             if is_seamless_branching:
                                 print(
-                                    "\n🔄 Seamless branching "
-                                    "detected - defaulting "
-                                    "to Title 0"
+                                    "\n🔄 Seamless branching " "detected - defaulting " "to Title 0"
                                 )
 
                     # Select main feature title
@@ -1765,9 +1721,7 @@ def main() -> int:
                         if candidates:
                             main_title_id = candidates[0][0]
                             main_duration = candidates[0][1]
-                            main_duration_str = (
-                                candidates[0][2]
-                            )
+                            main_duration_str = candidates[0][2]
                             print(
                                 f"  → Selected main feature:"
                                 f" Title {main_title_id} "
