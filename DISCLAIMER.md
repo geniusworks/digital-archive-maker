@@ -44,6 +44,8 @@ This software may invoke external tools that users must obtain and license separ
 - Users must download MakeMKV separately from [makemkv.com](https://www.makemkv.com/)
 - Users must license MakeMKV appropriately (beta period or purchased license)
 - Users must comply with their jurisdiction's laws regarding its use
+- **MakeMKV is optional** - HandBrake fallback available for DVD ripping
+- **MakeMKV is required** for Blu-ray ripping (no alternative available)
 - **The authors of this software have no affiliation with MakeMKV**
 
 ### HandBrakeCLI
