@@ -2484,11 +2484,11 @@ def main() -> int:
         print(f"  → Output exists: {mp4_path.exists()}")
         print()  # Blank line before spinner
         # Small delay to ensure no spinner overlap from previous operations
-        time.sleep(0.1)
+        time.sleep(0.2)  # Slightly longer delay to ensure clean state
         spinner = show_spinner("Encoding with HandBrake...")
 
         try:
-            _run(hb_cmd)
+            _run(hb_cmd, capture=False)  # Don't capture to show progress
             stop_spinner(spinner, f"✓ Encoding complete: {mp4_path.name}")
 
             # Extract subtitles based on user choice
