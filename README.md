@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can access from anywhere.
+Turn your CDs and movie discs into a convenient digital library you can access from anywhere.
 </p>
 
 <div align="center">
@@ -29,7 +29,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 **Digital Archive Maker** transforms your physical media collection into an organized digital library you can stream anywhere.
 
-**The Problem:** Your CDs, DVDs, and Blu-rays sit on shelves, collecting dust. They're difficult to browse and can't be searched.
+**The Problem:** Your CDs and movie discs sit on shelves, collecting dust. They're difficult to browse and can't be searched.
 
 **The Reality:** Traditional digitization requires wrestling with dozens of tools that don't talk to each other.
 
@@ -42,7 +42,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 
 **What it does:**
 - 🎵 **CDs to FLAC** — Lossless audio with album art and metadata
-- 📀 **DVDs/Blu-rays to MP4** — High-quality video with subtitles
+- 📀 **Movie discs to MP4** — High-quality video with subtitles
 - 🏷️ **Rich metadata** — Artist bios, movie descriptions, genres, ratings
 -️ **Smart organization** — Browsable, searchable library structure
 - 📱 **Media server ready** — Works with Jellyfin, Plex, and Emby
@@ -59,7 +59,7 @@ Turn your CDs, DVDs, and Blu-rays into a convenient digital library you can acce
 - **50GB+ free storage** for temporary files
 
 ### 💿 Hardware (for ripping)
-- **CD, DVD, and/or Blu-ray drive** (internal or USB)
+- **CD, DVD, and/or movie disc drive** (internal or USB)
 
 ### 📦 Software
 - **Optional**: MakeMKV (for DVD/Blu-ray) requires manual download from makemkv.com (free beta available)
@@ -97,7 +97,7 @@ cd gui && npm start
 dam rip cd
 ```
 
-**Step 4: Rip a DVD/Blu-ray**
+**Step 4: Rip a movie disc**
 ```bash
 dam rip video
 ```
@@ -126,7 +126,7 @@ dam sync
 ### 📀 Video
 | Feature | How it works |
 |:---------|:------------|
-| **DVD/Blu-ray ripping** | Extracts video while preserving quality |
+| **Movie disc ripping** | Extracts video while preserving quality |
 | **Subtitle handling** | Detects and includes the right language |
 | **Subtitle burning** | Embeds subtitles when needed |
 | **Movie organization** | Names files and adds descriptions |
@@ -152,7 +152,7 @@ dam version              # Show current version
 
 # Rip media
 dam rip cd               # Rip audio CD to FLAC
-dam rip video             # Rip DVD/Blu-ray to MP4
+dam rip video             # Rip movie disc to MP4
 dam rip video --title "Movie" --year 2024   # With metadata
 
 # Tag and organize
@@ -182,7 +182,7 @@ see [Documentation](docs/) for details.
 | **[Quick Start](QUICKSTART.md)** | Get running in 10 minutes |
 | **[Workflow Overview](docs/workflow_overview.md)** | High-level pipelines |
 | **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-Jellyfin guide |
-| **[Video Ripping](docs/video_ripping_guide.md)** | DVD/Blu-ray workflow |
+| **[Video Ripping](docs/video_ripping_guide.md)** | Movie disc workflow |
 | **[Media Server Setup](docs/media_server_setup.md)** | Jellyfin/Plex configuration |
 | **[Server Setups](docs/server_setups/)** | Hardware-specific guides |
 
@@ -200,7 +200,7 @@ digital-archive-maker/
 │   └── console.py      #   Rich terminal output helpers
 ├── bin/
 │   ├── music/          # CD ripping and tagging scripts
-│   ├── video/          # DVD/Blu-ray ripping scripts
+│   ├── video/          # Movie disc ripping scripts
 │   ├── sync/           # Library sync scripts
 │   ├── tv/             # TV show handling
 │   └── utils/          # Helper tools
