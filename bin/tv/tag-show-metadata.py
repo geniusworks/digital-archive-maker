@@ -117,7 +117,7 @@ def _extract_year_from_text(text):
 def _parse_jellyfin_episode_filename(filename):
     m = re.match(
         r"^(?P<show>.+?)\s+-\s+S(?P<season>\d{2})E(?P<episode>\d{2})\s+-\s+"
-            r"(?P<title>.+)\.(?P<ext>mp4|m4v)$",
+        r"(?P<title>.+)\.(?P<ext>mp4|m4v)$",
         filename,
         re.IGNORECASE,
     )

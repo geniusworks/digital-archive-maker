@@ -5,7 +5,6 @@ Tests for fix_album.py script.
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 

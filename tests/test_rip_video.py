@@ -5,7 +5,7 @@ Tests for rip_video.py script.
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -132,7 +132,6 @@ class TestRipVideo:
 
     def test_stop_spinner_function(self):
         """Test the stop_spinner function properly stops spinner."""
-        import threading
         import time
 
         # Start a spinner without duration

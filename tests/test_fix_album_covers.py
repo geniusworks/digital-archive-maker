@@ -6,7 +6,6 @@ Tests for fix_album_covers.py script.
 import json
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
