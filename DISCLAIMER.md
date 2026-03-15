@@ -40,7 +40,7 @@ The authors explicitly do not endorse or encourage any use of this software that
 This software may invoke external tools that users must obtain and license separately:
 
 ### MakeMKV
-- **Optional** for DVD ripping (HandBrake fallback available)
+- **Not required** for DVD ripping
 - **Required** for Blu-ray ripping (no alternative)
 - Users must download and license separately from [makemkv.com](https://www.makemkv.com/)
 - No affiliation with this project; users comply with applicable laws
