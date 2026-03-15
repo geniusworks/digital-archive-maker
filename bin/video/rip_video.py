@@ -1635,186 +1635,160 @@ def main() -> int:
                     else:
                         is_seamless_branching = False
 
-                    # For backward compatibility with existing logic
-                    same_duration_titles = candidates if is_seamless_branching else candidates
-
-                    # Get sizes for size-based selection when title_index is specified
-                    # or when there are same-duration titles
-                    should_check_sizes = (
-                        args.title_index is not None  # title_index explicitly specified
-                        or len(same_duration_titles) > 1  # Multiple same-duration titles
-                    )
-
-                    if should_check_sizes:
+                    # Display title info when multiple candidates
+                    # or title_index is specified
+                    if (
+                        args.title_index is not None
+                        or len(candidates) > 1
+                    ):
                         if args.title_index is not None:
                             print(
-                                f"Title index {args.title_index} specified, "
-                                f"checking all title sizes..."
+                                f"Title index {args.title_index} "
+                                f"specified, checking all "
+                                f"title sizes..."
                             )
                         else:
                             print(
-                                f"Found {len(same_duration_titles)} titles with similar duration, "
+                                f"Found {len(candidates)} titles "
+                                f"with similar duration, "
                                 f"checking sizes..."
                             )
 
-                        # Get file sizes for all titles (or same-duration ones)
-                        title_sizes = []
-                        titles_to_check = titles  # Check all titles when index specified
-
-                        for title_id, _, _, _, _ in titles_to_check:
-                            size_line = next(
-                                (
-                                    line
-                                    for line in info_res.stdout.split("\n")
-                                    if f"TINFO:{title_id},11," in line
-                                ),
-                                None,
-                            )
-                            if size_line:
-                                # Parse exact bytes string like "25717678080"
-                                size_str = size_line.split(",")[3].strip('"')
-                                try:
-                                    size_bytes = int(size_str)
-                                    # Convert to GB for display, but keep precision
-                                    size_gb = size_bytes / (1024**3)
-                                    title_sizes.append((title_id, size_gb))
-                                except ValueError:
-                                    pass
-
-                            if title_sizes:
-                                if is_seamless_branching:
-                                    # For seamless branching, use natural title order (0, 1, 2...)
-                                    # instead of size sorting for more predictable results
-                                    title_sizes.sort(key=lambda x: x[0])  # Sort by title_id
-                                    print(
-                                        "🔄 Seamless branching detected, using natural title order"
-                                    )
-                                else:
-                                    # For non-seamless discs, sort by size (largest first)
-                                    title_sizes.sort(key=lambda x: x[1], reverse=True)
-
-                                # Use title selection logic when title_index is specified
-                                if args.title_index is not None:
-                                    # Validate title_index is within range
-                                    if args.title_index >= len(title_sizes):
-                                        print(
-                                            f"❌ Title index {args.title_index} out of range "
-                                            f"(only {len(title_sizes)} titles available)"
-                                        )
-                                        print(f"  → Available titles: 0-{len(title_sizes)-1}")
-                                        return 1
-
-                                    main_title_id = title_sizes[args.title_index][0]
-                                    main_duration = next(
-                                        t[1] for t in titles if t[0] == main_title_id
-                                    )
-                                    main_duration_str = next(
-                                        t[2] for t in titles if t[0] == main_title_id
-                                    )
-
-                                    print(
-                                        "\nAvailable titles (natural order for seamless branching):"
-                                    )
-                                else:
-                                    print("\nAvailable titles (sorted by size):")
-
-                                for i, (tid, size_gb) in enumerate(title_sizes):
-                                    marker = "👉" if i == args.title_index else "  "
-                                    print(f"{marker} Index {i}: Title {tid} ({size_gb:.3f} GB)")
-                                else:
-                                    # No title_index specified and multiple same-duration titles
-                                    # Warn user and suggest using TITLE_INDEX
-                                    print(
-                                        f"\n⚠️  Found {len(same_duration_titles)} titles "
-                                        f"with similar duration:"
-                                    )
-                                    for i, (tid, seconds, duration, _, _) in enumerate(
-                                        same_duration_titles
-                                    ):
-                                        print(f"   Title {tid}: {duration}")
-                                    print("\n💡 Use TITLE_INDEX to select a specific title:")
-
-                                    if is_seamless_branching:
-                                        print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            "TITLE_INDEX=0  # Title 0 (usually main feature)"
-                                        )
-                                        print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            "TITLE_INDEX=1  # Title 1 (next candidate)"
-                                        )
-                                        print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            "TITLE_INDEX=2  # Title 2"
-                                        )
-                                        print(
-                                            "\n🔄 Seamless branching detected - "
-                                            "defaulting to Title 0 (most likely main feature)"
-                                        )
-                                        # Get first title (title 0) for seamless branching
-                                        title_0 = titles[0]
-                                        (
-                                            main_title_id,
-                                            main_title_id,
-                                            main_duration,
-                                            main_duration_str,
-                                        ) = titles[0][:3]
-                            else:
-                                # No title_index specified and multiple same-duration titles
-                                # Warn user and suggest using TITLE_INDEX
-                                print(
-                                    f"\n⚠️  Found {len(same_duration_titles)} titles "
-                                    f"with similar duration:"
-                                )
-                                for i, (tid, seconds, duration, _) in enumerate(
-                                    same_duration_titles
-                                ):
-                                    print(f"   Title {tid}: {duration}")
-                                print("\n💡 Use TITLE_INDEX to select a specific title:")
-
-                                if is_seamless_branching:
-                                    title_env = os.getenv("TITLE", "unknown")
-                                    year_env = os.getenv("YEAR", "unknown")
-                                    print(
-                                        f'   make rip-movie TITLE="{title_env}" '
-                                        f"YEAR={year_env} "
-                                        f"TITLE_INDEX=0  # Title 0 (usually main feature)"
-                                    )
-                                    print(
-                                        f'   make rip-movie TITLE="{title_env}" '
-                                        f"YEAR={year_env} "
-                                        f"TITLE_INDEX=1  # Title 1"
-                                    )
-                                    print(
-                                        f'   make rip-movie TITLE="{title_env}" '
-                                        f"YEAR={year_env} "
-                                        f"TITLE_INDEX=2  # Title 2"
-                                    )
-                                    print(
-                                        "\n🔄 Seamless branching detected - "
-                                        "defaulting to Title 0 (most likely main feature)"
-                                    )
-                                    # Use improved candidate-based selection
-                            if candidates:
-                                # Select the largest candidate (already sorted by size)
-                                main_title_id, main_duration, main_duration_str = candidates[0][:3]
-                                print(
-                                    f"  → Selected main feature: Title {main_title_id} "
-                                    f"({main_duration_str})"
-                                )
-                            else:
-                                # Fallback: no candidates met criteria, use largest file
-                                main_title_id, main_duration, main_duration_str = titles[0][:3]
-                                print(
-                                    f"  → No clear main feature found, "
-                                    f"using largest: Title {main_title_id}"
-                                )
+                        # Build display list from populated sizes
+                        title_sizes = [
+                            (t[0], t[4] / (1024**3))
+                            for t in titles
+                        ]
+                        if is_seamless_branching:
+                            title_sizes.sort(key=lambda x: x[0])
                         else:
-                            # No size checking needed, use the largest (already sorted by size)
-                            main_title_id, main_duration, main_duration_str = titles[0][:3]
-                    else:
-                        # No candidates and no size checking, use largest
-                        main_title_id, main_duration, main_duration_str = titles[0][:3]
+                            title_sizes.sort(
+                                key=lambda x: x[1], reverse=True
+                            )
+
+                        if args.title_index is not None:
+                            if args.title_index >= len(title_sizes):
+                                print(
+                                    f"❌ Title index "
+                                    f"{args.title_index} out of "
+                                    f"range (only "
+                                    f"{len(title_sizes)} available)"
+                                )
+                                print(
+                                    f"  → Available titles: "
+                                    f"0-{len(title_sizes) - 1}"
+                                )
+                                return 1
+
+                            label = (
+                                "natural order for seamless "
+                                "branching"
+                                if is_seamless_branching
+                                else "sorted by size"
+                            )
+                            print(
+                                f"\nAvailable titles ({label}):"
+                            )
+                            for i, (tid, sgb) in enumerate(
+                                title_sizes
+                            ):
+                                m = (
+                                    "👉"
+                                    if i == args.title_index
+                                    else "  "
+                                )
+                                print(
+                                    f"{m} Index {i}: Title {tid}"
+                                    f" ({sgb:.3f} GB)"
+                                )
+
+                            sel = title_sizes[args.title_index]
+                            main_title_id = sel[0]
+                            main_duration = next(
+                                t[1] for t in titles
+                                if t[0] == main_title_id
+                            )
+                            main_duration_str = next(
+                                t[2] for t in titles
+                                if t[0] == main_title_id
+                            )
+                        else:
+                            # Show sizes and warn about
+                            # multiple same-duration candidates
+                            print(
+                                "\nAvailable titles "
+                                "(sorted by size):"
+                            )
+                            for i, (tid, sgb) in enumerate(
+                                title_sizes
+                            ):
+                                print(
+                                    f"   Index {i}: Title {tid}"
+                                    f" ({sgb:.3f} GB)"
+                                )
+
+                            print(
+                                f"\n⚠️  Found {len(candidates)}"
+                                f" titles with similar "
+                                f"duration:"
+                            )
+                            for t in candidates:
+                                print(
+                                    f"   Title {t[0]}: {t[2]}"
+                                )
+
+                            title_env = os.getenv(
+                                "TITLE", "unknown"
+                            )
+                            year_env = os.getenv(
+                                "YEAR", "unknown"
+                            )
+                            print(
+                                "\n💡 Use TITLE_INDEX to "
+                                "select a specific title:"
+                            )
+                            print(
+                                f"   make rip-movie "
+                                f'TITLE="{title_env}" '
+                                f"YEAR={year_env} "
+                                f"TITLE_INDEX=0"
+                            )
+                            print(
+                                f"   make rip-movie "
+                                f'TITLE="{title_env}" '
+                                f"YEAR={year_env} "
+                                f"TITLE_INDEX=1"
+                            )
+
+                            if is_seamless_branching:
+                                print(
+                                    "\n🔄 Seamless branching "
+                                    "detected - defaulting "
+                                    "to Title 0"
+                                )
+
+                    # Select main feature title
+                    if args.title_index is None:
+                        if candidates:
+                            main_title_id = candidates[0][0]
+                            main_duration = candidates[0][1]
+                            main_duration_str = (
+                                candidates[0][2]
+                            )
+                            print(
+                                f"  → Selected main feature:"
+                                f" Title {main_title_id} "
+                                f"({main_duration_str})"
+                            )
+                        else:
+                            main_title_id = titles[0][0]
+                            main_duration = titles[0][1]
+                            main_duration_str = titles[0][2]
+                            print(
+                                f"  → No clear main feature "
+                                f"found, using largest: "
+                                f"Title {main_title_id}"
+                            )
 
                     print(f"Found main feature: Title {main_title_id} ({main_duration_str})")
                     print(f"Skipping {len(titles) - 1} shorter tracks")
