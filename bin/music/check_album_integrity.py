@@ -383,9 +383,9 @@ def check_cover(
                             f"{size_tolerance}% tolerance)"
                         )
                     return (
-                            f"cover.jpg is {width_height[0]}x{width_height[1]} (aspect ratio "
-                            f"{aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
-                        )
+                        f"cover.jpg is {width_height[0]}x{width_height[1]} (aspect ratio "
+                        f"{aspect_ratio:.3f} outside {size_tolerance}% tolerance)"
+                    )
             else:
                 # Case 3: Undersized or other covers - skip resizing
                 if dry_run:

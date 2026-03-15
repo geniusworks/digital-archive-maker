@@ -61,9 +61,9 @@ def process_album_dir(album_dir: Path) -> None:
 
     # Query MusicBrainz
     mb_url = (
-            f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
-            f"%20release:{q_album}&fmt=json&limit=1"
-        )
+        f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
+        f"%20release:{q_album}&fmt=json&limit=1"
+    )
     try:
         result = subprocess.run(["curl", "-s", mb_url], capture_output=True, text=True, check=True)
         release_json = result.stdout

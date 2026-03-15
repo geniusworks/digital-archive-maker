@@ -48,9 +48,9 @@ def query_musicbrainz(artist: str, album: str) -> dict:
 
     # Query for releases
     mb_url = (
-            f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
-            f"%20release:{q_album}&fmt=json&limit=1"
-        )
+        f"https://musicbrainz.org/ws/2/release/?query=artist:{q_artist}"
+        f"%20release:{q_album}&fmt=json&limit=1"
+    )
     try:
         result = subprocess.run(["curl", "-s", mb_url], capture_output=True, text=True, check=True)
         releases = json.loads(result.stdout)

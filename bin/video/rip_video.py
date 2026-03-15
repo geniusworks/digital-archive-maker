@@ -1573,22 +1573,17 @@ def main() -> int:
                         MIN_SIZE_RATIO = 0.75  # At least 75% of largest size
                         MIN_DURATION_RATIO = 0.4  # At least 40% of longest duration
 
-                        return (
-                            size_ratio >= MIN_SIZE_RATIO and
-                            duration_ratio >= MIN_DURATION_RATIO
-                        )
+                        return size_ratio >= MIN_SIZE_RATIO and duration_ratio >= MIN_DURATION_RATIO
 
                     # Filter titles to only main feature candidates
-                    candidates = [
-                        t for t in titles
-                        if is_main_feature_candidate(t, titles)
-                    ]
+                    candidates = [t for t in titles if is_main_feature_candidate(t, titles)]
 
                     # Detect seamless branching only among qualified candidates
                     if len(candidates) >= 3:
                         longest_duration = candidates[0][1]
                         same_duration_candidates = [
-                            t for t in candidates
+                            t
+                            for t in candidates
                             if abs(t[1] - longest_duration) <= 30  # Tighter 30-second window
                         ]
                         is_seamless_branching = len(same_duration_candidates) >= 3
@@ -1672,7 +1667,9 @@ def main() -> int:
                                         t[2] for t in titles if t[0] == main_title_id
                                     )
 
-                                    print("\nAvailable titles (natural order for seamless branching):")
+                                    print(
+                                        "\nAvailable titles (natural order for seamless branching):"
+                                    )
                                 else:
                                     print("\nAvailable titles (sorted by size):")
 
@@ -1683,7 +1680,8 @@ def main() -> int:
                                     # No title_index specified and multiple same-duration titles
                                     # Warn user and suggest using TITLE_INDEX
                                     print(
-                                        f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:"
+                                        f"\n⚠️  Found {len(same_duration_titles)} titles "
+                                        f"with similar duration:"
                                     )
                                     for i, (tid, seconds, duration, _) in enumerate(
                                         same_duration_titles
@@ -1693,16 +1691,20 @@ def main() -> int:
 
                                     if is_seamless_branching:
                                         print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
+                                            'TITLE_INDEX=0  # Title 0 (usually main feature)'
                                         )
                                         print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  # Title 1'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  '
+                                            '# Title 1'
                                         )
                                         print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  # Title 2'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  '
+                                            '# Title 2'
                                         )
                                         print(
-                                            "\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                            "\n🔄 Seamless branching detected - "
+                                            "defaulting to Title 0 (most likely main feature)"
                                         )
                                         # Get first title (title 0) for seamless branching
                                         title_0 = titles[0]
@@ -1711,14 +1713,13 @@ def main() -> int:
                                             main_title_id,
                                             main_duration,
                                             main_duration_str,
-                                        ) = titles[
-                                            0
-                                        ][:3]
+                                        ) = titles[0][:3]
                             else:
                                 # No title_index specified and multiple same-duration titles
                                 # Warn user and suggest using TITLE_INDEX
                                 print(
-                                    f"\n⚠️  Found {len(same_duration_titles)} titles with similar duration:"
+                                    f"\n⚠️  Found {len(same_duration_titles)} titles "
+                                    f"with similar duration:"
                                 )
                                 for i, (tid, seconds, duration, _) in enumerate(
                                     same_duration_titles
@@ -1728,13 +1729,19 @@ def main() -> int:
 
                                 if is_seamless_branching:
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
+                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'TITLE_INDEX=0  # Title 0 (usually main feature)'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=1  # Title 1'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
+                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'TITLE_INDEX=1  # Title 1'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" YEAR={os.getenv("YEAR", "unknown")} TITLE_INDEX=2  # Title 2'
+                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
+                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'TITLE_INDEX=2  # Title 2'
                                     )
                                     print(
                                         "\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
@@ -1743,11 +1750,15 @@ def main() -> int:
                             if candidates:
                                 # Select the largest candidate (already sorted by size)
                                 main_title_id, main_duration, main_duration_str = candidates[0][:3]
-                                print(f"  → Selected main feature: Title {main_title_id} ({main_duration_str})")
+                                print(
+                                    f"  → Selected main feature: Title {main_title_id} ({main_duration_str})"
+                                )
                             else:
                                 # Fallback: no candidates met criteria, use largest file
                                 main_title_id, main_duration, main_duration_str = titles[0][:3]
-                                print(f"  → No clear main feature found, using largest: Title {main_title_id}")
+                                print(
+                                    f"  → No clear main feature found, using largest: Title {main_title_id}"
+                                )
                         else:
                             # No size checking needed, use the largest (already sorted by size)
                             main_title_id, main_duration, main_duration_str = titles[0][:3]

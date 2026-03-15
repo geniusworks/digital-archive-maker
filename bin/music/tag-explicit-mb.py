@@ -634,10 +634,10 @@ def _is_itunes_collection_match(want_album_norm, cached_collection_name):
 
 def _itunes_track_key(artist, album, title):
     return (
-            f"{_normalize_title(artist)}\n"
-            f"{_normalize_title(_normalize_album_for_search(album))}\n"
-            f"{_normalize_title(title)}"
-        )
+        f"{_normalize_title(artist)}\n"
+        f"{_normalize_title(_normalize_album_for_search(album))}\n"
+        f"{_normalize_title(title)}"
+    )
 
 
 def _fetch_itunes_track_search(artist, album, title):
@@ -1373,9 +1373,7 @@ with open(EXPLICIT_PLAYLIST_FILE, "a", encoding="utf-8", newline="") as f:
     writer = csv.writer(f)
     # Only write header if file is empty
     if os.path.getsize(EXPLICIT_PLAYLIST_FILE) == 0:
-        writer.writerow(
-            ["File", "Artist", "Album", "Title", "Explicit", "Source"]
-        )
+        writer.writerow(["File", "Artist", "Album", "Title", "Explicit", "Source"])
     for track in sorted(explicit_tracks):
         writer.writerow(track)
 
@@ -1389,9 +1387,7 @@ if M3U_PLAYLIST_FILE:
     with open(M3U_PLAYLIST_FILE, "w", encoding="utf-8", newline="\n") as f:
         f.write("#EXTM3U\n")
         for track in sorted(explicit_tracks):
-            f.write(
-                os.path.relpath(track[0], ROOT) + "\n"
-            )
+            f.write(os.path.relpath(track[0], ROOT) + "\n")
     playlist_count = len(explicit_tracks)
 else:
     playlist_count = 0
