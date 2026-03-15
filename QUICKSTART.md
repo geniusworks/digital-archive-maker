@@ -97,15 +97,6 @@ dam rip video
 
 Follow the prompts to select title and configure encoding.
 
-## 5. (Optional) Run Tests
-
-Verify your installation with the test suite:
-```bash
-make test  # Should show "All tests passed!"
-```
-
-See [Contributing](CONTRIBUTING.md#running-tests) for detailed testing options.
-
 ---
 
 ## What's Next?
@@ -116,21 +107,3 @@ See [Contributing](CONTRIBUTING.md#running-tests) for detailed testing options.
 - **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
 - **[Video Ripping Guide](docs/video_ripping_guide.md)** — Movie disc workflow
 - **[README](README.md)** — Full feature overview
-
----
-
-## Troubleshooting
-
-### "Command not found: abcde"
-```bash
-brew install abcde
-```
-
-### "MakeMKV not found"
-Download from [makemkv.com](https://www.makemkv.com/) and install.
-
-### "No disc found"
-Ensure your disc is inserted and mounted. External drives may need a moment.
-
-### API errors
-Check that your `.env` file has valid API keys and that you haven't exceeded rate limits.
