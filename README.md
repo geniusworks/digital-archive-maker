@@ -73,12 +73,13 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 ```bash
 git clone https://github.com/geniusworks/digital-archive-maker.git
 cd digital-archive-maker
-make install-deps        # creates venv, installs everything, and shows next steps
+make install-deps
 ```
 
 **Step 2: Configure** (choose one)
 ```bash
-dam config                # interactive wizard (recommended)
+# interactive wizard (recommended)
+dam config
 ```
 
 Or manually:
@@ -127,7 +128,7 @@ dam sync
 | Feature | How it works |
 |:---------|:------------|
 | **Movie disc ripping** | Extracts video while preserving quality |
-| **Subtitle handling** | Detects and includes the right language |
+| **Subtitle handling** | Detects and includes your preferred language |
 | **Subtitle burning** | Embeds subtitles when needed |
 | **Movie organization** | Names files and adds descriptions |
 | **TV show support** | Groups episodes by season |
@@ -135,9 +136,9 @@ dam sync
 ### 🔄 Library Management
 | Feature | How it works |
 |:---------|:------------|
-| **Library sync** | Keeps multiple copies in sync |
+| **Library sync** | Syncs library to media servers and backups with content filtering |
 | **Content filtering** | Excludes explicit content for family devices |
-| **Playlists** | Auto-generates for easy browsing |
+| **Playlists** | Creates M3U8 album playlists and manages metadata from existing playlists |
 
 ---
 
@@ -152,15 +153,15 @@ dam version              # Show current version
 
 # Rip media
 dam rip cd               # Rip audio CD to FLAC
-dam rip video             # Rip movie disc to MP4
-dam rip video --title "Movie" --year 2024   # With metadata
+dam rip video            # Rip movie disc to MP4
+dam rip video --title "Movie" --year 2024    # With metadata
 
 # Tag and organize
 dam tag explicit /path/to/music           # Tag explicit content
-dam tag explicit /path/to/music --dry-run # Preview without writing
+dam tag explicit /path/to/music --dry-run  # Preview without writing
 dam tag genres /path/to/music             # Add genre tags
 dam tag lyrics /path/to/music             # Download lyrics
-dam tag lyrics /path/to/music --no-recursive # Process single directory
+dam tag lyrics /path/to/music --no-recursive  # Process single directory
 dam tag movie /path/to/movies             # Add movie metadata
 
 # Sync library
@@ -181,7 +182,7 @@ see [Documentation](docs/) for details.
 |-------|-------------|
 | **[Quick Start](QUICKSTART.md)** | Get running in 10 minutes |
 | **[Workflow Overview](docs/workflow_overview.md)** | High-level pipelines |
-| **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-Jellyfin guide |
+| **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-library guide |
 | **[Video Ripping](docs/video_ripping_guide.md)** | Movie disc workflow |
 | **[Media Server Setup](docs/media_server_setup.md)** | Jellyfin/Plex configuration |
 | **[Server Setups](docs/server_setups/)** | Hardware-specific guides |
