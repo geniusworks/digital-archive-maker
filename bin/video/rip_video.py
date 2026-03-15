@@ -1557,7 +1557,7 @@ def main() -> int:
                 # This must happen before candidate filtering, which requires size ratios.
                 for i, title in enumerate(titles):
                     size_line = next(
-                        (l for l in lines if l.startswith(f"TINFO:{title[0]},11,")),
+                        (line for line in lines if line.startswith(f"TINFO:{title[0]},11,")),
                         None,
                     )
                     if size_line:
