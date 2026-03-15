@@ -62,7 +62,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 ## 🎯 Key Features
 
 ### ✅ Universal MP4 Output
-- **Movie discs:** Both output to MP4 format
+- **Movie discs:** Output to MP4 format
 - **External SRT subtitles:** Jellyfin-compatible
 - **Foreign film support:** Optional subtitle burning
 - **Streaming optimization:** Web-ready files
