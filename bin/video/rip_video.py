@@ -1310,6 +1310,8 @@ def eject_disc() -> None:
 
 
 def main() -> int:
+    global CURRENT_SPINNER
+
     # Check virtual environment first
     check_virtual_environment()
 
@@ -2017,6 +2019,12 @@ def main() -> int:
                         print(f"  → Using device: {dvd_device}")
                         print(f"  → Audio preference: {LANG_AUDIO.upper()}")
                         print(f"  → Subtitles: {subtitle_action}")
+
+                        # Stop MakeMKV spinner before HandBrake
+                        if CURRENT_SPINNER:
+                            stop_spinner(CURRENT_SPINNER, "✓ MakeMKV ripping complete")
+                            CURRENT_SPINNER = None
+
                         hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
 
                         if hb_output.exists():
@@ -2207,6 +2215,12 @@ def main() -> int:
                 print(f"  → Using device: {dvd_device}")
                 print(f"  → Audio preference: {LANG_AUDIO.upper()}")
                 print(f"  → Subtitles: {subtitle_action}")
+
+                # Stop MakeMKV spinner before HandBrake
+                if CURRENT_SPINNER:
+                    stop_spinner(CURRENT_SPINNER, "✓ MakeMKV ripping complete")
+                    CURRENT_SPINNER = None
+
                 hb_result = _run(hb_cmd, capture=False)  # Don't capture to show progress
 
                 if hb_output.exists():
@@ -2229,7 +2243,6 @@ def main() -> int:
         # Eject disc after all ripping attempts complete (including HandBrake fallback)
         if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
             # Ensure any spinner is stopped before ejecting
-            global CURRENT_SPINNER
             if CURRENT_SPINNER:
                 try:
                     stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
@@ -2517,13 +2530,13 @@ def main() -> int:
 
         container = "MP4"  # Always MP4 now
         print(f"  → Encoding to {container}...")
-        print(f"  → Input: {mkv}")
-        print(f"  → Output: {mp4_path}")
-        print(f"  → Input exists: {mkv.exists()}")
-        print(f"  → Output exists: {mp4_path.exists()}")
         print()  # Blank line before encoding
-        # Small delay to ensure no spinner overlap from previous operations
-        time.sleep(0.2)  # Slightly longer delay to ensure clean state
+
+        # Stop remaining spinner before HandBrake encoding
+        if CURRENT_SPINNER:
+            stop_spinner(CURRENT_SPINNER, "✓ Preparation complete")
+            CURRENT_SPINNER = None
+
         print("  → Encoding with HandBrake... (showing native progress)")
         print()  # Space for HandBrake progress output
 
