@@ -2485,6 +2485,9 @@ def main() -> int:
         print()  # Blank line before spinner
         # Small delay to ensure no spinner overlap from previous operations
         time.sleep(0.2)  # Slightly longer delay to ensure clean state
+        # Ensure spinner starts on a fresh line to prevent flashy overwriting
+        print("  ", end="", flush=True)  # Position cursor at proper indentation
+        time.sleep(0.05)  # Tiny delay to ensure positioning
         spinner = show_spinner("Encoding with HandBrake...")
 
         try:
