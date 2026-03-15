@@ -2482,17 +2482,15 @@ def main() -> int:
         print(f"  → Output: {mp4_path}")
         print(f"  → Input exists: {mkv.exists()}")
         print(f"  → Output exists: {mp4_path.exists()}")
-        print()  # Blank line before spinner
+        print()  # Blank line before encoding
         # Small delay to ensure no spinner overlap from previous operations
         time.sleep(0.2)  # Slightly longer delay to ensure clean state
-        # Ensure spinner starts on a fresh line to prevent flashy overwriting
-        print("  ", end="", flush=True)  # Position cursor at proper indentation
-        time.sleep(0.05)  # Tiny delay to ensure positioning
-        spinner = show_spinner("Encoding with HandBrake...")
+        print("  → Encoding with HandBrake... (showing native progress)")
+        print()  # Space for HandBrake progress output
 
         try:
             _run(hb_cmd, capture=False)  # Don't capture to show progress
-            stop_spinner(spinner, f"✓ Encoding complete: {mp4_path.name}")
+            print(f"  ✓ Encoding complete: {mp4_path.name}")
 
             # Extract subtitles based on user choice
             if "subtitle_config" in locals() and subtitle_config:
