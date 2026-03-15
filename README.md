@@ -44,7 +44,7 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 - 🎵 **CDs to FLAC** — Lossless audio with album art and metadata
 - 📀 **Movie discs to MP4** — High-quality video with subtitles
 - 🏷️ **Rich metadata** — Artist bios, movie descriptions, genres, ratings
--️ **Smart organization** — Browsable, searchable library structure
+- 📁 **Smart organization** — Browsable, searchable library structure
 - 📱 **Media server ready** — Works with Jellyfin, Plex, and Emby
 
 **Your result:** Instant access to your entire media collection from any device, searchable by any criteria—no subscriptions required.
