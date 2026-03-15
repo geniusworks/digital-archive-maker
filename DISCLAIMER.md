@@ -17,14 +17,20 @@ This software is designed to help you:
 
 ## Explicit Non-Endorsement
 
-This software does **NOT**:
+This software does NOT:
 
-- Include or provide any copy protection circumvention capabilities
+- Contain built-in copy protection circumvention code
+- Distribute circumvention tools (users obtain them separately)
 - Download copyrighted content from the internet
-- Facilitate piracy or copyright infringement in any way
 - Provide access to content you do not own
 
-The authors explicitly do not endorse or encourage any use of this software that would violate copyright law or the rights of content creators.
+This software MAY:
+
+- Invoke third-party tools that perform circumvention (when obtained by the user)
+- Automate workflows that rely on circumvention capabilities
+- Coordinate with circumvention tools when present on the system
+
+The authors explicitly do not endorse or encourage any use of this software that would violate copyright law or the rights of content creators. Users are solely responsible for ensuring compliance with applicable laws regarding circumvention tools.
 
 ---
 
@@ -82,9 +88,9 @@ By using this software, you acknowledge that:
 
 ## DMCA & Digital Millennium Copyright Act Notice
 
-This software does not circumvent any technological protection measures. It relies on third-party tools (obtained separately by the user) for disc reading. The authors make no representations about the legality of disc decryption in any jurisdiction.
+This software does not contain built-in circumvention measures. It may invoke third-party tools (obtained separately by the user) that perform disc reading and circumvention. The authors make no representations about the legality of such tools or their use in any jurisdiction.
 
-Under 17 U.S.C. § 512, this project qualifies as a tool for lawful personal use. It does not host, index, or distribute copyrighted content.
+Under 17 U.S.C. § 512, this project serves as an automation framework for lawful personal use. It does not host, index, or distribute copyrighted content or circumvention tools.
 
 ## Jurisdictional Notes
 
