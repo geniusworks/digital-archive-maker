@@ -23,7 +23,7 @@ import typer
 
 from dam import __version__
 from dam.config import REPO_ROOT, env_file_exists, get, missing_api_keys
-from dam.console import console, error, heading, info, success, warning
+from dam.console import banner, console, error, heading, info, success, warning
 from dam.deps import check_all, check_python_deps, ensure_venv, install_missing
 from dam.keys import _KEY_INFO, onboard_keys
 
@@ -55,8 +55,6 @@ def check(
     install: bool = typer.Option(False, "--install", "-i", help="Install missing Homebrew deps."),
 ):
     """Check that all required tools, Python packages, and API keys are present."""
-    banner()
-
     # System deps
     installed, missing = check_all(scope=scope, verbose=True)
 
@@ -88,7 +86,7 @@ def check(
         console.print("[success]All required dependencies are satisfied![/]")
 
     # API keys
-    heading("API keys (highly recommended)")
+    heading("API keys (recommended)")
     api_missing = missing_api_keys()
     all_api_keys = [
         "ACOUSTID_API_KEY",
@@ -102,7 +100,7 @@ def check(
     for k in all_api_keys:
         if k in api_missing:
             purpose = _KEY_INFO.get(k, {}).get("purpose", "unknown purpose")
-            console.print(f" ⚠️ {k} (needed for {purpose})")
+            console.print(f" ⚠️ {k} (for {purpose})")
         else:
             console.print(f" ✅ {k}")
 

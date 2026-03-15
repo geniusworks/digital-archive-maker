@@ -36,7 +36,9 @@ help:
 
 install-deps:
 	@echo ""
-	@echo "Installing audio/CD ripping tools via Homebrew..."
+	@./venv/bin/python scripts/show_banner.py
+	@echo ""
+	@echo "Installing tools..."
 	@for p in abcde flac imagemagick jq curl wget ffmpeg node; do \
 		if ! brew list $$p >/dev/null 2>&1; then \
 			echo "brew install $$p"; brew install $$p || true; \

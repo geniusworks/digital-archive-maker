@@ -208,7 +208,7 @@ def check_all(
     missing: list[Dependency] = []
 
     if verbose:
-        heading("Checking system dependencies")
+        console.print("[heading]▸ Checking system dependencies[/]")
 
     for dep in deps:
         ok = dep.is_installed()
