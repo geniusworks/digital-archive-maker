@@ -40,13 +40,10 @@ The authors explicitly do not endorse or encourage any use of this software that
 This software may invoke external tools that users must obtain and license separately:
 
 ### MakeMKV
-- This software does NOT include MakeMKV or any decryption capabilities
-- Users must download MakeMKV separately from [makemkv.com](https://www.makemkv.com/)
-- Users must license MakeMKV appropriately (beta period or purchased license)
-- Users must comply with their jurisdiction's laws regarding its use
-- **MakeMKV is optional** - HandBrake fallback available for DVD ripping
-- **MakeMKV is required** for Blu-ray ripping (no alternative available)
-- **The authors of this software have no affiliation with MakeMKV**
+- **Optional** for DVD ripping (HandBrake fallback available)
+- **Required** for Blu-ray ripping (no alternative)
+- Users must download and license separately from [makemkv.com](https://www.makemkv.com/)
+- No affiliation with this project; users comply with applicable laws
 
 ### HandBrakeCLI
 - Open source video transcoder, available at [handbrake.fr](https://handbrake.fr/)
@@ -63,7 +60,7 @@ This software may invoke external tools that users must obtain and license separ
 This software interfaces with external APIs. Users must:
 
 | Service | Requirements |
-|---------|--------------|
+|:--------|:-------------|
 | **MusicBrainz** | Respect rate limiting and [usage policies](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting) |
 | **TMDb** | Obtain free API key; provide [attribution](https://www.themoviedb.org/documentation/api/terms-of-use) |
 | **OMDb** | Obtain API key; respect [tier limits](https://www.omdbapi.com/) |
