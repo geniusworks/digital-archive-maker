@@ -1569,9 +1569,8 @@ def main() -> int:
 
                 if titles:
                     # Improved main feature detection using size and duration heuristics
-                    # Sort by size (largest first) as primary indicator of main feature
-                    # Use element 4 (size_bytes), default to 0 if not populated yet
-                    titles.sort(key=lambda x: x[4] if len(x) > 4 else 0, reverse=True)
+                    # Note: Don't sort by size yet - size info not populated
+                    # Size-based sorting will happen after size retrieval
 
                     # Filter candidates using percentage-based thresholds
                     # This eliminates special features, trailers, and minor content
@@ -1665,6 +1664,29 @@ def main() -> int:
                                     pass
 
                             if title_sizes:
+                                # Update titles list with size information
+                                # Create a mapping of title_id -> size_gb
+                                size_map = {tid: size_gb for tid, size_gb in title_sizes}
+                                
+                                # Update each title with its size
+                                updated_titles = []
+                                for title in titles:
+                                    title_id = title[0]
+                                    if title_id in size_map:
+                                        # Replace size_bytes placeholder with actual size
+                                        if len(title) >= 5:
+                                            updated_title = (title[0], title[1], title[2], title[3], int(size_map[title_id] * (1024**3)))
+                                        else:
+                                            updated_title = (title[0], title[1], title[2], title[3], int(size_map[title_id] * (1024**3)))
+                                        updated_titles.append(updated_title)
+                                    else:
+                                        updated_titles.append(title)
+                                
+                                titles = updated_titles
+                                
+                                # Now sort titles by size (largest first) for proper candidate selection
+                                titles.sort(key=lambda x: x[4] if len(x) > 4 else 0, reverse=True)
+                                
                                 if is_seamless_branching:
                                     # For seamless branching, use natural title order (0, 1, 2...)
                                     # instead of size sorting for more predictable results
@@ -1866,9 +1888,31 @@ def main() -> int:
                             result = _run(cmd, capture=True)
                             stop_spinner(spinner, f"✓ MakeMKV output: {result.stdout.strip()}")
                             
-                            # Brief pause to ensure MakeMKV processes are fully terminated
+                            # Wait for any remaining MakeMKV processes to finish
+                            import subprocess
                             import time
-                            time.sleep(0.3)
+                            
+                            # Check for remaining MakeMKV processes and wait for them to finish
+                            max_wait_time = 10  # Maximum 10 seconds wait
+                            check_interval = 0.1  # Check every 100ms
+                            elapsed = 0
+                            
+                            while elapsed < max_wait_time:
+                                try:
+                                    # Use pgrep to check for MakeMKV processes
+                                    proc_result = subprocess.run(
+                                        ["pgrep", "-f", "makemkvcon"], 
+                                        capture_output=True, 
+                                        text=True, 
+                                        timeout=1
+                                    )
+                                    if proc_result.returncode != 0:  # No processes found
+                                        break
+                                    time.sleep(check_interval)
+                                    elapsed += check_interval
+                                except (subprocess.TimeoutExpired, FileNotFoundError):
+                                    # pgrep not available or timeout, assume no processes
+                                    break
                             
                         except Exception as e:
                             stop_spinner(spinner, f"✗ MakeMKV failed: {e}")
