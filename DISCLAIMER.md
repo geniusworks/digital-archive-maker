@@ -21,16 +21,17 @@ This software does NOT:
 
 - Contain built-in copy protection circumvention code
 - Distribute circumvention tools (users obtain them separately)
-- Download copyrighted content from the internet
+- Download entire media files (movies, songs, etc.) from the internet
 - Provide access to content you do not own
 
 This software MAY:
 
+- Download metadata and cover art from public APIs
+- Download lyrics for personal use (when user owns the media)
 - Invoke third-party tools that perform circumvention (when obtained by the user)
 - Automate workflows that rely on circumvention capabilities
-- Coordinate with circumvention tools when present on the system
 
-The authors explicitly do not endorse or encourage any use of this software that would violate copyright law or the rights of content creators. Users are solely responsible for ensuring compliance with applicable laws regarding circumvention tools.
+The authors explicitly do not endorse or encourage any use of this software that would violate copyright law or the rights of content creators. Users are solely responsible for ensuring compliance with applicable laws regarding circumvention tools and copyrighted content downloads.
 
 ---
 
