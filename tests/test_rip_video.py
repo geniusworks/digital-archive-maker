@@ -25,7 +25,8 @@ class TestRipVideo:
     def test_interactive_subtitle_prompt_default_action_vob_convert(self):
         """Test that VOB subtitles default to extract_vob_convert action."""
         # Test the core logic directly without mocking
-        # Simulate the condition: has_preferred_audio and preferred_vob_subs and not preferred_text_subs
+        # Simulate the condition: has_preferred_audio and preferred_vob_subs 
+        # and not preferred_text_subs
 
         # Simulate English audio present
         has_preferred_audio = True
@@ -45,7 +46,8 @@ class TestRipVideo:
     def test_interactive_subtitle_prompt_default_action_burn_vob(self):
         """Test that foreign audio + VOB subtitles defaults to burn_vob_subs."""
         # Test the core logic directly without mocking
-        # Simulate the condition: not has_preferred_audio and has_foreign_audio and preferred_vob_subs
+        # Simulate the condition: not has_preferred_audio and has_foreign_audio 
+        # and preferred_vob_subs
 
         # Simulate foreign audio (no preferred audio)
         has_preferred_audio = False

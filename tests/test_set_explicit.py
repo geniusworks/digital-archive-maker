@@ -103,8 +103,7 @@ class TestSetExplicit:
         # Mock tag setting to return old values
         mock_set_tag.side_effect = ["None", "Yes", "No"]
 
-        with patch("builtins.print") as mock_print:
-            count = set_explicit.process_album(album_dir, "Unknown")
+        count = set_explicit.process_album(album_dir, "Unknown")
 
         assert count == 3
         assert mock_set_tag.call_count == 3
@@ -127,8 +126,7 @@ class TestSetExplicit:
 
         mock_set_tag.return_value = "None"
 
-        with patch("builtins.print") as mock_print:
-            set_explicit.process_single_file(flac_file, "Yes")
+        set_explicit.process_single_file(flac_file, "Yes")
 
         mock_set_tag.assert_called_once_with(flac_file, "Yes")
 

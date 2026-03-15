@@ -69,7 +69,7 @@ def show_spinner(message: str, duration: float = None):
     if CURRENT_SPINNER:
         try:
             stop_spinner(CURRENT_SPINNER)
-        except:
+        except Exception:
             pass  # Ignore errors when stopping old spinner
         CURRENT_SPINNER = None
 
@@ -104,15 +104,15 @@ def stop_spinner(spinner_thread, final_message: str = None):
         try:
             spinner_thread.stop = True
             spinner_thread.join(timeout=0.5)
-        except:
+        except Exception:
             pass  # Ignore errors when stopping spinner
-        
+
         if spinner_thread == CURRENT_SPINNER:
             CURRENT_SPINNER = None
-        
+
         # Clear the spinner line
         print("\r" + " " * 80 + "\r", end="", flush=True)
-        
+
         if final_message:
             print(f"  {final_message}")
     else:
@@ -1574,7 +1574,9 @@ def main() -> int:
                     def is_main_feature_candidate(title_data, all_titles):
                         # Handle both 4-element and 5-element tuples
                         if len(title_data) >= 5:
-                            title_id, duration_seconds, duration_str, video_lang, size_bytes = title_data
+                            title_id, duration_seconds, duration_str, video_lang, size_bytes = (
+                                title_data
+                            )
                         else:
                             title_id, duration_seconds, duration_str, video_lang = title_data
                             size_bytes = 0
@@ -1717,12 +1719,13 @@ def main() -> int:
                                             'TITLE_INDEX=0  # Title 0 (usually main feature)'
                                         )
                                         print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=1  '
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
+                                            'TITLE_INDEX=1  # Title 1 (next candidate)'
                                             '# Title 1'
                                         )
                                         print(
-                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 TITLE_INDEX=2  '
-                                            '# Title 2'
+                                            '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
+                                            'TITLE_INDEX=2  # Title 2'
                                         )
                                         print(
                                             "\n🔄 Seamless branching detected - "
@@ -1750,36 +1753,41 @@ def main() -> int:
                                 print("\n💡 Use TITLE_INDEX to select a specific title:")
 
                                 if is_seamless_branching:
+                                    title_env = os.getenv("TITLE", "unknown")
+                                    year_env = os.getenv("YEAR", "unknown")
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
-                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'   make rip-movie TITLE="{title_env}" '
+                                        f'YEAR={year_env} '
                                         f'TITLE_INDEX=0  # Title 0 (usually main feature)'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
-                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'   make rip-movie TITLE="{title_env}" '
+                                        f'YEAR={year_env} '
                                         f'TITLE_INDEX=1  # Title 1'
                                     )
                                     print(
-                                        f'   make rip-movie TITLE="{os.getenv("TITLE", "unknown")}" '
-                                        f'YEAR={os.getenv("YEAR", "unknown")} '
+                                        f'   make rip-movie TITLE="{title_env}" '
+                                        f'YEAR={year_env} '
                                         f'TITLE_INDEX=2  # Title 2'
                                     )
                                     print(
-                                        "\n🔄 Seamless branching detected - defaulting to Title 0 (most likely main feature)"
+                                        "\n🔄 Seamless branching detected - "
+                                        "defaulting to Title 0 (most likely main feature)"
                                     )
                                     # Use improved candidate-based selection
                             if candidates:
                                 # Select the largest candidate (already sorted by size)
                                 main_title_id, main_duration, main_duration_str = candidates[0][:3]
                                 print(
-                                    f"  → Selected main feature: Title {main_title_id} ({main_duration_str})"
+                                    f"  → Selected main feature: Title {main_title_id} "
+                                    f"({main_duration_str})"
                                 )
                             else:
                                 # Fallback: no candidates met criteria, use largest file
                                 main_title_id, main_duration, main_duration_str = titles[0][:3]
                                 print(
-                                    f"  → No clear main feature found, using largest: Title {main_title_id}"
+                                    f"  → No clear main feature found, "
+                                    f"using largest: Title {main_title_id}"
                                 )
                         else:
                             # No size checking needed, use the largest (already sorted by size)
@@ -1872,7 +1880,8 @@ def main() -> int:
                         return 1
 
                         # Check if file was actually created
-                        # MakeMKV uses different naming: DVDs use "title_t00.mkv", Blu-rays use "MovieName_t00.mkv"
+                        # MakeMKV uses different naming: DVDs use "title_t00.mkv",
+                        # Blu-rays use "MovieName_t00.mkv"
                         # Look for any file with the correct title ID
                         mkv_files = list(outdir.glob(f"*_t{main_title_id:02d}.mkv"))
                         if not mkv_files:
@@ -1881,7 +1890,8 @@ def main() -> int:
                             existing_files = list(outdir.glob("*.mkv"))
                             if existing_files:
                                 print(
-                                    f"  → Found existing MKV files: {[f.name for f in existing_files]}"
+                                    f"  → Found existing MKV files: "
+                                    f"{[f.name for f in existing_files]}"
                                 )
                                 print("  → Using largest file as main feature")
                                 # Continue with existing files - skip backup
@@ -1911,7 +1921,8 @@ def main() -> int:
                                     f"--minlength={minlength}",
                                 ]
                                 print(
-                                    f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}"
+                                    f"  → Running rip from backup (all titles): "
+                                    f"{' '.join(backup_mkv_cmd)}"
                                 )
                                 backup_rip_result = _run(backup_mkv_cmd, capture=True)
                                 print(f"  ✓ Backup rip output: {backup_rip_result.stdout.strip()}")
@@ -1994,7 +2005,7 @@ def main() -> int:
                                         "--subtitle-lang-list",
                                         LANG_SUBTITLES,
                                         "--first-subtitle",  # Use first matching subtitle
-                                        "--subtitle-burned",  # Burn subtitles (HandBrake limitation)
+                                        "--subtitle-burned",  # Burn subtitles
                                     ]
                                 )
                                 subtitle_action = "burned (different language)"
@@ -2218,10 +2229,11 @@ def main() -> int:
         # Eject disc after all ripping attempts complete (including HandBrake fallback)
         if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
             # Ensure any spinner is stopped before ejecting
+            global CURRENT_SPINNER
             if CURRENT_SPINNER:
                 try:
                     stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
-                except:
+                except Exception:
                     pass  # Ignore errors when stopping spinner
                 CURRENT_SPINNER = None
                 # Small delay to ensure spinner cleanup is complete
@@ -2236,7 +2248,8 @@ def main() -> int:
         largest_mkv = max(mkvs, key=lambda p: p.stat().st_size)
         mkvs = [largest_mkv]
         print(
-            f"Focusing on main feature: {largest_mkv.name} ({largest_mkv.stat().st_size / (1024**3):.1f}GB)"
+            f"Focusing on main feature: {largest_mkv.name} "
+            f"({largest_mkv.stat().st_size / (1024**3):.1f}GB)"
         )
     elif force_all_tracks:
         print(f"Processing all {len(mkvs)} tracks (forced)")
