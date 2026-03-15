@@ -157,7 +157,7 @@ def main():
     base_name = idx_file.replace(".idx", "")
     output_srt = f"{base_name}.srt"
 
-    print(f"Converting VobSub to placeholder SRT...")
+    print("Converting VobSub to placeholder SRT...")
     print(f"  Input:  {idx_file}")
     print(f"  Output: {output_srt}")
     print("")

@@ -1015,7 +1015,8 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     cache_mtime = cache.get("cache_mtime", 0)
                     if overrides_mtime and cache_mtime and overrides_mtime <= cache_mtime:
                         continue
-                # Check if we have cached data for this track (Spotify/iTunes track-level) - only skip if not Unknown
+                # Check if we have cached data for this track (Spotify/iTunes track-level)
+                # - only skip if not Unknown
                 if prev_explicit_tag != UNKNOWN_VALUE:
                     itunes_track_key = _itunes_track_key(artist, album_search, title)
                     spotify_key = _spotify_track_key(
@@ -1409,7 +1410,8 @@ if args.verbose:
 if processed_count > 0:
     if args.verbose:
         print(
-            f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} Unknown={stats.get('Unknown', 0)}"
+            f"  This run: Yes={stats.get('Yes', 0)} No={stats.get('No', 0)} "
+            f"Unknown={stats.get('Unknown', 0)}"
         )
         if source_counts:
             top_sources = sorted(source_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]

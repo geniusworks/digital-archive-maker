@@ -126,7 +126,8 @@ def check_virtual_environment() -> None:
             cmd_type = os.getenv("TYPE", "auto")
             print("Then try again:")
             print(
-                f"   make rip-movie TYPE={cmd_type} TITLE=\"{os.getenv('TITLE')}\" YEAR={os.getenv('YEAR')}"
+                f"   make rip-movie TYPE={cmd_type} TITLE=\"{os.getenv('TITLE')}\" "
+                f"YEAR={os.getenv('YEAR')}"
             )
         else:
             # Direct script call
@@ -285,7 +286,8 @@ def load_dotenv(repo_root: Path) -> None:
         from dotenv import load_dotenv  # type: ignore
     except ImportError as e:
         raise RuntimeError(
-            "python-dotenv is required to load .env. Install deps with: python3 -m pip install -r requirements.txt"
+            "python-dotenv is required to load .env. Install deps with: "
+            "python3 -m pip install -r requirements.txt"
         ) from e
 
     load_dotenv(env_path)
@@ -660,7 +662,8 @@ def interactive_subtitle_prompt(
         print(f"{marker} {key}) {description}")
 
     print(
-        f"\nPress 1-{len(options)} to select, ENTER for default (default: {next(k for k, a, _ in options if a == default_action)})"
+        f"\nPress 1-{len(options)} to select, ENTER for default (default: "
+        f"{next(k for k, a, _ in options if a == default_action)})"
     )
     print()  # Empty line for countdown
 
@@ -1315,7 +1318,8 @@ def main() -> int:
         "--title-index",
         type=int,
         default=None,
-        help="Select title by index (0=Title 0, 1=Title 1, etc.). For seamless branching discs, uses natural title order.",
+        help="Select title by index (0=Title 0, 1=Title 1, etc.). "
+        "For seamless branching discs, uses natural title order.",
     )
     args = parser.parse_args()
 
@@ -1532,7 +1536,8 @@ def main() -> int:
                             except ValueError:
                                 continue
 
-                # Filter titles by preferred video language if LANG_VIDEO is set and titles have language info
+                # Filter titles by preferred video language if LANG_VIDEO is set
+                # and titles have language info
                 if LANG_VIDEO and any(t[3] for t in titles):  # t[3] is video_lang
                     preferred_titles = [
                         t for t in titles if t[3] and matches_language(t[3], LANG_VIDEO)
@@ -1542,7 +1547,8 @@ def main() -> int:
                         titles = preferred_titles
                     else:
                         print(
-                            f"  → No titles found with language {LANG_VIDEO.upper()}, using all titles"
+                            f"  → No titles found with language {LANG_VIDEO.upper()}, "
+                            f"using all titles"
                         )
 
                 if titles:
@@ -1602,11 +1608,13 @@ def main() -> int:
                     if should_check_sizes:
                         if args.title_index is not None:
                             print(
-                                f"Title index {args.title_index} specified, checking all title sizes..."
+                                f"Title index {args.title_index} specified, "
+                                f"checking all title sizes..."
                             )
                         else:
                             print(
-                                f"Found {len(same_duration_titles)} titles with similar duration, checking sizes..."
+                                f"Found {len(same_duration_titles)} titles with similar duration, "
+                                f"checking sizes..."
                             )
 
                         # Get file sizes for all titles (or same-duration ones)
@@ -1650,7 +1658,8 @@ def main() -> int:
                                     # Validate title_index is within range
                                     if args.title_index >= len(title_sizes):
                                         print(
-                                            f"❌ Title index {args.title_index} out of range (only {len(title_sizes)} titles available)"
+                                            f"❌ Title index {args.title_index} out of range "
+                                            f"(only {len(title_sizes)} titles available)"
                                         )
                                         print(f"  → Available titles: 0-{len(title_sizes)-1}")
                                         return 1
@@ -2220,8 +2229,8 @@ def main() -> int:
         elif all_preferred_audio and preferred_soft_subs:
             # Simple case - skip prompt, just proceed with extraction
             skip_prompt = True
-            print(f"\n🎬 Detected: English movie with English audio and soft subtitles")
-            print(f"  → Will automatically extract English soft subtitles to .srt file")
+            print("\n🎬 Detected: English movie with English audio and soft subtitles")
+            print("  → Will automatically extract English soft subtitles to .srt file")
             subtitle_config = {
                 "action": "extract_srt",
                 "preferred_text_subs": True,
@@ -2249,7 +2258,7 @@ def main() -> int:
 
         # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
         mp4_path = outdir / f"{name}.mp4"
-        print(f"  → Using MP4 container (Jellyfin compatible)")
+        print("  → Using MP4 container (Jellyfin compatible)")
 
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
@@ -2346,7 +2355,7 @@ def main() -> int:
                         str(eng_text_idx + 1),
                         "--subtitle-burned",
                     ]
-                    print(f"  ⚠️  BURNING English text subtitles (user choice)")
+                    print("  ⚠️  BURNING English text subtitles (user choice)")
             elif action == "burn_pgs_subs" and subtitle_config["preferred_pgs_subs"]:
                 # Burn English PGS subtitles
                 if eng_image_idx >= 0:
@@ -2355,7 +2364,7 @@ def main() -> int:
                         str(eng_image_hb_track),
                         "--subtitle-burned",
                     ]
-                    print(f"  ⚠️  BURNING English PGS subtitles (user choice)")
+                    print("  ⚠️  BURNING English PGS subtitles (user choice)")
             elif action == "burn_vob_subs" and subtitle_config["preferred_vob_subs"]:
                 # Burn English VOB subtitles
                 if eng_image_idx >= 0:
@@ -2364,31 +2373,31 @@ def main() -> int:
                         str(eng_image_hb_track),
                         "--subtitle-burned",
                     ]
-                    print(f"  ⚠️  BURNING English VOB subtitles (user choice)")
+                    print("  ⚠️  BURNING English VOB subtitles (user choice)")
             elif action == "extract_srt" and subtitle_config["preferred_text_subs"]:
                 # Extract text subtitles to SRT
-                print(f"  → Extracting English text subtitles to SRT (user choice)")
+                print("  → Extracting English text subtitles to SRT (user choice)")
             elif action == "extract_pgs_ocr":
                 # Extract PGS for later OCR
                 pgs_files = extract_pgs_subtitles(mkv, outdir)
                 if pgs_files:
-                    print(f"  ✓ Extracted {len(pgs_files)} PGS file(s) for future OCR")
+                    print("  ✓ Extracted {} PGS file(s) for future OCR".format(len(pgs_files)))
                 else:
-                    print(f"  ⚠️  No PGS files extracted")
+                    print("  ⚠️  No PGS files extracted")
             elif action == "extract_vob_convert":
                 # Extract VOB subtitles and convert to SRT
                 srt_files = extract_vob_subtitles(mkv, outdir)
                 if srt_files:
-                    print(f"  ✓ Converted {len(srt_files)} VOB→SRT file(s)")
+                    print("  ✓ Converted {} VOB→SRT file(s)".format(len(srt_files)))
                     # Add SRT files to subtitle list for MP4 embedding
                     for srt_file in srt_files:
-                        print(f"  → SRT ready for embedding: {srt_file.name}")
+                        print("  → SRT ready for embedding: {}".format(srt_file.name))
                 else:
-                    print(f"  ⚠️  No VOB subtitles converted")
+                    print("  ⚠️  No VOB subtitles converted")
             elif action == "no_subs":
-                print(f"  → Skipping all subtitle processing (user choice)")
+                print("  → Skipping all subtitle processing (user choice)")
             else:
-                print(f"  → Standard MP4 processing (user choice)")
+                print("  → Standard MP4 processing (user choice)")
         else:
             # Default automatic behavior (existing logic)
             burn_subs = get_env_str("BURN_SUBTITLES", "false").lower() in (
@@ -2405,14 +2414,14 @@ def main() -> int:
                         str(eng_text_idx + 1),
                         "--subtitle-burned",
                     ]
-                    print(f"  ⚠️  BURNING English text subtitles (foreign language audio)")
+                    print("  ⚠️  BURNING English text subtitles (foreign language audio)")
                 elif eng_image_idx >= 0:
                     hb_sub_opts = [
                         "--subtitle",
                         str(eng_image_hb_track),
                         "--subtitle-burned",
                     ]
-                    print(f"  ⚠️  BURNING English image subtitles (foreign language audio)")
+                    print("  ⚠️  BURNING English image subtitles (foreign language audio)")
             elif burn_subs and needs_lang_action and not has_en_subs:
                 # Foreign audio but no English subtitles - can't burn!
                 print("  ⚠️  Foreign language audio detected but no English subtitles available")
@@ -2535,7 +2544,7 @@ def main() -> int:
             # Apply streaming optimization to the final organized file
             if streaming_optimize:
                 try:
-                    print(f"  → Applying streaming optimization to final file...")
+                    print("  → Applying streaming optimization to final file...")
                     temp_path = dest.with_suffix(f".temp{dest.suffix}")
                     cmd = [
                         "ffmpeg",

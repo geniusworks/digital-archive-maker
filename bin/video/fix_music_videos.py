@@ -257,7 +257,8 @@ def update_video_metadata(
 
         if dry_run:
             print(
-                f"  Would update metadata: '{current_artist}' -> '{artist}', '{current_title}' -> '{title}'"
+                f"  Would update metadata: '{current_artist}' -> '{artist}', "
+                f"'{current_title}' -> '{title}'"
             )
             return True, True
 

@@ -678,7 +678,7 @@ def main():
             elif new_rating == UNKNOWN_VALUE:
                 if VERBOSE or DRY_RUN:
                     try:
-                        print(f"  No rating found")
+                        print("  No rating found")
                     except BrokenPipeError:
                         sys.exit(0)
 

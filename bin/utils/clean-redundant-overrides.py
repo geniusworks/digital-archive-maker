@@ -20,7 +20,8 @@ CACHE_FILE = Path("cache/movie_rating_cache.json")
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Remove redundant entries from movie_rating_overrides.json (already present in movie_rating_cache.json)."
+        description="Remove redundant entries from movie_rating_overrides.json "
+        "(already present in movie_rating_cache.json)."
     )
     parser.add_argument(
         "--dry-run",
@@ -54,7 +55,8 @@ def main():
 
     if removed:
         print(
-            f"{'[DRY RUN] Would remove' if args.dry_run else 'Removing'} {len(removed)} overrides already present in rating cache:"
+            f"{'[DRY RUN] Would remove' if args.dry_run else 'Removing'} "
+            f"{len(removed)} overrides already present in rating cache:"
         )
         for title, rating in sorted(removed.items()):
             print(f"  - {title}: {rating}")

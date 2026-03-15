@@ -729,12 +729,14 @@ def main():
                         if matched_date:
                             if args.verbose:
                                 print(
-                                    f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} ({matched_date}) [id={cached_show['show_id']}]"
+                                    f"  TMDb show match: {show_title} ({show_year}) -> "
+                                    f"{matched_name} ({matched_date}) [id={cached_show['show_id']}]"
                                 )
                         else:
                             if args.verbose:
                                 print(
-                                    f"  TMDb show match: {show_title} ({show_year}) -> {matched_name} [id={cached_show['show_id']}]"
+                                    f"  TMDb show match: {show_title} ({show_year}) -> "
+                                    f"{matched_name} [id={cached_show['show_id']}]"
                                 )
                     else:
                         if args.verbose:
@@ -756,7 +758,8 @@ def main():
                         if local_title:
                             if args.verbose:
                                 print(
-                                    f"  No TMDb episode match for S{season:02d}E{episode:02d} ({local_title})"
+                                    f"  No TMDb episode match for S{season:02d}E{episode:02d} "
+                                    f"({local_title})"
                                 )
                         else:
                             if args.verbose:
@@ -801,7 +804,8 @@ def main():
                     fields = ",".join(planned_updates) if planned_updates else "(unknown)"
                     if local_title and tmdb_ep_title and local_title != tmdb_ep_title:
                         print(
-                            f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} -> {tmdb_ep_title} [{fields}]"
+                            f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} -> "
+                            f"{tmdb_ep_title} [{fields}]"
                         )
                     elif local_title:
                         print(f"  [DRY RUN] S{season:02d}E{episode:02d}: {local_title} [{fields}]")
@@ -827,11 +831,13 @@ def main():
 
     if args.dry_run:
         print(
-            f"\nDry run completed. Would update: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}."
+            f"\nDry run completed. Would update: {wrote}. "
+            f"Skipped/no-op: {skipped}. Errors: {errors}."
         )
     else:
         print(
-            f"\nAll updates completed. Updated: {wrote}. Skipped/no-op: {skipped}. Errors: {errors}."
+            f"\nAll updates completed. Updated: {wrote}. "
+            f"Skipped/no-op: {skipped}. Errors: {errors}."
         )
 
 

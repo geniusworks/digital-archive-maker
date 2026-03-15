@@ -649,7 +649,7 @@ def main():
             print(f"  Year: {year}")
 
         if not any([imdb_id, tmdb_id, title]):
-            print(f"  No identifiers found (no IDs and couldn't infer title/year); skipping")
+            print("  No identifiers found (no IDs and couldn't infer title/year); skipping")
             continue
 
         key = _cache_key(imdb_id=imdb_id, tmdb_id=tmdb_id, title=title, year=year)
@@ -716,12 +716,12 @@ def main():
             if wrote:
                 print(f"  [DRY RUN] Would write metadata to {file_path}")
             else:
-                print(f"  No changes needed")
+                print("  No changes needed")
         else:
             if wrote:
                 print(f"  Wrote metadata to {file_path}")
             else:
-                print(f"  No changes needed")
+                print("  No changes needed")
 
         if cache_dirty:
             _save_cache(cache)

@@ -222,9 +222,9 @@ def scan_music_videos():
                     print(f"   Existing: {result['existing_artist']} - {result['existing_title']}")
 
             if action == "failed":
-                print(f"   ERROR: Failed to update metadata")
+                print("   ERROR: Failed to update metadata")
             elif action == "skip":
-                print(f"   SKIP: Cannot parse filename format")
+                print("   SKIP: Cannot parse filename format")
 
     # Print summary
     print()

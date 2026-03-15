@@ -1168,7 +1168,8 @@ def update_genres_in_folder(
     else:
         if HAS_TQDM and not verbose and not sys.stderr.isatty():
             _log(
-                "Note: progress bar disabled (stderr is not a TTY); showing periodic progress instead"
+                "Note: progress bar disabled (stderr is not a TTY); "
+                "showing periodic progress instead"
             )
         flac_iterator = flac_files
 
@@ -1204,7 +1205,8 @@ def update_genres_in_folder(
 
     if unresolved_count:
         print(
-            f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged, unresolved {unresolved_count})"
+            f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged, "
+            f"unresolved {unresolved_count})"
         )
     else:
         print(f"Processed: {updated_count} tracks (skipped {skipped_count} already tagged)")
@@ -1285,7 +1287,8 @@ def main():
         print(f"Graceful shutdown: Saved genre cache with {len(GENRE_CACHE)} entries")
         if REJECTED_GENRES:
             print(
-                f"Graceful shutdown: Saved {len(REJECTED_GENRES)} rejected genres to {REJECTED_GENRES_FILE}"
+                f"Graceful shutdown: Saved {len(REJECTED_GENRES)} rejected genres "
+                f"to {REJECTED_GENRES_FILE}"
             )
 
     if SHUTDOWN_REQUESTED or FORCE_EXIT_REQUESTED:

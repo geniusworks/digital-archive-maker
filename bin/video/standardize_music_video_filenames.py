@@ -175,20 +175,20 @@ def process_file(file_path: Path) -> tuple[str, str]:
 
     # Check if rename needed
     if new_path == file_path:
-        print(f"  Already has correct format")
+        print("  Already has correct format")
         return "unchanged", file_path
 
     print(f"  Would rename: {file_path.name} → {new_filename}")
     print(f"  Full path: {new_path.relative_to(MUSIC_VIDEOS_ROOT)}")
 
     if DRY_RUN:
-        print(f"  [DRY RUN] Would rename file")
+        print("  [DRY RUN] Would rename file")
         return "changed", new_path
 
     # Perform rename
     try:
         file_path.rename(new_path)
-        print(f"  Renamed successfully")
+        print("  Renamed successfully")
         return "changed", new_path
     except Exception as e:
         print(f"  Error renaming: {e}")
@@ -209,7 +209,7 @@ def main():
         sys.exit(1)
 
     print(f"Standardizing music video filenames in: {MUSIC_VIDEOS_ROOT}")
-    print(f"Target format: {{artist}} - {{title}}.mp4")
+    print("Target format: {{artist}} - {{title}}.mp4")
 
     # Counters
     processed = 0
@@ -242,9 +242,9 @@ def main():
     print(f"Errors: {errors}")
 
     if DRY_RUN:
-        print(f"\nDRY RUN - No actual changes made")
+        print("\nDRY RUN - No actual changes made")
     else:
-        print(f"\nAll files now follow the format: {{artist}} - {{title}}.mp4")
+        print("\nAll files now follow the format: {{artist}} - {{title}}.mp4")
 
 
 if __name__ == "__main__":
