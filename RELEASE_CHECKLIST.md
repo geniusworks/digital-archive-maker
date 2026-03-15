@@ -419,6 +419,16 @@ Current `docs/` has overlapping files. Target structure:
       - Ensure counter persists across updates and system reboots
     - **User Value Assessment**: Does tracking progress enhance user motivation and engagement?
     - **Implementation Priority**: Low-effort enhancement with potential user satisfaction benefits
+  - [ ] **Storage Management Enhancement**: Add cleanup script for large intermediate files
+    - **MKV Cleanup Script**: Remove large .mkv files after successful MP4 conversion
+      - Automatically detect .mkv files that have corresponding working .mp4 files
+      - Verify MP4 files are complete and playable before cleanup
+      - Calculate space savings and show user before deletion
+      - User approval options: yes, no, always, don't ask again
+      - Store user preference in config for future runs
+    - **Integration Points**: Prompt for cleanup after successful video ripping batches
+    - **Safety Considerations**: Verify file integrity before deletion, provide undo option
+    - **User Experience Impact**: Significant drive space savings vs. user control over file deletion
 
 > **Versioning Guidelines**:
 > - **Patch releases** (X.Y.Z+1): Bug fixes, no breaking changes
