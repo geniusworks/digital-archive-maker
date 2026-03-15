@@ -17,11 +17,11 @@ cd digital-archive-maker
 # Install system dependencies (audio/CD tools) — this creates the venv
 make install-deps
 
-# Install video ripping dependencies (DVD/Blu-ray support)
+# Install video ripping dependencies (movie disc support)
 make install-video-deps
 
-# Note: MakeMKV is optional for DVD ripping - the script will use HandBrake fallback
-# For full functionality (including Blu-ray), install MakeMKV from https://www.makemkv.com/download/
+# Note: MakeMKV is not required for DVD ripping - the script will use HandBrake fallback
+# For full functionality, install MakeMKV from https://www.makemkv.com/download/
 # After installing MakeMKV, run 'make install-video-deps' again to link makemkvcon
 
 # Activate the virtual environment (shown in Next steps after install)
@@ -73,11 +73,11 @@ dam check                 # shows status of all tools, packages, and API keys
 ```
 
 ### MakeMKV Configuration (Important for Subtitles)
-The `rip_video.py` script will automatically configure MakeMKV to extract all subtitles (including Blu-ray PGS subtitles) by adding this to `~/.MakeMKV/settings.conf`:
+The `rip_video.py` script will automatically configure MakeMKV to extract all subtitles by adding this to `~/.MakeMKV/settings.conf`:
 ```
 app_DefaultSelectionString="+sel:all,-sel:(core)"
 ```
-This ensures both DVD and Blu-ray rips contain the necessary subtitle streams.
+This ensures movie disc rips contain the necessary subtitle streams.
 
 ## 3. Rip Your First CD
 
@@ -88,7 +88,16 @@ dam rip cd
 # or: make rip-cd
 ```
 
-## 4. (Optional) Add Convenience Aliases
+## 4. Rip Your First Movie Disc
+
+```bash
+dam rip video
+# or: make rip-video
+```
+
+Follow the prompts to select title and configure encoding.
+
+## 5. (Optional) Convenience Aliases
 
 For seamless media management, add this function to your `~/.zshrc`:
 
@@ -119,7 +128,7 @@ media() {
             echo "Media Management Commands:"
             echo "  media sync    - Sync media library"
             echo "  media cd     - Rip a CD"
-            echo "  media video  - Rip DVD/Blu-ray"
+            echo "  media video  - Rip movie disc"
             echo "  media lyrics - Download lyrics for music"
             echo "  media help   - Show this help"
             ;;
@@ -142,7 +151,7 @@ media sync
 # Rip a CD
 media cd
 
-# Rip a DVD/Blu-ray
+# Rip a movie disc
 media video
 
 # Download lyrics for music library
@@ -154,15 +163,6 @@ This will:
 2. Rip to FLAC with proper tags
 3. Fetch cover art
 4. Organize into your library
-
-## 5. Rip Your First DVD/Blu-ray
-
-```bash
-dam rip video
-# or: make rip-video
-```
-
-Follow the prompts to select title and configure encoding.
 
 ## 6. (Optional) Run Tests
 
@@ -181,7 +181,7 @@ See [Contributing](CONTRIBUTING.md#running-tests) for detailed testing options.
 - **[GUI Desktop App](gui/README.md)** — Graphical interface for all workflows
 - **[Full Documentation](docs/)** — Detailed guides for each workflow
 - **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
-- **[Video Ripping Guide](docs/video_ripping_guide.md)** — DVD/Blu-ray workflow
+- **[Video Ripping Guide](docs/video_ripping_guide.md)** — Movie disc workflow
 - **[README](README.md)** — Full feature overview
 
 ---
