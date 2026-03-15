@@ -27,7 +27,7 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 
 ## About
 
-**Digital Archive Maker** transforms your physical media collection into an organized digital library you can stream anywhere.
+**Digital Archive Maker** transforms your physical media collection into an organized digital library you can access anywhere.
 
 **The Problem:** Your CDs and movie discs sit on shelves, collecting dust. They're difficult to browse and can't be searched.
 
