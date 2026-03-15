@@ -67,7 +67,11 @@ def show_spinner(message: str, duration: float = None):
 
     # Stop any existing spinner before starting a new one
     if CURRENT_SPINNER:
-        stop_spinner(CURRENT_SPINNER)
+        try:
+            stop_spinner(CURRENT_SPINNER)
+        except:
+            pass  # Ignore errors when stopping old spinner
+        CURRENT_SPINNER = None
 
     spinner_chars = itertools.cycle(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
 
@@ -97,16 +101,23 @@ def stop_spinner(spinner_thread, final_message: str = None):
     """Stop spinner thread and print final message."""
     global CURRENT_SPINNER
     if spinner_thread:
-        spinner_thread.stop = True
-        spinner_thread.join(timeout=0.5)
+        try:
+            spinner_thread.stop = True
+            spinner_thread.join(timeout=0.5)
+        except:
+            pass  # Ignore errors when stopping spinner
+        
         if spinner_thread == CURRENT_SPINNER:
             CURRENT_SPINNER = None
+        
+        # Clear the spinner line
+        print("\r" + " " * 80 + "\r", end="", flush=True)
+        
         if final_message:
-            print(f"\r  {final_message}")
-        else:
-            # Clear the spinner line and ensure clean newline
-            print("\r  ", end="", flush=True)
-            print()  # Ensure clean newline after clearing spinner
+            print(f"  {final_message}")
+    else:
+        if final_message:
+            print(f"  {final_message}")
 
 
 def check_virtual_environment() -> None:
@@ -2208,9 +2219,13 @@ def main() -> int:
         if get_env_str("EJECT_DISC", "true").lower() in ("true", "1", "yes"):
             # Ensure any spinner is stopped before ejecting
             if CURRENT_SPINNER:
-                stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
+                try:
+                    stop_spinner(CURRENT_SPINNER, "✓ Ripping complete")
+                except:
+                    pass  # Ignore errors when stopping spinner
+                CURRENT_SPINNER = None
                 # Small delay to ensure spinner cleanup is complete
-                time.sleep(0.1)
+                time.sleep(0.2)  # Slightly longer delay
             print("Disc rip complete, ejecting...")
             eject_disc()
             print()  # Blank line after ejection for clean spacing
