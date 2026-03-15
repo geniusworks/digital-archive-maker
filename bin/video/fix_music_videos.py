@@ -59,7 +59,7 @@ def get_library_root() -> Path:
 try:
     import acoustid
     import musicbrainzngs
-    from mutagen.mp4 import MP4, MP4FreeForm
+    from mutagen.mp4 import MP4
 
     DEPS_AVAILABLE = True
 except ImportError as e:

@@ -6,9 +6,7 @@ Processes all files in ${LIBRARY_ROOT}/Videos/Music and its subdirectories.
 
 import os
 import re
-import shutil
 import sys
-import unicodedata
 from pathlib import Path
 
 from dotenv import load_dotenv

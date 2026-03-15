@@ -48,9 +48,7 @@ DEPENDENCIES:
 """
 
 import json
-import os
 import subprocess
-from datetime import datetime
 from pathlib import Path
 
 print()  # Add newline at beginning
@@ -317,7 +315,6 @@ def analyze_mp4_file(mp4_path):
 def main():
     """Main analysis function"""
     import argparse
-    import sys
 
     # Parse arguments
     parser = argparse.ArgumentParser(

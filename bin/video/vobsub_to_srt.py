@@ -42,7 +42,6 @@ Integration with backfill workflow:
 import os
 import re
 import sys
-from pathlib import Path
 
 
 def extract_timing_info(idx_content):

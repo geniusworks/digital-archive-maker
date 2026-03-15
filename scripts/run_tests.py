@@ -5,7 +5,6 @@ Test runner for digital library scripts.
 
 import sys
 import subprocess
-from pathlib import Path
 
 
 def run_command(cmd, description):
@@ -36,10 +35,10 @@ def main():
     # Check test dependencies are installed
     print("Checking test dependencies...")
     try:
-        import pytest
-        import pytest_cov
-        import pytest_mock
-        import requests_mock
+        import pytest  # noqa
+        import pytest_cov  # noqa
+        import pytest_mock  # noqa
+        import requests_mock  # noqa
 
         print("✅ All test dependencies are available")
     except ImportError as e:

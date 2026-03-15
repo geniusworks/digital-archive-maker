@@ -13,7 +13,6 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from mutagen.flac import FLAC
 
 # Import the same whitelist and validation functions from update-genre-mb.py
 sys.path.append(str(Path(__file__).parent))

@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Tests for download_lyrics.py functionality."""
 
-import json
-
-# Add the bin directory to the path so we can import the script
 import sys
 import tempfile
 from pathlib import Path

@@ -4,19 +4,13 @@ Scan and update metadata for music videos in Videos/Music folder.
 Checks for missing metadata and updates it using filename-based lookups.
 """
 
-import json
 import os
-import re
-import sys
-import time
 from pathlib import Path
 
-import requests
 from dotenv import load_dotenv
 from mutagen.id3 import TIT2, TPE1
 from mutagen.mp3 import MP3 as MP3File
-from mutagen.mp3 import HeaderNotFoundError
-from mutagen.mp4 import MP4, MP4StreamInfoError
+from mutagen.mp4 import MP4
 
 # Load environment variables
 load_dotenv()
