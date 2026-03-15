@@ -1001,7 +1001,7 @@ class LyricsDownloader:
                     sep_index = artist.lower().find(sep.lower())
                     if sep_index != -1:
                         part1 = artist[:sep_index].strip()
-                        part2 = artist[sep_index + len(sep):].strip()
+                        part2 = artist[sep_index + len(sep) :].strip()
                         variations.append((part1, clean_title))
                         variations.append((part2, clean_title))
 

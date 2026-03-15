@@ -178,7 +178,7 @@ def _strip_leading_show_prefix(title, show_title):
     if not st:
         return t
     if t.lower().startswith(st.lower()):
-        rest = t[len(st):]
+        rest = t[len(st) :]
         rest = re.sub(r"^[\s\-–—:._]+", "", rest)
         return rest.strip() or t
     return t

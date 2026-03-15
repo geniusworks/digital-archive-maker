@@ -1718,16 +1718,16 @@ def main() -> int:
                                     if is_seamless_branching:
                                         print(
                                             '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            'TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                            "TITLE_INDEX=0  # Title 0 (usually main feature)"
                                         )
                                         print(
                                             '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            'TITLE_INDEX=1  # Title 1 (next candidate)'
-                                            '# Title 1'
+                                            "TITLE_INDEX=1  # Title 1 (next candidate)"
+                                            "# Title 1"
                                         )
                                         print(
                                             '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
-                                            'TITLE_INDEX=2  # Title 2'
+                                            "TITLE_INDEX=2  # Title 2"
                                         )
                                         print(
                                             "\n🔄 Seamless branching detected - "
@@ -1759,18 +1759,18 @@ def main() -> int:
                                     year_env = os.getenv("YEAR", "unknown")
                                     print(
                                         f'   make rip-movie TITLE="{title_env}" '
-                                        f'YEAR={year_env} '
-                                        f'TITLE_INDEX=0  # Title 0 (usually main feature)'
+                                        f"YEAR={year_env} "
+                                        f"TITLE_INDEX=0  # Title 0 (usually main feature)"
                                     )
                                     print(
                                         f'   make rip-movie TITLE="{title_env}" '
-                                        f'YEAR={year_env} '
-                                        f'TITLE_INDEX=1  # Title 1'
+                                        f"YEAR={year_env} "
+                                        f"TITLE_INDEX=1  # Title 1"
                                     )
                                     print(
                                         f'   make rip-movie TITLE="{title_env}" '
-                                        f'YEAR={year_env} '
-                                        f'TITLE_INDEX=2  # Title 2'
+                                        f"YEAR={year_env} "
+                                        f"TITLE_INDEX=2  # Title 2"
                                     )
                                     print(
                                         "\n🔄 Seamless branching detected - "
