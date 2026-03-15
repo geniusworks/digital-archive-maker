@@ -990,7 +990,7 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
         album_search = _normalize_album_for_search(album)
         title_norm = _normalize_title(title)
 
-        # --- SKIP_CACHED: skip if already processed (has tag or in cache) and no pending 
+        # --- SKIP_CACHED: skip if already processed (has tag or in cache) and no pending
         # override ---
         if SKIP_CACHED:
             override_val = _resolve_override(
@@ -1005,11 +1005,11 @@ with open(LOG_FILE, "w", encoding="utf-8", newline="") as log:
                     continue
                 # Override doesn't match current tag — need to re-tag
             else:
-                # No override — skip if already tagged Yes/No, but NOT Unknown 
+                # No override — skip if already tagged Yes/No, but NOT Unknown
                 # (need to check Unknown against overrides)
                 if prev_explicit_tag in {"Yes", "No"}:
                     continue
-                # For Unknown tags, only process if overrides file changed since last cache 
+                # For Unknown tags, only process if overrides file changed since last cache
                 # write
                 if prev_explicit_tag == UNKNOWN_VALUE:
                     cache_mtime = cache.get("cache_mtime", 0)

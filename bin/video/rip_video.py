@@ -1560,19 +1560,19 @@ def main() -> int:
                     # This eliminates special features, trailers, and minor content
                     def is_main_feature_candidate(title_data, all_titles):
                         title_id, duration_seconds, duration_str, size_bytes = title_data
-                        
+
                         # Get the longest duration and largest size from ALL titles
                         longest_duration = max(t[1] for t in all_titles)
                         largest_size = max(t[3] for t in all_titles)
-                        
+
                         # Calculate ratios
                         size_ratio = size_bytes / largest_size
                         duration_ratio = duration_seconds / longest_duration
-                        
+
                         # Percentage-based thresholds
                         MIN_SIZE_RATIO = 0.75  # At least 75% of largest size
                         MIN_DURATION_RATIO = 0.4  # At least 40% of longest duration
-                        
+
                         return (
                             size_ratio >= MIN_SIZE_RATIO and
                             duration_ratio >= MIN_DURATION_RATIO
@@ -1580,7 +1580,7 @@ def main() -> int:
 
                     # Filter titles to only main feature candidates
                     candidates = [
-                        t for t in titles 
+                        t for t in titles
                         if is_main_feature_candidate(t, titles)
                     ]
 
@@ -1588,7 +1588,7 @@ def main() -> int:
                     if len(candidates) >= 3:
                         longest_duration = candidates[0][1]
                         same_duration_candidates = [
-                            t for t in candidates 
+                            t for t in candidates
                             if abs(t[1] - longest_duration) <= 30  # Tighter 30-second window
                         ]
                         is_seamless_branching = len(same_duration_candidates) >= 3
@@ -1671,7 +1671,7 @@ def main() -> int:
                                     main_duration_str = next(
                                         t[2] for t in titles if t[0] == main_title_id
                                     )
-                                    
+
                                     print("\nAvailable titles (natural order for seamless branching):")
                                 else:
                                     print("\nAvailable titles (sorted by size):")

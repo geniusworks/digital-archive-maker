@@ -5,6 +5,7 @@ Checks for missing metadata and updates it using filename-based lookups.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv

@@ -23,6 +23,7 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
+from typing import Dict
 
 from mutagen.flac import FLAC
 

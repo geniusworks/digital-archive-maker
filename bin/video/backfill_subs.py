@@ -11,9 +11,9 @@ Behavior:
 - Detects the first English text subtitle stream (subrip/ass/ssa/text/webvtt).
 - If no English text subs exist, attempts automatic OCR:
   - DVD (dvd_subtitle): extract VobSub (idx/sub), OCR via sub2srt + tesseract => SRT
-  - Blu-ray (hdmv_pgs_subtitle): extract PGS (.sup), convert to VobSub via bdsup2sub, 
+  - Blu-ray (hdmv_pgs_subtitle): extract PGS (.sup), convert to VobSub via bdsup2sub,
   OCR via sub2srt + tesseract => SRT
-- Muxes the resulting subtitle (text stream) into the MP4 as a soft subtitle 
+- Muxes the resulting subtitle (text stream) into the MP4 as a soft subtitle
   (mov_text). By default, it is NOT marked default.
 - Set DEFAULT=yes to mark the English subtitle track as default (players may auto-enable it).
 - Outputs a new file with suffix `.en-subs.mp4` next to the original by default.

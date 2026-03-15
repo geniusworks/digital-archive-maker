@@ -92,7 +92,6 @@ def create_placeholder_srt(idx_file, output_srt):
         with open(output_srt, "w", encoding="utf-8") as srt:
             if timestamps and len(timestamps) >= 2:
                 # Use extracted timestamps if available
-                start_time = timestamps[0].replace(":", ",", 3)  # SRT uses comma for milliseconds
                 end_time = (
                     timestamps[-1].replace(":", ",", 3) if len(timestamps) > 1 else "01:30:00,000"
                 )

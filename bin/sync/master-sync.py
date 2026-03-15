@@ -155,7 +155,7 @@ def _stream_process_output(process, *, quiet=False, label=None, capture_lines=No
                     sys.stdout.write("\n")
                     sys.stdout.flush()
                     last_was_progress = False
-                # Keep the total internally for the progress bar, but the header line is noisy 
+                # Keep the total internally for the progress bar, but the header line is noisy
                 # in quiet mode.
                 if label not in {
                     "Tagging movie metadata",
