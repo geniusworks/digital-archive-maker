@@ -340,6 +340,8 @@ def sanitize_title(raw: str) -> str:
 
     raw = re.sub(r"[\t:/]", " ", raw)
     raw = re.sub(r"[\\?*\"<>|]", "", raw)
+    # Replace colons with dashes for better filename compatibility
+    raw = re.sub(r":", " -", raw)
     raw = re.sub(r"\s+", " ", raw).strip()
 
     parts = raw.split(" ")
