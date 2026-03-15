@@ -410,9 +410,15 @@ Current `docs/` has overlapping files. Target structure:
     - **Processing Time Impact**: Would integration significantly slow down the main workflow?
     - **API Reliability**: Are external services (TMDb, Genius, etc.) reliable enough for automatic integration?
     - **Decision**: Integrate now vs. document for future enhancement vs. leave as manual optional
-  - [ ] **Future Roadmap Note**: Add CLI enhancement opportunities to backlog for post-v1.0 development
-    - Prioritize enhancements that support "process once, done forever" philosophy
-    - Focus on high-impact, low-complexity integrations that maximize user value
+  - [ ] **User Experience Enhancements**: Consider user engagement and progress tracking features
+    - **Disc Ripping Counter**: Track total discs ripped using DAM over time
+      - Store counter in user's home directory or config directory
+      - Display counter after successful ripping operations
+      - Provide simple stats (CDs ripped, movies ripped, total discs)
+      - Consider optional milestone celebrations or achievements
+      - Ensure counter persists across updates and system reboots
+    - **User Value Assessment**: Does tracking progress enhance user motivation and engagement?
+    - **Implementation Priority**: Low-effort enhancement with potential user satisfaction benefits
 
 > **Versioning Guidelines**:
 > - **Patch releases** (X.Y.Z+1): Bug fixes, no breaking changes
