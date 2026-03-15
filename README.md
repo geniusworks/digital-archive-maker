@@ -59,7 +59,7 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 - **50GB+ free storage** for temporary files
 
 ### 💿 Hardware (for ripping)
-- **CD, DVD, and/or movie disc drive** (internal or USB)
+- **CD, DVD, and/or Blu-ray drive** (internal or USB)
 
 ### 📦 Software
 - **Optional**: MakeMKV (for DVD/Blu-ray) requires manual download from makemkv.com (free beta available)
