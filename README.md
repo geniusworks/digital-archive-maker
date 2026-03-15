@@ -138,7 +138,7 @@ dam sync
 |:---------|:------------|
 | **Library sync** | Syncs library to media servers and backups with content filtering |
 | **Content filtering** | Excludes explicit content for family devices |
-| **Playlists** | Creates M3U8 album playlists and manages metadata from existing playlists |
+| **Playlists** | Creates album playlists and fixes missing metadata from existing ones |
 
 ---
 
