@@ -1531,6 +1531,7 @@ def main() -> int:
                                             total_seconds,
                                             duration,
                                             video_lang,
+                                            0,  # size_bytes placeholder
                                         )
                                     )
                             except ValueError:
@@ -1554,19 +1555,29 @@ def main() -> int:
                 if titles:
                     # Improved main feature detection using size and duration heuristics
                     # Sort by size (largest first) as primary indicator of main feature
-                    titles.sort(key=lambda x: x[3], reverse=True)
+                    # Use element 4 (size_bytes), default to 0 if not populated yet
+                    titles.sort(key=lambda x: x[4] if len(x) > 4 else 0, reverse=True)
 
                     # Filter candidates using percentage-based thresholds
                     # This eliminates special features, trailers, and minor content
                     def is_main_feature_candidate(title_data, all_titles):
-                        title_id, duration_seconds, duration_str, size_bytes = title_data
+                        # Handle both 4-element and 5-element tuples
+                        if len(title_data) >= 5:
+                            title_id, duration_seconds, duration_str, video_lang, size_bytes = title_data
+                        else:
+                            title_id, duration_seconds, duration_str, video_lang = title_data
+                            size_bytes = 0
 
                         # Get the longest duration and largest size from ALL titles
                         longest_duration = max(t[1] for t in all_titles)
-                        largest_size = max(t[3] for t in all_titles)
+                        # Use element 4 for size, default to 0
+                        largest_size = max(t[4] if len(t) > 4 else 0 for t in all_titles)
 
                         # Calculate ratios
-                        size_ratio = size_bytes / largest_size
+                        if largest_size > 0:
+                            size_ratio = size_bytes / largest_size
+                        else:
+                            size_ratio = 0
                         duration_ratio = duration_seconds / longest_duration
 
                         # Percentage-based thresholds
@@ -1616,7 +1627,7 @@ def main() -> int:
                         title_sizes = []
                         titles_to_check = titles  # Check all titles when index specified
 
-                        for title_id, _, _, _ in titles_to_check:
+                        for title_id, _, _, _, _ in titles_to_check:
                             size_line = next(
                                 (
                                     line
@@ -1683,7 +1694,7 @@ def main() -> int:
                                         f"\n⚠️  Found {len(same_duration_titles)} titles "
                                         f"with similar duration:"
                                     )
-                                    for i, (tid, seconds, duration, _) in enumerate(
+                                    for i, (tid, seconds, duration, _, _) in enumerate(
                                         same_duration_titles
                                     ):
                                         print(f"   Title {tid}: {duration}")
