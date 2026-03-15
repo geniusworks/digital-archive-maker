@@ -1725,7 +1725,6 @@ def main() -> int:
                                         print(
                                             '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
                                             "TITLE_INDEX=1  # Title 1 (next candidate)"
-                                            "# Title 1"
                                         )
                                         print(
                                             '   make rip-movie TITLE="Finding Dory" YEAR=2011 '
@@ -1866,6 +1865,11 @@ def main() -> int:
                         try:
                             result = _run(cmd, capture=True)
                             stop_spinner(spinner, f"✓ MakeMKV output: {result.stdout.strip()}")
+                            
+                            # Brief pause to ensure MakeMKV processes are fully terminated
+                            import time
+                            time.sleep(0.3)
+                            
                         except Exception as e:
                             stop_spinner(spinner, f"✗ MakeMKV failed: {e}")
                             raise
