@@ -41,7 +41,6 @@ This software may invoke external tools that users must obtain and license separ
 
 ### MakeMKV
 - **Not required** for DVD ripping
-- **Required** for Blu-ray ripping (no alternative)
 - Users must download and license separately from [makemkv.com](https://www.makemkv.com/)
 - No affiliation with this project; users comply with applicable laws
 
