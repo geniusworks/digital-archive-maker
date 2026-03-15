@@ -23,9 +23,9 @@ import typer
 
 from dam import __version__
 from dam.config import REPO_ROOT, env_file_exists, get, missing_api_keys
-from dam.console import banner, console, error, heading, info, success, warning
+from dam.console import console, error, heading, info, success, warning
 from dam.deps import check_all, check_python_deps, ensure_venv, install_missing
-from dam.keys import onboard_keys
+from dam.keys import _KEY_INFO, onboard_keys
 
 app = typer.Typer(
     name="dam",
@@ -101,7 +101,8 @@ def check(
 
     for k in all_api_keys:
         if k in api_missing:
-            console.print(f" ⚠️ {k} (not configured yet)")
+            purpose = _KEY_INFO.get(k, {}).get("purpose", "unknown purpose")
+            console.print(f" ⚠️ {k} (needed for {purpose})")
         else:
             console.print(f" ✅ {k}")
 
