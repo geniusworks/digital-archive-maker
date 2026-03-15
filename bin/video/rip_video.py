@@ -1713,29 +1713,27 @@ def main() -> int:
                                 if t[0] == main_title_id
                             )
                         else:
-                            # Show sizes and warn about
-                            # multiple same-duration candidates
+                            # Show candidates and mark the
+                            # auto-selected one
+                            auto_tid = candidates[0][0]
                             print(
-                                "\nAvailable titles "
+                                "\nCandidate titles "
                                 "(sorted by size):"
                             )
-                            for i, (tid, sgb) in enumerate(
-                                title_sizes
-                            ):
+                            for i, t in enumerate(candidates):
+                                tid = t[0]
+                                sgb = t[4] / (1024**3)
+                                m = "👉" if tid == auto_tid else "  "
                                 print(
-                                    f"   Index {i}: Title {tid}"
-                                    f" ({sgb:.3f} GB)"
+                                    f"{m} Index {i}: Title {tid}"
+                                    f" ({sgb:.3f} GB, {t[2]})"
                                 )
 
                             print(
-                                f"\n⚠️  Found {len(candidates)}"
-                                f" titles with similar "
-                                f"duration:"
+                                f"\n⚠️  {len(candidates)} titles"
+                                f" with similar duration — "
+                                f"auto-selecting Index 0"
                             )
-                            for t in candidates:
-                                print(
-                                    f"   Title {t[0]}: {t[2]}"
-                                )
 
                             title_env = os.getenv(
                                 "TITLE", "unknown"
@@ -1744,21 +1742,16 @@ def main() -> int:
                                 "YEAR", "unknown"
                             )
                             print(
-                                "\n💡 Use TITLE_INDEX to "
-                                "select a specific title:"
+                                "\n💡 To override, use "
+                                "TITLE_INDEX:"
                             )
-                            print(
-                                f"   make rip-movie "
-                                f'TITLE="{title_env}" '
-                                f"YEAR={year_env} "
-                                f"TITLE_INDEX=0"
-                            )
-                            print(
-                                f"   make rip-movie "
-                                f'TITLE="{title_env}" '
-                                f"YEAR={year_env} "
-                                f"TITLE_INDEX=1"
-                            )
+                            for i in range(len(candidates)):
+                                print(
+                                    f"   make rip-movie "
+                                    f'TITLE="{title_env}" '
+                                    f"YEAR={year_env} "
+                                    f"TITLE_INDEX={i}"
+                                )
 
                             if is_seamless_branching:
                                 print(
