@@ -170,16 +170,14 @@ dam sync --dry-run       # Preview without changes
 dam sync --quiet         # Minimal output
 ```
 
-The `dam` CLI wraps the underlying scripts and handles dependency checks and API key
-onboarding automatically. You can still use `make` targets and individual scripts directly —
-see [Documentation](docs/) for details.
+The `dam` command provides easy access to all features with automatic setup. You can also use individual scripts directly — see [Documentation](docs/) for details.
 
 ---
 
 ## Documentation
 
 | Guide | Description |
-|-------|-------------|
+|:------|:------------|
 | **[Quick Start](QUICKSTART.md)** | Get running in 10 minutes |
 | **[Workflow Overview](docs/workflow_overview.md)** | High-level pipelines |
 | **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-library guide |
