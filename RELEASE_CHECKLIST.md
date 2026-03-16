@@ -361,6 +361,22 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
 - [ ] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
 - [ ] **Git History**: Review recent commits for any sensitive information
+- [ ] **API Key Graceful Failure Testing**: Verify missing API keys don't crash workflows
+  - **Spotify API Status Check**: Review recent Spotify API terms changes
+    - Verify current API access requirements and rate limits
+    - Check if recent policy changes affect explicit content tagging
+    - Confirm fallback behavior when Spotify API unavailable
+  - **Missing Key Tests**: Test each API-dependent script with no keys configured
+    - Genius lyrics API: Should skip gracefully with informative message
+    - Spotify explicit API: Should continue without tagging, not crash
+    - TMDb/OMDb APIs: Should skip metadata fetch, continue processing
+    - MusicBrainz: Should work without API key (rate-limited but functional)
+  - **Invalid Key Tests**: Test with malformed/expired API keys
+    - Verify clear error messages guide users to fix configuration
+    - Confirm scripts continue with reduced functionality when possible
+  - **Documentation Review**: Ensure API setup instructions are current
+    - Verify all API key acquisition URLs are still valid
+    - Check that rate limits and usage policies are accurately documented
 - [ ] **CLI Enhancement Review**: Assess user experience gap between basic CLI and enhanced processing
   - [ ] **"Process Once, Done Forever" Philosophy Review**: Users may only process each disc once - maximize integrated value
     - **Principle**: Every disc processing should include all reasonable enhancements automatically
