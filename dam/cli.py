@@ -193,10 +193,10 @@ def rip_cd():
     import os
 
     abcde_config = os.path.expanduser("~/.abcde.conf")
-    sample_config = os.path.join(os.getcwd(), ".abcde.conf.example")
+    example_config = os.path.join(os.getcwd(), ".abcde.conf.example")
 
     if not os.path.exists(abcde_config):
-        if os.path.exists(sample_config):
+        if os.path.exists(example_config):
             info("Setting up abcde configuration...")
 
             # Read MusicBrainz setting from user's .env (default to enabled)
@@ -204,8 +204,8 @@ def rip_cd():
 
             musicbrainz_setting = get("MUSICBRAINZ_LOOKUP", "true").lower()
 
-            # Read sample config
-            with open(sample_config, "r") as f:
+            # Read example config
+            with open(example_config, "r") as f:
                 config_content = f.read()
 
             # Set MusicBrainz based on user's .env configuration
@@ -233,8 +233,8 @@ def rip_cd():
             info("  • Using LIBRARY_ROOT from your .env file")
             info("  • Edit ~/.abcde.conf to customize settings")
         else:
-            warning("abcde configuration sample not found:")
-            warning(f"  • {sample_config}")
+            warning("abcde configuration example not found:")
+            warning(f"  • {example_config}")
             warning("\nContinuing with abcde defaults...")
 
     # Check for CD and prompt user to insert if needed
