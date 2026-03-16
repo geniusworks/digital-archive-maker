@@ -76,7 +76,7 @@ def show_spinner(message: str, duration: float = None):
     spinner_chars = itertools.cycle(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
 
     def spin():
-        while not getattr(spin, "stop", False):
+        while not getattr(threading.current_thread(), "stop", False):
             if CANCELLED:
                 break
             print(f"\r  {next(spinner_chars)} {message}", end="", flush=True)
@@ -89,7 +89,7 @@ def show_spinner(message: str, duration: float = None):
 
     if duration:
         time.sleep(duration)
-        spin.stop = True
+        spin_thread.stop = True
         spin_thread.join()
         CURRENT_SPINNER = None
         print(f"\r  ✓ {message}")
@@ -1803,32 +1803,6 @@ def main() -> int:
                         try:
                             result = _run(cmd, capture=True)
                             stop_spinner(spinner, f"✓ MakeMKV output: {result.stdout.strip()}")
-
-                            # Wait for any remaining MakeMKV processes to finish
-                            import subprocess
-                            import time
-
-                            # Check for remaining MakeMKV processes and wait for them to finish
-                            max_wait_time = 10  # Maximum 10 seconds wait
-                            check_interval = 0.1  # Check every 100ms
-                            elapsed = 0
-
-                            while elapsed < max_wait_time:
-                                try:
-                                    # Use pgrep to check for MakeMKV processes
-                                    proc_result = subprocess.run(
-                                        ["pgrep", "-f", "makemkvcon"],
-                                        capture_output=True,
-                                        text=True,
-                                        timeout=1,
-                                    )
-                                    if proc_result.returncode != 0:  # No processes found
-                                        break
-                                    time.sleep(check_interval)
-                                    elapsed += check_interval
-                                except (subprocess.TimeoutExpired, FileNotFoundError):
-                                    # pgrep not available or timeout, assume no processes
-                                    break
 
                         except Exception as e:
                             stop_spinner(spinner, f"✗ MakeMKV failed: {e}")
