@@ -84,7 +84,7 @@ dam config
 
 Or manually:
 ```bash
-cp .env.sample .env
+cp .env.example .env
 # Edit .env with your paths and optional API keys
 ```
 
@@ -108,13 +108,13 @@ dam rip video
 dam sync
 ```
 
-📖 **[Full Quick Start Guide →](QUICKSTART.md)**
+**[Full Quick Start Guide →](QUICKSTART.md)**
 
 ---
 
 ## Core Features
 
-### 🎵 Music
+### **Music**
 | Feature | How it works |
 |:---------|:------------|
 | **CD ripping** | Saves as FLAC with album art |
@@ -124,7 +124,7 @@ dam sync
 | **Lyrics** | Downloads when available |
 | **Gap filling** | Fixes missing information |
 
-### 📀 Video
+### **Video**
 | Feature | How it works |
 |:---------|:------------|
 | **Movie disc ripping** | Extracts video while preserving quality |
@@ -133,7 +133,7 @@ dam sync
 | **Movie organization** | Names files and adds descriptions |
 | **TV show support** | Groups episodes by season |
 
-### 🔄 Library Management
+### **Library Management**
 | Feature | How it works |
 |:---------|:------------|
 | **Library sync** | Syncs library to media servers and backups with content filtering |
@@ -191,32 +191,32 @@ The `dam` command provides easy access to all features with automatic setup. You
 
 ```
 digital-archive-maker/
-├── dam/                # Shared library & unified CLI
-│   ├── cli.py          #   `dam` command entry point
-│   ├── config.py       #   Centralised configuration loader
-│   ├── deps.py         #   Dependency checker & installer
-│   ├── keys.py         #   Interactive API key onboarding
-│   └── console.py      #   Rich terminal output helpers
+├── dam/                 # Shared library & unified CLI
+│   ├── cli.py           #   `dam` command entry point
+│   ├── config.py        #   Centralised configuration loader
+│   ├── deps.py          #   Dependency checker & installer
+│   ├── keys.py          #   Interactive API key onboarding
+│   └── console.py       #   Rich terminal output helpers
 ├── bin/
-│   ├── music/          # CD ripping and tagging scripts
-│   ├── video/          # Movie disc ripping scripts
-│   ├── sync/           # Library sync scripts
-│   ├── tv/             # TV show handling
-│   └── utils/          # Helper tools
-├── docs/               # Detailed guides
-├── gui/                # Desktop application
-├── scripts/            # Utility scripts
-├── tests/              # Test suite
-├── assets/             # Project assets
-├── cache/              # Temporary data
-├── log/                # Log files
-├── config/             # Configuration templates
-├── .github/            # GitHub workflows
+│   ├── music/           # CD ripping and tagging scripts
+│   ├── video/           #   Movie disc ripping scripts
+│   ├── sync/            #   Library sync scripts
+│   ├── tv/              #   TV show handling
+│   └── utils/           #   Helper tools
+├── docs/                # Detailed guides
+├── gui/                 # Desktop application
+├── scripts/             # Utility scripts
+├── tests/               # Test suite
+├── assets/              # Project assets
+├── cache/               # Temporary data
+├── log/                 # Log files
+├── config/              # Configuration templates
+├── .github/             # GitHub workflows
 ├── requirements.txt     # Python dependencies
-├── pyproject.toml      # Python project configuration
-├── Makefile            # Build and utility targets
-├── .env.sample         # Environment variables template
-└── .abcde.conf.sample  # CD ripping configuration
+├── pyproject.toml       # Python project configuration
+├── Makefile             # Build and utility targets
+├── .env.example         # Environment variables template
+└── .abcde.conf.example  # CD ripping configuration
 ```
 
 ---

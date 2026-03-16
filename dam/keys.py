@@ -171,12 +171,12 @@ def _save_key_to_env(key_name: str, value: str, env_path: Path) -> None:
     """Append or update a key in the .env file."""
     if not env_path.exists():
         # Create from sample if available
-        sample = env_path.parent / ".env.sample"
+        sample = env_path.parent / ".env.example"
         if sample.exists():
             import shutil
 
             shutil.copy2(sample, env_path)
-            info("Created .env from .env.sample")
+            info("Created .env from .env.example")
         else:
             env_path.touch()
 

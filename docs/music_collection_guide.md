@@ -28,7 +28,7 @@ Complete guide to processing music from CDs, digital files, and loose tracks int
 
 **First time only — configure abcde:**
 ```bash
-cp .abcde.conf.sample ~/.abcde.conf
+cp .abcde.conf.example ~/.abcde.conf
 ```
 Verify key settings in `~/.abcde.conf`:
 - `OUTPUTDIR="${LIBRARY_ROOT}/CDs"` — uses `LIBRARY_ROOT` from `.env`

@@ -77,7 +77,7 @@ def check(
     if env_file_exists():
         success(".env file found.")
     else:
-        warning(".env not found. Run: cp .env.sample .env")
+        warning(".env not found. Run: cp .env.example .env")
 
     # Summary - After dependency checks are complete
     console.print()
@@ -152,12 +152,12 @@ def config(
     # .env file
     env_path = REPO_ROOT / ".env"
     if not env_path.exists():
-        sample = REPO_ROOT / ".env.sample"
+        sample = REPO_ROOT / ".env.example"
         if sample.exists():
             import shutil
 
             shutil.copy2(sample, env_path)
-            success("Created .env from .env.sample")
+            success("Created .env from .env.example")
         else:
             env_path.touch()
             success("Created empty .env")
@@ -193,7 +193,7 @@ def rip_cd():
     import os
 
     abcde_config = os.path.expanduser("~/.abcde.conf")
-    sample_config = os.path.join(os.getcwd(), ".abcde.conf.sample")
+    sample_config = os.path.join(os.getcwd(), ".abcde.conf.example")
 
     if not os.path.exists(abcde_config):
         if os.path.exists(sample_config):

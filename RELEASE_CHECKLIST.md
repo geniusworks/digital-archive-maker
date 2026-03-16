@@ -29,7 +29,7 @@
 - [x] Fix `pyproject.toml` — wrong project name, wrong URLs, wrong author
 - [x] Fix `NOTICE` — wrong project name and author
 - [x] Consolidate `requirements-lyrics.txt` into `requirements.txt`; add missing `Pillow`
-- [x] Fix `QUICKSTART.md` — env vars didn't match `.env.sample`
+- [x] Fix `QUICKSTART.md` — env vars didn't match `.env.example`
 - [x] **Delete `requirements-lyrics.txt`** (now redundant)
 - [x] **Delete `TODO.md`** (content absorbed here and into `CHANGELOG.md`)
 - [x] **Delete `IMPROVEMENTS.md`** (changelog → `CHANGELOG.md`; capabilities already documented in guides)
@@ -297,7 +297,7 @@ Current `docs/` has overlapping files. Target structure:
 > - Improved title selection UX: shows only candidates with 👉 marker for auto-selected title
 - [ ] **Clean Git Status**: No uncommitted changes in working directory
 - [ ] **Documentation Links**: Verify all internal links in README and docs work
-- [ ] **Environment Variables**: Cross-check `.env.sample` with all script requirements
+- [ ] **Environment Variables**: Cross-check `.env.example` with all script requirements
 - [ ] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
 - [ ] **Documentation Appropriateness**: Review docs/ for user-focused content
   - [ ] Verify docs/video_ripping_guide.md, docs/music_collection_guide.md, docs/workflow_overview.md, and docs/media_server_setup.md contain user workflows, not implementation details
@@ -634,7 +634,7 @@ git branch -m main
 
 #### **🔧 Implementation Strategy**
 - [ ] **Phase 1**: Implement Tier 1 extensions (quick wins)
-  - [ ] Add environment variables to .env.sample
+  - [ ] Add environment variables to .env.example
   - [ ] Update configuration loading logic
   - [ ] Add validation and error handling
   - [ ] Update documentation and help text

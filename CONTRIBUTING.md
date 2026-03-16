@@ -78,7 +78,7 @@ pip install pre-commit
 pre-commit install
 
 # Copy environment template
-cp .env.sample .env
+cp .env.example .env
 
 # Verify setup
 dam check

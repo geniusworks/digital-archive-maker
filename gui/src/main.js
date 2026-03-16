@@ -9,7 +9,7 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const VENV_PYTHON = path.join(REPO_ROOT, 'venv', 'bin', 'python');
 const DAM_CMD = path.join(REPO_ROOT, 'venv', 'bin', 'dam');
 const ENV_FILE = path.join(REPO_ROOT, '.env');
-const ENV_SAMPLE = path.join(REPO_ROOT, '.env.sample');
+const ENV_SAMPLE = path.join(REPO_ROOT, '.env.example');
 
 let mainWindow;
 let activeProcess = null;

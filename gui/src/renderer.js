@@ -117,7 +117,7 @@ async function refreshStatus() {
     issues.push('Python venv or dam command not found — run: make install-deps && pip install -e .');
   }
   if (!info.envExists) {
-    issues.push('.env config missing — run: cp .env.sample .env');
+    issues.push('.env config missing — run: cp .env.example .env');
   }
   if (issues.length > 0) {
     alertMsg.textContent = ' ' + issues.join('  ·  ');

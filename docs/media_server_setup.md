@@ -14,7 +14,7 @@ This guide outlines recommended folder structures and filenames so your media se
   - TV: `${LIBRARY_ROOT}/TV`
   - Disc backups (raw MKV/MP4 by title or date): `${LIBRARY_ROOT}/DVDs` and `${LIBRARY_ROOT}/Blurays`
 
-Note: `LIBRARY_ROOT` is centralized in `.env` (see `.env.sample`). Make targets auto-load `.env`.
+Note: `LIBRARY_ROOT` is centralized in `.env` (see `.env.example`). Make targets auto-load `.env`.
 
 Use the title-named (preferred when Title/Year are known) or date-based folders under `${LIBRARY_ROOT}` for staging. After verification/renaming, move items into the long-term library roots for your media server.
 
@@ -34,7 +34,7 @@ ${LIBRARY_ROOT}/CDs/
 ```
 
 Notes:
-- Various Artists: consider `Various/Album/NN - Artist - Title.flac` (see `VAOUTPUTFORMAT` in `.abcde.conf.sample`).
+- Various Artists: consider `Various/Album/NN - Artist - Title.flac` (see `VAOUTPUTFORMAT` in `.abcde.conf.example`).
 - Multi-disc albums: either separate as `Album (Disc 1)` / `Album (Disc 2)` or subfolders within the album.
 - Keep `cover.jpg` at 1000x1000 for best compatibility with many clients.
 

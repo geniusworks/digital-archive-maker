@@ -46,7 +46,7 @@ This walks you through setting your library path and API keys interactively.
 
 **Option B: Manual setup**
 ```bash
-cp .env.sample .env
+cp .env.example .env
 ```
 
 Edit `.env` with your paths and preferences:
