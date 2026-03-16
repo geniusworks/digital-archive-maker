@@ -356,22 +356,7 @@ Current `docs/` has overlapping files. Target structure:
 
 ### G3. Final Sanity Checks
 - [ ] **Fresh Install Test**: Clone repo to temp directory, run install, test basic workflow
-- [ ] **Hardware Diversity Testing**: Test on different hardware configurations
-  - **Apple Silicon (M1/M2/M3)**: Verify compatibility and performance
-    - Test all external tools work via Rosetta 2 or native versions
-    - Verify Homebrew paths (/opt/homebrew vs /usr/local)
-    - Check performance differences vs Intel
-  - **Intel Mac**: Ensure legacy compatibility still works
-    - Verify Intel-specific paths and binaries
-    - Test performance on older Intel hardware
-  - **External Drive Testing**: Test with various drive types and connections
-    - USB-C, USB-A, Thunderbolt drives
-    - Different drive formats (APFS, HFS+, exFAT)
-    - Network drives and NAS compatibility
-  - **Optical Drive Variations**: Test with different drives
-    - Internal SuperDrive vs external USB drives
-    - Different Blu-ray drive models and capabilities
-    - DVD-only drives (no Blu-ray support)
+- [ ] **Test with Different Disc Drive**: Verify ripping works with at least one other drive model
 - [ ] **README Rendering**: View README on GitHub preview before release
 - [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
 - [ ] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
