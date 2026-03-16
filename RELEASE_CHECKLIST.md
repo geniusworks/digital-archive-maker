@@ -290,10 +290,20 @@ Current `docs/` has overlapping files. Target structure:
   - ✅ **Minimal test issues**: F841 issues ≤ 5 (test files only)
   
 > **🎯 Quality Baseline Achieved (March 2026)**: Successfully reduced flake8 issues from 71 to 26 (63% improvement) while maintaining all functionality. Current state: 24 E501 + 2 F841 = 26 total issues, all non-critical.
+> 
+> **🔧 Recent Critical Fixes (March 2026)**:
+> - Fixed spinner lifecycle bug where "Ripping with MakeMKV..." persisted through HandBrake encoding
+> - Fixed infinite loop in title selection when multiple candidates found
+> - Improved title selection UX: shows only candidates with 👉 marker for auto-selected title
 - [ ] **Clean Git Status**: No uncommitted changes in working directory
 - [ ] **Documentation Links**: Verify all internal links in README and docs work
 - [ ] **Environment Variables**: Cross-check `.env.sample` with all script requirements
 - [ ] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
+- [ ] **Documentation Appropriateness**: Review docs/ for user-focused content
+  - [ ] Verify docs/video_ripping_guide.md, docs/music_collection_guide.md, docs/workflow_overview.md, and docs/media_server_setup.md contain user workflows, not implementation details
+  - [ ] Check docs/server_setups/ files are hardware-specific configuration templates (appropriate location)
+  - [ ] Remove any trivialities (ASCII spinners, emoji celebrations, ENTER key prompts) from user-facing docs
+  - [ ] Ensure all docs focus on "what users can do" rather than "how the code works"
 
 ### G1.1. Testing Strategy & Coverage Policy
 - [ ] **Smart Testing Approach**: Focus on critical business logic over comprehensive script coverage

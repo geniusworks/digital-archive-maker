@@ -61,35 +61,30 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 
 ## 🎯 Key Features
 
-### ✅ Universal MP4 Output
-- **Movie discs:** Output to MP4 format
-- **External SRT subtitles:** Jellyfin-compatible
-- **Foreign film support:** Optional subtitle burning
-- **Streaming optimization:** Web-ready files
+### ✅ Complete Disc to Digital Pipeline
+- **DVD & Blu-ray support:** Rips from physical discs with automatic main feature detection
+- **Universal MP4 output:** H.264 encoding with streaming optimization
+- **Smart compression:** Only re-encodes when needed (>10GB), preserves quality
+- **Automatic organization:** Creates media-server-friendly folder structure
 
-### ✅ Intelligent Processing
-- **Smart compression:** Only re-encode when needed (>10GB)
-- **Existing file handling:** Works with already-ripped MKV files
-- **Error resilience:** Graceful handling of missing discs
-- **Automatic organization:** Proper folder structure
+### ✅ Intelligent Title Selection
+- **Main feature detection:** Automatically identifies the longest track as the main movie
+- **Seamless branching support:** Handles multi-language discs with TITLE_INDEX override
+- **Size-based fallback:** Uses file size to distinguish main features from extras
+- **Manual override:** TITLE_INDEX option for precise control when needed
 
-### ✅ Subtitle Management
-- **Interactive prompt:** Choose subtitle processing before ripping starts
-- **English films:** External SRT files (auto-extracted for soft subs)
-- **Foreign films:** Option to burn subtitles or extract externally
-- **PGS subtitles:** Option to burn or extract for OCR
+### ✅ Comprehensive Subtitle Support
+- **Interactive selection:** Choose subtitle processing before ripping starts
+- **English films:** Auto-extracts soft subtitles to external .srt files
+- **Foreign films:** Option to burn subtitles into video or extract externally
+- **PGS handling:** Supports image-based subtitles with OCR options
+- **Jellyfin compatibility:** `.en.srt` and `.en.sup` files work perfectly
 
-### ✅ Enhanced User Experience
-- **Visual progress:** ASCII spinners during MakeMKV ripping and HandBrake encoding
-- **Interactive prompts:** ENTER key accepts default selections, countdown timers
-- **Status feedback:** Clear messages for each step, no silent periods
-- **Celebratory completion:** 🎉 emoji when workflows finish successfully
-- **Jellyfin ready:** `.en.srt` and `.en.sup` files work perfectly with Jellyfin
-
-### ✅ Resume Processing
-- **Skip disc scanning:** If MKV files exist, skips MakeMKV step
-- **Re-encode only:** Converts existing MKV to MP4 without re-ripping
-- **Preserve subtitles:** Uses existing .sup/.srt files when available
+### ✅ Flexible Workflow Options
+- **Disc ripping:** Direct from DVD/Blu-ray with MakeMKV + HandBrake integration
+- **Existing MKV processing:** Skip disc scanning, work with already-ripped files
+- **Resume capability:** Re-encode only MP4 without re-ripping from disc
+- **Subtitle backfill:** Add English soft subs to existing MP4 files
 
 ---
 
