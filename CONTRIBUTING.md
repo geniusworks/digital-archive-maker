@@ -134,6 +134,15 @@ python -m pytest tests/ -k "test_url_encode" -v
 - `integration` - May require external tools (ffmpeg, abcde, etc.)
 - `slow` - Network calls or large file operations
 
+### Quick Test
+
+For contributors: Run the test suite to verify everything works:
+```bash
+make test
+```
+
+This runs all tests with comprehensive coverage. See the commands above for more granular testing options.
+
 ---
 
 ## Pull Request Process

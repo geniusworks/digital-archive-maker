@@ -15,7 +15,7 @@
 | **Community Infra** | ✅ Complete | Issue templates, PR template, CI workflow |
 | **README / QUICKSTART** | ✅ Solid | Redesigned hero page, badges, Quick Start guide |
 | **Documentation** | ✅ Consolidated | 6 docs + 2 server guides — overlap eliminated |
-| **Code Quality** | ✅ Complete | Shared library, type hints, 104 tests passing, clean CI pipeline, professional polish |
+| **Code Quality** | ✅ Complete | Shared library, type hints, comprehensive test suite, clean CI pipeline, professional polish |
 | **User Experience** | ✅ Complete | ENTER key support, ASCII spinners, visual progress feedback, celebratory completion |
 | **GUI App** | ✅ Complete | Electron wrapper with dashboard, console, settings (runs from repo) |
 | **Visual / Delight** | ✅ Complete | ASCII spinners, emoji feedback, professional CLI interface, comprehensive status messages |
@@ -100,7 +100,7 @@ Current `docs/` has overlapping files. Target structure:
 ### C1. Naming Policy
 **Decision:** Keep existing filenames (mixed `snake_case` / `kebab-case`) for backward compatibility. New scripts use `snake_case`. Document this in `CONTRIBUTING.md`.
 
-### C2. `bin/music/` — 19 scripts → classify as Core vs Utility
+### C2. `bin/music/` — Multiple scripts → classify as Core vs Utility
 
 | Script | Category | Action |
 |--------|----------|--------|
@@ -124,7 +124,7 @@ Current `docs/` has overlapping files. Target structure:
 | `repair-flac-tags.py` | **Utility** | ✅ Keep — tag repair from playlists, no personal data |
 | `specialized/` | **Keep** | Prince Lovesexy splitter — niche but harmless |
 
-### C3. `bin/video/` — 17 scripts → classify
+### C3. `bin/video/` — Multiple scripts → classify
 
 | Script | Category | Action |
 |--------|----------|--------|
@@ -281,7 +281,7 @@ Current `docs/` has overlapping files. Target structure:
 
 ### G1. Quality Assurance Checklist
 - [ ] **Code Quality Pipeline**: Run `scripts/test-pipeline.sh` - must pass with 0 errors
-- [ ] **All Tests Passing**: 95+ tests must pass (check pytest coverage)
+- [ ] **All Tests Passing**: All tests must pass (check pytest coverage)
 - [ ] **No Critical Linting**: Zero E9/F63/F7/F82 errors
 - [ ] **Flake8 Clean**: `./venv/bin/python -m flake8 bin/ tests/ scripts/ dam/ --max-line-length=100` shows acceptable quality:
   - ✅ **Zero critical errors**: No E9/F63/F7/F82 issues

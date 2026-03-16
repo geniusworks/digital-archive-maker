@@ -252,14 +252,7 @@ rm -rf cache/ log/  # Remove cache and log directories
 
 ## Development
 
-### Testing
-
-For contributors: Run the test suite to verify everything works:
-```bash
-make test  # Runs all 104 tests with comprehensive coverage
-```
-
-See [Contributing](CONTRIBUTING.md#running-tests) for more testing options.
+For development setup and testing guidelines, see [Contributing](CONTRIBUTING.md).
 
 ## Author
 
