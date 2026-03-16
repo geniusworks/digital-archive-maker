@@ -11,10 +11,12 @@ A clear description of what the bug is.
 
 ## Script/Component
 Which script or component is affected?
-- [ ] CD ripping (`abcde`, `fix_album.py`)
-- [ ] Video ripping (`rip_video.py`, HandBrake)
+- [ ] Unified CLI (`dam` command)
+- [ ] CD ripping (`dam rip cd`, `abcde`, `fix_album.py`)
+- [ ] Video ripping (`dam rip video`, `rip_video.py`, HandBrake)
 - [ ] Metadata tagging (`tag-explicit-mb.py`, `tag-movie-ratings.py`, etc.)
-- [ ] Library sync (`sync-library.py`, `master-sync.py`)
+- [ ] Library sync (`dam sync`, `sync-library.py`, `master-sync.py`)
+- [ ] GUI application (`gui/` directory)
 - [ ] Other: 
 
 ## Steps to Reproduce

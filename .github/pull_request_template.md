@@ -15,7 +15,8 @@ Fixes #
 How was this tested?
 
 ## Checklist
-- [ ] Code follows project style guidelines
+- [ ] Code follows project style guidelines (see CONTRIBUTING.md)
 - [ ] Self-reviewed the code
 - [ ] Updated documentation if needed
-- [ ] Tests pass locally
+- [ ] Tests pass locally (`make test`)
+- [ ] Pre-commit checks pass (`make test` includes linting)
