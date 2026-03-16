@@ -438,26 +438,21 @@ Current `docs/` has overlapping files. Target structure:
       - Ensure counter persists across updates and system reboots
     - **User Value Assessment**: Does tracking progress enhance user motivation and engagement?
     - **Implementation Priority**: Low-effort enhancement with potential user satisfaction benefits
-  - [ ] **Rip Time Estimation Enhancement**: Add time estimates for disc ripping operations
-    - **Video Ripping Estimates**: Calculate expected processing time based on disc size and type
-      - Blu-ray: ~2-4 hours for 25-50GB discs (MakeMKV + HandBrake)
-      - DVD: ~30-90 minutes for 4-8GB discs (MakeMKV/HandBrake)
-      - Existing MKV: ~30-120 minutes for re-encoding (HandBrake only)
-      - Show estimate before starting: "Estimated time: ~2 hours 15 minutes"
-    - **CD Ripping Estimates**: Calculate expected time based on disc length
-      - Standard CD (74 min): ~10-15 minutes for ripping + metadata
-      - Double CD: ~20-30 minutes
-      - Show estimate: "Estimated time: ~12 minutes"
+  - [ ] **Rip Time Estimation Enhancement**: Show time estimate based on selected track
+    - **Track-Based Estimation**: Use actual main track size/duration for accurate estimates
+      - Video: Calculate from selected track's file size or duration
+      - CD: Use CD length from disc metadata (74 minutes, etc.)
+      - Show: "Come back in ~28 minutes (at 3:47 PM)"
     - **Implementation Approach**:
-      - Track historical processing times and calculate averages
-      - Factor in system performance (CPU speed, disk I/O)
-      - Update estimates in real-time as processing progresses
-      - Show time remaining: "Time remaining: ~45 minutes"
+      - Use information already gathered during title/track selection
+      - Simple calculation: track_size ÷ average_processing_rate
+      - Display both duration and actual completion time
+      - No complex tracking - just use pre-ripping data
     - **User Experience Benefits**:
-      - Users can plan ripping sessions around their schedule
-      - Reduces uncertainty about long-running operations
-      - Helps users decide between quality vs. speed settings
-      - Professional touch similar to other media processing tools
+      - Accurate estimates based on actual content being processed
+      - Clear "come back at 3:47 PM" for easy planning
+      - Uses data already collected, no extra overhead
+      - Helps users plan disc swapping precisely
   - [ ] **Storage Management Enhancement**: Add cleanup script for large intermediate files
     - **MKV Cleanup Script**: Remove large .mkv files after successful MP4 conversion
       - Automatically detect .mkv files that have corresponding working .mp4 files
