@@ -1453,14 +1453,17 @@ def main() -> int:
 
     if not mkvs:
         # Only rip if no MKV files exist
+        print()
         print("No MKV files found, ripping from disc...")
 
         # Check if disc is actually present using existing detection
         detected_type = detect_disc_type()
         if detected_type == "auto":
+            print()
             print("  ❌ No Blu-ray/DVD disc found in drive")
             print("  💡 Please insert a disc and try again")
-            return 1
+            print()
+            return 0  # Exit cleanly to avoid make error message
 
         print(f"  ✓ Detected {detected_type.upper()} disc")
 
@@ -1468,8 +1471,10 @@ def main() -> int:
         used_handbrake_fallback = False
         if not makemkv_available:
             if detected_type == "bluray":
+                print()
                 print("  ❌ Blu-ray ripping requires MakeMKV")
                 print("  💡 Install from https://www.makemkv.com/download/")
+                print()
                 return 1
             # For DVDs without MakeMKV, use HandBrake fallback directly
             print("  → Using HandBrake fallback (MakeMKV not available)")
