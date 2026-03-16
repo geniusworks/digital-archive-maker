@@ -1461,7 +1461,7 @@ def main() -> int:
         if detected_type == "auto":
             print()
             print("  ❌ No Blu-ray/DVD disc found in drive")
-            print("  💡 Please insert a disc and try again")
+            print("  💿 Please insert a disc and try again")
             print()
             return 0  # Exit cleanly to avoid make error message
 
@@ -1473,7 +1473,7 @@ def main() -> int:
             if detected_type == "bluray":
                 print()
                 print("  ❌ Blu-ray ripping requires MakeMKV")
-                print("  💡 Install from https://www.makemkv.com/download/")
+                print("  💿 Install from https://www.makemkv.com/download/")
                 print()
                 return 1
             # For DVDs without MakeMKV, use HandBrake fallback directly

@@ -304,6 +304,15 @@ Current `docs/` has overlapping files. Target structure:
   - [ ] Check docs/server_setups/ files are hardware-specific configuration templates (appropriate location)
   - [ ] Remove any trivialities (ASCII spinners, emoji celebrations, ENTER key prompts) from user-facing docs
   - [ ] Ensure all docs focus on "what users can do" rather than "how the code works"
+- [ ] **CD Ripping End-to-End Review**: Test complete CD ripping workflow from start to finish
+  - [ ] Verify fresh setup: `cp .abcde.conf.example ~/.abcde.conf` works correctly
+  - [ ] Test CD detection and ripping with `dam rip cd` (or `make rip-cd`)
+  - [ ] Confirm metadata lookup and album art retrieval working
+  - [ ] Verify lyrics download functionality (with/without API key)
+  - [ ] Test explicit content tagging workflow
+  - [ ] Confirm final file organization in ${LIBRARY_ROOT}/CDs/
+  - [ ] Validate M3U playlist generation
+  - [ ] Check error handling for missing disc or failed rips
 
 ### G1.1. Testing Strategy & Coverage Policy
 - [ ] **Smart Testing Approach**: Focus on critical business logic over comprehensive script coverage
