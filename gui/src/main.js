@@ -9,7 +9,7 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const VENV_PYTHON = path.join(REPO_ROOT, 'venv', 'bin', 'python');
 const DAM_CMD = path.join(REPO_ROOT, 'venv', 'bin', 'dam');
 const ENV_FILE = path.join(REPO_ROOT, '.env');
-const ENV_SAMPLE = path.join(REPO_ROOT, '.env.example');
+const ENV_EXAMPLE = path.join(REPO_ROOT, '.env.example');
 
 let mainWindow;
 let activeProcess = null;
@@ -126,7 +126,7 @@ ipcMain.handle('check-venv', () => {
 // ── IPC: Read .env file ─────────────────────────────────────────────────────
 
 ipcMain.handle('read-env', () => {
-  const source = fs.existsSync(ENV_FILE) ? ENV_FILE : ENV_SAMPLE;
+  const source = fs.existsSync(ENV_FILE) ? ENV_FILE : ENV_EXAMPLE;
   if (!fs.existsSync(source)) return {};
   const lines = fs.readFileSync(source, 'utf8').split('\n');
   const result = {};
@@ -147,8 +147,8 @@ ipcMain.handle('read-env', () => {
 ipcMain.handle('write-env', (event, updates) => {
   let content = fs.existsSync(ENV_FILE)
     ? fs.readFileSync(ENV_FILE, 'utf8')
-    : fs.existsSync(ENV_SAMPLE)
-    ? fs.readFileSync(ENV_SAMPLE, 'utf8')
+    : fs.existsSync(ENV_EXAMPLE)
+    ? fs.readFileSync(ENV_EXAMPLE, 'utf8')
     : '';
 
   for (const [key, value] of Object.entries(updates)) {
