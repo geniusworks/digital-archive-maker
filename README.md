@@ -192,17 +192,17 @@ The `dam` command provides easy access to all features with automatic setup. You
 ```
 digital-archive-maker/
 ├── dam/                 # Shared library & unified CLI
-│   ├── cli.py           #   `dam` command entry point
-│   ├── config.py        #   Centralised configuration loader
-│   ├── deps.py          #   Dependency checker & installer
-│   ├── keys.py          #   Interactive API key onboarding
-│   └── console.py       #   Rich terminal output helpers
+│   ├── cli.py           # `dam` command entry point
+│   ├── config.py        # Centralised configuration loader
+│   ├── deps.py          # Dependency checker & installer
+│   ├── keys.py          # Interactive API key onboarding
+│   └── console.py       # Rich terminal output helpers
 ├── bin/
 │   ├── music/           # CD ripping and tagging scripts
-│   ├── video/           #   Movie disc ripping scripts
-│   ├── sync/            #   Library sync scripts
-│   ├── tv/              #   TV show handling
-│   └── utils/           #   Helper tools
+│   ├── video/           # Movie disc ripping scripts
+│   ├── sync/            # Library sync scripts
+│   ├── tv/              # TV show handling
+│   └── utils/           # Helper tools
 ├── docs/                # Detailed guides
 ├── gui/                 # Desktop application
 ├── scripts/             # Utility scripts
