@@ -438,6 +438,26 @@ Current `docs/` has overlapping files. Target structure:
       - Ensure counter persists across updates and system reboots
     - **User Value Assessment**: Does tracking progress enhance user motivation and engagement?
     - **Implementation Priority**: Low-effort enhancement with potential user satisfaction benefits
+  - [ ] **Rip Time Estimation Enhancement**: Add time estimates for disc ripping operations
+    - **Video Ripping Estimates**: Calculate expected processing time based on disc size and type
+      - Blu-ray: ~2-4 hours for 25-50GB discs (MakeMKV + HandBrake)
+      - DVD: ~30-90 minutes for 4-8GB discs (MakeMKV/HandBrake)
+      - Existing MKV: ~30-120 minutes for re-encoding (HandBrake only)
+      - Show estimate before starting: "Estimated time: ~2 hours 15 minutes"
+    - **CD Ripping Estimates**: Calculate expected time based on disc length
+      - Standard CD (74 min): ~10-15 minutes for ripping + metadata
+      - Double CD: ~20-30 minutes
+      - Show estimate: "Estimated time: ~12 minutes"
+    - **Implementation Approach**:
+      - Track historical processing times and calculate averages
+      - Factor in system performance (CPU speed, disk I/O)
+      - Update estimates in real-time as processing progresses
+      - Show time remaining: "Time remaining: ~45 minutes"
+    - **User Experience Benefits**:
+      - Users can plan ripping sessions around their schedule
+      - Reduces uncertainty about long-running operations
+      - Helps users decide between quality vs. speed settings
+      - Professional touch similar to other media processing tools
   - [ ] **Storage Management Enhancement**: Add cleanup script for large intermediate files
     - **MKV Cleanup Script**: Remove large .mkv files after successful MP4 conversion
       - Automatically detect .mkv files that have corresponding working .mp4 files
