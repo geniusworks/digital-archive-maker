@@ -377,6 +377,20 @@ Current `docs/` has overlapping files. Target structure:
   - **Documentation Review**: Ensure API setup instructions are current
     - Verify all API key acquisition URLs are still valid
     - Check that rate limits and usage policies are accurately documented
+- [ ] **Directory Structure and Configuration Review**: Verify standard naming and defaults
+  - **Directory Naming Consistency**: Review standard folder names for consistency
+    - Check if "Blurays" should be "BDs" to match "DVDs" and "Movies" pattern
+    - Verify all target directories are properly named (CDs, Movies, etc.)
+    - Ensure consistent capitalization and spelling across all scripts
+  - **Directory Placement Verification**: Confirm target folders are in logical locations
+    - Verify CDs, Movies, TV Shows directories are properly placed
+    - Check that all scripts reference correct directory paths
+    - Ensure directory structure matches documentation examples
+  - **Configuration Defaults Review**: Verify .env.example has sensible defaults
+    - Check LIBRARY_ROOT path is appropriate for typical macOS setups
+    - Verify all optional settings have reasonable default values
+    - Ensure defaults don't require immediate modification for basic use
+    - Confirm API key placeholders are clearly marked as optional
 - [ ] **CLI Enhancement Review**: Assess user experience gap between basic CLI and enhanced processing
   - [ ] **"Process Once, Done Forever" Philosophy Review**: Users may only process each disc once - maximize integrated value
     - **Principle**: Every disc processing should include all reasonable enhancements automatically
