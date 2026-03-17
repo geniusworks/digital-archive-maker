@@ -27,27 +27,27 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 
 ## About
 
-**Digital Archive Maker** transforms your physical media collection into an organized digital library you can access anywhere.
+**Digital Archive Maker** converts your physical disc collection into digital files for media servers.
 
-**The Problem:** Your CDs and movie discs sit on shelves, collecting dust. They're difficult to browse and can't be searched.
+**The Challenge:** Media servers need digital files, but can only work with what you give them. They can't read discs or prepare files properly.
 
-**The Reality:** Traditional digitization requires wrestling with dozens of tools that don't talk to each other.
+**The Gap:** Getting from physical disc to fully-prepared media files requires dozens of uncoordinated tools, each solving only part of the problem.
 
-**The Solution:** Digital Archive Maker automates everything:
-- **Extract** high-quality digital files from physical discs
-- **Organize** everything with names, metadata, and artwork  
-- **Tag** each item with rich details from online databases
-- **Structure** files for media servers like Jellyfin and Plex
-- **Sync** your library to devices you actually use
+**What Digital Archive Maker does:**
+- **Read** any disc (CD, DVD, Blu-ray) with intelligent error recovery
+- **Extract** archival quality digital files
+- **Enrich** with metadata, artwork, and subtitles from online databases  
+- **Organize** into a well-prepared collection
+- **Deliver** files ready for any media server
 
-**What it does:**
-- 🎵 **CDs to FLAC** — Lossless audio with album art and metadata
-- 📀 **Movie discs to MP4** — High-quality video with subtitles
-- 🏷️ **Rich metadata** — Artist bios, movie descriptions, genres, ratings
-- 📁 **Smart organization** — Browsable, searchable library structure
-- 📱 **Media server ready** — Works with Jellyfin, Plex, and Emby
+**Unique capabilities:**
+- 📀 **Disc transfers** - Physical media to digital files
+- 🎵 **High-quality audio** - Lossless CD rips with perfect metadata
+- 🎬 **High-quality video** - Track auto-selection and subtitle intelligence
+- 🏷️ **Automatic tagging** - No data entry required
+- 📁 **Server ready** - Syncs with your media server
 
-**Your result:** Instant access to your entire media collection from any device, searchable by any criteria—no subscriptions required.
+**Result:** Your physical collection becomes a searchable, accessible digital library.
 
 ---
 
@@ -119,7 +119,7 @@ dam sync
 |:---------|:------------|
 | **CD ripping** | Saves as FLAC with album art |
 | **Metadata** | Automatic album/track/artist lookup |
-| **Content tags** | Marks explicit content |
+| **Content tags** | Marks explicit content (optional) |
 | **Genres** | Organizes by musical style |
 | **Lyrics** | Downloads when available |
 | **Gap filling** | Fixes missing information |
@@ -127,8 +127,8 @@ dam sync
 ### **Video**
 | Feature | How it works |
 |:---------|:------------|
-| **Movie disc ripping** | Extracts video while preserving quality |
-| **Subtitle handling** | Detects and includes your preferred language |
+| **Movie discs** | Extracts high-quality video |
+| **Subtitles** | Includes your preferred language |
 | **Subtitle burning** | Embeds subtitles when needed |
 | **Movie organization** | Names files and adds descriptions |
 | **TV show support** | Groups episodes by season |
@@ -137,8 +137,8 @@ dam sync
 | Feature | How it works |
 |:---------|:------------|
 | **Library sync** | Syncs library to media servers and backups with content filtering |
-| **Content filtering** | Excludes explicit content for family devices |
-| **Playlists** | Creates album playlists and fixes missing metadata from existing ones |
+| **Content filtering** | Excludes explicit content for family devices (optional) |
+| **Playlists** | Creates album playlists and fixes missing metadata |
 
 ---
 
