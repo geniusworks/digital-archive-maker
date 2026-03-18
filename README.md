@@ -18,6 +18,7 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 <p align="center">
   <a href="QUICKSTART.md">Quick Start</a> ·
   <a href="docs/">Documentation</a> ·
+  <a href="ROADMAP.md">Roadmap</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="DISCLAIMER.md">Disclaimer</a> ·
   <a href="SECURITY.md">Security</a>
@@ -27,27 +28,61 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 
 ## About
 
-**Digital Archive Maker** converts your physical disc collection into digital files for media servers.
+**Digital Archive Maker** converts your physical disc collection into a digital archive for media servers.
 
-**The Challenge:** Media servers need digital files, but can only work with what you give them. They can't read discs or prepare files properly.
+**The Challenge:** Media servers need digital files, but only work with what you give them. They don't guarantee quality disc transfers, file preparation, and complete information tagging.
 
-**The Gap:** Getting from physical disc to fully-prepared media files requires dozens of uncoordinated tools, each solving only part of the problem.
+**The Gap:** Organizing your physical collection into well-prepared media files requires dozens of uncoordinated tools, each solving only part of the problem.
 
 **What Digital Archive Maker does:**
-- **Read** any disc (CD, DVD, Blu-ray) with intelligent error recovery
+- **Read** any disc (CD, DVD, Blu-ray)
 - **Extract** archival quality digital files
-- **Enrich** with metadata, artwork, and subtitles from online databases  
+- **Enrich** with metadata, artwork, and subtitles
 - **Organize** into a well-prepared collection
 - **Deliver** files ready for any media server
 
-**Unique capabilities:**
-- 📀 **Disc transfers** - Physical media to digital files
-- 🎵 **High-quality audio** - Lossless CD rips with perfect metadata
-- 🎬 **High-quality video** - Track auto-selection and subtitle intelligence
-- 🏷️ **Automatic tagging** - No data entry required
+**Unique automatic capabilities:**
+- 📀 **Disc transfers** - Audio, DVD, Blu-ray
+- 🎵 **High-quality audio** - Lossless rips and metadata
+- 🎬 **High-quality video** - Track selection and subtitle intelligence
+- 🏷️ **Automatic tagging** - No manual data entry
 - 📁 **Server ready** - Syncs with your media server
 
 **Result:** Your physical collection becomes a searchable, accessible digital library.
+
+---
+
+## Development Status
+
+**Current Version: 0.9.0-beta** - Pre-release, actively developed
+
+### ✅ What's Working
+- **Complete media pipelines** for CDs, DVDs, and Blu-rays
+- **Robust error recovery** for problematic discs (MakeMKV retries, HandBrake fallback)
+- **Advanced subtitle processing** (VOB/PGS OCR, SRT extraction, language preferences)
+- **Unified CLI** (`dam`) with comprehensive commands
+- **Desktop GUI** application (preliminary, needs testing)
+- **Rich metadata integration** (MusicBrainz, TMDb, Spotify, Genius)
+- **Comprehensive testing** (tests passing)
+- **Professional documentation** and user guides
+- **CI/CD pipeline** with automated checks
+
+### 🎯 Roadmap to 1.0.0
+- **DAM workflow validation and optimization** for all main features
+- **API key graceful failure** handling improvements
+- **GUI application testing** and refinement
+- **Hardware compatibility testing** for different drives
+- **Documentation & Onboarding**
+  - Troubleshooting guide for common issues
+  - Video tutorials for key workflows
+  - Examples gallery with sample configurations
+- **Final documentation polish** and examples
+
+### 🤝 Community Status
+- **Open for feedback** and feature requests
+- **Contributions welcome** - see CONTRIBUTING.md
+- **Issue tracking** active on GitHub
+- **Discussions** enabled for community input
 
 ---
 

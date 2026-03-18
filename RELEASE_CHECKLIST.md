@@ -543,6 +543,22 @@ git branch -m main
 - [ ] Plan v1.1.0 features based on early feedback
 - [ ] Document any known issues in GitHub Issues
 
+### I3. Enhanced Workflow Integration
+- [ ] **Integrated Metadata Tagging**: Move metadata fetching and file preparation to end of rip session
+  - **Current Gap**: Users must run separate tagging scripts after ripping
+  - **Proposed Solution**: Integrate TMDb/Spotify/Genius tagging into main rip workflows
+  - **User Benefit**: "Process Once, Done Forever" - single command gets fully prepared files
+  - **Implementation**: Add optional tagging phase to `dam rip cd` and `dam rip video` commands
+  - **Considerations**: Add API rate limiting, provide skip option for faster ripping
+
+### I4. Enhanced User Experience
+- [ ] **Auto-Detect Disc Workflow**: One-shot command that detects disc type and starts appropriate workflow
+  - **Current Gap**: Users must run `dam rip cd` vs `dam rip video` based on disc type knowledge
+  - **Proposed Solution**: `dam rip auto` command that detects CD/DVD/Blu-ray and runs appropriate workflow
+  - **User Benefit**: Simplified interface - just insert disc and run single command
+  - **Implementation**: Use existing disc detection logic to determine type and dispatch to correct workflow
+  - **Considerations**: Add confirmation prompt before starting, provide manual override option
+
 ---
 
 ## J. GUI App Polish (Electron)
