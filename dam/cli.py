@@ -55,6 +55,7 @@ def check(
     install: bool = typer.Option(False, "--install", "-i", help="Install missing Homebrew deps."),
 ):
     """Check that all required tools, Python packages, and API keys are present."""
+    banner()
     # System deps
     installed, missing = check_all(scope=scope, verbose=True)
 
@@ -178,6 +179,7 @@ def config(
 
     console.print()
     success("Configuration complete! Run [bold]dam check[/] to verify everything.")
+    console.print()
 
 
 # ── dam rip cd ─────────────────────────────────────────────────────────----
