@@ -203,7 +203,7 @@ def check_all(
     missing: list[Dependency] = []
 
     if verbose:
-        console.print("")
+        console.print()
         console.print("[heading]▸ Checking system dependencies[/]")
 
     for dep in deps:

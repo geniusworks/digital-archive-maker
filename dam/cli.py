@@ -148,7 +148,6 @@ def config(
     Creates .env if needed, sets LIBRARY_ROOT, and walks through API key setup.
     """
     banner()
-    heading("Configuration wizard")
 
     # .env file
     env_path = REPO_ROOT / ".env"
@@ -163,18 +162,21 @@ def config(
             env_path.touch()
             success("Created empty .env")
 
-    # Library root
+    # Library path
+    heading("Destination library path")
+    
     current_root = get("LIBRARY_ROOT", "/Volumes/Data/Media/Library")
-    console.print(f"\n  Current library root: [key]{current_root}[/]")
-    new_root = console.input("  Enter new library root (or press Enter to keep current): ").strip()
+    console.print(f"\nCurrent destination library path: [key]{current_root}[/]")
+    new_root = console.input("  Enter new path (or press Enter to keep current): ").strip()
     if new_root and new_root != current_root:
         _update_env_value(env_path, "LIBRARY_ROOT", new_root)
-        success(f"Library root set to {new_root}")
+        success(f"Library path set to {new_root}")
     else:
-        info(f"Keeping library root: {current_root}")
+        info(f"Keeping library path: {current_root}")
 
     # API keys
     console.print()
+    heading("API keys")
     onboard_keys(scope=scope)
 
     # Sync destination
@@ -562,24 +564,27 @@ def _configure_sync_destination() -> None:
         console.print(f"  Config file: [key]{sync_config_path}[/]")
         return
 
-    console.print("[heading]Sync destination[/]")
-    console.print("[muted]Set up where your media library will be synced to.[/]")
+    heading("Sync destination (your media server)")
+    console.print()
+    console.print("Set up where your media library will be synced to.")
 
     # Ask if local or remote (default to remote)
     sync_type = console.input("  Sync to (l)ocal or (r)emote destination? [R/l]: ").strip().lower()
     
     if sync_type in ("", "r"):  # Default to remote
-        console.print("[muted]Setting up remote sync - you'll need SSH access to the server[/]")
-        console.print("[muted]Example: user@192.168.1.100:/mnt/media/Music[/]")
-        server = console.input("  Enter server IP or hostname (e.g. user@192.168.1.100): ").strip()
-        path = console.input("  Enter remote directory path (e.g. /mnt/media/Music): ").strip()
-        if not server or not path:
+        console.print()
+        console.print("Setting up remote sync - you'll need SSH access to the server")
+        console.print("Example: user@192.168.1.100:/mnt/media")
+        username = console.input("  Enter username: ").strip()
+        server = console.input("  Enter server IP or hostname (e.g. 192.168.1.100): ").strip()
+        path = console.input("  Enter remote base media directory (e.g. /mnt/media): ").strip()
+        if not username or not server or not path:
             info("Skipping sync destination configuration.")
             return
-        dest = f"{server}:{path}"
+        dest = f"{username}@{server}:{path}"
     else:
-        console.print("[muted]Setting up local sync to another directory or drive[/]")
-        console.print("[muted]Example: /Volumes/ExternalDrive/MediaBackup[/]")
+        console.print("Setting up local sync to another directory or drive")
+        console.print("Example: /Volumes/ExternalDrive/MediaBackup")
         dest = console.input("  Enter local directory path: ").strip()
         if not dest:
             info("Skipping sync destination configuration.")
@@ -589,6 +594,64 @@ def _configure_sync_destination() -> None:
         dest = str(Path(dest).expanduser())
 
     library_root = get("LIBRARY_ROOT", "/Volumes/Data/Media/Library")
+
+    # Ask about content filtering
+    exclude_content = console.input("  Exclude material flagged explicit or unknown? (y/N): ").strip().lower() in ("y", "yes")
+    exclude_explicit = exclude_content
+    exclude_unknown = exclude_content
+
+    # Test connection and verify directory
+    console.print("Verifying sync destination accessibility...")
+    
+    try:
+        import subprocess
+        
+        if sync_type in ("", "r"):  # Remote sync
+            # Test SSH connection and directory existence
+            test_cmd = ["ssh", f"{username}@{server}", "test", "-d", path]
+            result = subprocess.run(test_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                success(f"✓ Connected to {server}")
+                success(f"✓ Target directory exists: {path}")
+            else:
+                warning(f"Target directory doesn't exist: {path}")
+                create_dir = console.input(f"  Create directory {path}? (y/N): ").strip().lower()
+                if create_dir in ("y", "yes"):
+                    create_cmd = ["ssh", f"{username}@{server}", "mkdir", "-p", path]
+                    create_result = subprocess.run(create_cmd, capture_output=True, text=True, timeout=10)
+                    if create_result.returncode == 0:
+                        success(f"Created directory: {path}")
+                    else:
+                        error(f"✗ Failed to create directory: {create_result.stderr.strip()}")
+                        info("Please check permissions and try again.")
+                        return
+                else:
+                    info("Please create the directory manually and re-run dam config.")
+                    return
+        else:  # Local sync
+            # Test local directory
+            local_path = Path(dest)
+            if local_path.exists():
+                success(f"✓ Local directory exists: {dest}")
+            else:
+                warning(f"Local directory doesn't exist: {dest}")
+                create_dir = console.input(f"  Create directory {dest}? (y/N): ").strip().lower()
+                if create_dir in ("y", "yes"):
+                    local_path.mkdir(parents=True, exist_ok=True)
+                    success(f"Created directory: {dest}")
+                else:
+                    info("Please create the directory manually and re-run dam config.")
+                    return
+                    
+    except subprocess.TimeoutExpired:
+        error(f"✗ Connection timeout to {server}")
+        info("Please check network connectivity and server status.")
+        return
+    except Exception as e:
+        error(f"✗ Connection test failed: {e}")
+        info("Please verify the server details and try again.")
+        return
 
     yaml_content = f'''# Sync configuration - auto-generated by dam config
 # Edit this file to add more sync jobs or customize options
@@ -603,8 +666,8 @@ sync_jobs:
   - name: "main-library"
     src: "{library_root}"
     dest: "{dest}"
-    exclude_explicit: false
-    exclude_unknown: false
+    exclude_explicit: {str(exclude_explicit).lower()}
+    exclude_unknown: {str(exclude_unknown).lower()}
 '''
 
     sync_config_path.parent.mkdir(parents=True, exist_ok=True)

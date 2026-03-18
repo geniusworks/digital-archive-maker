@@ -128,8 +128,11 @@ def onboard_keys(scope: Optional[str] = None) -> None:
     """Walk the user through all missing API keys for a given scope.
 
     Args:
-        scope: "music", "video", or None for all.
+        scope: Optional scope ('music' or 'video') to limit which keys are prompted.
+
+    Prompts for all missing keys in the given scope, or all keys if no scope.
     """
+    from dam.console import heading
     from dam.config import missing_api_keys
 
     scope_keys: dict[str, list[str]] = {
@@ -160,8 +163,10 @@ def onboard_keys(scope: Optional[str] = None) -> None:
             return
         # Show existing values and prompt for updates
         from dam.config import get
-        console.print("\n[heading]Update API Keys[/]")
-        console.print("[muted]Press Enter to keep existing value, or enter new key to update.[/]")
+        console.print()
+        heading("Update API Keys")
+        console.print()
+        console.print("  Press Enter to keep existing value, or enter new key to update.")
         for key_name in relevant:
             current_value = get(key_name, "")
             if current_value:

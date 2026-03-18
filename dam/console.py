@@ -26,6 +26,7 @@ console = Console(theme=DAM_THEME)
 
 def banner() -> None:
     """Print the Digital Archive Maker banner."""
+    console.print()
     console.print(
         Panel.fit(
             "[bold white]Digital Archive Maker[/]\n"
