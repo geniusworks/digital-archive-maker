@@ -32,6 +32,7 @@ app = typer.Typer(
     help="Digital Archive Maker — physical media to digital library automation.",
     no_args_is_help=True,
     rich_markup_mode="rich",
+    add_completion=False,  # Disable completion options we don't support
 )
 
 # ── Subcommand groups ──────────────────────────────────────────────────────
