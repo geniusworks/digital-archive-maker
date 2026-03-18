@@ -28,27 +28,27 @@ Turn your CDs and movie discs into a convenient digital library you can access f
 
 ## About
 
-**Digital Archive Maker** converts your physical disc collection into a digital archive for media servers.
+**Digital Archive Maker** converts your physical disc collection into a digital archive you can use anywhere.
 
-**The Challenge:** Media servers need digital files, but only work with what you give them. They don't guarantee quality disc transfers, file preparation, and complete information tagging.
+**The Challenge:** Your CDs, DVDs, and Blu-rays sit on shelves—difficult to browse, search, or access without the physical discs and players.
 
-**The Gap:** Organizing your physical collection into well-prepared media files requires dozens of uncoordinated tools, each solving only part of the problem.
+**The Gap:** Creating a proper digital library requires dozens of uncoordinated tools for ripping, tagging, organizing, and syncing.
 
 **What Digital Archive Maker does:**
 - **Read** any disc (CD, DVD, Blu-ray)
 - **Extract** archival quality digital files
 - **Enrich** with metadata, artwork, and subtitles
-- **Organize** into a well-prepared collection
-- **Deliver** files ready for any media server
+- **Organize** into a browsable, searchable collection
+- **Sync** to your devices or media server
 
 **Unique automatic capabilities:**
 - 📀 **Disc transfers** - Audio, DVD, Blu-ray
 - 🎵 **High-quality audio** - Lossless rips and metadata
 - 🎬 **High-quality video** - Track selection and subtitle intelligence
 - 🏷️ **Automatic tagging** - No manual data entry
-- 📁 **Server ready** - Syncs with your media server
+- 📁 **Flexible access** - Use locally or with any media server
 
-**Result:** Your physical collection becomes a searchable, accessible digital library.
+**Result:** Your physical collection becomes a searchable, accessible digital library—stored on your own hardware, no subscriptions required.
 
 ---
 
