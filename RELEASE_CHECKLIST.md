@@ -14,7 +14,7 @@
 - **Manual credential scan**: No hardcoded API keys, tokens, or secrets found
 - **Placeholder verification**: .env.example uses proper placeholder values only
 - **Git history**: Clean - no sensitive commits requiring cleanup
-- **Status**: ✅ **Repository is safe for public release**
+- **Status**: **Repository is safe for public release**
 
 ### ✅ Documentation Updates
 - README tagline refined to emphasize automatic preparation for media servers
@@ -71,55 +71,12 @@
 
 ---
 
-## B. Documentation Consolidation
+## B. Script Audit & Consolidation
 
-### B1. Reduce Root Markdown Sprawl
-After cleanup, root should contain only **standard GitHub files**:
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `README.md` | Hero page — what / why / quick start | ✅ Keep |
-| `QUICKSTART.md` | 10-minute first-run guide | ✅ Keep |
-| `CHANGELOG.md` | Release history | ✅ Created |
-| `CONTRIBUTING.md` | How to contribute | ✅ Keep |
-| `DISCLAIMER.md` | Legal protections | ✅ Keep |
-| `CODE_OF_CONDUCT.md` | Community standards | ✅ Keep |
-| `SECURITY.md` | Vulnerability reporting | ✅ Keep |
-| `LICENSE` | GPLv2+ license | ✅ Keep |
-| `NOTICE` | Third-party attribution | ✅ Keep |
-| ~~`TODO.md`~~ | ~~594-line planning doc~~ | ❌ Delete (absorbed here) |
-| ~~`IMPROVEMENTS.md`~~ | ~~256-line changelog/roadmap~~ | ❌ Delete (absorbed into CHANGELOG.md) |
-
-### B2. Consolidate `docs/` Guides
-Current `docs/` has overlapping files. Target structure:
-
-| File | Purpose | Action |
-|------|---------|--------|
-| `workflow_overview.md` | High-level Mermaid diagrams of all pipelines | ✅ Keep as-is |
-| `music_collection_guide.md` | Complete music pipeline (all sources → Jellyfin) | ✅ Done — absorbed `cd_ripping_guide.md` |
-| ~~`cd_ripping_guide.md`~~ | ~~CD-only ripping~~ | ✅ Merged & deleted |
-| `video_ripping_guide.md` | Complete DVD/Blu-ray guide + scenario diagrams | ✅ Done — absorbed `video_workflows.md` |
-| ~~`video_workflows.md`~~ | ~~Mermaid decision trees~~ | ✅ Merged & deleted |
-| `media_server_setup.md` | Server naming conventions, sync, explicit filtering | ✅ Keep |
-| `server_setups/` | Hardware-specific guides (BMAX, Jellyfin small box) | ✅ Keep |
-| `RELEASE_CHECKLIST.md` | **This file** — the single release plan | ✅ Keep |
-
-**Result:** 6 docs instead of 8, with zero content loss. ✅ Complete.
-
-### B3. Fix Known Doc Bugs
-- [x] `media_server_setup.md` lines 86-101: broken/duplicated markdown code block for `metaflac` examples
-- [x] Verify all `bin/music/fix_missing_metadata.py` references → actual file is `fix-missing-metadata.py` (kebab-case)
-- [x] Ensure every doc links back to QUICKSTART.md for prereqs
-- [x] Replace hardcoded `/Volumes/Data/Media/...` paths with `${LIBRARY_ROOT}/...` where possible
-
----
-
-## C. Script Audit & Consolidation
-
-### C1. Naming Policy
+### B1. Naming Policy
 **Decision:** Keep existing filenames (mixed `snake_case` / `kebab-case`) for backward compatibility. New scripts use `snake_case`. Document this in `CONTRIBUTING.md`.
 
-### C2. `bin/music/` — Multiple scripts → classify as Core vs Utility
+### B2. `bin/music/` — Multiple scripts → classify as Core vs Utility
 
 | Script | Category | Action |
 |--------|----------|--------|
@@ -137,13 +94,13 @@ Current `docs/` has overlapping files. Target structure:
 | `fix_metadata.py` | **Utility** | Keep — metadata validation |
 | `fix-missing-metadata.py` | **Utility** | Keep — MusicBrainz metadata repair |
 | `set_explicit.py` | **Utility** | Keep — manual explicit tag setter |
-| `fix-single-title.py` | **Utility** | ✅ Keep — generic FLAC title fixer, no personal data |
-| `fix-track-numbers.py` | **Utility** | ✅ Keep — generic track number fixer, no personal data |
-| `fix-unknown-album.py` | **Utility** | ✅ Keep — album repair with MusicBrainz, no personal data |
-| `repair-flac-tags.py` | **Utility** | ✅ Keep — tag repair from playlists, no personal data |
-| `specialized/` | **Keep** | Prince Lovesexy splitter — niche but harmless |
+| `fix-single-title.py` | **Utility** | Keep — generic FLAC title fixer, no personal data |
+| `fix-track-numbers.py` | **Utility** | Keep — generic track number fixer, no personal data |
+| `fix-unknown-album.py` | **Utility** | Keep — album repair with MusicBrainz, no personal data |
+| `repair-flac-tags.py` | **Utility** | Keep — tag repair from playlists, no personal data |
+| `specialized/` | **Keep** | Keep — Prince Lovesexy splitter — niche but harmless |
 
-### C3. `bin/video/` — Multiple scripts → classify
+### B3. `bin/video/` — Multiple scripts → classify
 
 | Script | Category | Action |
 |--------|----------|--------|
@@ -160,35 +117,33 @@ Current `docs/` has overlapping files. Target structure:
 | `scan_music_video_metadata.py` | **Utility** | Keep — metadata scanner |
 | `utils/mp4_integrity_checker.py` | **Utility** | Keep — validation |
 | `optimize_mp4_streaming.py` | **Utility** | Keep — Jellyfin optimization |
-| `embed_thumbnail.py` | **Utility** | ✅ Keep — generic MP4 cover art embedder, no personal data |
-| `repair_mp4.sh` | **Utility** | ✅ Keep — generic MP4 streaming compliance fixer, no personal data |
-| ~~`fix_music_videos_mapped.py`~~ | **Archived** | ✅ Moved to `_archive/` — 367-entry personal mapping table |
-| ~~`fix_music_videos_secondary.py`~~ | **Archived** | ✅ Moved to `_archive/` — hardcoded personal paths + mapping |
+| `embed_thumbnail.py` | **Utility** | Keep — generic MP4 cover art embedder, no personal data |
+| `repair_mp4.sh` | **Utility** | Keep — generic MP4 streaming compliance fixer, no personal data |
 
 ### C4. `bin/sync/` — Clean ✅
 | Script | Status |
 |--------|--------|
-| `master-sync.py` | ✅ Keep |
-| `sync-library.py` | ✅ Keep |
+| `master-sync.py` | Keep |
+| `sync-library.py` | Keep |
 | `sync-config.yaml` | Gitignored (user-specific); `.example` ships |
 
 ### C5. `bin/tv/` — Clean ✅
 | Script | Status |
 |--------|--------|
-| `tag-show-metadata.py` | ✅ Keep |
-| `rename_shows_jellyfin.py` | ✅ Keep |
+| `tag-show-metadata.py` | Keep |
+| `rename_shows_jellyfin.py` | Keep |
 
 ### C6. `bin/utils/` — Clean ✅
 | Script | Status |
 |--------|--------|
-| `clean_playlists.py` | ✅ Keep |
-| `clean-redundant-overrides.py` | ✅ Keep |
+| `clean_playlists.py` | Keep |
+| `clean-redundant-overrides.py` | Keep |
 
 ---
 
-## D. User Experience Improvements
+## C. User Experience Improvements
 
-### D1. Unified CLI ✅
+### C1. Unified CLI ✅
 *Replace scattered scripts with a single, intuitive entry point.*
 
 - [x] Create unified CLI entry point (`dam` command) using `typer` + `rich`
@@ -241,16 +196,16 @@ Current `docs/` has overlapping files. Target structure:
 
 ---
 
-## E. Code Quality & Polish
+## D. Code Quality & Polish
 
-### E1. Important for Professional Release
+### D1. Important for Professional Release
 - [x] Add `--help` with clear usage examples to every script
 - [x] Ensure every script checks for required tools before running → `dam.deps` module + `dam check`
 - [x] Add type hints to critical public functions
 - [x] Extract shared patterns into `dam/` package (config, deps, keys, console)
 - [x] Standardize exit codes across all scripts (0 = success, 1 = error, 2 = partial)
 
-### E2. Testing
+### D2. Testing
 - [x] Current tests cover: `backfill_subs`, `clean_playlists`, `fix_album`, `fix_album_covers`, `set_explicit`
 - [x] Add tests for: `download_lyrics`, `tag-explicit-mb` (mock-based)
 - [ ] Add tests for: `rip_video` (mock-based) - **Priority: Low**
@@ -260,35 +215,37 @@ Current `docs/` has overlapping files. Target structure:
   - Note: Hardware-dependent, complex mocking required
 - [x] Target: 70%+ coverage for core scripts (95 tests passing)
 
-### E3. CI / Pre-commit
+### D3. CI / Pre-commit
 - [x] Add pre-commit hooks config: `black`, `isort`, `flake8`, trailing whitespace, end-of-file, check-yaml
 - [x] Ensure CI runs on PR (already have `.github/workflows/ci.yml`)
 
 ---
 
-## F. User Experience & Documentation
+## E. User Experience & Documentation
 
-### F1. User Stories & Persona Integration
+### E1. User Stories & Persona Integration
 - [x] **Create User Story Inventory**: Document 5 core user stories with complete workflows
 - [ ] **Integrate User Stories into README**: Add persona-based narrative showing real use cases
 - [ ] **Add User Journey Section**: Show how different personas use specific features
 - [ ] **Create Use Case Examples**: Practical scenarios for each media type
 
-### F2. Visual Polish & Delight
-- [ ] Create project logo (or refine existing `assets/logo.png`)
+### E2. Visual Polish & Delight
+- [x] Create project logo (or refine existing `assets/logo.png`)
 - [ ] Add GIF demo of CD ripping workflow (terminal recording)
 - [ ] Add terminal screenshots showing beautiful output
 - [x] Test README rendering on GitHub before release
 - [x] Consistent emoji language across docs (standardized status indicators and feature emojis)
 
 ### F3. Workflow Documentation Enhancement
-- [ ] **Add Integrated Workflow Flowcharts**: Include finalized flowcharts in `docs/workflow_overview.md`
-  - [ ] **Current State Flowcharts**: Show fragmented user journeys with manual script requirements
-  - [ ] **Proposed Integrated Flowcharts**: Display "process once, done forever" complete workflows
+- [x] **Add Integrated Workflow Flowcharts**: Include finalized flowcharts in `docs/workflow_overview.md`
+  - [x] **System Overview**: Complete flowchart showing physical media → digital archive → filtered sync
+  - [x] **Workflow A**: CDs → FLACs → tagging → sync (with Mermaid flowchart)
+  - [x] **Workflow B**: Movie discs → MP4s → organize/subtitles → server (with Mermaid flowchart)
+  - [x] **Workflow C**: TV Shows → organize → metadata → server (with Mermaid flowchart)
+  - [x] **Workflow D**: Music Videos → organize → standardize → sync (with Mermaid flowchart)
   - [ ] **Comparative Analysis**: Include integration gap summary and user experience impact
   - [ ] **Implementation Roadmap**: Add phased integration strategy with success metrics
   - [ ] **Technical Considerations**: Document integration challenges and mitigation strategies
-  - **Prerequisite**: Complete CLI enhancements identified in CLI Enhancement Review (Section G3)
   - **Goal**: Provide visual documentation of current limitations and future integrated workflows
 
 ---
@@ -303,10 +260,10 @@ Current `docs/` has overlapping files. Target structure:
 - [ ] **All Tests Passing**: All tests must pass (check pytest coverage)
 - [ ] **No Critical Linting**: Zero E9/F63/F7/F82 errors
 - [ ] **Flake8 Clean**: `./venv/bin/python -m flake8 bin/ tests/ scripts/ dam/ --max-line-length=100` shows acceptable quality:
-  - ✅ **Zero critical errors**: No E9/F63/F7/F82 issues
-  - ✅ **Zero code quality issues**: No F401/F541/F821/W291/W293/E131/E203 issues  
-  - ✅ **Acceptable line length**: E501 issues ≤ 30 (complex cases only)
-  - ✅ **Minimal test issues**: F841 issues ≤ 5 (test files only)
+  - [x] **Zero critical errors**: No E9/F63/F7/F82 issues
+  - [x] **Zero code quality issues**: No F401/F541/F821/W291/W293/E131/E203 issues  
+  - [x] **Acceptable line length**: E501 issues ≤ 30 (complex cases only)
+  - [x] **Minimal test issues**: F841 issues ≤ 5 (test files only)
   
 > **🎯 Quality Baseline Achieved (March 2026)**: Successfully reduced flake8 issues from 71 to 26 (63% improvement) while maintaining all functionality. Current state: 24 E501 + 2 F841 = 26 total issues, all non-critical.
 > 
@@ -314,10 +271,10 @@ Current `docs/` has overlapping files. Target structure:
 > - Fixed spinner lifecycle bug where "Ripping with MakeMKV..." persisted through HandBrake encoding
 > - Fixed infinite loop in title selection when multiple candidates found
 > - Improved title selection UX: shows only candidates with 👉 marker for auto-selected title
-- [ ] **Clean Git Status**: No uncommitted changes in working directory
+- [x] **Clean Git Status**: No uncommitted changes in working directory
 - [ ] **Documentation Links**: Verify all internal links in README and docs work
-- [ ] **Environment Variables**: Cross-check `.env.example` with all script requirements
-- [ ] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
+- [x] **Environment Variables**: Cross-check `.env.example` with all script requirements
+- [x] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
 - [ ] **Documentation Appropriateness**: Review docs/ for user-focused content
   - [ ] Verify docs/video_ripping_guide.md, docs/music_collection_guide.md, docs/workflow_overview.md, and docs/media_server_setup.md contain user workflows, not implementation details
   - [ ] Check docs/server_setups/ files are hardware-specific configuration templates (appropriate location)
@@ -376,8 +333,8 @@ Current `docs/` has overlapping files. Target structure:
 ### G3. Final Sanity Checks
 - [ ] **Fresh Install Test**: Clone repo to temp directory, run install, test basic workflow
 - [ ] **Test with Different Disc Drive**: Verify ripping works with at least one other drive model
-- [ ] **README Rendering**: View README on GitHub preview before release
-- [ ] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
+- [x] **README Rendering**: View README on GitHub preview before release
+- [x] **License Compliance**: Verify all deps in requirements.txt have compatible licenses
 - [x] **Security Scan**: Final `gitleaks` or `truffleHog` scan for any missed secrets
 - [x] **Git History**: Review recent commits for any sensitive information
 - [ ] **API Key Graceful Failure Testing**: Verify missing API keys don't crash workflows
@@ -978,6 +935,3 @@ Current video ripping pipeline is optimized for single-feature movie discs. TV s
 ```
 
 ---
-
-*Last updated: March 2026*
-*Status: Sections A (hygiene), B (docs), C (script audit), I1-I2 (GUI app) complete. Sections D–H, I3-I4 remain for future work.*
