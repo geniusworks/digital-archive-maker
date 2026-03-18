@@ -565,10 +565,25 @@ def _configure_sync_destination() -> None:
     console.print("[heading]Sync destination[/]")
     console.print("[muted]Set up where your media library will be synced to.[/]")
 
-    dest = console.input("  Enter destination path (or press Enter to skip): ").strip()
-    if not dest:
-        info("Skipping sync destination configuration.")
-        return
+    # Ask if local or remote (default to remote)
+    sync_type = console.input("  Sync to (l)ocal or (r)emote destination? [R/l]: ").strip().lower()
+    
+    if sync_type in ("", "r"):  # Default to remote
+        console.print("[muted]Setting up remote sync - you'll need SSH access to the server[/]")
+        console.print("[muted]Example: user@192.168.1.100:/mnt/media/Music[/]")
+        server = console.input("  Enter server IP or hostname (e.g. user@192.168.1.100): ").strip()
+        path = console.input("  Enter remote directory path (e.g. /mnt/media/Music): ").strip()
+        if not server or not path:
+            info("Skipping sync destination configuration.")
+            return
+        dest = f"{server}:{path}"
+    else:
+        console.print("[muted]Setting up local sync to another directory or drive[/]")
+        console.print("[muted]Example: /Volumes/ExternalDrive/MediaBackup[/]")
+        dest = console.input("  Enter local directory path: ").strip()
+        if not dest:
+            info("Skipping sync destination configuration.")
+            return
 
     if dest.startswith("~"):
         dest = str(Path(dest).expanduser())

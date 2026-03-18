@@ -155,13 +155,30 @@ def onboard_keys(scope: Optional[str] = None) -> None:
     console.print()
     if not missing:
         info("All API keys for this workflow are already configured.")
-        # Offer to update existing keys
-        update = console.input("  Update an existing key? [y/N]: ").strip().lower()
+        update = console.input("  Update an existing key? (y/N): ").strip().lower()
         if update not in ("y", "yes"):
             return
-        # Prompt for all keys in this scope
+        # Show existing values and prompt for updates
+        from dam.config import get
+        console.print("\n[heading]Update API Keys[/]")
+        console.print("[muted]Press Enter to keep existing value, or enter new key to update.[/]")
         for key_name in relevant:
-            require_key(key_name, prompt=True, persist=True)
+            current_value = get(key_name, "")
+            if current_value:
+                # Mask API keys for security
+                masked = current_value[:4] + "*" * (len(current_value) - 8) + current_value[-4:] if len(current_value) > 8 else "*" * len(current_value)
+                console.print(f"\n  {key_name}: {masked}")
+                new_value = console.input(f"  New value (or press Enter to keep): ").strip()
+                if new_value and new_value != current_value:
+                    from dam.config import REPO_ROOT
+                    env_path = REPO_ROOT / ".env"
+                    _save_key_to_env(key_name, new_value, env_path)
+                    success(f"Updated {key_name}")
+                else:
+                    info(f"Kept existing {key_name}")
+            else:
+                # This shouldn't happen if we're in the "all configured" branch, but handle it
+                require_key(key_name, prompt=True, persist=True)
         return
 
     console.print(

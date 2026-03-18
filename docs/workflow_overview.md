@@ -12,6 +12,35 @@ Each step uses the `dam` command or links to detailed guides.
 
 ---
 
+## 🏛️ Philosophy: Curated Library + Filtered Sync
+
+### Local Library = Curated Archive
+Your **LIBRARY_ROOT** is your permanent, curated collection:
+- **Physical media → Digital files** with complete metadata
+- **Quality control** through ripping, tagging, and organization
+- **No filtering** - everything is preserved in high quality
+- **Single source of truth** for your entire media collection
+
+### Sync = Filtered Distribution
+**`dam sync`** applies final filters when distributing to servers:
+- **Content filtering**: Exclude explicit content, unknown ratings, etc.
+- **Target-specific**: Different rules for family vs. full servers
+- **Remote by default**: Usually syncs to media servers (Jellyfin/Plex)
+- **Optional local**: Can also sync to backup drives or other storage
+
+### Example Workflow
+```
+Physical Media → [RIP + TAG] → Local Library (curated)
+                                   ↓
+                               [SYNC + FILTERS]
+                                   ↓
+                            Remote Server (filtered)
+```
+
+This separation lets you maintain a **perfect archive locally** while **syncing filtered content** to different destinations.
+
+---
+
 ## System Overview
 
 ```mermaid
