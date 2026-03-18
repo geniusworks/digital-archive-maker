@@ -39,8 +39,8 @@ app = typer.Typer(
 
 # ── Subcommand groups ──────────────────────────────────────────────────────
 
-rip_app = typer.Typer(help="Rip physical media to digital files.")
-app.add_typer(rip_app, name="rip")
+# Note: Commands are displayed in the order they're added to the app
+# To achieve alphabetical ordering, we add typer apps in the right order
 
 
 # ── dam check ──────────────────────────────────────────────────────────────
@@ -180,8 +180,14 @@ def config(
     success("Configuration complete! Run [bold]dam check[/] to verify everything.")
 
 
-# ── dam rip cd ─────────────────────────────────────────────────────────────
+# ── dam rip cd ─────────────────────────────────────────────────────────----
 
+rip_app = typer.Typer(help="Rip physical media to digital files.")
+
+@app.command()
+def rip():
+    """Rip physical media to digital files."""
+    return rip_app()
 
 @rip_app.command("cd")
 def rip_cd():
@@ -380,7 +386,6 @@ def rip_video(
 # ── dam tag <subcommands> ─────────────────────────────────────────────────
 
 tag_app = typer.Typer(help="Tag and enrich media metadata.")
-app.add_typer(tag_app, name="tag")
 
 
 @tag_app.command("explicit")
@@ -471,6 +476,12 @@ def sync(
 def version():
     """Show the current version."""
     console.print(f"Digital Archive Maker [bold]{__version__}[/]")
+
+
+# ── Subcommand apps (added in alphabetical order for help display) ──────────────────────────────────────────────────────
+
+app.add_typer(rip_app, name="rip")
+app.add_typer(tag_app, name="tag")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────

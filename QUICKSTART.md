@@ -1,6 +1,6 @@
 # Digital Archive Maker - Quick Start Guide
 
-Get from zero to ripping your first CD in under 10 minutes.
+Get from zero to ripping your first disc in under 10 minutes.
 
 ---
 
@@ -28,13 +28,6 @@ make install-video-deps
 source venv/bin/activate
 ```
 
-*If you prefer not to use `make`, create the venv manually:*
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-```
 
 ## 2. Configure Environment
 
@@ -53,7 +46,7 @@ Edit `.env` with your paths and preferences:
 
 ```bash
 # Required: Where your media library lives
-LIBRARY_ROOT="/Volumes/Data/Media/Library"
+LIBRARY_ROOT="/path/to/your/media/library"
 
 # Optional: Language preferences for video ripping
 # Use 2-letter ISO 639-1 codes (e.g., "en", "fr", "es", "de", "ja")
@@ -85,14 +78,12 @@ Insert a CD, then:
 
 ```bash
 dam rip cd
-# or: make rip-cd
 ```
 
 ## 4. Rip Your First Movie Disc
 
 ```bash
 dam rip video
-# or: make rip-video
 ```
 
 Follow the prompts to select title and configure encoding.

@@ -187,17 +187,17 @@ dam config               # Interactive first-run wizard (library path, API keys)
 dam version              # Show current version
 
 # Rip media
-dam rip cd               # Rip audio CD to FLAC
-dam rip video            # Rip movie disc to MP4
+dam rip cd                                   # Rip audio CD to FLAC
+dam rip video                                # Rip movie disc to MP4
 dam rip video --title "Movie" --year 2024    # With metadata
 
 # Tag and organize
-dam tag explicit /path/to/music           # Tag explicit content
-dam tag explicit /path/to/music --dry-run  # Preview without writing
-dam tag genres /path/to/music             # Add genre tags
-dam tag lyrics /path/to/music             # Download lyrics
+dam tag explicit /path/to/music                 # Tag explicit content
+dam tag explicit /path/to/music --dry-run       # Preview without writing
+dam tag genres /path/to/music                   # Add genre tags
+dam tag lyrics /path/to/music                   # Download lyrics
 dam tag lyrics /path/to/music --no-recursive    # Process single directory
-dam tag movie /path/to/movies             # Add movie metadata
+dam tag movie /path/to/movies                   # Add movie metadata
 
 # Sync library
 dam sync                 # Sync to media server
