@@ -13,7 +13,7 @@ endif
 help:
 	@echo "Available targets:"
 	@echo "  install-deps        Install Homebrew deps and Python packages"
-	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, ccextractor, libdvdcss; link makemkvcon"
+	@echo "  install-video-deps  Install HandBrakeCLI, ffmpeg/ffprobe, jq, tesseract, mkvtoolnix, libdvdcss; link makemkvcon"
 	@echo "  rip-cd              Rip an audio CD using abcde"
 	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/video/rip_video.py"
 	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
@@ -75,7 +75,7 @@ install-deps:
 
 install-video-deps:
 	@echo "Installing video tools via Homebrew... (installing individually to avoid aborts)"
-	@for p in handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss; do \
+	@for p in handbrake ffmpeg jq tesseract mkvtoolnix libdvdcss; do \
 		if ! brew list $$p >/dev/null 2>&1; then \
 		  echo "brew install $$p"; brew install $$p || true; \
 		else \
@@ -94,12 +94,7 @@ install-video-deps:
 		sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv /usr/local/bin/mmgplsrv && \
 		echo "Linked mmgplsrv to /usr/local/bin/mmgplsrv") || \
 		echo "Note: mmgplsrv not found, MakeMKV may not be properly installed."
-	@echo "Creating MakeMKV ccextractor symlink..."
-	@([ -x /opt/homebrew/bin/ccextractor ] && \
-		sudo ln -sf /opt/homebrew/bin/ccextractor /usr/local/bin/mmccextr && \
-		echo "Linked ccextractor to /usr/local/bin/mmccextr for MakeMKV") || \
-		echo "Note: ccextractor not found, install with: brew install ccextractor"
-	@echo "If 'mkvmerge' is still not found, ensure Homebrew bin is in PATH (e.g., export PATH=\"$$(brew --prefix)/bin:$$PATH\")."
+		@echo "If 'mkvmerge' is still not found, ensure Homebrew bin is in PATH (e.g., export PATH=\"$$(brew --prefix)/bin:$$PATH\")."
 	@echo ""
 	@echo "For OCR of image-based subtitles (VobSub/PGS), consider:"
 	@echo "  - Subtitle Edit (GUI): https://www.nikse.dk/subtitleedit (recommended)"
@@ -183,7 +178,7 @@ uninstall:
 		echo "✓ Uninstall complete"; \
 		echo ""; \
 		echo "Optional cleanup:"; \
-		echo "  • Remove Homebrew packages: brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss"; \
+		echo "  • Remove Homebrew packages: brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix libdvdcss"; \
 		echo "  • Remove cache directory: rm -rf cache/"; \
 		echo "  • Remove log directory: rm -rf log/"; \
 		echo "  • Keep your .env file and media library"; \

@@ -801,11 +801,10 @@ Notes:
 ## Preflight and troubleshooting
 
 ### MakeMKV setup
-The script performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` or `mmccextr` not found, create symlinks:
+The script performs preflight checks and warns if helper tools are missing. If you see errors like `mmgplsrv` not found, create symlinks:
 
 ```bash
 sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmgplsrv /usr/local/bin/mmgplsrv
-sudo ln -sf /Applications/MakeMKV.app/Contents/MacOS/mmccextr /usr/local/bin/mmccextr
 ```
 
 On first run, launch the GUI once to accept the EULA and set the drive region, and consider removing quarantine:

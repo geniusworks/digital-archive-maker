@@ -13,7 +13,6 @@ brew "ffmpeg"
 brew "handbrake"
 brew "libdvdcss"
 brew "mkvtoolnix"
-brew "ccextractor"
 
 # Image processing
 brew "imagemagick"

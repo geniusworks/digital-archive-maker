@@ -145,15 +145,7 @@ CORE_DEPS: list[Dependency] = [
         check_cmd="which mkvmerge",
         required_for=["video"],
     ),
-    Dependency(
-        name="ccextractor",
-        kind=DepKind.BREW,
-        description="Closed-caption extraction",
-        check_cmd="which ccextractor",
-        required_for=["video"],
-        optional=True,
-    ),
-    Dependency(
+        Dependency(
         name="libdvdcss",
         kind=DepKind.BREW,
         description="DVD decryption library",
@@ -211,6 +203,7 @@ def check_all(
     missing: list[Dependency] = []
 
     if verbose:
+        console.print("")
         console.print("[heading]▸ Checking system dependencies[/]")
 
     for dep in deps:

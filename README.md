@@ -281,7 +281,7 @@ make uninstall  # Removes Python package and virtual environment
 
 Optional cleanup (run manually if needed):
 ```bash
-brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix ccextractor libdvdcss
+brew uninstall handbrake ffmpeg jq tesseract mkvtoolnix libdvdcss
 rm -rf cache/ log/  # Remove cache and log directories
 ```
 
