@@ -33,15 +33,14 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
     add_completion=False,  # Disable completion options we don't support
+    rich_help_panel="dam",  # Enable rich formatting
+    pretty_exceptions_show_locals=False,  # Clean error output
 )
 
 # ── Subcommand groups ──────────────────────────────────────────────────────
 
 rip_app = typer.Typer(help="Rip physical media to digital files.")
 app.add_typer(rip_app, name="rip")
-
-tag_app = typer.Typer(help="Tag and enrich media metadata.")
-app.add_typer(tag_app, name="tag")
 
 
 # ── dam check ──────────────────────────────────────────────────────────────
@@ -380,6 +379,9 @@ def rip_video(
 
 # ── dam tag <subcommands> ─────────────────────────────────────────────────
 
+tag_app = typer.Typer(help="Tag and enrich media metadata.")
+app.add_typer(tag_app, name="tag")
+
 
 @tag_app.command("explicit")
 def tag_explicit(
@@ -458,14 +460,8 @@ def sync(
 ):
     """Sync media library to configured destinations."""
     banner()
-    heading("Library sync")
-    script = REPO_ROOT / "bin" / "sync" / "master-sync.py"
-    args = [sys.executable, str(script)]
-    if dry_run:
-        args.append("--dry-run")
-    if quiet:
-        args.append("--quiet")
-    _run(args)
+    from dam.sync import main as sync_main
+    sync_main(dry_run=dry_run, quiet=quiet)
 
 
 # ── dam version ────────────────────────────────────────────────────────────
