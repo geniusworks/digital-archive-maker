@@ -618,10 +618,6 @@ git branch -m main
   - [ ] Consistent feedback for all user actions
 
 ### J4. GUI Critical Features for v1.0
-- [ ] **Git History Security**: Clear git history to avoid secrets/PII exposure
-  - [ ] Review entire git history for sensitive data
-  - [ ] Consider squash-to-single-commit or fresh repository
-  - [ ] Document git history cleaning procedure
 - [ ] **Operation Cancellation**: Consistent cancel/interrupt functionality
   - [ ] Add cancel button for all long-running operations
   - [ ] Implement graceful shutdown equivalent to CTRL+C
@@ -661,13 +657,6 @@ git branch -m main
   - [ ] Ensure preview mode for all enhancement operations
   - [ ] Test safety features (backup, confirmation, rollback)
   - [ ] Document enhancement workflows and safety measures
-- [ ] **Community & Support Strategy**: Plan user engagement approach
-  - [ ] Decide whether to host own community vs. point to existing forums
-  - [ ] Consider recommending established forums (MakeMKV, HandBrake, Jellyfin/Plex)
-  - [ ] Evaluate pros/cons of GitHub Discussions vs. existing communities
-  - [ ] Plan moderation capacity if hosting own community
-  - [ ] Document community guidelines and code of conduct
-  - [ ] Consider creating FAQ for common cross-tool questions
 
 ### I4. Future Configuration Extensions (Post-v1.0)
 
