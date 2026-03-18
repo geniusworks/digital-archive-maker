@@ -9,7 +9,7 @@ Transform your discs into a digital library—automatically organized and ready 
 <div align="center">
 
 [![License](https://img.shields.io/badge/license-GPLv2+-007ec6?style=for-the-badge&label=License&labelColor=444444)](LICENSE)
-[![Version](https://img.shields.io/github/v/tag/geniusworks/digital-archive-maker?include_prereleases=true&style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](https://github.com/geniusworks/digital-archive-maker/releases)
+[![Version](https://img.shields.io/github/v/tag/geniusworks/digital-archive-maker?include_prereleases&style=for-the-badge&label=Version&labelColor=444444&color=ED7B00)](https://github.com/geniusworks/digital-archive-maker/releases)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg?style=for-the-badge&label=Platform&labelColor=444444&color=999999)](https://www.apple.com/macos/)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg?style=for-the-badge&label=Python&labelColor=444444&color=3776AB)](https://www.python.org/downloads/)
 
