@@ -2,8 +2,8 @@
 # Copy to ~/.abcde.conf and adjust as needed
 
 # Output format and location
-# OUTPUTDIR can be centralized via LIBRARY_ROOT (see .env.example). Falls back to /Volumes/Data/Media/Library
-OUTPUTDIR="${LIBRARY_ROOT:-/Volumes/Data/Media/Library}/CDs"
+# OUTPUTDIR is set via LIBRARY_ROOT (see .env.example). Run `dam config` to set your library path.
+OUTPUTDIR="${LIBRARY_ROOT}/CDs"
 OUTPUTTYPE="flac"
 
 # Actions pipeline

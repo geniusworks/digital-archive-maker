@@ -33,7 +33,7 @@ REPO_ROOT: Path = _find_repo_root()
 
 # Default values — overridden by .env / env vars
 _DEFAULTS: dict[str, str] = {
-    "LIBRARY_ROOT": "/Volumes/Data/Media/Library",
+    "LIBRARY_ROOT": "",
     "LANG_AUDIO": "en",
     "LANG_SUBTITLES": "en",
 }

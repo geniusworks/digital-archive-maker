@@ -165,7 +165,7 @@ def config(
     # Library path
     heading("Destination library path")
     
-    current_root = get("LIBRARY_ROOT", "/Volumes/Data/Media/Library")
+    current_root = get("LIBRARY_ROOT", "")
     console.print(f"\nCurrent destination library path: [key]{current_root}[/]")
     new_root = console.input("  Enter new path (or press Enter to keep current): ").strip()
     if new_root and new_root != current_root:
@@ -593,7 +593,7 @@ def _configure_sync_destination() -> None:
     if dest.startswith("~"):
         dest = str(Path(dest).expanduser())
 
-    library_root = get("LIBRARY_ROOT", "/Volumes/Data/Media/Library")
+    library_root = get("LIBRARY_ROOT", "")
 
     # Ask about content filtering
     exclude_content = console.input("  Exclude material flagged explicit or unknown? (y/N): ").strip().lower() in ("y", "yes")

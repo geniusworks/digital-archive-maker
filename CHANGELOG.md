@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0-beta] - 2026-03-18
+
 ### Added
 - **Unified CLI** (`dam` command) — Single entry point for all workflows: `dam rip`, `dam tag`, `dam sync`, `dam check`, `dam config`
 - **Shared library** (`dam/` package) — Centralised config loader, dependency checker with auto-install, interactive API key onboarding, and Rich console helpers
@@ -56,5 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library sync with explicit content filtering
 - TV show renaming and metadata tagging
 
-[Unreleased]: https://github.com/geniusworks/media-archive-maker/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/geniusworks/media-archive-maker/releases/tag/v0.1.0
+[Unreleased]: https://github.com/geniusworks/digital-archive-maker/compare/v0.9.0-beta...HEAD
+[0.9.0-beta]: https://github.com/geniusworks/digital-archive-maker/compare/v0.1.0...v0.9.0-beta
+[0.1.0]: https://github.com/geniusworks/digital-archive-maker/releases/tag/v0.1.0

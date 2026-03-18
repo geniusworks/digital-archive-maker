@@ -53,7 +53,7 @@ def get_library_root() -> Path:
         return Path(lib_root)
 
     # Fallback to default
-    return Path("/Volumes/Data/Media/Library")
+    return Path(os.getenv("LIBRARY_ROOT") or ".")
 
 
 try:
