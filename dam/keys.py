@@ -152,11 +152,18 @@ def onboard_keys(scope: Optional[str] = None) -> None:
 
     missing = [k for k in relevant if k in missing_api_keys()]
 
+    console.print()
     if not missing:
         info("All API keys for this workflow are already configured.")
+        # Offer to update existing keys
+        update = console.input("  Update an existing key? [y/N]: ").strip().lower()
+        if update not in ("y", "yes"):
+            return
+        # Prompt for all keys in this scope
+        for key_name in relevant:
+            require_key(key_name, prompt=True, persist=True)
         return
 
-    console.print()
     console.print(
         f"[heading]API Key Setup[/] — {len(missing)} key{'s' if len(missing) != 1 else ''} "
         f"not yet configured."
