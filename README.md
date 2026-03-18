@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-Turn your CDs and movie discs into a convenient digital library you can access from anywhere.
+Transform your discs into a digital library—automatically organized and ready for media servers.
 </p>
 
 <div align="center">
