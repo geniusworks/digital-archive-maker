@@ -266,11 +266,6 @@
   - [x] **Minimal test issues**: Minimal F841 issues (test files only)
   
 > **🎯 Quality Baseline Achieved (March 2026)**: Code quality significantly improved while maintaining all functionality. All critical issues resolved, only minor style issues remain.
-> 
-> **🔧 Recent Critical Fixes (March 2026)**:
-> - Fixed spinner lifecycle bug where "Ripping with MakeMKV..." persisted through HandBrake encoding
-> - Fixed infinite loop in title selection when multiple candidates found
-> - Improved title selection UX: shows only candidates with 👉 marker for auto-selected title
 - [x] **Clean Git Status**: No uncommitted changes in working directory
 - [ ] **Documentation Links**: Verify all internal links in README and docs work
 - [x] **Environment Variables**: Cross-check `.env.example` with all script requirements
