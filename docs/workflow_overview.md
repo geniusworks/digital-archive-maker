@@ -1,4 +1,4 @@
-# Workflow Overview (Physical Media → Digital Archive)
+# Physical Media → Digital Archive workflow
 
 Digital Archive Maker provides a simple command-line tool (`dam`) for two main workflows:
 
@@ -9,7 +9,7 @@ Each step uses the simple `dam` command.
 
 ---
 
-## 🏛️ Two-Stage Approach: Archive Locally, Share Selectively
+## 🏛️ Archive Locally, Share Selectively
 
 ### Stage 1: Your Perfect Local Archive
 Your **LIBRARY_ROOT** becomes your complete digital collection:
@@ -101,126 +101,72 @@ flowchart TB
 
 ---
 
-## Workflow A: CDs → FLACs → tagging → sync
+## Workflow A: CDs → FLACs → sync
 
 ```mermaid
 flowchart LR
-    A[🎵 Audio CD] --> B[abcde + MusicBrainz]
-    B --> C[FLAC + cover.jpg + .m3u8]
-    C --> D[Enhance Metadata]
-    D --> E[Tag Explicit Content]
-    E --> F[Download Lyrics]
-    F --> G{Sync?}
-    G -->|exclude explicit| H[🖥️ Family Server]
-    G -->|all content| I[🖥️ Full Server]
+    A[🎵 Audio CD] --> B[dam rip cd]
+    B --> C[FLAC + Metadata]
+    C --> D[dam sync]
+    D --> E[🖥️ Media Server]
 ```
 
-### A1) Rip CD to FLAC (MusicBrainz + cover + playlist)
-- Guide: `docs/music_collection_guide.md` (Source 1: Audio CDs)
-- Commands:
-  - `dam rip cd` (unified CLI)
-  - `make rip-cd` (Makefile shortcut)
+### A1) Rip CD to digital library
+- **Command**: `dam rip cd`
+- **What it does**: 
+  - Rips audio CD to high-quality FLAC files
+  - Automatically fetches album art and metadata from MusicBrainz
+  - Creates playlist and organizes files by artist/album
+- **Output**: `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac`
 
-Output (default):
-- `${LIBRARY_ROOT}/CDs/Artist/Album/NN - Title.flac`
-- `cover.jpg`
-- `Album.m3u8`
+### A2) Sync to media server (optional)
+- **Command**: `dam sync`
+- **What it does**: 
+  - Syncs your music library to Jellyfin/Plex
+  - Applies rating and explicit content filters (if set in config)
+  - Maintains perfect organization on your media server
 
-### A2) Normalize/fix an existing album folder (optional)
-- Commands:
-  - `dam tag fix-album` (unified CLI)
-  - `bin/music/fix_album.py` (direct script)
-  - Renames tracks to `NN - Title.flac`
-  - Rebuilds playlist
-  - Fixes tags and cover art
-
-### A3) Download lyrics (optional)
-- Commands:
-  - `dam tag lyrics` (unified CLI)
-  - `bin/music/download_lyrics.py` (direct script)
-- Fetches lyrics from Genius API (falls back to free sources if no key)
-
-### A4) Tag explicit content (optional)
-- Commands:
-  - `dam tag explicit` (unified CLI)
-  - `bin/music/tag-explicit-mb.py` (direct script)
-- Writes per-track tag: `EXPLICIT=Yes|No|Unknown`
-
-### A5) Sync to a destination server while excluding explicit/unknown (optional)
-- Commands:
-  - `dam sync` (unified CLI)
-  - `bin/sync/sync-library.py` (direct script)
-- Excludes are driven by the `EXPLICIT` tag:
-  - `--exclude-explicit` skips `EXPLICIT=Yes`
-  - `--exclude-unknown` skips `EXPLICIT=Unknown` and missing tags
+**Setup required**: Run `dam config` first to set up your library path and API keys
 
 ---
 
-## Workflow B: Movie discs → MP4s → organize/subtitles → server
+## Workflow B: Movie discs → MP4s → sync
 
 ```mermaid
 flowchart LR
-    A[📀 Movie disc] --> B[MakeMKV Scan]
-    B --> C[Interactive Prompt]
-    C --> D[Rip MKV]
-    D --> E[HandBrakeCLI]
-    E --> F[MP4 + subtitles]
-    F --> G[Tag Metadata]
-    G --> H[Tag Ratings]
-    H --> I{Rating Filter}
-    I -->|≤PG-13| J[🖥️ Family Server]
-    I -->|all ratings| K[🖥️ Full Server]
+    A[📀 Movie disc] --> B[dam rip video]
+    B --> C[MP4 + Subtitles + Metadata]
+    C --> D[dam sync]
+    D --> E[🖥️ Media Server]
 ```
 
-### B1) Rip discs to staging (MKV/MP4)
-- Guide: `docs/video_ripping_guide.md`
-- Commands:
-  - `dam rip video` (unified CLI)
-  - `make rip-video` (staging)
-  - `make rip-movie TITLE="Movie Name" YEAR=1999` (organize main feature)
-- Features: Automatic disc scanning, interactive subtitle processing prompt before ripping, automatic compression for large MKVs.
-- **MakeMKV is optional for DVDs**: If MakeMKV is not installed, the script will automatically use HandBrake CLI directly for DVD ripping. Blu-ray ripping still requires MakeMKV due to encryption.
+### B1) Rip movie disc to digital library
+- **Command**: `dam rip video`
+- **What it does**:
+  - Scans disc and shows interactive subtitle options
+  - Rips DVD/Blu-ray to high-quality MP4 files
+  - Automatically fetches movie metadata and ratings from TMDb
+  - Handles both MakeMKV and HandBrake as needed
+- **Output**: Organized MP4 files with optional subtitles and rich metadata
 
-### B2) Organize into a server-friendly layout
-- Guide: `docs/media_server_setup.md`
-- Recommended:
-  - Movies: `.../Movies/Movie Name (Year)/Movie Name (Year).mp4`
-  - TV: `.../TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.mp4`
+### B2) Sync to media server (optional)
+- **Command**: `dam sync`
+- **What it does**:
+  - Syncs your movie library to Jellyfin/Plex
+  - Applies rating and explicit content filters (if set in config)
+  - Maintains perfect server-ready organization
 
-### B3) Ensure subtitles are present (optional)
-- Video guide covers:
-  - English subtitle selection/burn-in policies
-  - Backfilling English soft subs into existing MP4s
-
-### B4) Tag movie metadata and ratings (optional)
-- Commands:
-  - `dam tag metadata` (unified CLI)
-  - `dam tag ratings` (unified CLI)
-  - `bin/video/tag-movie-metadata.py` — rich metadata (plot/genres/cast/artwork) via TMDb/OMDb
-  - `bin/video/tag-movie-ratings.py` — MPAA rating tag (`©rat`) via TMDb/OMDb + overrides/cache
+**Setup required**: Run `dam config` first to set up your library path and API keys
 
 ---
 
-## Workflow C: TV Shows → organize → metadata → server
+## 📚 Additional Tools
 
-```mermaid
-flowchart LR
-    A[📺 TV Shows] --> B[rename_shows_jellyfin.py]
-    B --> C[Jellyfin Format]
-    C --> D[tag-show-metadata.py]
-    D --> E[TMDb Metadata]
-    E --> F[🖥️ Media Server]
-```
+For advanced users and special cases, see **`docs/additional_tools.md`** for:
+- Manual organization scripts
+- Enhanced metadata tools
+- TV show processing utilities
+- Custom sync options
 
-### C1) Organize TV shows into Jellyfin-compatible format
-- Commands:
-  - `bin/tv/rename_shows_jellyfin.py` (direct script)
-- Output: `.../TV/Show Name/Season 01/Show Name - S01E01 - Episode Title.ext`
-- Handles various input formats and normalizes to Jellyfin naming conventions
-
-### C2) Tag TV show metadata (optional)
-- Commands:
-  - `bin/tv/tag-show-metadata.py` (direct script)
-- Fetches show metadata from TMDb
-- Adds proper series/season/episode metadata
+These scripts provide additional functionality beyond the core `dam` workflows.
 
