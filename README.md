@@ -28,27 +28,20 @@ Transform CDs, DVDs, and Blu-rays into a perfectly organized, media server-ready
 
 ## About
 
-**Digital Archive Maker** converts your physical disc collection into a digital archive you can use anywhere.
+**Digital Archive Maker** converts your physical disc collection into a rich digital archive you can use anywhere.
 
-**The Challenge:** Your CDs, DVDs, and Blu-rays sit on shelves—difficult to browse, search, or access without the physical discs and players. Traditional digital solutions often compress quality, strip metadata, or lock you into proprietary formats.
+**The Challenge:** Your media collection sits on shelves—difficult to browse, search, access, and enjoy. Traditional transfers often degrade quality, lose information, or lock you into proprietary systems.
 
-**The Gap:** Creating a proper digital library requires dozens of uncoordinated tools for ripping, tagging, organizing, and syncing.
+**The Gap:** Creating a proper digital library requires dozens of uncoordinated tools for ripping, tagging, organizing, and delivery.
 
 **What Digital Archive Maker does:**
-- **Read** any disc (CD, DVD, Blu-ray)
-- **Extract** archival quality digital files
-- **Enrich** with metadata, artwork, and subtitles
-- **Organize** into a browsable, searchable collection
-- **Sync** to your devices or media server
+- 📀 **Reads** any disc (CD, DVD, Blu-ray)
+- 💻 **Extracts** archival quality digital files
+- 🏷️ **Enriches** with metadata, artwork, subtitles
+- 📁 **Organizes** a browsable, searchable collection
+- 🔄 **Syncs** to your device or media server
 
-**Unique automatic capabilities:**
-- 📀 **Disc transfers** - Audio, DVD, Blu-ray
-- 🎵 **High-quality audio** - Lossless rips and metadata
-- 🎬 **High-quality video** - Track selection and subtitle intelligence
-- 🏷️ **Automatic tagging** - No manual data entry
-- 📁 **Flexible access** - Use locally or with any media server
-
-**Result:** Your physical collection becomes a searchable, accessible digital library—stored on your own hardware, no subscriptions required.
+**Result:** Your physical collection becomes a searchable, accessible digital library—stored on your hardware, no subscriptions required.
 
 ---
 
