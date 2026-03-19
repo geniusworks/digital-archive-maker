@@ -1,10 +1,9 @@
 # Workflow Overview (Physical Media → Digital Archive)
 
-This repository provides a unified CLI (`dam`) for three primary workflows:
+This repository provides a unified CLI (`dam`) for two primary workflows:
 
-- **🎵 Audio CDs → FLAC library → tagging → optional sync to a server**
-- **🎬 Movie discs → MP4 library → subtitles/organization → server-ready layout**
-- **🎥 Music Videos → organize → standardize → sync with other video content**
+- **🎵 Audio CDs → FLAC library → tagging → sync to media server (optional)**
+- **🎬 Movie discs → MP4 library → subtitles/organization → sync to media server (optional)**
 
 Each step uses the `dam` command or links to detailed guides.
 
@@ -49,7 +48,6 @@ flowchart TB
         CD[Audio CD]
         DVD[DVD]
         BR[Blu-ray]
-        MV[Music Videos]
     end
 
     subgraph PROCESS["⚙️ Processing"]
@@ -81,7 +79,6 @@ flowchart TB
     CD --> RIP
     DVD --> RIP
     BR --> RIP
-    MV --> ORG
 
     RIP --> TAG
     TAG --> ORG
@@ -229,40 +226,3 @@ flowchart LR
 - Fetches show metadata from TMDb
 - Adds proper series/season/episode metadata
 
----
-
-## Workflow D: Music Videos → organize → standardize → sync
-
-```mermaid
-flowchart LR
-    A[🎬 Music Videos] --> B[fix_music_videos.py]
-    B --> C[Artist folders]
-    C --> D[standardize_filenames.py]
-    D --> E["{Artist} - {Title}.mp4"]
-    E --> F[scan_metadata.py]
-    F --> G[Tagged videos]
-    G --> H[🖥️ Media Server]
-```
-
-### D1) Organize music videos into artist folders
-- Commands:
-  - `dam tag music-videos` (unified CLI)
-  - `bin/video/fix_music_videos.py` — Uses MusicBrainz/AcoustID to identify and organize videos
-- Output: `${LIBRARY_ROOT}/Videos/Music/Artist/Title.mp4`
-
-### D2) Standardize filenames and metadata (optional)
-- Commands:
-  - `dam tag standardize` (unified CLI)
-  - **Filename standardization:** `bin/video/standardize_music_video_filenames.py`
-  - **Metadata scanning:** `bin/video/scan_music_video_metadata.py`
-  - Ensures all files follow `{artist} - {title}.mp4` format
-  - Handles both MP4 and MP3 files
-  - Uses existing metadata or falls back to directory/filename parsing
-
-### D3) Sync to server alongside other video content
-- Commands:
-  - `dam sync` (unified CLI)
-  - Configuration: `bin/sync/sync-config.yaml`
-- Destination: `/mnt/media/Videos` (syncs entire Videos directory including Music subfolder)
-- No rating filtering applied to music videos
-- Integrated with master sync orchestration

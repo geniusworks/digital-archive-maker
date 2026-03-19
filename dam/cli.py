@@ -410,7 +410,7 @@ def tag_explicit(
 
     heading("Tagging explicit content")
     script = REPO_ROOT / "bin" / "music" / "tag-explicit-mb.py"
-    args = [sys.executable, str(script), "--path", path]
+    args = [sys.executable, str(script), path]
     if dry_run:
         args.append("--dry-run")
     _run(args)
@@ -420,10 +420,10 @@ def tag_explicit(
 def tag_genres(
     path: str = typer.Argument(..., help="Path to music library or album."),
 ):
-    """Add genre tags via MusicBrainz."""
+    """Add genre tags to music files."""
     banner()
-    heading("Updating genres")
-    script = REPO_ROOT / "bin" / "music" / "update-genre-mb.py"
+    _ensure_deps(["python"])
+    script = REPO_ROOT / "bin" / "music" / "add-genres.py"
     _run([sys.executable, str(script), path])
 
 
@@ -431,18 +431,14 @@ def tag_genres(
 def tag_lyrics(
     path: str = typer.Argument(..., help="Path to music library."),
     recursive: bool = typer.Option(
-        True, "--recursive/--no-recursive", help="Process subdirectories."
+        False, "--recursive", "-r", help="Process albums recursively."
     ),
 ):
-    """Download song lyrics via Genius."""
+    """Download and embed lyrics in music files."""
     banner()
-    from dam.keys import require_key
-
-    require_key("GENIUS_API_TOKEN")
-
-    heading("Downloading lyrics")
+    _ensure_deps(["python"])
     script = REPO_ROOT / "bin" / "music" / "download_lyrics.py"
-    args = [sys.executable, str(script), "--path", path]
+    args = [sys.executable, str(script), path]
     if recursive:
         args.append("--recursive")
     _run(args)
@@ -452,8 +448,9 @@ def tag_lyrics(
 def tag_movie(
     path: str = typer.Argument(..., help="Path to movie file or directory."),
 ):
-    """Add movie metadata via TMDb/OMDb."""
+    """Tag movie metadata from TMDb."""
     banner()
+    _ensure_deps(["python"])
     from dam.keys import require_key
 
     require_key("TMDB_API_KEY")
@@ -461,6 +458,12 @@ def tag_movie(
     heading("Tagging movie metadata")
     script = REPO_ROOT / "bin" / "video" / "tag-movie-metadata.py"
     _run([sys.executable, str(script), path])
+
+
+@app.command()
+def tag():
+    """Tag and enrich media metadata."""
+    return tag_app()
 
 
 # ── dam sync ───────────────────────────────────────────────────────────────
