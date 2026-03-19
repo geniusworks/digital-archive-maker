@@ -54,7 +54,7 @@ Transform CDs, DVDs, and Blu-rays into a perfectly organized, media server-ready
 - **Robust error recovery** for problematic discs (MakeMKV retries, HandBrake fallback)
 - **Advanced subtitle processing** (VOB/PGS OCR, SRT extraction, language preferences)
 - **Unified CLI** (`dam`) with comprehensive commands
-- **Desktop GUI** application (preliminary, needs testing)
+- **Desktop GUI** application (alpha quality - CLI preferred during beta)
 - **Rich metadata integration** (MusicBrainz, TMDb, Spotify, Genius)
 - **Comprehensive testing** (tests passing)
 - **Professional documentation** and user guides
@@ -116,7 +116,7 @@ cp .env.example .env
 # Edit .env with your paths and optional API keys
 ```
 
-**GUI Option:** For a graphical interface:
+**GUI Option:** For a graphical interface (alpha quality - CLI preferred during beta):
 ```bash
 cd gui && npm start
 ```
