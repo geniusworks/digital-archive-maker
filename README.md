@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-Transform your discs into a digital library—automatically organized and ready for media servers.
+Transform CDs, DVDs, and Blu-rays into a perfectly organized, media server-ready digital library.
 </p>
 
 <div align="center">

@@ -1,42 +1,40 @@
 # Workflow Overview (Physical Media → Digital Archive)
 
-This repository provides a unified CLI (`dam`) for two primary workflows:
+Digital Archive Maker provides a simple command-line tool (`dam`) for two main workflows:
 
 - **🎵 Audio CDs → FLAC library → tagging → sync to media server (optional)**
 - **🎬 Movie discs → MP4 library → subtitles/organization → sync to media server (optional)**
 
-Each step uses the `dam` command or links to detailed guides.
-
-📖 **For the complete music pipeline from ALL sources to Jellyfin, see `docs/music_collection_guide.md`**
+Each step uses the simple `dam` command.
 
 ---
 
-## 🏛️ Philosophy: Curated Library + Filtered Sync
+## 🏛️ Two-Stage Approach: Archive Locally, Share Selectively
 
-### Local Library = Curated Archive
-Your **LIBRARY_ROOT** is your permanent, curated collection:
-- **Physical media → Digital files** with complete metadata
-- **Quality control** through ripping, tagging, and organization
-- **No filtering** - everything is preserved in high quality
-- **Single source of truth** for your entire media collection
+### Stage 1: Your Perfect Local Archive
+Your **LIBRARY_ROOT** becomes your complete digital collection:
+- **Everything preserved**: No content filtering - keep all your media in high quality
+- **Rich metadata**: Automatic tagging from MusicBrainz, TMDb, Spotify, and more
+- **Perfect organization**: Files organized by artist, album, movie, TV show
+- **Your master copy**: The single source of truth for your entire collection
 
-### Sync = Filtered Distribution
-**`dam sync`** applies final filters when distributing to servers:
-- **Content filtering**: Exclude explicit content, unknown ratings, etc.
-- **Target-specific**: Different rules for family vs. full servers
-- **Remote by default**: Usually syncs to media servers (Jellyfin/Plex)
-- **Optional local**: Can also sync to backup drives or other storage
+### Stage 2: Filtered Server Sync
+**`dam sync`** prepares content for your media server:
+- **Smart filtering**: Skip explicit content, unknown ratings, or files you choose
+- **Family-friendly options**: Different rules for different audiences
+- **Multiple destinations**: Sync to Jellyfin, Plex, or backup drives
+- **Your choice**: What gets shared is up to you
 
-### Example Workflow
+### How It Works
 ```
-Physical Media → [RIP + TAG] → Local Library (curated)
+Physical Media → [RIP + TAG] → Your Complete Library
                                    ↓
                                [SYNC + FILTERS]
                                    ↓
-                            Remote Server (filtered)
+                            Media Server (selective)
 ```
 
-This separation lets you maintain a **perfect archive locally** while **syncing filtered content** to different destinations.
+**Result**: Keep everything perfect locally, share only what you want with your media server.
 
 ---
 
