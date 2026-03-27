@@ -368,6 +368,7 @@ def rip_video(
         help="Disc type: dvd, bluray, or auto.",
     ),
     burn_subs: bool = typer.Option(False, "--burn-subs", help="Burn subtitles into video."),
+    episodes: bool = typer.Option(False, "--episodes", help="Rip TV show episodes (all tracks)."),
 ):
     """Rip a DVD or Blu-ray to MP4."""
     banner()
@@ -376,7 +377,10 @@ def rip_video(
     heading("Ripping video disc")
     cmd_parts = ["make"]
     if title and year:
-        cmd_parts += ["rip-movie", f'TITLE="{title}"', f"YEAR={year}"]
+        if episodes:
+            cmd_parts += ["rip-episodes", f'TITLE="{title}"', f"YEAR={year}"]
+        else:
+            cmd_parts += ["rip-movie", f'TITLE="{title}"', f"YEAR={year}"]
     else:
         cmd_parts.append("rip-video")
 

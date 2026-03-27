@@ -178,9 +178,15 @@ dam config               # Interactive first-run wizard (library path, API keys)
 dam version              # Show current version
 
 # Rip media
-dam rip cd                                   # Rip audio CD to FLAC
-dam rip video                                # Rip movie disc to MP4
-dam rip video --title "Movie" --year 2024    # With metadata
+dam rip cd                                              # Rip audio CD to FLAC
+dam rip video                                           # Rip movie disc to MP4
+dam rip video --title "Movie" --year 2024               # With metadata
+dam rip video --title "Show" --year 2024 --episodes     # TV show disc
+
+# TV show episodes (Makefile targets)
+make rip-episodes TITLE="Show Name" YEAR=2024           # Rip TV show disc
+make rip-movie TITLE="Movie Name" YEAR=2024             # Rip movie disc
+make rip-movie-all TITLE="Movie Name" YEAR=2024         # Rip all tracks
 
 # Tag and organize
 dam tag explicit /path/to/music                 # Tag explicit content
