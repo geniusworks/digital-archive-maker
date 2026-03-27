@@ -43,7 +43,7 @@
 - **Workflow Integration - "Process Once, Done Forever"**
   - Verify one-shot enhanced CD ripping with automatic quality checks and metadata repair
   - Verify one-shot video ripping with automatic TMDb metadata and ratings fetching
-  - Complete TV show processing workflow with CLI integration
+  - 🔄 TV show processing workflow with CLI integration (`make rip-episodes`) - **ripping complete, organization verification needed**
   - Lyrics fetching and explicit content tagging integrated into main workflows
 - **User Experience Features**
   - Disc ripping counter with stats and milestone tracking

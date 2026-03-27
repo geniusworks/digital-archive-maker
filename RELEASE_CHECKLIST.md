@@ -267,14 +267,14 @@
   
 > **🎯 Quality Baseline Achieved (March 2026)**: Code quality significantly improved while maintaining all functionality. All critical issues resolved, only minor style issues remain.
 - [x] **Clean Git Status**: No uncommitted changes in working directory
-- [ ] **Documentation Links**: Verify all internal links in README and docs work
+- [x] **Documentation Links**: Verify all internal links in README and docs work
 - [x] **Environment Variables**: Cross-check `.env.example` with all script requirements
 - [x] **Dependency Audit**: Re-run `pip-audit` on requirements.txt and requirements-test.txt
-- [ ] **Documentation Appropriateness**: Review docs/ for user-focused content
-  - [ ] Verify docs/video_ripping_guide.md, docs/music_collection_guide.md, docs/workflow_overview.md, and docs/media_server_setup.md contain user workflows, not implementation details
-  - [ ] Check docs/server_setups/ files are hardware-specific configuration templates (appropriate location)
-  - [ ] Remove any trivialities (ASCII spinners, emoji celebrations, ENTER key prompts) from user-facing docs
-  - [ ] Ensure all docs focus on "what users can do" rather than "how the code works"
+- [x] **Documentation Appropriateness**: Review docs/ for user-focused content
+  - [x] Verify docs/video_ripping_guide.md, docs/music_collection_guide.md, docs/workflow_overview.md, and docs/media_server_setup.md contain user workflows, not implementation details
+  - [x] Check docs/server_setups/ files are hardware-specific configuration templates (appropriate location)
+  - [x] Remove any trivialities (ASCII spinners, emoji celebrations, ENTER key prompts) from user-facing docs
+  - [x] Ensure all docs focus on "what users can do" rather than "how the code works"
 - [ ] **CD Ripping End-to-End Review**: Test complete CD ripping workflow from start to finish
   - [ ] Verify fresh setup: `cp .abcde.conf.example ~/.abcde.conf` works correctly
   - [ ] Test CD detection and ripping with `dam rip cd` (or `make rip-cd`)
@@ -378,14 +378,17 @@
     - **Process-Once Analysis**: Should video ripping automatically fetch TMDb metadata and ratings during the process?
     - Decision: Document current limitation OR integrate metadata enhancement into `dam rip video` workflow
   - [ ] **TV Workflow Gap**: Review missing CLI integration for TV show processing
-    - Current: No CLI wrappers for TV show organization and metadata
-    - Gap: Users must run scripts manually for TV show workflow
+    - Current: 🔄 Added `make rip-episodes` for TV show disc ripping (first step complete)
+    - Gap: Need to verify file naming, organization, and metadata workflow completeness
     - **Process-Once Analysis**: Should TV show processing be a complete workflow with automatic metadata?
-    - Decision: Add integrated CLI commands OR document manual workflow clearly
+    - Decision: 🔄 Added CLI ripping step, organization verification needed
   - [ ] **TV Show Ripping Experience Testing**: Test end-to-end TV show workflow for UX quality
     - **Setup Test**: Create test TV show directory with various naming patterns
     - **Organization Test**: Run `rename_shows_jellyfin.py` with --dry-run and verify planned changes
     - **Metadata Test**: Run `tag-show-metadata.py` and verify proper metadata tagging
+    - **CLI Ripping Test**: Test `make rip-episodes` with TITLE/YEAR parameters
+    - **File Naming Verification**: Verify ripped episodes are properly named and organized in Shows/ folder
+    - **End-to-End Workflow Test**: Test complete flow from disc ripping to organized TV library
     - **Edge Cases Test**: Test with special characters, season directories, flat structures
     - **Error Handling Test**: Verify graceful handling of malformed filenames or missing metadata
     - **Documentation Review**: Ensure TV show workflow is clearly documented for users
@@ -524,11 +527,12 @@ git branch -m main
 
 ### I4. Enhanced User Experience
 - [ ] **Auto-Detect Disc Workflow**: One-shot command that detects disc type and starts appropriate workflow
-  - **Current Gap**: Users must run `dam rip cd` vs `dam rip video` based on disc type knowledge
-  - **Proposed Solution**: `dam rip auto` command that detects CD/DVD/Blu-ray and runs appropriate workflow
-  - **User Benefit**: Simplified interface - just insert disc and run single command
-  - **Implementation**: Use existing disc detection logic to determine type and dispatch to correct workflow
-  - **Considerations**: Add confirmation prompt before starting, provide manual override option
+    - **Current Gap**: Users must run `dam rip cd` vs `dam rip video` based on disc type knowledge
+    - **Proposed Solution**: `dam rip auto` command that detects CD/DVD/Blu-ray and runs appropriate workflow
+    - **User Benefit**: Simplified interface - just insert disc and run single command
+    - **Implementation**: Use existing disc detection logic to determine type and dispatch to correct workflow
+    - **Considerations**: Add confirmation prompt before starting, provide manual override option
+    - **TV Show Enhancement**: Extend auto-detection to identify TV show vs movie discs for appropriate routing
 
 ---
 
