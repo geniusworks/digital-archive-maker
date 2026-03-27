@@ -50,17 +50,15 @@ Transform CDs, DVDs, and Blu-rays into a perfectly organized, media server-ready
 **Current Version: 0.9.0-beta** - Pre-release, actively developed
 
 ### ✅ What's Working
-- **Complete media pipelines** for CDs, DVDs, and Blu-rays
-- **Robust error recovery** for problematic discs (MakeMKV retries, HandBrake fallback)
-- **Advanced subtitle processing** (VOB/PGS OCR, SRT extraction, language preferences)
-- **Unified CLI** (`dam`) with comprehensive commands
-- **Desktop GUI** application (alpha quality - CLI preferred during beta)
+- **Complete media pipelines** for CDs, DVDs, Blu-rays, and TV show discs
+- **Advanced subtitle processing** with language preferences and OCR support
+- **Unified CLI** (`dam`) with comprehensive commands including `make rip-episodes`
 - **Rich metadata integration** (MusicBrainz, TMDb, Spotify, Genius)
-- **Comprehensive testing** (tests passing)
 - **Professional documentation** and user guides
-- **CI/CD pipeline** with automated checks
+- **Comprehensive testing** and automated quality checks
 
 ### 🎯 Roadmap to 1.0.0
+- **TV show workflow validation** (ripping complete, organization verification needed)
 - **DAM workflow validation and optimization** for all main features
 - **API key graceful failure** handling improvements
 - **GUI application testing** and refinement
