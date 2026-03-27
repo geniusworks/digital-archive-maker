@@ -52,6 +52,37 @@ Ready to contribute code? See [Development Setup](#development-setup) below.
 
 ## Development Setup
 
+### Project Structure
+
+```
+digital-archive-maker/
+├── dam/                 # Shared library & unified CLI
+│   ├── cli.py           # `dam` command entry point
+│   ├── config.py        # Centralised configuration loader
+│   ├── deps.py          # Dependency checker & installer
+│   ├── keys.py          # Interactive API key onboarding
+│   └── console.py       # Rich terminal output helpers
+├── bin/
+│   ├── music/           # CD ripping and tagging scripts
+│   ├── video/           # Movie disc ripping scripts
+│   ├── sync/            # Library sync scripts
+│   ├── tv/              # TV show handling
+│   └── utils/           # Helper tools
+├── docs/                # Detailed guides
+├── gui/                 # Desktop application
+├── scripts/             # Utility scripts
+├── tests/               # Test suite
+├── assets/              # Project assets
+├── cache/               # Temporary data
+├── log/                 # Log files
+├── config/              # Configuration templates
+├── .github/             # GitHub workflows
+├── requirements.txt     # Python dependencies
+├── pyproject.toml       # Python project configuration
+├── Makefile             # Build and utility targets
+└── .env.example         # Environment variables template
+```
+
 ### Prerequisites
 
 - macOS (primary development platform)
