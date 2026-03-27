@@ -54,7 +54,7 @@ Transform CDs, DVDs, and Blu-rays into a perfectly organized, media server-ready
 - **Advanced subtitle processing** with language preferences and OCR support
 - **Unified CLI** (`dam`) with comprehensive commands including `make rip-episodes`
 - **Rich metadata integration** (MusicBrainz, TMDb, Spotify, Genius)
-- **Professional documentation** and user guides
+- **Comprehensive documentation** and user guides
 - **Comprehensive testing** and automated quality checks
 
 ### 🎯 Roadmap to 1.0.0
