@@ -8,7 +8,7 @@ include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
 endif
 
-.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie rip-movie-all optimize-mp4 fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all test-pipeline
+.PHONY: help install-deps install-video-deps rip-cd rip-video rip-movie rip-movie-all rip-episodes optimize-mp4 fix-album fetch-covers fix-track compare backfill-subs vobsub-to-srt test test-unit test-integration test-all test-pipeline
 
 help:
 	@echo "Available targets:"
@@ -18,6 +18,7 @@ help:
 	@echo "  rip-video [TYPE=...]  Rip a video disc (TYPE=dvd|bluray; auto-detect if omitted) using bin/video/rip_video.py"
 	@echo "  rip-movie [TYPE=...] TITLE=... YEAR=...  Rip and organize a movie into Movies/Title (Year)/Title (Year).mp4 (auto-detect if TYPE omitted)"
 	@echo "  rip-movie-all [TYPE=...] TITLE=... YEAR=...  Same as rip-movie but processes ALL tracks (not just main feature)"
+	@echo "  rip-episodes [TYPE=...] TITLE=... YEAR=...  Rip TV show episodes to Shows/Title (Year)/ with all tracks (episodes)"
 	@echo "  optimize-mp4 DIR=...  Optimize existing MP4 files for streaming (Jellyfin/Plex)"
 	@echo "  fix-album DIR=...   Normalize and complete an album folder"
 	@echo "  fetch-covers ROOT=...  Fetch missing cover.jpg under ROOT"
@@ -119,6 +120,12 @@ rip-movie-all:
 	  echo "Usage: make rip-movie-all [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
 	fi
 	@TITLE="$(TITLE)" YEAR="$(YEAR)" ./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
+
+rip-episodes:
+	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
+	  echo "Usage: make rip-episodes [TYPE=dvd|bluray] TITLE=\"Show Name\" YEAR=1999" >&2; exit 1; \
+	fi
+	@TITLE="$(TITLE)" YEAR="$(YEAR)" DEST_CATEGORY="Shows" ./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
 
 optimize-mp4:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make optimize-mp4 DIR=\"/path/to/movies\"" >&2; exit 1; fi

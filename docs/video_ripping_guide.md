@@ -21,6 +21,9 @@ dam rip video --title "Other Language Film" --year 2023 --type bluray --burn-sub
 # Process existing MKV files
 dam rip video --title "Movie Title" --year 2023 --type bluray
 
+# TV show episodes (all tracks)
+make rip-episodes TITLE="Show Name" YEAR=2023
+
 # Makefile shortcuts (still available)
 make rip-movie TITLE="Movie Title" YEAR=2023 TYPE=bluray
 BURN_SUBTITLES=true make rip-movie TITLE="Other Language Film" YEAR=2023 TYPE=bluray
@@ -63,6 +66,7 @@ Note: This guide avoids Bash 4+ features to remain compatible with macOS's defau
 
 ### ✅ Complete Disc to Digital Pipeline
 - **DVD & Blu-ray support:** Rips from physical discs with automatic main feature detection
+- **TV show support:** `make rip-episodes` rips all episodes from TV show discs to Shows/ folder
 - **Universal MP4 output:** H.264 encoding with streaming optimization
 - **Smart compression:** Only re-encodes when needed (>10GB), preserves quality
 - **Automatic organization:** Creates media-server-friendly folder structure
@@ -142,7 +146,7 @@ Select option [1-3, default=1]:
 
 ## 📁 File Organization
 
-**Success Pattern:**
+**Movie Success Pattern:**
 ```
 ${LIBRARY_ROOT}/
 ├── Blurays/Movie Title (Year)/          # Source files
@@ -150,6 +154,20 @@ ${LIBRARY_ROOT}/
 └── Movies/Movie Title (Year)/           # Final destination
     ├── Movie Title (Year).mp4           # Compressed video
     └── Movie Title (Year).en.srt        # External subtitles
+```
+
+**TV Show Success Pattern:**
+```
+${LIBRARY_ROOT}/
+├── Blurays/Show Name (Year)/            # Source files
+│   ├── t00.mkv                          # Episode 1
+│   ├── t01.mkv                          # Episode 2
+│   └── t02.mkv                          # Episode 3
+└── Shows/Show Name (Year)/              # Final destination
+    ├── Show Name (Year) - S01E01.mp4    # Episode 1
+    ├── Show Name (Year) - S01E01.en.srt # Subtitles 1
+    ├── Show Name (Year) - S01E02.mp4    # Episode 2
+    └── Show Name (Year) - S01E02.en.srt # Subtitles 2
 ```
 
 ---
