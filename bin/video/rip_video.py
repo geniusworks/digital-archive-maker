@@ -2030,6 +2030,9 @@ def main() -> int:
             # First, get detected track numbers from MakeMKV info
             print("🔍 Detecting available tracks...")
             try:
+                # Import regex locally to avoid scope issues
+                import re as regex_module
+                
                 info_cmd = [
                     "makemkvcon", "info", "disc:0", 
                     f"--minlength={minlength}"
@@ -2042,7 +2045,7 @@ def main() -> int:
                     for line in info_result.stdout.split('\n'):
                         if "was added as title #" in line:
                             # Extract track number from "File 00800.mpls was added as title #0"
-                            track_match = re.search(r'title #(\d+)', line)
+                            track_match = regex_module.search(r'title #(\d+)', line)
                             if track_match:
                                 track_id = int(track_match.group(1))
                                 detected_tracks.append(track_id)
