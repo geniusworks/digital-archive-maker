@@ -2021,6 +2021,19 @@ def main() -> int:
                     ]
                 )
                 stop_spinner(spinner, "✓ Successfully ripped all tracks (forced)")
+            except KeyboardInterrupt:
+                stop_spinner(spinner, "✗ Rip cancelled by user")
+                print("\n   → Cleaning up partial files...")
+                # Clean up any partial files from this rip
+                for partial_file in outdir.glob("*"):
+                    try:
+                        if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
+                            partial_file.unlink()
+                            print(f"   → Removed: {partial_file.name}")
+                    except Exception:
+                        pass
+                print("\n⚠️  Rip cancelled by user - no files were created")
+                return 1  # Exit with error code
             except subprocess.CalledProcessError as e:
                 stop_spinner(spinner, f"✗ MakeMKV failed to rip all tracks (forced): {e}")
                 print("  → Trying backup method for problematic disc...")
@@ -2035,6 +2048,10 @@ def main() -> int:
                     stop_spinner(
                         backup_spinner, f"✓ Backup output: {backup_result.stdout.strip()[-200:]}"
                     )
+                except KeyboardInterrupt:
+                    stop_spinner(backup_spinner, "✗ Backup cancelled by user")
+                    print("\n⚠️  Backup cancelled by user - no files were created")
+                    return 1  # Exit with error code
                 except Exception as backup_e:
                     stop_spinner(backup_spinner, f"✗ Backup failed: {backup_e}")
                     raise
@@ -2059,6 +2076,10 @@ def main() -> int:
                         f"✓ Backup rip output: {backup_rip_result.stdout.strip()}",
                     )
                     print("  ✓ Successfully ripped using backup method")
+                except KeyboardInterrupt:
+                    stop_spinner(backup_rip_spinner, "✗ Backup rip cancelled by user")
+                    print("\n⚠️  Backup rip cancelled by user - no files were created")
+                    return 1  # Exit with error code
                 except subprocess.CalledProcessError as e3:
                     stop_spinner(backup_rip_spinner, f"✗ Backup rip also failed: {e3}")
                     print("  ❌ This disc appears to be unreadable or heavily protected")
