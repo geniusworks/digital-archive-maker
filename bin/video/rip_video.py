@@ -2518,65 +2518,172 @@ def main() -> int:
         target_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        # Look for the final compressed MP4 file (prefer _compressed if exists)
+        # Look for the final compressed MP4 files
         mp4_files = list(outdir.glob("*.mp4"))
         if mp4_files:
-            # Prefer _compressed.mp4 files (these are the re-encoded ones)
-            compressed_files = [f for f in mp4_files if "_compressed" in f.name]
-            target_file = (
-                compressed_files[0]
-                if compressed_files
-                else max(mp4_files, key=lambda p: p.stat().st_size)
-            )
+            if dest_category == "Shows":
+                # For TV shows: move ALL MP4 files with episode naming
+                print(f"  📺 Organizing {len(mp4_files)} episodes to Shows folder...")
+                
+                # Extract season number if present in title
+                season_num = None
+                import re
+                season_match = re.search(r'season\s*(\d+)', safe_title.lower())
+                if season_match:
+                    season_num = int(season_match.group(1))
+                
+                # Sort MP4 files by track number (extract from filename)
+                def extract_track_num(filename):
+                    match = re.search(r't(\d+)', filename)
+                    return int(match.group(1)) if match else 0
+                
+                mp4_files.sort(key=extract_track_num)
+                
+                for i, mp4_file in enumerate(mp4_files, 1):
+                    # Extract track number for episode numbering
+                    track_match = re.search(r't(\d+)', mp4_file.name)
+                    track_num = int(track_match.group(1)) if track_match else i
+                    
+                    # Create episode name
+                    if season_num:
+                        episode_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.mp4"
+                    else:
+                        episode_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.mp4"
+                    
+                    dest = target_dir / episode_name
+                    if not dest.exists():
+                        shutil.move(str(mp4_file), str(dest))
+                        print(f"  ✓ Moved episode: {episode_name}")
+                
+                # Move subtitle files with episode naming
+                srt_files = list(outdir.glob("*.en.srt"))
+                for srt_file in srt_files:
+                    # Match with corresponding MP4 file
+                    track_match = re.search(r't(\d+)', srt_file.name)
+                    track_num = int(track_match.group(1)) if track_match else 1
+                    
+                    if season_num:
+                        srt_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.en.srt"
+                    else:
+                        srt_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.en.srt"
+                    
+                    srt_dest = target_dir / srt_name
+                    if not srt_dest.exists():
+                        shutil.move(str(srt_file), str(srt_dest))
+                        print(f"  ✓ Moved subtitle: {srt_name}")
+                
+                # Move PGS subtitle files with episode naming
+                sup_files = list(outdir.glob("*.en.sup"))
+                for sup_file in sup_files:
+                    # Match with corresponding MP4 file
+                    track_match = re.search(r't(\d+)', sup_file.name)
+                    track_num = int(track_match.group(1)) if track_match else 1
+                    
+                    if season_num:
+                        sup_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.en.sup"
+                    else:
+                        sup_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.en.sup"
+                    
+                    sup_dest = target_dir / sup_name
+                    if not sup_dest.exists():
+                        shutil.move(str(sup_file), str(sup_dest))
+                        print(f"  ✓ Moved PGS subtitle: {sup_name}")
+                        
+            else:
+                # For movies: move only the main feature (existing behavior)
+                # Prefer _compressed.mp4 files (these are the re-encoded ones)
+                compressed_files = [f for f in mp4_files if "_compressed" in f.name]
+                target_file = (
+                    compressed_files[0]
+                    if compressed_files
+                    else max(mp4_files, key=lambda p: p.stat().st_size)
+                )
 
-            # Always use MP4 now
-            dest = target_dir / f"{safe_title} ({safe_year}).mp4"
-            if not dest.exists():
-                shutil.move(str(target_file), str(dest))
+                # Always use MP4 now
+                dest = target_dir / f"{safe_title} ({safe_year}).mp4"
+                if not dest.exists():
+                    shutil.move(str(target_file), str(dest))
 
-            # Move subtitle files too
-            srt_files = list(outdir.glob("*.en.srt"))
-            for srt_file in srt_files:
-                srt_dest = target_dir / f"{safe_title} ({safe_year}).en.srt"
-                if not srt_dest.exists():
-                    shutil.move(str(srt_file), str(srt_dest))
-                    print(f"  ✓ Moved subtitle: {srt_dest.name}")
+                # Move subtitle files too
+                srt_files = list(outdir.glob("*.en.srt"))
+                for srt_file in srt_files:
+                    srt_dest = target_dir / f"{safe_title} ({safe_year}).en.srt"
+                    if not srt_dest.exists():
+                        shutil.move(str(srt_file), str(srt_dest))
+                        print(f"  ✓ Moved subtitle: {srt_dest.name}")
 
-            # Move PGS subtitle files too
-            sup_files = list(outdir.glob("*.en.sup"))
-            for sup_file in sup_files:
-                sup_dest = target_dir / f"{safe_title} ({safe_year}).en.sup"
-                if not sup_dest.exists():
-                    shutil.move(str(sup_file), str(sup_dest))
-                    print(f"  ✓ Moved PGS subtitle: {sup_dest.name}")
+                # Move PGS subtitle files too
+                sup_files = list(outdir.glob("*.en.sup"))
+                for sup_file in sup_files:
+                    sup_dest = target_dir / f"{safe_title} ({safe_year}).en.sup"
+                    if not sup_dest.exists():
+                        shutil.move(str(sup_file), str(sup_dest))
+                        print(f"  ✓ Moved PGS subtitle: {sup_dest.name}")
 
-            # Apply streaming optimization to the final organized file
+            # Apply streaming optimization to the final organized file(s)
             if streaming_optimize:
-                try:
-                    print("  → Applying streaming optimization to final file...")
-                    temp_path = dest.with_suffix(f".temp{dest.suffix}")
-                    cmd = [
-                        "ffmpeg",
-                        "-i",
-                        str(dest),
-                        "-c",
-                        "copy",  # Copy streams without re-encoding
-                        # Generate proper timestamps (fixes warning)
-                        "-fflags",
-                        "+genpts",
-                        "-movflags",
-                        "+faststart",  # Standard web optimization
-                        "-f",
-                        "mp4",  # Always use MP4 now
-                        str(temp_path),
-                    ]
-                    _run(cmd, capture=False)
-                    temp_path.replace(dest)
-                    print(f"  ✓ Streaming optimization applied to {dest.name}")
-                except Exception as e:
-                    print(f"  ⚠ Streaming optimization failed: {e}")
-                    # Continue without optimization - file should still be
-                    # usable
+                if dest_category == "Shows":
+                    # For TV shows: optimize all episode files
+                    print("  → Applying streaming optimization to all episodes...")
+                    for mp4_file in target_dir.glob("*.mp4"):
+                        if mp4_file.is_file():
+                            try:
+                                temp_path = mp4_file.with_suffix(f".temp{mp4_file.suffix}")
+                                cmd = [
+                                    "ffmpeg",
+                                    "-i",
+                                    str(mp4_file),
+                                    "-c",
+                                    "copy",  # Copy streams without re-encoding
+                                    # Generate proper timestamps (fixes warning)
+                                    "-fflags",
+                                    "+genpts",
+                                    "-movflags",
+                                    "+faststart",  # Standard web optimization
+                                    "-f",
+                                    "mp4",
+                                    str(temp_path),
+                                ]
+                                result = _run(cmd, capture=True)
+                                if result.returncode == 0:
+                                    temp_path.replace(mp4_file)
+                                    print(f"    ✓ Optimized: {mp4_file.name}")
+                                else:
+                                    print(f"    ⚠️  Optimization failed for {mp4_file.name}")
+                                    temp_path.unlink(missing_ok=True)
+                            except Exception as e:
+                                print(f"    ✗ Optimization error for {mp4_file.name}: {e}")
+                                temp_path.unlink(missing_ok=True)
+                else:
+                    # For movies: optimize single file (existing behavior)
+                    try:
+                        print("  → Applying streaming optimization to final file...")
+                        temp_path = dest.with_suffix(f".temp{dest.suffix}")
+                        cmd = [
+                            "ffmpeg",
+                            "-i",
+                            str(dest),
+                            "-c",
+                            "copy",  # Copy streams without re-encoding
+                            # Generate proper timestamps (fixes warning)
+                            "-fflags",
+                            "+genpts",
+                            "-movflags",
+                            "+faststart",  # Standard web optimization
+                            "-f",
+                            "mp4",
+                            str(temp_path),
+                        ]
+                        result = _run(cmd, capture=True)
+                        if result.returncode == 0:
+                            temp_path.replace(dest)
+                            print("  ✓ Streaming optimization applied")
+                        else:
+                            print("  ⚠️  Streaming optimization failed")
+                            temp_path.unlink(missing_ok=True)
+                    except Exception as e:
+                        print(f"  ✗ Streaming optimization error: {e}")
+                        temp_path.unlink(missing_ok=True)
 
     print(f"\n🎉 Done: {outdir}\n")
 
