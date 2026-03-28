@@ -2522,7 +2522,7 @@ def main() -> int:
         mp4_files = list(outdir.glob("*.mp4"))
         if mp4_files:
             if dest_category == "Shows":
-                # For TV shows: move ALL MP4 files with episode naming
+                # For TV shows: move ALL MP4 files with continuous episode numbering
                 print(f"  📺 Organizing {len(mp4_files)} episodes to Shows folder...")
                 
                 # Extract season number if present in title
@@ -2532,6 +2532,22 @@ def main() -> int:
                 if season_match:
                     season_num = int(season_match.group(1))
                 
+                # Find existing episodes to determine next episode number
+                existing_episodes = []
+                if target_dir.exists():
+                    for existing_file in target_dir.glob("*.mp4"):
+                        # Match pattern like "Show Name (2014) - S01E05.mp4"
+                        episode_match = re.search(r'S(\d+)E(\d+)', existing_file.name)
+                        if episode_match:
+                            existing_season = int(episode_match.group(1))
+                            existing_episode = int(episode_match.group(2))
+                            # Only consider episodes from the same season
+                            if season_num is None or existing_season == season_num:
+                                existing_episodes.append(existing_episode)
+                
+                # Determine next episode number
+                next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
+                
                 # Sort MP4 files by track number (extract from filename)
                 def extract_track_num(mp4_file):
                     match = re.search(r't(\d+)', mp4_file.name)
@@ -2539,55 +2555,93 @@ def main() -> int:
                 
                 mp4_files.sort(key=extract_track_num)
                 
-                for i, mp4_file in enumerate(mp4_files, 1):
-                    # Extract track number for episode numbering
-                    track_match = re.search(r't(\d+)', mp4_file.name)
-                    track_num = int(track_match.group(1)) if track_match else i
+                # Filter out short files (likely copyright warnings, intros, etc.)
+                import subprocess
+                def get_duration_seconds(file_path):
+                    try:
+                        cmd = [
+                            "ffprobe",
+                            "-v", "quiet",
+                            "-show_entries", "format=duration",
+                            "-of", "default=noprint_wrappers=1:nokey=1",
+                            str(file_path)
+                        ]
+                        result = subprocess.run(cmd, capture=True, text=True, timeout=30)
+                        if result.returncode == 0 and result.stdout.strip():
+                            return float(result.stdout.strip())
+                    except (subprocess.TimeoutExpired, ValueError, subprocess.CalledProcessError):
+                        pass
+                    return 0
+                
+                print(f"  🕐 Checking file durations (min 10 minutes for episodes)...")
+                valid_episodes = []
+                for mp4_file in mp4_files:
+                    duration_seconds = get_duration_seconds(mp4_file)
+                    duration_minutes = duration_seconds / 60
                     
-                    # Create episode name
-                    if season_num:
-                        episode_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.mp4"
+                    if duration_minutes >= 10:
+                        valid_episodes.append((mp4_file, next_episode_num))
+                        print(f"    ✓ {mp4_file.name}: {duration_minutes:.1f}min → Episode {next_episode_num}")
+                        next_episode_num += 1
                     else:
-                        episode_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.mp4"
+                        print(f"    ⚠️  {mp4_file.name}: {duration_minutes:.1f}min (too short, skipping)")
+                
+                # Move valid episodes with continuous numbering
+                for mp4_file, episode_num in valid_episodes:
+                    # Create episode name with continuous numbering
+                    if season_num:
+                        episode_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.mp4"
+                    else:
+                        episode_name = f"{safe_title} ({safe_year}) - E{episode_num:02d}.mp4"
                     
                     dest = target_dir / episode_name
                     if not dest.exists():
                         shutil.move(str(mp4_file), str(dest))
                         print(f"  ✓ Moved episode: {episode_name}")
                 
-                # Move subtitle files with episode naming
+                # Move subtitle files for valid episodes only
                 srt_files = list(outdir.glob("*.en.srt"))
                 for srt_file in srt_files:
-                    # Match with corresponding MP4 file
+                    # Match with corresponding MP4 file based on track number
                     track_match = re.search(r't(\d+)', srt_file.name)
-                    track_num = int(track_match.group(1)) if track_match else 1
-                    
-                    if season_num:
-                        srt_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.en.srt"
-                    else:
-                        srt_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.en.srt"
-                    
-                    srt_dest = target_dir / srt_name
-                    if not srt_dest.exists():
-                        shutil.move(str(srt_file), str(srt_dest))
-                        print(f"  ✓ Moved subtitle: {srt_name}")
+                    if track_match:
+                        track_num = int(track_match.group(1))
+                        # Find the episode number for this track
+                        for mp4_file, episode_num in valid_episodes:
+                            mp4_track_match = re.search(r't(\d+)', mp4_file.name)
+                            if mp4_track_match and int(mp4_track_match.group(1)) == track_num:
+                                if season_num:
+                                    srt_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.en.srt"
+                                else:
+                                    srt_name = f"{safe_title} ({safe_year}) - E{episode_num:02d}.en.srt"
+                                
+                                srt_dest = target_dir / srt_name
+                                if not srt_dest.exists():
+                                    shutil.move(str(srt_file), str(srt_dest))
+                                    print(f"  ✓ Moved subtitle: {srt_name}")
+                                break
                 
-                # Move PGS subtitle files with episode naming
+                # Move PGS subtitle files for valid episodes only
                 sup_files = list(outdir.glob("*.en.sup"))
                 for sup_file in sup_files:
-                    # Match with corresponding MP4 file
+                    # Match with corresponding MP4 file based on track number
                     track_match = re.search(r't(\d+)', sup_file.name)
-                    track_num = int(track_match.group(1)) if track_match else 1
-                    
-                    if season_num:
-                        sup_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{track_num:02d}.en.sup"
-                    else:
-                        sup_name = f"{safe_title} ({safe_year}) - E{track_num:02d}.en.sup"
-                    
-                    sup_dest = target_dir / sup_name
-                    if not sup_dest.exists():
-                        shutil.move(str(sup_file), str(sup_dest))
-                        print(f"  ✓ Moved PGS subtitle: {sup_name}")
+                    if track_match:
+                        track_num = int(track_match.group(1))
+                        # Find the episode number for this track
+                        for mp4_file, episode_num in valid_episodes:
+                            mp4_track_match = re.search(r't(\d+)', mp4_file.name)
+                            if mp4_track_match and int(mp4_track_match.group(1)) == track_num:
+                                if season_num:
+                                    sup_name = f"{safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.en.sup"
+                                else:
+                                    sup_name = f"{safe_title} ({safe_year}) - E{episode_num:02d}.en.sup"
+                                
+                                sup_dest = target_dir / sup_name
+                                if not sup_dest.exists():
+                                    shutil.move(str(sup_file), str(sup_dest))
+                                    print(f"  ✓ Moved PGS subtitle: {sup_name}")
+                                break
                         
             else:
                 # For movies: move only the main feature (existing behavior)
