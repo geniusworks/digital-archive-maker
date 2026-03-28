@@ -2596,7 +2596,7 @@ def main() -> int:
                             "-of", "default=noprint_wrappers=1:nokey=1",
                             str(file_path)
                         ]
-                        result = subprocess.run(cmd, capture=True, text=True, timeout=30)
+                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
                         if result.returncode == 0 and result.stdout.strip():
                             return float(result.stdout.strip())
                     except (subprocess.TimeoutExpired, ValueError, subprocess.CalledProcessError):
