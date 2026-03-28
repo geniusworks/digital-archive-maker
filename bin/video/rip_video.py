@@ -1345,6 +1345,11 @@ def main() -> int:
     library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
     minlength = int(get_env_str("MINLENGTH", "600") or "600")  # 10 minutes for TV shows
 
+    # Track selection settings
+    force_all_tracks = args.force_all_tracks or get_env_str(
+        "FORCE_ALL_TRACKS", "false"
+    ).lower() in ("true", "1", "yes")
+
     # Adjust minlength for TV shows - be more permissive when force_all_tracks
     if force_all_tracks:
         # For TV shows, use a lower minlength to catch all episodes
@@ -1367,11 +1372,6 @@ def main() -> int:
     # Encoding speed preset
     preset = get_env_str("HB_PRESET", "Apple 1080p30 Surround") or "Apple 1080p30 Surround"
     tune = get_env_str("HB_TUNE", None)  # Optional tuning
-
-    # Track selection settings
-    force_all_tracks = args.force_all_tracks or get_env_str(
-        "FORCE_ALL_TRACKS", "false"
-    ).lower() in ("true", "1", "yes")
 
     # Streaming optimization settings
     streaming_optimize = get_env_str("STREAMING_OPTIMIZE", "true").lower() in (
