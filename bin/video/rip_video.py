@@ -2034,7 +2034,7 @@ def main() -> int:
                     "makemkvcon", "info", "disc:0", 
                     f"--minlength={minlength}"
                 ]
-                info_result = _run(info_cmd, capture=True, text=True)
+                info_result = _run(info_cmd, capture=True)
                 
                 # Parse track numbers from info output
                 detected_tracks = []
@@ -2092,10 +2092,25 @@ def main() -> int:
                     print("\n⚠️  Rip cancelled by user - no files were created")
                     return 1  # Exit with error code
                     
-                except subprocess.CalledProcessError as e:
-                    stop_spinner(spinner, f"✗ Track {track_str} failed: {e}")
-                    print(f"  ⚠️  Track {track_str} failed to rip - continuing with others...")
-                    continue
+                except Exception as e:
+                    # Check if it's a SIGINT (Ctrl+C) from subprocess
+                    if hasattr(e, 'returncode') and e.returncode == 2:
+                        stop_spinner(spinner, f"✗ Track {track_str} cancelled by user")
+                        print("\n   → Cleaning up partial files...")
+                        # Clean up any partial files from this rip
+                        for partial_file in outdir.glob("*"):
+                            try:
+                                if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
+                                    partial_file.unlink()
+                                    print(f"   → Removed: {partial_file.name}")
+                            except Exception:
+                                pass
+                        print("\n⚠️  Rip cancelled by user - no files were created")
+                        return 1  # Exit with error code
+                    else:
+                        stop_spinner(spinner, f"✗ Track {track_str} failed: {e}")
+                        print(f"  ⚠️  Track {track_str} failed to rip - continuing with others...")
+                        continue
             
             if not successful_rips:
                 print("\n❌ No tracks were successfully ripped")
