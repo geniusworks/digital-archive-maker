@@ -2533,8 +2533,8 @@ def main() -> int:
                     season_num = int(season_match.group(1))
                 
                 # Sort MP4 files by track number (extract from filename)
-                def extract_track_num(filename):
-                    match = re.search(r't(\d+)', filename)
+                def extract_track_num(mp4_file):
+                    match = re.search(r't(\d+)', mp4_file.name)
                     return int(match.group(1)) if match else 0
                 
                 mp4_files.sort(key=extract_track_num)
