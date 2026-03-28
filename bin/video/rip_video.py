@@ -1343,7 +1343,7 @@ def main() -> int:
 
     # Defaults
     library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
-    minlength = int(get_env_str("MINLENGTH", "120") or "120")
+    minlength = int(get_env_str("MINLENGTH", "600") or "600")  # 10 minutes for TV shows
 
     # Handle TITLE_INDEX from environment variable if not specified via command line
     if args.title_index is None:
