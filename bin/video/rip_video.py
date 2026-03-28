@@ -1343,18 +1343,15 @@ def main() -> int:
 
     # Defaults
     library_root = Path(get_env_str("LIBRARY_ROOT") or "/Library")
-    minlength = int(get_env_str("MINLENGTH", "600") or "600")  # 10 minutes for TV shows
+    minlength = int(get_env_str("MINLENGTH", "600") or "600")  # 10 minutes minimum
 
     # Track selection settings
     force_all_tracks = args.force_all_tracks or get_env_str(
         "FORCE_ALL_TRACKS", "false"
     ).lower() in ("true", "1", "yes")
 
-    # Adjust minlength for TV shows - be more permissive when force_all_tracks
-    if force_all_tracks:
-        # For TV shows, use a lower minlength to catch all episodes
-        # Some episodes might be shorter than 10 minutes
-        minlength = min(minlength, 300)  # Use 5 minutes minimum for TV shows
+    # Keep 10-minute minimum even for TV shows - episode filtering should happen during organization
+    # Don't reduce minlength for force_all_tracks - maintain quality threshold
 
     # Handle TITLE_INDEX from environment variable if not specified via command line
     if args.title_index is None:
