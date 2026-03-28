@@ -2038,50 +2038,45 @@ def main() -> int:
                 
                 # Parse track numbers from info output
                 detected_tracks = []
-                for line in info_result.stdout.split('\n'):
-                    if "was added as title #" in line:
-                        # Extract track number from "File 00800.mpls was added as title #0"
-                        track_match = re.search(r'title #(\d+)', line)
-                        if track_match:
-                            track_id = int(track_match.group(1))
-                            detected_tracks.append(track_id)
+                if info_result.stdout:
+                    for line in info_result.stdout.split('\n'):
+                        if "was added as title #" in line:
+                            # Extract track number from "File 00800.mpls was added as title #0"
+                            track_match = re.search(r'title #(\d+)', line)
+                            if track_match:
+                                track_id = int(track_match.group(1))
+                                detected_tracks.append(track_id)
                 
                 if not detected_tracks:
                     print("  ❌ No tracks detected - falling back to 'all' method")
-                    detected_tracks = ["all"]
+                    use_fallback = True
                 else:
                     print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
+                    use_fallback = False
                     
             except Exception as e:
                 print(f"  ⚠️  Failed to detect tracks: {e}")
                 print("  → Falling back to 'all' method")
-                detected_tracks = ["all"]
+                use_fallback = True
             
-            # Rip each detected track individually
-            print(f"\n📀 Ripping {len(detected_tracks)} track(s)...")
-            successful_rips = []
-            
-            for i, track_id in enumerate(detected_tracks):
-                track_str = str(track_id) if track_id != "all" else "all"
-                print(f"  🎬 Ripping track {track_str} ({i+1}/{len(detected_tracks)})...")
-                
+            # Rip tracks
+            if use_fallback:
+                print(f"\n📀 Using fallback method (ripping all tracks)...")
                 try:
-                    spinner = show_spinner(f"Ripping track {track_str}...")
+                    spinner = show_spinner("Ripping all tracks with MakeMKV...")
                     _run([
                         "makemkvcon",
                         "mkv",
                         "disc:0",
-                        track_str,
+                        "all",
                         str(outdir),
                         f"--minlength={minlength}",
                     ])
-                    stop_spinner(spinner, f"✓ Successfully ripped track {track_str}")
-                    successful_rips.append(track_id)
-                    
+                    stop_spinner(spinner, "✓ Successfully ripped all tracks (fallback)")
+                    successful_rips = ["all"]
                 except KeyboardInterrupt:
-                    stop_spinner(spinner, f"✗ Track {track_str} rip cancelled by user")
+                    stop_spinner(spinner, "✗ Rip cancelled by user")
                     print("\n   → Cleaning up partial files...")
-                    # Clean up any partial files from this rip
                     for partial_file in outdir.glob("*"):
                         try:
                             if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
@@ -2090,14 +2085,35 @@ def main() -> int:
                         except Exception:
                             pass
                     print("\n⚠️  Rip cancelled by user - no files were created")
-                    return 1  # Exit with error code
-                    
+                    return 1
                 except Exception as e:
-                    # Check if it's a SIGINT (Ctrl+C) from subprocess
-                    if hasattr(e, 'returncode') and e.returncode == 2:
-                        stop_spinner(spinner, f"✗ Track {track_str} cancelled by user")
+                    stop_spinner(spinner, f"✗ Fallback rip failed: {e}")
+                    successful_rips = []
+            else:
+                # Rip each detected track individually
+                print(f"\n📀 Ripping {len(detected_tracks)} track(s)...")
+                successful_rips = []
+                
+                for i, track_id in enumerate(detected_tracks):
+                    track_str = str(track_id)
+                    print(f"  🎬 Ripping track {track_str} ({i+1}/{len(detected_tracks)})...")
+                    
+                    try:
+                        spinner = show_spinner(f"Ripping track {track_str}...")
+                        _run([
+                            "makemkvcon",
+                            "mkv",
+                            "disc:0",
+                            track_str,
+                            str(outdir),
+                            f"--minlength={minlength}",
+                        ])
+                        stop_spinner(spinner, f"✓ Successfully ripped track {track_str}")
+                        successful_rips.append(track_id)
+                        
+                    except KeyboardInterrupt:
+                        stop_spinner(spinner, f"✗ Track {track_str} rip cancelled by user")
                         print("\n   → Cleaning up partial files...")
-                        # Clean up any partial files from this rip
                         for partial_file in outdir.glob("*"):
                             try:
                                 if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
@@ -2106,8 +2122,9 @@ def main() -> int:
                             except Exception:
                                 pass
                         print("\n⚠️  Rip cancelled by user - no files were created")
-                        return 1  # Exit with error code
-                    else:
+                        return 1
+                        
+                    except Exception as e:
                         stop_spinner(spinner, f"✗ Track {track_str} failed: {e}")
                         print(f"  ⚠️  Track {track_str} failed to rip - continuing with others...")
                         continue
@@ -2145,6 +2162,9 @@ def main() -> int:
             # Try HandBrake CLI directly from disc
             try:
                 hb_output = outdir / f"{title_raw}_{year_raw}_handbrake.mkv"
+                
+                # Initialize subtitle_config for fallback case
+                subtitle_config = {"action": "none"}  # Default: no subtitles for fallback
 
                 # Find DVD device
                 dvd_device = "/dev/rdisk1"  # Default macOS DVD device
