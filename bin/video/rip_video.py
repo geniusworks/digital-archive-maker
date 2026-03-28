@@ -1442,6 +1442,9 @@ def main() -> int:
 
     mkvs = source_mkvs  # Only use source MKV files
 
+    # Initialize fallback flag
+    used_handbrake_fallback = False
+
     # If we have destination MP4 files, check if we're already done
     if dest_mp4s and not source_mkvs:
         # We have final MP4 files but no source MKV files
