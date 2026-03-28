@@ -113,22 +113,19 @@ rip-movie:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
 	  echo "Usage: make rip-movie [TYPE=...] TITLE=... YEAR=..." >&2; exit 1; \
 	fi
-	@export TITLE="$(TITLE)" YEAR="$(YEAR)"; \
-	./venv/bin/python bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
+	@env TITLE="$(TITLE)" YEAR="$(YEAR)" ./venv/bin/python bin/video/rip_video.py $(if $(TYPE),$(TYPE),auto)
 
 rip-movie-all:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
 	  echo "Usage: make rip-movie-all [TYPE=dvd|bluray] TITLE=\"Movie Name\" YEAR=1999" >&2; exit 1; \
 	fi
-	@export TITLE="$(TITLE)" YEAR="$(YEAR)"; \
-	./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
+	@env TITLE="$(TITLE)" YEAR="$(YEAR)" ./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
 
 rip-episodes:
 	@if [ -z "$(TITLE)" ] || [ -z "$(YEAR)" ]; then \
 	  echo "Usage: make rip-episodes [TYPE=dvd|bluray] TITLE=\"Show Name\" YEAR=1999" >&2; exit 1; \
 	fi
-	@export TITLE="$(TITLE)" YEAR="$(YEAR)" DEST_CATEGORY="Shows"; \
-	./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
+	@env TITLE="$(TITLE)" YEAR="$(YEAR)" DEST_CATEGORY="Shows" ./venv/bin/python bin/video/rip_video.py --force-all-tracks $(if $(TYPE),$(TYPE),auto)
 
 optimize-mp4:
 	@if [ -z "$(DIR)" ]; then echo "Usage: make optimize-mp4 DIR=\"/path/to/movies\"" >&2; exit 1; fi
