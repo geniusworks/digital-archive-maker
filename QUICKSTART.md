@@ -88,6 +88,19 @@ dam rip video
 
 Follow the prompts to select title and configure encoding.
 
+## 5. Rip TV Show Episodes
+
+```bash
+dam rip video --title "Show Name" --year 2024 --episodes
+```
+
+Or use the Makefile shortcut:
+```bash
+make rip-episodes TITLE="Show Name" YEAR=2024
+```
+
+This automatically detects and rips all episode tracks from TV show discs.
+
 ---
 
 ## What's Next?
@@ -95,6 +108,7 @@ Follow the prompts to select title and configure encoding.
 - **`dam --help`** — See all available commands
 - **[GUI Desktop App](gui/README.md)** — Graphical interface for all workflows
 - **[Full Documentation](docs/)** — Detailed guides for each workflow
-- **[Music Collection Guide](docs/music_collection_guide.md)** — Complete CD pipeline
-- **[Video Ripping Guide](docs/video_ripping_guide.md)** — Movie disc workflow
+- **[Music Guide](docs/music_guide.md)** — Complete CD pipeline
+- **[Video Guide](docs/video_guide.md)** — Movie and TV show workflows
+- **[Server Guide](docs/server_guide.md)** — Media server configuration
 - **[README](README.md)** — Full feature overview

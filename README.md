@@ -129,7 +129,12 @@ dam rip cd
 dam rip video
 ```
 
-**Step 5: Sync to your media server**
+**Step 5: Rip TV show episodes**
+```bash
+dam rip video --title "Show Name" --year 2024 --episodes
+```
+
+**Step 6: Sync to your media server**
 ```bash
 dam sync
 ```
@@ -154,10 +159,11 @@ dam sync
 | Feature | How it works |
 |:---------|:------------|
 | **Movie discs** | Extracts high-quality video |
+| **TV show episodes** | Detects and rips all episodes from TV show discs |
 | **Subtitles** | Includes your preferred language |
 | **Subtitle burning** | Embeds subtitles when needed |
 | **Movie organization** | Names files and adds descriptions |
-| **TV show support** | Groups episodes by season |
+| **TV show organization** | Groups episodes by season with continuous numbering |
 
 ### **Library Management**
 | Feature | How it works |
@@ -211,10 +217,11 @@ The `dam` command provides easy access to all features with automatic setup. You
 | Guide | Description |
 |:------|:------------|
 | **[Quick Start](QUICKSTART.md)** | Get running in 10 minutes |
-| **[Workflow Overview](docs/workflow_overview.md)** | High-level pipelines |
-| **[Music Collection](docs/music_collection_guide.md)** | Complete CD-to-library guide |
-| **[Video Ripping](docs/video_ripping_guide.md)** | Movie disc workflow |
-| **[Media Server Setup](docs/media_server_setup.md)** | Jellyfin/Plex configuration |
+| **[Workflow Guide](docs/workflow_guide.md)** | High-level pipelines |
+| **[Music Guide](docs/music_guide.md)** | Complete CD-to-library guide |
+| **[Video Guide](docs/video_guide.md)** | Movie and TV show disc workflows |
+| **[Server Guide](docs/server_guide.md)** | Jellyfin/Plex configuration |
+| **[Tools Guide](docs/tools_guide.md)** | Additional utilities |
 | **[Server Setups](docs/server_setups/)** | Hardware-specific guides |
 
 ---
