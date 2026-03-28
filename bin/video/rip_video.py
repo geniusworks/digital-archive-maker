@@ -1495,7 +1495,16 @@ def main() -> int:
     # files)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    if not mkvs and not used_handbrake_fallback:
+    # Check if we already have MKV files and can skip ripping
+    existing_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
+    if existing_mkvs and not used_handbrake_fallback:
+        print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
+        for mkv in existing_mkvs:
+            size_gb = mkv.stat().st_size / (1024**3)
+            print(f"  → {mkv.name} ({size_gb:.1f}GB)")
+        print("\n✓ Skipping disc rip - using existing MKV files")
+        mkvs = existing_mkvs
+    elif not mkvs and not used_handbrake_fallback:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
             print("\n🎬 Disc Analysis (Main Feature)")
