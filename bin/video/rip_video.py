@@ -2026,86 +2026,83 @@ def main() -> int:
         else:
             print("Ripping all tracks (forced)...")
             print()  # Blank line before spinner
-            spinner = show_spinner("Ripping all tracks with MakeMKV...")
+            
+            # First, get detected track numbers from MakeMKV info
+            print("🔍 Detecting available tracks...")
             try:
-                _run(
-                    [
+                info_cmd = [
+                    "makemkvcon", "info", "disc:0", 
+                    f"--minlength={minlength}"
+                ]
+                info_result = _run(info_cmd, capture=True, text=True)
+                
+                # Parse track numbers from info output
+                detected_tracks = []
+                for line in info_result.stdout.split('\n'):
+                    if "was added as title #" in line:
+                        # Extract track number from "File 00800.mpls was added as title #0"
+                        track_match = re.search(r'title #(\d+)', line)
+                        if track_match:
+                            track_id = int(track_match.group(1))
+                            detected_tracks.append(track_id)
+                
+                if not detected_tracks:
+                    print("  ❌ No tracks detected - falling back to 'all' method")
+                    detected_tracks = ["all"]
+                else:
+                    print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
+                    
+            except Exception as e:
+                print(f"  ⚠️  Failed to detect tracks: {e}")
+                print("  → Falling back to 'all' method")
+                detected_tracks = ["all"]
+            
+            # Rip each detected track individually
+            print(f"\n📀 Ripping {len(detected_tracks)} track(s)...")
+            successful_rips = []
+            
+            for i, track_id in enumerate(detected_tracks):
+                track_str = str(track_id) if track_id != "all" else "all"
+                print(f"  🎬 Ripping track {track_str} ({i+1}/{len(detected_tracks)})...")
+                
+                try:
+                    spinner = show_spinner(f"Ripping track {track_str}...")
+                    _run([
                         "makemkvcon",
                         "mkv",
                         "disc:0",
-                        "all",
+                        track_str,
                         str(outdir),
                         f"--minlength={minlength}",
-                    ]
-                )
-                stop_spinner(spinner, "✓ Successfully ripped all tracks (forced)")
-            except KeyboardInterrupt:
-                stop_spinner(spinner, "✗ Rip cancelled by user")
-                print("\n   → Cleaning up partial files...")
-                # Clean up any partial files from this rip
-                for partial_file in outdir.glob("*"):
-                    try:
-                        if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
-                            partial_file.unlink()
-                            print(f"   → Removed: {partial_file.name}")
-                    except Exception:
-                        pass
-                print("\n⚠️  Rip cancelled by user - no files were created")
-                return 1  # Exit with error code
-            except subprocess.CalledProcessError as e:
-                stop_spinner(spinner, f"✗ MakeMKV failed to rip all tracks (forced): {e}")
-                print("  → Trying backup method for problematic disc...")
-
-                # Try backup method for problematic discs
-                backup_cmd = ["makemkvcon", "backup", "disc:0", str(outdir)]
-                print(f"  → Running backup: {' '.join(backup_cmd)}")
-                print()  # Blank line before spinner
-                backup_spinner = show_spinner("Creating backup with MakeMKV...")
-                try:
-                    backup_result = _run(backup_cmd, capture=True)
-                    stop_spinner(
-                        backup_spinner, f"✓ Backup output: {backup_result.stdout.strip()[-200:]}"
-                    )
+                    ])
+                    stop_spinner(spinner, f"✓ Successfully ripped track {track_str}")
+                    successful_rips.append(track_id)
+                    
                 except KeyboardInterrupt:
-                    stop_spinner(backup_spinner, "✗ Backup cancelled by user")
-                    print("\n⚠️  Backup cancelled by user - no files were created")
+                    stop_spinner(spinner, f"✗ Track {track_str} rip cancelled by user")
+                    print("\n   → Cleaning up partial files...")
+                    # Clean up any partial files from this rip
+                    for partial_file in outdir.glob("*"):
+                        try:
+                            if partial_file.is_file() and partial_file.stat().st_size < 1024 * 1024:  # < 1MB
+                                partial_file.unlink()
+                                print(f"   → Removed: {partial_file.name}")
+                        except Exception:
+                            pass
+                    print("\n⚠️  Rip cancelled by user - no files were created")
                     return 1  # Exit with error code
-                except Exception as backup_e:
-                    stop_spinner(backup_spinner, f"✗ Backup failed: {backup_e}")
-                    raise
-
-                # Now rip ALL titles from backup (don't rely on title ID
-                # mapping)
-                backup_mkv_cmd = [
-                    "makemkvcon",
-                    "mkv",
-                    f"file:{outdir}",
-                    "all",
-                    str(outdir),
-                    f"--minlength={minlength}",
-                ]
-                print(f"  → Running rip from backup (all titles): {' '.join(backup_mkv_cmd)}")
-                print()  # Blank line before spinner
-                backup_rip_spinner = show_spinner("Ripping from backup with MakeMKV...")
-                try:
-                    backup_rip_result = _run(backup_mkv_cmd, capture=True)
-                    stop_spinner(
-                        backup_rip_spinner,
-                        f"✓ Backup rip output: {backup_rip_result.stdout.strip()}",
-                    )
-                    print("  ✓ Successfully ripped using backup method")
-                except KeyboardInterrupt:
-                    stop_spinner(backup_rip_spinner, "✗ Backup rip cancelled by user")
-                    print("\n⚠️  Backup rip cancelled by user - no files were created")
-                    return 1  # Exit with error code
-                except subprocess.CalledProcessError as e3:
-                    stop_spinner(backup_rip_spinner, f"✗ Backup rip also failed: {e3}")
-                    print("  ❌ This disc appears to be unreadable or heavily protected")
-                    print("  💡 Try cleaning the disc or using a different Blu-ray drive")
-                    return 1  # Exit gracefully
-                except Exception as e3:
-                    stop_spinner(backup_rip_spinner, f"✗ Backup rip error: {e3}")
-                    raise
+                    
+                except subprocess.CalledProcessError as e:
+                    stop_spinner(spinner, f"✗ Track {track_str} failed: {e}")
+                    print(f"  ⚠️  Track {track_str} failed to rip - continuing with others...")
+                    continue
+            
+            if not successful_rips:
+                print("\n❌ No tracks were successfully ripped")
+                return 1
+                
+            print(f"\n✅ Successfully ripped {len(successful_rips)} track(s): {successful_rips}")
+            print()  # Blank line before next phase
 
         # Eject disc if requested (default: true for disc rips)
         # Note: Don't eject here - HandBrake fallback may need the disc
