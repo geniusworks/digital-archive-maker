@@ -378,9 +378,9 @@ def rip_video(
     cmd_parts = ["make"]
     if title and year:
         if episodes:
-            cmd_parts += ["rip-episodes", f'TITLE="{title}"', f"YEAR={year}"]
+            cmd_parts += ["rip-episodes", f"TITLE={title}", f"YEAR={year}"]
         else:
-            cmd_parts += ["rip-movie", f'TITLE="{title}"', f"YEAR={year}"]
+            cmd_parts += ["rip-movie", f"TITLE={title}", f"YEAR={year}"]
     else:
         cmd_parts.append("rip-video")
 
