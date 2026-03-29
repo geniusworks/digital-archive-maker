@@ -171,8 +171,23 @@ app_DefaultSelectionString="+sel:all,-sel:(core)"
 ### ✅ **Flexible Workflows**
 - **Disc ripping**: Direct from physical media
 - **File processing**: Work with existing files
+- **Smart selective ripping**: Only rip missing episodes (TV shows)
 - **Resume capability**: Continue interrupted work
 - **Subtitle backfill**: Add subs to existing files
+
+### 🎯 **Smart TV Show Ripping**
+For TV shows (`--episodes`), the script intelligently handles partial rips:
+
+```bash
+# Always scans disc, but only rips missing episodes
+dam rip video --title "Show Name" --year 2023 --episodes
+
+# Behavior:
+# 🔍 Scans disc for all episodes
+# ✓ Skips episodes that already exist (MKV or MP4)
+# 🎬 Only rips missing episodes
+# 📁 Perfect for interrupted rips or adding missing episodes
+```
 
 ---
 
