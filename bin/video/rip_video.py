@@ -2342,15 +2342,43 @@ def main() -> int:
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
 
         # Skip if MP4 already exists and is reasonably sized (compressed)
-        if mp4_path.exists() and mp4_path.stat().st_size > 1000000:  # > 1MB
-            # Additional check: ensure file is actually compressed (not
-            # original MakeMKV rip)
-            file_size_gb = mp4_path.stat().st_size / (1024**3)
+        # Check both local staging folder and final destination folder
+        local_mp4_exists = mp4_path.exists() and mp4_path.stat().st_size > 1000000  # > 1MB
+        
+        # Also check destination folder if we have title/year info
+        dest_mp4_exists = False
+        dest_mp4_path = None
+        if safe_title and safe_year:
+            dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+            # For TV shows, we need to determine the episode filename pattern
+            if dest_category == "Shows" and force_all_tracks:
+                # For TV shows, check if any episode files already exist
+                existing_episodes = list(dest_dir.glob(f"{safe_title} ({safe_year}) - S*.mp4"))
+                if existing_episodes:
+                    dest_mp4_exists = True
+                    dest_mp4_path = existing_episodes[0]  # Just need to know one exists
+            else:
+                # For movies, check the expected filename
+                dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}).mp4"
+                dest_mp4_exists = dest_mp4_path.exists() and dest_mp4_path.stat().st_size > 1000000
+        
+        if local_mp4_exists or dest_mp4_exists:
+            # Determine which location has the file and its size
+            if local_mp4_exists:
+                file_size_gb = mp4_path.stat().st_size / (1024**3)
+                location = "local"
+                file_name = mp4_path.name
+            else:
+                file_size_gb = dest_mp4_path.stat().st_size / (1024**3)
+                location = "destination"
+                file_name = dest_mp4_path.name
+            
+            # Additional check: ensure file is actually compressed (not original MakeMKV rip)
             if file_size_gb < 10:  # If file is less than 10GB, assume it's compressed
-                print(f"  ✓ Already encoded: {mp4_path.name} ({file_size_gb:.1f}GB)")
+                print(f"  ✓ Already encoded in {location}: {file_name} ({file_size_gb:.1f}GB)")
                 continue
             else:
-                print(f"  ⚠️  Found large file ({file_size_gb:.1f}GB) - re-encoding to compress...")
+                print(f"  ⚠️  Found large file in {location} ({file_size_gb:.1f}GB) - re-encoding to compress...")
                 # Continue with encoding to compress the large file
                 # Use a different output filename to avoid overwriting input
                 mp4_path = outdir / f"{name}_compressed.mp4"
