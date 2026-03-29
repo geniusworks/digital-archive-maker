@@ -1544,13 +1544,16 @@ def main() -> int:
             # Parse track numbers from info output
             detected_tracks = []
             if info_result.stdout:
+                print(f"    DEBUG: MakeMKV info output:")
                 for line in info_result.stdout.split('\n'):
+                    print(f"    DEBUG: {line}")
                     if "was added as title #" in line:
                         # Extract track number from "File 00800.mpls was added as title #0"
                         track_match = regex_module.search(r'title #(\d+)', line)
                         if track_match:
                             track_id = int(track_match.group(1))
                             detected_tracks.append(track_id)
+                            print(f"    DEBUG: Detected track {track_id} from line: {line}")
             
             if not detected_tracks:
                 print("  ❌ No tracks detected - using existing files only")
@@ -1586,7 +1589,11 @@ def main() -> int:
                     if safe_title and safe_year and force_all_tracks:
                         dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
                         episode_pattern = f"S01E{episode_num:02d}"
-                        existing_mp4 = any(episode_pattern in mp4.name for mp4 in dest_dir.glob("*.mp4"))
+                        existing_mp4s = list(dest_dir.glob("*.mp4"))
+                        print(f"    DEBUG: Checking for MP4 pattern '{episode_pattern}' in {dest_dir}")
+                        print(f"    DEBUG: Found {len(existing_mp4s)} MP4 files: {[mp4.name for mp4 in existing_mp4s]}")
+                        existing_mp4 = any(episode_pattern in mp4.name for mp4 in existing_mp4s)
+                        print(f"    DEBUG: existing_mp4 = {existing_mp4}")
                     
                     if existing_mp4:
                         print(f"  ✓ Skipping episode {episode_num} (track {track_str}) - MP4 already exists in library")
@@ -1598,14 +1605,17 @@ def main() -> int:
                     
                     try:
                         spinner = show_spinner(f"Ripping episode {episode_num} (track {track_str})...")
-                        _run([
+                        cmd = [
                             "makemkvcon",
                             "mkv",
                             "disc:0",
                             track_str,
                             str(outdir),
                             f"--minlength={minlength}",
-                        ])
+                        ]
+                        print(f"    DEBUG: Running command: {' '.join(cmd)}")
+                        result = _run(cmd)
+                        print(f"    DEBUG: Command result: {result}")
                         stop_spinner(spinner, f"✓ Successfully ripped episode {episode_num} (track {track_str})")
                         
                         # Step 3: Verify the file was actually created by observing what MakeMKV did
@@ -2228,13 +2238,16 @@ def main() -> int:
                 # Parse track numbers from info output
                 detected_tracks = []
                 if info_result.stdout:
+                    print(f"    DEBUG: MakeMKV info output:")
                     for line in info_result.stdout.split('\n'):
+                        print(f"    DEBUG: {line}")
                         if "was added as title #" in line:
                             # Extract track number from "File 00800.mpls was added as title #0"
                             track_match = regex_module.search(r'title #(\d+)', line)
                             if track_match:
                                 track_id = int(track_match.group(1))
                                 detected_tracks.append(track_id)
+                                print(f"    DEBUG: Detected track {track_id} from line: {line}")
                 
                 if not detected_tracks:
                     print("  ❌ No tracks detected - falling back to 'all' method")
