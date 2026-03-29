@@ -189,6 +189,7 @@ dam rip video --title "Show Name" --year 2023 --episodes
 # 🎬 Only rips missing episodes
 # 📁 Perfect for interrupted rips or adding missing episodes
 # 🔧 File verification prevents MakeMKV silent failures
+# 🎯 Observation-based approach (no filename guessing)
 
 # Disc-based episode numbering:
 # - Disc 1: Episodes 1-5 (first track → Episode 1)
@@ -200,6 +201,12 @@ dam rip video --title "Show Name" --year 2023 --episodes
 # - Episode 2: Second track detected → S01E02.mp4
 # - Episode 3: Third track detected → S01E03.mp4
 # - And so on...
+
+# Observation-based file mapping:
+# - Let MakeMKV create whatever filenames it wants
+# - Map files to episodes by creation order (most reliable)
+# - Shows episode → file mapping after ripping
+# - Prevents overwrites by observing actual behavior
 
 # Pragmatic approach:
 # - If MP4 exists → Skip ripping entirely (final product already available)
@@ -221,23 +228,32 @@ FORCE_ALL_TRACKS=true make rip-episodes TITLE="Show" YEAR=2023
 ```
 
 ### **MakeMKV Silent Failure Detection**
-The script includes robust verification to handle MakeMKV's silent failures:
+The script includes robust verification to handle MakeMKV's unpredictable behavior:
 
 ```bash
 # What happens when MakeMKV fails silently:
 📊 Rip Summary:
   → Tracks detected: 5
   → Files created: 3
-  → Successful rips: 3
+  → Episodes processed: 3
   ⚠️  2 track(s) failed silently (MakeMKV issue)
   → This is a known MakeMKV behavior with some discs
   ✓ Processing 3 valid file(s)
 
+# Episode → file mapping (observation-based):
+📋 Episode 1 → Silicon Valley Season 1 Disc 1_t01.mkv
+📋 Episode 2 → Silicon Valley Season 1 Disc 1_t02.mkv
+📋 Episode 3 → Silicon Valley Season 1 Disc 1_t03.mkv
+📋 Episode 4 → Silicon Valley Season 1 Disc 1_t04.mkv
+📋 Episode 5 → Silicon Valley Season 1 Disc 1_t05.mkv
+
 # Verification features:
+# - Observes what MakeMKV actually creates (no pattern guessing)
+# - Maps files to episodes by creation order (most reliable)
 # - Detects when MakeMKV reports success but creates no files
 # - Removes partial files (< 1MB) 
 # - Reports exactly what happened vs. what was expected
-# - Prevents overwriting existing files
+# - Prevents overwrites by using before/after file comparison
 ```
 
 ### **Encoding Options**

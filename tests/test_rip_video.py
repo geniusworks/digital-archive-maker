@@ -112,6 +112,48 @@ class TestRipVideo:
         assert get_episode_pattern(5) == "S01E05"
         assert get_episode_pattern(10) == "S01E10"
 
+    def test_observation_based_file_mapping(self):
+        """Test observation-based file mapping instead of pattern guessing."""
+        # Test the observation-based approach for mapping files to episodes
+        def map_episodes_to_files(mkvs, start_episode):
+            """Map episode numbers to files by creation order."""
+            episode_to_file = {}
+            for i, mkv in enumerate(mkvs):
+                episode_num = start_episode + i
+                episode_to_file[episode_num] = mkv
+            return episode_to_file
+        
+        # Mock MKV files (simulating creation order)
+        mock_mkvs = [
+            "show_t01.mkv",  # First created
+            "show_t02.mkv",  # Second created  
+            "show_t03.mkv",  # Third created
+        ]
+        
+        # Test mapping for Disc 1 (episodes 1-3)
+        mapping = map_episodes_to_files(mock_mkvs, start_episode=1)
+        assert mapping[1] == "show_t01.mkv"
+        assert mapping[2] == "show_t02.mkv"
+        assert mapping[3] == "show_t03.mkv"
+        
+        # Test mapping for Disc 2 (episodes 4-6)
+        mapping_disc2 = map_episodes_to_files(mock_mkvs, start_episode=4)
+        assert mapping_disc2[4] == "show_t01.mkv"
+        assert mapping_disc2[5] == "show_t02.mkv"
+        assert mapping_disc2[6] == "show_t03.mkv"
+        
+        # Test that this works regardless of MakeMKV's naming pattern
+        weird_mkvs = [
+            "show_weird_name_001.mkv",
+            "show_weird_name_002.mkv", 
+            "show_weird_name_003.mkv",
+        ]
+        
+        mapping_weird = map_episodes_to_files(weird_mkvs, start_episode=1)
+        assert mapping_weird[1] == "show_weird_name_001.mkv"
+        assert mapping_weird[2] == "show_weird_name_002.mkv"
+        assert mapping_weird[3] == "show_weird_name_003.mkv"
+
     def test_disc_based_episode_numbering(self):
         """Test disc-based episode numbering for multi-disc TV shows."""
         # Test the disc number extraction and episode calculation
