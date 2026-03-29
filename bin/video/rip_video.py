@@ -1504,12 +1504,22 @@ def main() -> int:
     # Check if we already have MKV files and can skip ripping
     existing_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
     if existing_mkvs and not used_handbrake_fallback:
-        print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
-        for mkv in existing_mkvs:
-            size_gb = mkv.stat().st_size / (1024**3)
-            print(f"  → {mkv.name} ({size_gb:.1f}GB)")
-        print("\n✓ Skipping disc rip - using existing MKV files")
-        mkvs = existing_mkvs
+        if force_all_tracks:
+            # For TV shows: always scan disc to find missing tracks, even if some files exist
+            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
+            for mkv in existing_mkvs:
+                size_gb = mkv.stat().st_size / (1024**3)
+                print(f"  → {mkv.name} ({size_gb:.1f}GB)")
+            print("\n🔍 Checking for additional episodes on disc...")
+            # Continue to disc scanning to find missing tracks
+        else:
+            # For movies: use existing files if we have them
+            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
+            for mkv in existing_mkvs:
+                size_gb = mkv.stat().st_size / (1024**3)
+                print(f"  → {mkv.name} ({size_gb:.1f}GB)")
+            print("\n✓ Skipping disc rip - using existing MKV files")
+            mkvs = existing_mkvs
     elif not mkvs and not used_handbrake_fallback:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
@@ -2096,6 +2106,27 @@ def main() -> int:
                 
                 for i, track_id in enumerate(detected_tracks):
                     track_str = str(track_id)
+                    
+                    # Check if this track already exists as MKV or MP4
+                    track_pattern = f"_t{int(track_str)+1:02d}"  # Track 0 becomes _t01
+                    existing_mkv = any(track_pattern in mkv.name for mkv in existing_mkvs)
+                    
+                    # Also check if MP4 exists in destination
+                    existing_mp4 = False
+                    if safe_title and safe_year and force_all_tracks:
+                        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+                        episode_num = int(track_str) + 1  # Track 0 becomes Episode 1
+                        episode_pattern = f"S01E{episode_num:02d}"
+                        existing_mp4 = any(episode_pattern in mp4.name for mp4 in dest_dir.glob("*.mp4"))
+                    
+                    if existing_mkv or existing_mp4:
+                        if existing_mkv:
+                            print(f"  ✓ Skipping track {track_str} - MKV already exists")
+                        else:
+                            print(f"  ✓ Skipping track {track_str} - MP4 already exists")
+                        successful_rips.append(track_id)
+                        continue
+                    
                     print(f"  🎬 Ripping track {track_str} ({i+1}/{len(detected_tracks)})...")
                     
                     try:
