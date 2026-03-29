@@ -1551,31 +1551,28 @@ def main() -> int:
                     
                     for i, track_id in enumerate(detected_tracks):
                         track_str = str(track_id)
+                        episode_num = i + 1  # Episode number based on detection order
                         
-                        # Check if this track already exists as MKV or MP4
-                        track_pattern = f"_t{int(track_str)+1:02d}"
-                        existing_mkv = any(track_pattern in mkv.name for mkv in existing_mkvs)
+                        # Check if this track already exists as MKV
+                        # Let MakeMKV create whatever filename it wants, we'll detect it after
+                        existing_mkv = False  # We'll check after ripping
                         
                         # Also check if MP4 exists in destination
                         existing_mp4 = False
                         if safe_title and safe_year and force_all_tracks:
                             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
-                            episode_num = int(track_str) + 1
                             episode_pattern = f"S01E{episode_num:02d}"
                             existing_mp4 = any(episode_pattern in mp4.name for mp4 in dest_dir.glob("*.mp4"))
                         
-                        if existing_mkv or existing_mp4:
-                            if existing_mkv:
-                                print(f"  ✓ Skipping track {track_str} - MKV already exists")
-                            else:
-                                print(f"  ✓ Skipping track {track_str} - MP4 already exists")
+                        if existing_mp4:
+                            print(f"  ✓ Skipping episode {episode_num} (track {track_str}) - MP4 already exists")
                             successful_rips.append(track_id)
                             continue
                         
-                        print(f"  🎬 Ripping track {track_str} ({i+1}/{len(detected_tracks)})...")
+                        print(f"  🎬 Ripping episode {episode_num} (track {track_str}) ({i+1}/{len(detected_tracks)})...")
                         
                         try:
-                            spinner = show_spinner(f"Ripping track {track_str}...")
+                            spinner = show_spinner(f"Ripping episode {episode_num} (track {track_str})...")
                             _run([
                                 "makemkvcon",
                                 "mkv",
@@ -1584,7 +1581,7 @@ def main() -> int:
                                 str(outdir),
                                 f"--minlength={minlength}",
                             ])
-                            stop_spinner(spinner, f"✓ Successfully ripped track {track_str}")
+                            stop_spinner(spinner, f"✓ Successfully ripped episode {episode_num} (track {track_str})")
                             successful_rips.append(track_id)
                             
                         except KeyboardInterrupt:
