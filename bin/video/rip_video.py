@@ -1595,15 +1595,23 @@ def main() -> int:
                             stop_spinner(spinner, f"✓ Successfully ripped episode {episode_num} (track {track_str})")
                             
                             # Verify the file was actually created
-                            expected_files = list(outdir.glob(f"*_t{int(track_str)+1:02d}.mkv"))
-                            if not expected_files:
+                            # Get all MKV files before and after to find the new one
+                            mkvs_before = set(outdir.glob("*.mkv"))
+                            
+                            # Wait a moment for file system to update
+                            import time
+                            time.sleep(1)
+                            
+                            mkvs_after = set(outdir.glob("*.mkv"))
+                            new_files = mkvs_after - mkvs_before
+                            
+                            if not new_files:
                                 print(f"  ❌ ERROR: MakeMKV reported success but no file created for track {track_str}")
-                                print(f"  → Expected: *_t{int(track_str)+1:02d}.mkv")
                                 print(f"  → This indicates a silent MakeMKV failure")
                                 # Don't add to successful_rips since no file was created
                                 continue
                             
-                            created_file = expected_files[0]
+                            created_file = list(new_files)[0]
                             if created_file.stat().st_size < 1024 * 1024:  # < 1MB
                                 print(f"  ❌ ERROR: File created but too small ({created_file.stat().st_size} bytes)")
                                 print(f"  → This indicates a failed rip")
