@@ -97,59 +97,38 @@ class TestRipVideo:
         assert any(action == "extract_vob_convert" for action, _ in available_actions)
         assert ("extract_vob_convert", "MP4 + Convert DVD subtitles") in available_actions
 
-    def test_track_pattern_generation(self):
-        """Test MakeMKV track pattern generation logic for selective ripping."""
-        # Test the track pattern logic we added for selective ripping
-        def get_track_pattern(track_str):
-            """Generate MakeMKV filename pattern for track."""
-            track_number_for_filename = int(track_str) + 1  # Convert 0-based track to 1-based filename
-            return f"_t{track_number_for_filename:02d}.mkv"
-
-        # Test track to filename mapping (0-based track to 1-based filename)
-        assert get_track_pattern("0") == "_t01.mkv"
-        assert get_track_pattern("1") == "_t02.mkv"
-        assert get_track_pattern("2") == "_t03.mkv"
-        assert get_track_pattern("3") == "_t04.mkv"
-        assert get_track_pattern("4") == "_t05.mkv"
-        assert get_track_pattern("9") == "_t10.mkv"
-
     def test_episode_pattern_generation(self):
         """Test episode filename pattern generation for MP4 files."""
-        # Test the episode pattern logic for MP4 files
-        def get_episode_pattern(track_str):
-            """Generate episode filename pattern for track."""
-            episode_num = int(track_str) + 1  # Track 0 becomes Episode 1
+        # Test the episode pattern logic for MP4 files (based on detection order)
+        def get_episode_pattern(episode_num):
+            """Generate episode filename pattern for episode number."""
             return f"S01E{episode_num:02d}"
 
-        # Test track to episode mapping (0-based track to 1-based episode)
-        assert get_episode_pattern("0") == "S01E01"
-        assert get_episode_pattern("1") == "S01E02"
-        assert get_episode_pattern("2") == "S01E03"
-        assert get_episode_pattern("3") == "S01E04"
-        assert get_episode_pattern("4") == "S01E05"
-        assert get_episode_pattern("9") == "S01E10"
+        # Test episode numbering (1-based episode numbers)
+        assert get_episode_pattern(1) == "S01E01"
+        assert get_episode_pattern(2) == "S01E02"
+        assert get_episode_pattern(3) == "S01E03"
+        assert get_episode_pattern(4) == "S01E04"
+        assert get_episode_pattern(5) == "S01E05"
+        assert get_episode_pattern(10) == "S01E10"
 
-    def test_existing_mkv_detection_logic(self):
-        """Test logic for detecting existing MKV files for selective ripping."""
-        # Mock existing MKV files
-        existing_mkvs = [
-            "show_t01.mkv",
-            "show_t02.mkv", 
-            "show_t03.mkv"
-        ]
+    def test_selective_ripping_detection_order(self):
+        """Test selective ripping logic based on detection order."""
+        # Test that episode numbers are based on detection order, not track IDs
+        detected_tracks = [3, 0, 2, 4, 1]  # Random order like MakeMKV might return
         
-        # Test track pattern matching
-        def track_exists(track_str, existing_files):
-            """Check if track already has MKV file."""
-            track_pattern = f"_t{int(track_str)+1:02d}"
-            return any(track_pattern in mkv for mkv in existing_files)
+        # Episode numbers should be based on detection order (1-based)
+        episode_mapping = {}
+        for i, track_id in enumerate(detected_tracks):
+            episode_num = i + 1  # Detection order + 1
+            episode_mapping[track_id] = episode_num
         
-        # Test detection
-        assert track_exists("0", existing_mkvs) == True   # _t01 exists
-        assert track_exists("1", existing_mkvs) == True   # _t02 exists
-        assert track_exists("2", existing_mkvs) == True   # _t03 exists
-        assert track_exists("3", existing_mkvs) == False  # _t04 missing
-        assert track_exists("4", existing_mkvs) == False  # _t05 missing
+        # Test the mapping
+        assert episode_mapping[3] == 1  # First detected track → Episode 1
+        assert episode_mapping[0] == 2  # Second detected track → Episode 2
+        assert episode_mapping[2] == 3  # Third detected track → Episode 3
+        assert episode_mapping[4] == 4  # Fourth detected track → Episode 4
+        assert episode_mapping[1] == 5  # Fifth detected track → Episode 5
 
     def test_sanitize_title_function(self):
         """Test title sanitization logic."""

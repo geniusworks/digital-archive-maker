@@ -183,10 +183,17 @@ For TV shows (`--episodes`), the script intelligently handles partial rips:
 dam rip video --title "Show Name" --year 2023 --episodes
 
 # Behavior:
-# 🔍 Scans disc for all episodes
-# ✓ Skips episodes that already exist (MKV or MP4)
+# 🔍 Scans disc for all episodes meeting minimum duration
+# 📊 Episodes numbered by detection order (1, 2, 3, 4, 5...)
+# ✓ Skips episodes with existing MP4 files (S01E01.mp4, S01E02.mp4, etc.)
 # 🎬 Only rips missing episodes
 # 📁 Perfect for interrupted rips or adding missing episodes
+
+# Per-track detection logic:
+# - Episode 1: First track detected → S01E01.mp4
+# - Episode 2: Second track detected → S01E02.mp4
+# - Episode 3: Third track detected → S01E03.mp4
+# - And so on...
 ```
 
 ---
