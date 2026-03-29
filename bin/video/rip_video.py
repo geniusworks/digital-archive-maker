@@ -1330,6 +1330,11 @@ def main() -> int:
         help="Encode all tracks instead of just the main feature (largest file)",
     )
     parser.add_argument(
+        "--episodes",
+        action="store_true",
+        help="Treat disc as TV show episodes (use episode numbering and smart skipping)",
+    )
+    parser.add_argument(
         "--title-index",
         type=int,
         default=None,
@@ -1346,9 +1351,11 @@ def main() -> int:
     minlength = int(get_env_str("MINLENGTH", "600") or "600")  # 10 minutes minimum
 
     # Track selection settings
-    force_all_tracks = args.force_all_tracks or get_env_str(
-        "FORCE_ALL_TRACKS", "false"
-    ).lower() in ("true", "1", "yes")
+    force_all_tracks = (
+        args.force_all_tracks or 
+        args.episodes or 
+        get_env_str("FORCE_ALL_TRACKS", "false").lower() in ("true", "1", "yes")
+    )
 
     # Keep 10-minute minimum even for TV shows - episode filtering should happen during organization
     # Don't reduce minlength for force_all_tracks - maintain quality threshold
