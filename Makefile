@@ -209,7 +209,7 @@ test-integration:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	@./venv/bin/python -m pytest tests/ --cov=bin --cov-report=term-missing --cov-report=html --cov-fail-under=10
+	@./venv/bin/python -m pytest tests/ --cov=bin --cov-report=term-missing --cov-report=html --cov-fail-under=25
 
 test-pipeline:
 	@echo "Running local pipeline test (mirrors GitHub Actions CI)..."

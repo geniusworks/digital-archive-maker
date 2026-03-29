@@ -151,6 +151,80 @@ class TestRipVideo:
         assert track_exists("3", existing_mkvs) == False  # _t04 missing
         assert track_exists("4", existing_mkvs) == False  # _t05 missing
 
+    def test_sanitize_title_function(self):
+        """Test title sanitization logic."""
+        # Test basic sanitization
+        assert rip_video.sanitize_title("Simple Title") == "Simple Title"
+        assert rip_video.sanitize_title("title with and") == "Title With And"  # "and" not stop word when first
+        assert rip_video.sanitize_title("TITLE WITH AND") == "TITLE WITH AND"  # All caps preserved
+        
+        # Test acronym preservation
+        assert rip_video.sanitize_title("USA Today") == "USA Today"
+        assert rip_video.sanitize_title("BBC News") == "BBC News"
+        
+        # Test stop words in middle
+        assert rip_video.sanitize_title("Movie and Film") == "Movie and Film"  # "and" not stop word
+        assert rip_video.sanitize_title("The Movie") == "The Movie"  # "the" not stop word at start
+
+    def test_sanitize_year_function(self):
+        """Test year sanitization logic."""
+        # Test valid years
+        assert rip_video.sanitize_year("2023") == "2023"
+        assert rip_video.sanitize_year("1999") == "1999"
+        
+        # Test mixed content
+        assert rip_video.sanitize_year("2023-2024") == "2023"
+        assert rip_video.sanitize_year("(1999)") == "1999"
+        assert rip_video.sanitize_year(" Released in 2021 ") == "2021"
+        
+        # Test invalid input - returns original if less than 4 digits
+        assert rip_video.sanitize_year("") == ""
+        assert rip_video.sanitize_year("abc") == "abc"  # No digits, returns original
+        assert rip_video.sanitize_year("12") == "12"  # Too short, returns as-is
+
+    def test_seconds_to_srt_time_function(self):
+        """Test SRT time conversion function."""
+        # Test the actual function from rip_video
+        assert rip_video._seconds_to_srt_time(0.0) == "00:00:00,000"
+        assert rip_video._seconds_to_srt_time(1.5) == "00:00:01,500"
+        assert rip_video._seconds_to_srt_time(61.123) in ["00:01:01,123", "00:01:01,122"]  # Precision
+        assert rip_video._seconds_to_srt_time(3661.999) in ["01:01:01,999", "01:01:01,998"]
+        assert rip_video._seconds_to_srt_time(7200.0) == "02:00:00,000"
+
+    def test_is_command_available_function(self):
+        """Test command availability checking."""
+        # Test with a command that should exist
+        assert rip_video.is_command_available("python") == True
+        assert rip_video.is_command_available("python3") == True
+        
+        # Test with a command that shouldn't exist
+        assert rip_video.is_command_available("definitely_not_a_real_command_12345") == False
+
+    def test_language_helper_functions(self):
+        """Test language detection helper functions."""
+        # Mock stream data with proper structure
+        audio_streams = [
+            {"tags": {"language": "eng"}},
+            {"tags": {"language": "fre"}},
+            {"tags": {}}  # No language
+        ]
+        
+        subtitle_streams = [
+            {"tags": {"language": "eng"}, "codec_name": "subrip", "index": 0},
+            {"tags": {"language": "spa"}, "codec_name": "subrip", "index": 1},
+        ]
+        
+        # Test has_lang function
+        assert rip_video.has_lang(audio_streams, "eng") == True
+        assert rip_video.has_lang(audio_streams, "fre") == True
+        assert rip_video.has_lang(audio_streams, "ger") == False
+        
+        # Test first_eng_text_sub_index with proper structure
+        assert rip_video.first_eng_text_sub_index(subtitle_streams) == 0
+        
+        # Test pick_default_audio_lang
+        assert rip_video.pick_default_audio_lang(audio_streams) == "eng"
+
     def test_show_spinner_function(self):
         """Test the show_spinner function creates a thread."""
         import threading
