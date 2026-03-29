@@ -1552,7 +1552,8 @@ def main() -> int:
                         match = regex_module.search(r'disc\s*(\d+)', title_str.lower())
                         return int(match.group(1)) if match else 1
                     
-                    disc_num = extract_disc_number(title)
+                    # Use title_raw from the outer scope
+                    disc_num = extract_disc_number(title_raw or "")
                     episodes_per_disc = len(detected_tracks)
                     start_episode = (disc_num - 1) * episodes_per_disc + 1
                     
