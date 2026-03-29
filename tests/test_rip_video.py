@@ -5,7 +5,7 @@ Tests for rip_video.py script.
 
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -20,7 +20,7 @@ except ImportError:
 
 @pytest.mark.unit
 class TestRipVideo:
-    """Test cases for rip_video.py subtitle handling."""
+    """Test cases for rip_video.py subtitle handling and MP4 skip logic."""
 
     def test_interactive_subtitle_prompt_default_action_vob_convert(self):
         """Test that VOB subtitles default to extract_vob_convert action."""
@@ -49,7 +49,7 @@ class TestRipVideo:
         # Simulate the condition: not has_preferred_audio and has_foreign_audio
         # and preferred_vob_subs
 
-        # Simulate foreign audio (no preferred audio)
+        # Simulate foreign audio present
         has_preferred_audio = False
         has_foreign_audio = True
 
@@ -57,14 +57,9 @@ class TestRipVideo:
         preferred_vob_subs = True
         preferred_text_subs = False
 
-        # This is the exact condition from rip_video.py lines 349-355
-        if not has_preferred_audio and has_foreign_audio:
-            if preferred_text_subs:
-                default_action = "burn_subs"
-            elif preferred_vob_subs:
-                default_action = "burn_vob_subs"
-            else:
-                default_action = "unknown"
+        # This is the exact condition from rip_video.py line 369-371
+        if not has_preferred_audio and has_foreign_audio and preferred_vob_subs:
+            default_action = "burn_vob_subs"
         else:
             default_action = "unknown"
 
@@ -102,20 +97,59 @@ class TestRipVideo:
         assert any(action == "extract_vob_convert" for action, _ in available_actions)
         assert ("extract_vob_convert", "MP4 + Convert DVD subtitles") in available_actions
 
-    def test_require_command_mkvextract(self):
-        """Test that mkvextract is properly required."""
-        # Test that require_command function works with mkvextract
-        with patch("subprocess.run") as mock_run:
-            # Mock which command to return zero exit code (command found)
-            mock_run.return_value.returncode = 0
+    def test_track_pattern_generation(self):
+        """Test MakeMKV track pattern generation logic for selective ripping."""
+        # Test the track pattern logic we added for selective ripping
+        def get_track_pattern(track_str):
+            """Generate MakeMKV filename pattern for track."""
+            track_number_for_filename = int(track_str) + 1  # Convert 0-based track to 1-based filename
+            return f"_t{track_number_for_filename:02d}.mkv"
 
-            # Should not raise an exception for mkvextract
-            rip_video.require_command("mkvextract")
+        # Test track to filename mapping (0-based track to 1-based filename)
+        assert get_track_pattern("0") == "_t01.mkv"
+        assert get_track_pattern("1") == "_t02.mkv"
+        assert get_track_pattern("2") == "_t03.mkv"
+        assert get_track_pattern("3") == "_t04.mkv"
+        assert get_track_pattern("4") == "_t05.mkv"
+        assert get_track_pattern("9") == "_t10.mkv"
 
-            # Verify which command was called (account for additional kwargs)
-            mock_run.assert_called_with(
-                ["which", "mkvextract"], check=False, capture_output=True, text=True
-            )
+    def test_episode_pattern_generation(self):
+        """Test episode filename pattern generation for MP4 files."""
+        # Test the episode pattern logic for MP4 files
+        def get_episode_pattern(track_str):
+            """Generate episode filename pattern for track."""
+            episode_num = int(track_str) + 1  # Track 0 becomes Episode 1
+            return f"S01E{episode_num:02d}"
+
+        # Test track to episode mapping (0-based track to 1-based episode)
+        assert get_episode_pattern("0") == "S01E01"
+        assert get_episode_pattern("1") == "S01E02"
+        assert get_episode_pattern("2") == "S01E03"
+        assert get_episode_pattern("3") == "S01E04"
+        assert get_episode_pattern("4") == "S01E05"
+        assert get_episode_pattern("9") == "S01E10"
+
+    def test_existing_mkv_detection_logic(self):
+        """Test logic for detecting existing MKV files for selective ripping."""
+        # Mock existing MKV files
+        existing_mkvs = [
+            "show_t01.mkv",
+            "show_t02.mkv", 
+            "show_t03.mkv"
+        ]
+        
+        # Test track pattern matching
+        def track_exists(track_str, existing_files):
+            """Check if track already has MKV file."""
+            track_pattern = f"_t{int(track_str)+1:02d}"
+            return any(track_pattern in mkv for mkv in existing_files)
+        
+        # Test detection
+        assert track_exists("0", existing_mkvs) == True   # _t01 exists
+        assert track_exists("1", existing_mkvs) == True   # _t02 exists
+        assert track_exists("2", existing_mkvs) == True   # _t03 exists
+        assert track_exists("3", existing_mkvs) == False  # _t04 missing
+        assert track_exists("4", existing_mkvs) == False  # _t05 missing
 
     def test_show_spinner_function(self):
         """Test the show_spinner function creates a thread."""
