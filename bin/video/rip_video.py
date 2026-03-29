@@ -1553,11 +1553,7 @@ def main() -> int:
                         track_str = str(track_id)
                         episode_num = i + 1  # Episode number based on detection order
                         
-                        # Check if this track already exists as MKV
-                        # Let MakeMKV create whatever filename it wants, we'll detect it after
-                        existing_mkv = False  # We'll check after ripping
-                        
-                        # Also check if MP4 exists in destination
+                        # Step 1: Check if MP4 exists in destination (per-episode)
                         existing_mp4 = False
                         if safe_title and safe_year and force_all_tracks:
                             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
@@ -1565,10 +1561,11 @@ def main() -> int:
                             existing_mp4 = any(episode_pattern in mp4.name for mp4 in dest_dir.glob("*.mp4"))
                         
                         if existing_mp4:
-                            print(f"  ✓ Skipping episode {episode_num} (track {track_str}) - MP4 already exists")
+                            print(f"  ✓ Skipping episode {episode_num} (track {track_str}) - MP4 already exists in library")
                             successful_rips.append(track_id)
                             continue
                         
+                        # Step 2: Attempt to rip (MakeMKV will handle existing MKV files)
                         print(f"  🎬 Ripping episode {episode_num} (track {track_str}) ({i+1}/{len(detected_tracks)})...")
                         
                         try:
@@ -1597,10 +1594,15 @@ def main() -> int:
                             print("\n⚠️  Rip cancelled by user - no files were created")
                             return 1
                         except Exception as e:
-                            stop_spinner(spinner, f"✗ Track {track_str} rip failed: {e}")
-                            successful_rips = []
-                    
-                    # After ripping, get all MKV files (existing + newly created)
+                            # Check if MakeMKV failed because file already exists
+                            if "already exists" in str(e).lower() or "file exists" in str(e).lower():
+                                print(f"  ✓ Skipping episode {episode_num} (track {track_str}) - MKV already exists")
+                                successful_rips.append(track_id)
+                            else:
+                                stop_spinner(spinner, f"✗ Track {track_str} rip failed: {e}")
+                                successful_rips = []
+                
+                # After ripping, get all MKV files (existing + newly created)
                     mkvs = sorted(outdir.glob("*.mkv"))
                     
             except Exception as e:
