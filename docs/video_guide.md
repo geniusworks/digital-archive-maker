@@ -184,16 +184,27 @@ dam rip video --title "Show Name" --year 2023 --episodes
 
 # Behavior:
 # 🔍 Scans disc for all episodes meeting minimum duration
-# 📊 Episodes numbered by detection order (1, 2, 3, 4, 5...)
+# 📊 Disc-based episode numbering (Disc 1: 1-5, Disc 2: 6-10, etc.)
 # ✓ Skips episodes with existing MP4 files (S01E01.mp4, S01E02.mp4, etc.)
 # 🎬 Only rips missing episodes
 # 📁 Perfect for interrupted rips or adding missing episodes
+# 🔧 File verification prevents MakeMKV silent failures
+
+# Disc-based episode numbering:
+# - Disc 1: Episodes 1-5 (first track → Episode 1)
+# - Disc 2: Episodes 6-10 (first track → Episode 6)
+# - Disc 3: Episodes 11-15 (first track → Episode 11)
 
 # Per-track detection logic:
 # - Episode 1: First track detected → S01E01.mp4
 # - Episode 2: Second track detected → S01E02.mp4
 # - Episode 3: Third track detected → S01E03.mp4
 # - And so on...
+
+# Pragmatic approach:
+# - If MP4 exists → Skip ripping entirely (final product already available)
+# - If no MP4 → Rip and encode the episode
+# - Prevents redundant work and saves disk space
 ```
 
 ---
@@ -207,6 +218,26 @@ TITLE_INDEX=0 make rip-movie TITLE="Movie" YEAR=2023
 
 # Force all tracks (bypass filtering)
 FORCE_ALL_TRACKS=true make rip-episodes TITLE="Show" YEAR=2023
+```
+
+### **MakeMKV Silent Failure Detection**
+The script includes robust verification to handle MakeMKV's silent failures:
+
+```bash
+# What happens when MakeMKV fails silently:
+📊 Rip Summary:
+  → Tracks detected: 5
+  → Files created: 3
+  → Successful rips: 3
+  ⚠️  2 track(s) failed silently (MakeMKV issue)
+  → This is a known MakeMKV behavior with some discs
+  ✓ Processing 3 valid file(s)
+
+# Verification features:
+# - Detects when MakeMKV reports success but creates no files
+# - Removes partial files (< 1MB) 
+# - Reports exactly what happened vs. what was expected
+# - Prevents overwriting existing files
 ```
 
 ### **Encoding Options**
