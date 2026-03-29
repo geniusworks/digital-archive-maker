@@ -1521,7 +1521,10 @@ def main() -> int:
                 import re as regex_module
                 
                 print("🔍 Detecting available tracks...")
-                info_cmd = ["makemkvcon", "-r", "--cache=1", "info", "disc:0"]
+                info_cmd = [
+                    "makemkvcon", "info", "disc:0", 
+                    f"--minlength={minlength}"
+                ]
                 info_result = _run(info_cmd, capture=True)
                 
                 # Parse track numbers from info output
