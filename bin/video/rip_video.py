@@ -1559,12 +1559,43 @@ def main() -> int:
                 print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
                 use_fallback = False
                 
-                # Simple approach: start at episode 1 for each disc
-                disc_num = 1  # Always start at 1 for each disc
+                # Smart episode numbering: count all detected tracks across discs
+                def get_next_episode_number():
+                    """Find the next episode number by counting all detected tracks."""
+                    # Create a tracking file for this season
+                    if safe_title and safe_year:
+                        season_key = f"{safe_title}_{safe_year}"
+                        tracking_file = outdir / f".episode_tracking_{season_key}.txt"
+                        
+                        # Read existing track count
+                        existing_tracks = 0
+                        if tracking_file.exists():
+                            try:
+                                with open(tracking_file, 'r') as f:
+                                    existing_tracks = int(f.read().strip())
+                            except:
+                                existing_tracks = 0
+                        
+                        # Add current disc's tracks to the count
+                        total_tracks = existing_tracks + len(detected_tracks)
+                        
+                        # Save the new total
+                        try:
+                            with open(tracking_file, 'w') as f:
+                                f.write(str(total_tracks))
+                        except:
+                            pass  # Continue even if we can't save
+                        
+                        # Next episode starts after existing tracks
+                        return existing_tracks + 1
+                    
+                    return 1  # Fallback to episode 1
+                
+                start_episode = get_next_episode_number()
                 episodes_per_disc = len(detected_tracks)
-                start_episode = 1  # Always start at episode 1
                 
                 print(f"  📀 Processing {len(detected_tracks)} episodes on this disc")
+                print(f"  📝 Starting numbering at episode {start_episode} (continuing from previous discs)")
                 
                 # Use the same proven approach as movie ripping:
                 # Try individual tracks first, then fall back to "all" method

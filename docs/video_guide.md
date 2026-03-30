@@ -51,10 +51,10 @@ make rip-movie TITLE="Movie Name" YEAR=2023
 **Perfect for:** TV series, episodic content, multi-episode discs
 
 **Workflow:**
-1. **Episode detection** - Finds all episode tracks on disc
+1. **Episode detection** - Finds all episode tracks on disc (10+ minutes)
 2. **Dual approach ripping** - Individual tracks first, then "all" method if needed
 3. **Resilient handling** - Continues even if some tracks fail
-4. **Per-disc numbering** - Each disc starts with episode 1
+4. **Smart episode numbering** - Continues numbering across discs, tracks all qualifying episodes
 5. **Season organization** - `/Shows/Show Name (Year)/Season X/`
 
 **Commands:**
@@ -375,10 +375,10 @@ make rip-episodes TITLE="Breaking Bad Season 1" YEAR=2008
 
 # Multi-disc series
 make rip-episodes TITLE="Game of Thrones Season 1" YEAR=2011
-# (run again for disc 2, each disc starts with episode 1)
+# (run again for disc 2, numbering continues automatically)
 ```
 
-**Note:** TV show ripping uses a dual approach - individual tracks first, then "all" method if needed. Some tracks may fail due to disc/drive issues, but successful episodes will still be processed. Each disc starts numbering at episode 1 for reliability.
+**Note:** TV show ripping uses a dual approach - individual tracks first, then "all" method if needed. Some tracks may fail due to disc/drive issues, but successful episodes will still be processed. Episode numbering continues across discs by tracking all qualifying episodes (10+ minutes), ensuring no gaps in the sequence.
 
 ### **File Processing Examples**
 ```bash

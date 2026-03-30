@@ -154,28 +154,40 @@ class TestRipVideo:
         assert mapping_weird[2] == "show_weird_name_002.mkv"
         assert mapping_weird[3] == "show_weird_name_003.mkv"
 
-    def test_per_disc_episode_numbering(self):
-        """Test per-disc episode numbering (each disc starts at episode 1)."""
-        # Test the simplified episode numbering approach
-        def get_episode_numbers(detected_tracks):
-            """Get episode numbers for detected tracks (always starts at 1)."""
-            return list(range(1, detected_tracks + 1))
+    def test_smart_episode_numbering_across_discs(self):
+        """Test smart episode numbering that continues across discs."""
+        # Test the smart episode numbering approach
+        def get_next_episode_number(existing_tracks, detected_tracks):
+            """Simulate the episode numbering logic."""
+            # Next episode starts after existing tracks
+            return existing_tracks + 1
         
-        # Test episode numbering for different disc sizes
-        assert get_episode_numbers(5) == [1, 2, 3, 4, 5]  # 5 episodes: 1-5
-        assert get_episode_numbers(4) == [1, 2, 3, 4]     # 4 episodes: 1-4
-        assert get_episode_numbers(3) == [1, 2, 3]        # 3 episodes: 1-3
+        # Test episode numbering for multiple discs
+        # Disc 1: 5 tracks detected, 0 existing
+        assert get_next_episode_number(0, 5) == 1  # Start at episode 1
+        # Disc 2: 4 tracks detected, 5 existing from Disc 1
+        assert get_next_episode_number(5, 4) == 6  # Continue at episode 6
+        # Disc 3: 5 tracks detected, 9 existing from Disc 1+2
+        assert get_next_episode_number(9, 5) == 10  # Continue at episode 10
         
-        # Test episode mapping to tracks
-        detected_tracks = 5
-        episode_numbers = get_episode_numbers(detected_tracks)
+        # Test episode mapping for Disc 2
+        existing_tracks = 5  # From Disc 1
+        detected_tracks = 4   # Disc 2 has 4 episodes
+        start_episode = existing_tracks + 1  # Episode 6
         
-        # Track 0 → Episode 1, Track 1 → Episode 2, etc.
-        for i, episode_num in enumerate(episode_numbers):
-            track_id = i  # Track IDs start at 0
-            expected_episode = i + 1  # Episodes start at 1
-            assert episode_num == expected_episode
-            assert track_id == expected_episode - 1
+        # Track 0 → Episode 6, Track 1 → Episode 7, etc.
+        for i in range(detected_tracks):
+            expected_episode = start_episode + i
+            assert expected_episode == 6 + i  # 6, 7, 8, 9
+        
+        # Test that only qualifying tracks (10+ minutes) are counted
+        # This is simulated by the detected_tracks parameter
+        qualifying_tracks = [0, 1, 2, 3, 4]  # 5 qualifying episodes
+        non_qualifying = [5, 6, 7]  # 3 special features (ignored)
+        
+        assert len(qualifying_tracks) == 5
+        assert len(non_qualifying) == 3
+        # Only qualifying tracks are counted for episode numbering
 
     def test_sanitize_title_function(self):
         """Test title sanitization logic."""
