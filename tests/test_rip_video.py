@@ -154,44 +154,28 @@ class TestRipVideo:
         assert mapping_weird[2] == "show_weird_name_002.mkv"
         assert mapping_weird[3] == "show_weird_name_003.mkv"
 
-    def test_disc_based_episode_numbering(self):
-        """Test disc-based episode numbering for multi-disc TV shows."""
-        # Test the disc number extraction and episode calculation
-        def extract_disc_number(title_str):
-            """Extract disc number from title string."""
-            import re
-            match = re.search(r'disc\s*(\d+)', title_str.lower())
-            return int(match.group(1)) if match else 1
+    def test_per_disc_episode_numbering(self):
+        """Test per-disc episode numbering (each disc starts at episode 1)."""
+        # Test the simplified episode numbering approach
+        def get_episode_numbers(detected_tracks):
+            """Get episode numbers for detected tracks (always starts at 1)."""
+            return list(range(1, detected_tracks + 1))
         
-        def calculate_episode_range(disc_num, episodes_per_disc):
-            """Calculate episode range for a disc."""
-            start_episode = (disc_num - 1) * episodes_per_disc + 1
-            end_episode = start_episode + episodes_per_disc - 1
-            return start_episode, end_episode
+        # Test episode numbering for different disc sizes
+        assert get_episode_numbers(5) == [1, 2, 3, 4, 5]  # 5 episodes: 1-5
+        assert get_episode_numbers(4) == [1, 2, 3, 4]     # 4 episodes: 1-4
+        assert get_episode_numbers(3) == [1, 2, 3]        # 3 episodes: 1-3
         
-        # Test disc number extraction
-        assert extract_disc_number("Show Season 1 Disc 1") == 1
-        assert extract_disc_number("Show Season 1 Disc 2") == 2
-        assert extract_disc_number("Show Season 1 Disc 3") == 3
-        assert extract_disc_number("Show Season 1") == 1  # Default to 1
+        # Test episode mapping to tracks
+        detected_tracks = 5
+        episode_numbers = get_episode_numbers(detected_tracks)
         
-        # Test episode range calculation
-        assert calculate_episode_range(1, 5) == (1, 5)   # Disc 1: Episodes 1-5
-        assert calculate_episode_range(2, 5) == (6, 10)  # Disc 2: Episodes 6-10
-        assert calculate_episode_range(3, 4) == (9, 12)  # Disc 3: Episodes 9-12 (4 episodes)
-        
-        # Test episode numbering for specific tracks
-        disc_num = 2  # Disc 2
-        episodes_per_disc = 5
-        start_episode = (disc_num - 1) * episodes_per_disc + 1  # 6
-        
-        # First qualifying track (index 0) → Episode 6
-        # Second qualifying track (index 1) → Episode 7  
-        # Third qualifying track (index 2) → Episode 8
-        # Counting starts from 1 for the first track on each disc
-        assert start_episode + 0 == 6  # First track on Disc 2
-        assert start_episode + 1 == 7  # Second track on Disc 2
-        assert start_episode + 2 == 8  # Third track on Disc 2
+        # Track 0 → Episode 1, Track 1 → Episode 2, etc.
+        for i, episode_num in enumerate(episode_numbers):
+            track_id = i  # Track IDs start at 0
+            expected_episode = i + 1  # Episodes start at 1
+            assert episode_num == expected_episode
+            assert track_id == expected_episode - 1
 
     def test_sanitize_title_function(self):
         """Test title sanitization logic."""

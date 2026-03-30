@@ -1559,36 +1559,12 @@ def main() -> int:
                 print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
                 use_fallback = False
                 
-                # Extract disc number from MakeMKV disc metadata, fallback to title
-                def get_disc_number():
-                    """Get disc number from MakeMKV disc metadata, with title fallback."""
-                    # Try MakeMKV disc metadata first
-                    try:
-                        res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], capture=True)
-                        lines = res.stdout.split("\n")
-                        for line in lines:
-                            if line.startswith("DRV:0,"):
-                                parts = line.split(",")
-                                if len(parts) >= 6:
-                                    disc_title = parts[5].strip('"')
-                                    # Look for "DISC" followed by optional separator and number
-                                    import re as regex_module
-                                    match = regex_module.search(r'DISC[_\s]?(\d+)', disc_title.upper())
-                                    if match:
-                                        return int(match.group(1))
-                    except Exception:
-                        pass
-                    
-                    # Fallback to title string parsing
-                    import re as regex_module
-                    match = regex_module.search(r'disc[_\s]?(\d+)', (title_raw or "").lower())
-                    return int(match.group(1)) if match else 1
-                
-                disc_num = get_disc_number()
+                # Simple approach: start at episode 1 for each disc
+                disc_num = 1  # Always start at 1 for each disc
                 episodes_per_disc = len(detected_tracks)
-                start_episode = (disc_num - 1) * episodes_per_disc + 1
+                start_episode = 1  # Always start at episode 1
                 
-                print(f"  📀 Disc {disc_num} detected → Episodes {start_episode}-{start_episode + episodes_per_disc - 1}")
+                print(f"  📀 Processing {len(detected_tracks)} episodes on this disc")
                 
                 # Use the same proven approach as movie ripping:
                 # Try individual tracks first, then fall back to "all" method
