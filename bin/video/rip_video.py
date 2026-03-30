@@ -1559,15 +1559,32 @@ def main() -> int:
                 print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
                 use_fallback = False
                 
-                # Extract disc number for multi-disc TV shows
-                def extract_disc_number(title_str):
-                    """Extract disc number from title string."""
+                # Extract disc number from MakeMKV disc metadata, fallback to title
+                def get_disc_number():
+                    """Get disc number from MakeMKV disc metadata, with title fallback."""
+                    # Try MakeMKV disc metadata first
+                    try:
+                        res = _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], capture=True)
+                        lines = res.stdout.split("\n")
+                        for line in lines:
+                            if line.startswith("DRV:0,"):
+                                parts = line.split(",")
+                                if len(parts) >= 6:
+                                    disc_title = parts[5].strip('"')
+                                    # Look for "DISC" followed by optional separator and number
+                                    import re as regex_module
+                                    match = regex_module.search(r'DISC[_\s]?(\d+)', disc_title.upper())
+                                    if match:
+                                        return int(match.group(1))
+                    except Exception:
+                        pass
+                    
+                    # Fallback to title string parsing
                     import re as regex_module
-                    match = regex_module.search(r'disc\s*(\d+)', title_str.lower())
+                    match = regex_module.search(r'disc[_\s]?(\d+)', (title_raw or "").lower())
                     return int(match.group(1)) if match else 1
                 
-                # Use title_raw from the outer scope
-                disc_num = extract_disc_number(title_raw or "")
+                disc_num = get_disc_number()
                 episodes_per_disc = len(detected_tracks)
                 start_episode = (disc_num - 1) * episodes_per_disc + 1
                 
