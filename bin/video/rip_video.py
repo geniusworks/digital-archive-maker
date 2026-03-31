@@ -1512,136 +1512,46 @@ def main() -> int:
     existing_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
     if (existing_mkvs and not used_handbrake_fallback) or force_all_tracks:
         if existing_mkvs:
-            # For TV shows: always scan disc to find missing tracks, even if some files exist
+            # For TV shows: use existing files and continue
             print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
             for mkv in existing_mkvs:
                 size_gb = mkv.stat().st_size / (1024**3)
                 print(f"  → {mkv.name} ({size_gb:.1f}GB)")
-            print("\n🔍 Checking for additional episodes on disc...")
-        elif force_all_tracks:
-            # For TV shows with --episodes: start fresh with TV show logic
-            print(f"\n📁 No existing MKV files found, starting fresh...")
-            print("\n🔍 Checking for episodes on disc...")
-        else:
-            # Regular movie logic
-            pass
-        
-        # Scan disc to find all tracks, then rip only missing ones
-        use_fallback = False
-        detected_tracks = []
-        
-        try:
-            # Import regex locally to avoid scope issues
-            import re as regex_module
-            
-            print("🔍 Detecting available tracks...")
-            info_cmd = [
-                "makemkvcon", "info", "disc:0", 
-                f"--minlength={minlength}"
-            ]
-            info_result = _run(info_cmd, capture=True)
-            
-            # Parse track numbers from info output
-            detected_tracks = []
-            if info_result.stdout:
-                for line in info_result.stdout.split('\n'):
-                    if "was added as title #" in line:
-                        # Extract track number from "File 00800.mpls was added as title #0"
-                        track_match = regex_module.search(r'title #(\d+)', line)
-                        if track_match:
-                            track_id = int(track_match.group(1))
-                            detected_tracks.append(track_id)
-            
-            if not detected_tracks:
-                print("  ❌ No tracks detected - using existing files only")
-                mkvs = existing_mkvs
-            else:
-                print(f"  ✓ Detected {len(detected_tracks)} tracks: {detected_tracks}")
-                use_fallback = False
-                
-                # Simple approach: start at episode 1 for each disc
-                episodes_per_disc = len(detected_tracks)
-                start_episode = 1  # Always start at episode 1 for now
-                
-                print(f"  📀 Processing {len(detected_tracks)} episodes on this disc")
-                
-                # Use the same proven approach as movie ripping
-                print(f"\n🎬 Ripping all tracks from disc...")
-                mkvs = []
-                
-                try:
-                    spinner = show_spinner("Ripping all tracks with MakeMKV...")
-                    _run([
-                        "makemkvcon",
-                        "mkv",
-                        "disc:0",
-                        "all",
-                        str(outdir),
-                        f"--minlength={minlength}",
-                    ])
-                    stop_spinner(spinner, "✓ Successfully ripped all tracks")
-                    
-                    # Get the MKV files
-                    mkvs = sorted(outdir.glob("*.mkv"), key=lambda x: x.stat().st_mtime)
-                    
-                except KeyboardInterrupt:
-                    stop_spinner(spinner, "✗ Rip cancelled by user")
-                    print("\n⚠️  Rip cancelled")
-                    return 1
-                except Exception as e:
-                    stop_spinner(spinner, f"✗ All method failed: {e}")
-                    print(f"  ❌ Failed to rip tracks from disc")
-                    return 1
-                
-                # Smart episode numbering: continue from existing episodes
-                def get_next_episode_number():
-                    """Find the next episode number by checking existing MP4 files."""
-                    if safe_title and safe_year:
-                        dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
-                        if dest_dir.exists():
-                            # Find all existing episode files
-                            episode_numbers = []
-                            for mp4 in dest_dir.glob("*.mp4"):
-                                # Look for S01E## pattern
-                                import re as regex_module
-                                match = regex_module.search(r'S01E(\d+)', mp4.name)
-                                if match:
-                                    episode_numbers.append(int(match.group(1)))
-                            
-                            if episode_numbers:
-                                return max(episode_numbers) + 1
-                    
-                    return 1  # Start at 1 if no existing episodes found
-                
-                # Only adjust numbering if we have files and this isn't the first disc
-                if mkvs and safe_title and safe_year:
-                    dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
-                    if dest_dir.exists() and list(dest_dir.glob("*.mp4")):
-                        start_episode = get_next_episode_number()
-                        print(f"  📝 Continuing numbering at episode {start_episode} (found existing episodes)")
-                
-                # Map episodes to files by creation order
-                episode_to_file = {}
-                for i, mkv in enumerate(mkvs):
-                    ep = start_episode + i
-                    episode_to_file[ep] = mkv
-                
-                print(f"\n📊 Rip Summary:")
-                print(f"  → Tracks detected: {len(detected_tracks)}")
-                print(f"  → Files created: {len(mkvs)}")
-                
-                if len(mkvs) < len(detected_tracks):
-                    print(f"  ⚠️  {len(detected_tracks) - len(mkvs)} track(s) failed")
-
-                if not mkvs:
-                    print("  ❌ No MKV files created from episodic rip")
-                    return 1
-                    
-        except Exception as e:
-            print(f"  ❌ Error scanning disc: {e}")
-            print("  → Using existing files only")
             mkvs = existing_mkvs
-    elif not mkvs and not used_handbrake_fallback:
+        elif force_all_tracks:
+            # For TV shows with --episodes: just rip all tracks (no detection)
+            print(f"\n📁 No existing MKV files found, starting fresh...")
+            print(f"\n🎬 Ripping all tracks from disc...")
+            
+            try:
+                spinner = show_spinner("Ripping all tracks with MakeMKV...")
+                _run([
+                    "makemkvcon",
+                    f"--minlength={minlength}",
+                    "mkv",
+                    "disc:0",
+                    "all",
+                    str(outdir),
+                ])
+                stop_spinner(spinner, "✓ Successfully ripped all tracks")
+                
+                # Get the MKV files
+                mkvs = sorted(outdir.glob("*.mkv"), key=lambda x: x.stat().st_mtime)
+                
+            except KeyboardInterrupt:
+                stop_spinner(spinner, "✗ Rip cancelled by user")
+                print("\n⚠️  Rip cancelled")
+                return 1
+            except Exception as e:
+                stop_spinner(spinner, f"✗ Rip failed: {e}")
+                print(f"  ❌ Failed to rip tracks from disc")
+                return 1
+        else:
+            # Regular movie logic - will be handled below
+            pass
+    
+    # Handle movie ripping (non-TV show) or fallback
+    if not force_all_tracks and not mkvs and not used_handbrake_fallback:
         # Smart ripping: main feature only vs all tracks
         if not force_all_tracks:
             print("\n🎬 Disc Analysis (Main Feature)")
@@ -2162,8 +2072,8 @@ def main() -> int:
                 import re as regex_module
                 
                 info_cmd = [
-                    "makemkvcon", "info", "disc:0", 
-                    f"--minlength={minlength}"
+                    "makemkvcon", f"--minlength={minlength}",
+                    "info", "disc:0",
                 ]
                 info_result = _run(info_cmd, capture=True)
                 
@@ -2197,11 +2107,11 @@ def main() -> int:
                     spinner = show_spinner("Ripping all tracks with MakeMKV...")
                     _run([
                         "makemkvcon",
+                        f"--minlength={minlength}",
                         "mkv",
                         "disc:0",
                         "all",
                         str(outdir),
-                        f"--minlength={minlength}",
                     ])
                     stop_spinner(spinner, "✓ Successfully ripped all tracks (fallback)")
                     successful_rips = ["all"]
@@ -2254,11 +2164,11 @@ def main() -> int:
                         spinner = show_spinner(f"Ripping track {track_str}...")
                         _run([
                             "makemkvcon",
+                            f"--minlength={minlength}",
                             "mkv",
                             "disc:0",
                             track_str,
                             str(outdir),
-                            f"--minlength={minlength}",
                         ])
                         stop_spinner(spinner, f"✓ Successfully ripped track {track_str}")
                         successful_rips.append(track_id)
