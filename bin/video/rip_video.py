@@ -2446,7 +2446,6 @@ def main() -> int:
             def sort_key(mkv_path):
                 name = mkv_path.stem
                 # Extract disc number and track number
-                import re
                 disc_match = re.search(r'Disc (\d+)', name, re.IGNORECASE)
                 track_match = re.search(r'_t(\d+)', name)
                 
@@ -2760,7 +2759,6 @@ def main() -> int:
                 
                 # Extract season number if present in title
                 season_num = None
-                import re
                 season_match = re.search(r'season\s*(\d+)', safe_title.lower())
                 if season_match:
                     season_num = int(season_match.group(1))
