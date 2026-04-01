@@ -2442,8 +2442,20 @@ def main() -> int:
             next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
             
             # Calculate episode number for this MKV based on its position
-            # Get all MKV files and sort them to determine position
-            all_mkvs = sorted(outdir.glob("*.mkv"))
+            # Get all MKV files and sort them by disc number then track number
+            def sort_key(mkv_path):
+                name = mkv_path.stem
+                # Extract disc number and track number
+                import re
+                disc_match = re.search(r'Disc (\d+)', name, re.IGNORECASE)
+                track_match = re.search(r'_t(\d+)', name)
+                
+                disc_num = int(disc_match.group(1)) if disc_match else 0
+                track_num = int(track_match.group(1)) if track_match else 0
+                
+                return (disc_num, track_num)
+            
+            all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             episode_num = next_episode_num + mkv_index
             
