@@ -1335,6 +1335,11 @@ def main() -> int:
         help="Treat disc as TV show episodes (use episode numbering and smart skipping)",
     )
     parser.add_argument(
+        "--skip-disc",
+        action="store_true",
+        help="Skip disc detection and process existing MKV files directly",
+    )
+    parser.add_argument(
         "--title-index",
         type=int,
         default=None,
@@ -1342,6 +1347,10 @@ def main() -> int:
         "For seamless branching discs, uses natural title order.",
     )
     args = parser.parse_args()
+
+    # Check for SKIP_DISC environment variable
+    if get_env_str("SKIP_DISC", "false").lower() in ("true", "1", "yes"):
+        args.skip_disc = True
 
     repo_root = Path(__file__).resolve().parents[2]
     load_dotenv(repo_root)
@@ -1465,44 +1474,52 @@ def main() -> int:
             return
 
     if not mkvs:
-        # Only rip if no MKV files exist
-        print()
-        print("No MKV files found, ripping from disc...")
-
-        # Check if disc is actually present using existing detection
-        detected_type = detect_disc_type()
-        if detected_type == "auto":
+        # Only rip if no MKV files exist and not skipping disc
+        if not args.skip_disc:
             print()
-            print("  ❌ No Blu-ray/DVD disc found in drive")
-            print("  💿 Please insert a disc and try again")
-            print()
-            return 0  # Exit cleanly to avoid make error message
+            print("No MKV files found, ripping from disc...")
 
-        print(f"  ✓ Detected {detected_type.upper()} disc")
+            # Check if disc is actually present using existing detection
+            detected_type = detect_disc_type()
+            if detected_type == "auto":
+                print()
+                print("  ❌ No Blu-ray/DVD disc found in drive")
+                print("  💿 Please insert a disc and try again")
+                print()
+                return 0  # Exit cleanly to avoid make error message
 
-        # Handle MakeMKV availability
-        used_handbrake_fallback = False
-        if not makemkv_available:
-            if detected_type == "bluray":
-                print()
-                print("  ❌ Blu-ray ripping requires MakeMKV")
-                print("  💿 Install from https://www.makemkv.com/download/")
-                print()
-                return 1
-            # For DVDs without MakeMKV, use HandBrake fallback directly
-            print("  → Using HandBrake fallback (MakeMKV not available)")
-            outdir.mkdir(parents=True, exist_ok=True)
-            handbrake_dvd_rip(disc_type, outdir, title_raw, year_raw, minlength)
-            mkvs = sorted(outdir.glob("*.mkv"))
-            if not mkvs:
-                print("  ❌ HandBrake fallback failed to create output")
-                return 1
-            # Skip the rest of MakeMKV-specific code
-            used_handbrake_fallback = True
-            disc_type = detected_type
+            print(f"  ✓ Detected {detected_type.upper()} disc")
+
+            # Handle MakeMKV availability
+            used_handbrake_fallback = False
+            if not makemkv_available:
+                if detected_type == "bluray":
+                    print()
+                    print("  ❌ Blu-ray ripping requires MakeMKV")
+                    print("  💿 Install from https://www.makemkv.com/download/")
+                    print()
+                    return 1
+                # For DVDs without MakeMKV, use HandBrake fallback directly
+                print("  → Using HandBrake fallback (MakeMKV not available)")
+                outdir.mkdir(parents=True, exist_ok=True)
+                handbrake_dvd_rip(disc_type, outdir, title_raw, year_raw, minlength)
+                mkvs = sorted(outdir.glob("*.mkv"))
+                if not mkvs:
+                    print("  ❌ HandBrake fallback failed to create output")
+                    return 1
+                # Skip the rest of MakeMKV-specific code
+                used_handbrake_fallback = True
+                disc_type = detected_type
+            else:
+                # Probe disc access early (best-effort)
+                _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
         else:
-            # Probe disc access early (best-effort)
-            _run(["makemkvcon", "-r", "--cache=1", "info", "disc:0"], check=False)
+            # Skipping disc and no MKV files found
+            print()
+            print("  ❌ No MKV files found and --skip-disc specified")
+            print("  💿 Please insert a disc to rip, or place MKV files in the output directory")
+            print()
+            return 0
 
     # NOW create the output directory (only after we know we have a disc or
     # files)
@@ -1510,6 +1527,12 @@ def main() -> int:
 
     # Check if we already have MKV files and can skip ripping
     existing_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
+    
+    # If skipping disc, let user know
+    if args.skip_disc and existing_mkvs:
+        print(f"\n📁 Skipping disc detection - found {len(existing_mkvs)} existing MKV files")
+        print("  → Processing existing MKV files directly")
+    
     if (existing_mkvs and not used_handbrake_fallback) or force_all_tracks:
         if existing_mkvs:
             # For TV shows: use existing files and continue
@@ -2398,7 +2421,39 @@ def main() -> int:
         name = mkv.stem
 
         # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
-        mp4_path = outdir / f"{name}.mp4"
+        # For TV shows, determine episode number
+        if safe_title and safe_year and dest_category == "Shows" and force_all_tracks:
+            dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
+            
+            # Find existing episodes to determine next episode number
+            existing_episodes = []
+            if dest_dir.exists():
+                for existing_file in dest_dir.glob("*.mp4"):
+                    # Match pattern like "Show Name (2014) - S01E05.mp4"
+                    episode_match = re.search(r"S(\d+)E(\d+)", existing_file.name)
+                    if episode_match:
+                        existing_season = int(episode_match.group(1))
+                        existing_episode = int(episode_match.group(2))
+                        # Only consider episodes from season 1 for now
+                        if existing_season == 1:
+                            existing_episodes.append(existing_episode)
+            
+            # Determine next episode number
+            next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
+            
+            # Calculate episode number for this MKV based on its position
+            # Get all MKV files and sort them to determine position
+            all_mkvs = sorted(outdir.glob("*.mkv"))
+            mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
+            episode_num = next_episode_num + mkv_index
+            
+            # Use episode pattern for filename
+            episode_pattern = f"S01E{episode_num:02d}"
+            mp4_path = outdir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
+            print(f"  → Episode {episode_pattern}")
+        else:
+            mp4_path = outdir / f"{name}.mp4"
+        
         print("  → Using MP4 container (Jellyfin compatible)")
 
         print(f"Processing: {mkv.name} ({mkv.stat().st_size / (1024**3):.1f}GB)")
@@ -2414,11 +2469,16 @@ def main() -> int:
             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             # For TV shows, we need to determine the episode filename pattern
             if dest_category == "Shows" and force_all_tracks:
-                # For TV shows, check if any episode files already exist
-                existing_episodes = list(dest_dir.glob(f"{safe_title} ({safe_year}) - S*.mp4"))
-                if existing_episodes:
-                    dest_mp4_exists = True
-                    dest_mp4_path = existing_episodes[0]  # Just need to know one exists
+                # Check if this specific episode already exists in destination
+                if 'episode_pattern' in locals():
+                    dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
+                    dest_mp4_exists = dest_mp4_path.exists() and dest_mp4_path.stat().st_size > 1000000
+                else:
+                    # Fallback - check any episode (shouldn't happen with proper logic)
+                    existing_episodes = list(dest_dir.glob(f"{safe_title} ({safe_year}) - S*.mp4"))
+                    if existing_episodes:
+                        dest_mp4_exists = True
+                        dest_mp4_path = existing_episodes[0]  # Just need to know one exists
             else:
                 # For movies, check the expected filename
                 dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}).mp4"

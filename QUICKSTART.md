@@ -101,6 +101,15 @@ make rip-episodes TITLE="Show Name" YEAR=2024
 
 This automatically detects and rips all episode tracks from TV show discs.
 
+### Process Existing MKV Files
+If you already have MKV files ripped and want to process them to MP4:
+
+```bash
+dam rip video --title "Show Name" --year 2024 --episodes --skip-disc
+```
+
+This skips disc detection and processes existing MKV files directly into properly numbered MP4 episodes.
+
 ---
 
 ## What's Next?

@@ -20,6 +20,9 @@ make rip-movie TITLE="Movie Title" YEAR=2023
 dam rip video --title "Show Name" --year 2023 --episodes
 make rip-episodes TITLE="Show Name" YEAR=2023
 
+# Process existing MKV files to MP4 (no disc needed)
+dam rip video --title "Show Name" --year 2023 --episodes --skip-disc
+
 # Foreign language content
 dam rip video --title "Foreign Film" --year 2023 --burn-subtitles
 BURN_SUBTITLES=true make rip-movie TITLE="Foreign Film" YEAR=2023
@@ -359,23 +362,26 @@ ls -la /Shows/
 ### **Movie Examples**
 ```bash
 # Standard movie
-dam rip video --title "The Matrix" --year 1999
+dam rip video --title "Action Movie" --year 1999
 
 # Foreign language film
-dam rip video --title "Amélie" --year 2001 --burn-subtitles
+dam rip video --title "Foreign Film" --year 2001 --burn-subtitles
 
 # Specific title for seamless branching
-TITLE_INDEX=2 dam rip video --title "Blade Runner" --year 1982
+TITLE_INDEX=2 dam rip video --title "Sci-Fi Movie" --year 1982
 ```
 
 ### **TV Show Examples**
 ```bash
 # TV series season
-make rip-episodes TITLE="Breaking Bad Season 1" YEAR=2008
+make rip-episodes TITLE="Drama Series Season 1" YEAR=2008
 
 # Multi-disc series
-make rip-episodes TITLE="Game of Thrones Season 1" YEAR=2011
+make rip-episodes TITLE="Fantasy Series Season 1" YEAR=2011
 # (run again for disc 2, numbering continues automatically)
+
+# Process existing MKV files to MP4 (no disc needed)
+dam rip video --title "Fantasy Series Season 1" --year 2011 --episodes --skip-disc
 ```
 
 **Note:** TV show ripping uses a dual approach - individual tracks first, then "all" method if needed. Some tracks may fail due to disc/drive issues, but successful episodes will still be processed. Episode numbering continues across discs by tracking all qualifying episodes (10+ minutes), ensuring no gaps in the sequence.

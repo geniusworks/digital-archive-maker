@@ -188,6 +188,7 @@ dam rip cd                                              # Rip audio CD to FLAC
 dam rip video                                           # Rip movie disc to MP4
 dam rip video --title "Movie" --year 2024               # With metadata
 dam rip video --title "Show" --year 2024 --episodes     # TV show disc
+dam rip video --title "Show" --year 2024 --episodes --skip-disc  # Process existing MKV files
 
 # TV show episodes (Makefile targets)
 make rip-episodes TITLE="Show Name" YEAR=2024           # Rip TV show disc
