@@ -2446,6 +2446,13 @@ def main() -> int:
             # Determine next episode number
             next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
             
+            # Debug: Show what episodes were found
+            if existing_episodes:
+                print(f"  📊 Found existing episodes: {sorted(existing_episodes)}")
+                print(f"  📊 Next episode number: {next_episode_num}")
+            else:
+                print(f"  📊 No existing episodes found, starting with S01E01")
+            
             # Calculate episode number for this MKV based on its position
             # Get all MKV files and sort them by disc number then track number
             def sort_key(mkv_path):
@@ -2484,17 +2491,16 @@ def main() -> int:
         if safe_title and safe_year:
             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             # For TV shows, we need to determine the episode filename pattern
-            if dest_category == "Shows" and force_all_tracks:
+            if dest_category == "Shows" and force_all_tracks and episode_pattern:
                 # Check if this specific episode already exists in destination
-                if 'episode_pattern' in locals():
-                    dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
-                    dest_mp4_exists = dest_mp4_path.exists() and dest_mp4_path.stat().st_size > 1000000
-                else:
-                    # Fallback - check any episode (shouldn't happen with proper logic)
-                    existing_episodes = list(dest_dir.glob(f"{safe_title} ({safe_year}) - S*.mp4"))
-                    if existing_episodes:
-                        dest_mp4_exists = True
-                        dest_mp4_path = existing_episodes[0]  # Just need to know one exists
+                dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
+                dest_mp4_exists = dest_mp4_path.exists() and dest_mp4_path.stat().st_size > 1000000
+            elif dest_category == "Shows" and force_all_tracks:
+                # Fallback - check any episode (shouldn't happen with proper logic)
+                existing_episodes = list(dest_dir.glob(f"{safe_title} ({safe_year}) - S*.mp4"))
+                if existing_episodes:
+                    dest_mp4_exists = True
+                    dest_mp4_path = existing_episodes[0]  # Just need to know one exists
             else:
                 # For movies, check the expected filename
                 dest_mp4_path = dest_dir / f"{safe_title} ({safe_year}).mp4"
