@@ -1528,22 +1528,26 @@ def main() -> int:
     # Check if we already have MKV files and can skip ripping
     existing_mkvs = sorted(outdir.glob("*.mkv")) if outdir.exists() else []
     
-    # If skipping disc, let user know
-    if args.skip_disc and existing_mkvs:
-        print(f"\n📁 Skipping disc detection - found {len(existing_mkvs)} existing MKV files")
-        print("  → Processing existing MKV files directly")
-    
-    if (existing_mkvs and not used_handbrake_fallback) or force_all_tracks:
+    # If skipping disc, let user know and use existing files
+    if args.skip_disc:
         if existing_mkvs:
-            # For TV shows: use existing files and continue
-            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files:")
-            for mkv in existing_mkvs:
-                size_gb = mkv.stat().st_size / (1024**3)
-                print(f"  → {mkv.name} ({size_gb:.1f}GB)")
+            print(f"\n📁 Skipping disc detection - found {len(existing_mkvs)} existing MKV files")
+            print("  → Processing existing MKV files directly")
             mkvs = existing_mkvs
-        elif force_all_tracks:
+        else:
+            print("\n  ❌ No MKV files found and --skip-disc specified")
+            print("  💿 Please insert a disc to rip, or place MKV files in the output directory")
+            print()
+            return 0
+    else:
+        # Normal disc ripping - always rip the disc for multi-disc sets
+        if existing_mkvs and not used_handbrake_fallback:
+            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files (from previous discs)")
+            print("  → These will be ignored for multi-disc continuity")
+            print("  → Ripping current disc to get new episodes...")
+        
+        if force_all_tracks:
             # For TV shows with --episodes: just rip all tracks (no detection)
-            print(f"\n📁 No existing MKV files found, starting fresh...")
             print(f"\n🎬 Ripping all tracks from disc...")
             
             try:
@@ -2422,6 +2426,7 @@ def main() -> int:
 
         # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
         # For TV shows, determine episode number
+        episode_pattern = None
         if safe_title and safe_year and dest_category == "Shows" and force_all_tracks:
             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             
