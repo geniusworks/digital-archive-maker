@@ -1552,7 +1552,7 @@ def main() -> int:
             
             try:
                 spinner = show_spinner("Ripping all tracks with MakeMKV...")
-                _run([
+                result = _run([
                     "makemkvcon",
                     f"--minlength={minlength}",
                     "mkv",
@@ -1560,6 +1560,20 @@ def main() -> int:
                     "all",
                     str(outdir),
                 ])
+                
+                # Check MakeMKV exit codes for specific errors
+                if hasattr(result, 'returncode') and result.returncode != 0:
+                    if result.returncode == 11:
+                        stop_spinner(spinner, "✗ No disc found")
+                        print("\n  ❌ No Blu-ray/DVD disc found in drive")
+                        print("  💿 Please insert a disc and try again")
+                        print()
+                        return 0  # Exit cleanly to avoid make error message
+                    else:
+                        stop_spinner(spinner, f"✗ Rip failed (exit code {result.returncode})")
+                        print(f"  ❌ Failed to rip tracks from disc (exit code {result.returncode})")
+                        return 1
+                
                 stop_spinner(spinner, "✓ Successfully ripped all tracks")
                 
                 # Get the MKV files
@@ -2174,7 +2188,14 @@ def main() -> int:
                     if safe_title and safe_year and force_all_tracks:
                         dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
                         episode_num = int(track_str) + 1  # Track 0 becomes Episode 1
-                        episode_pattern = f"S01E{episode_num:02d}"
+                        
+                        # Extract season number from title
+                        season_num = 1  # Default fallback
+                        season_match = re.search(r'season\s*(\d+)', safe_title.lower())
+                        if season_match:
+                            season_num = int(season_match.group(1))
+                        
+                        episode_pattern = f"S{season_num:02d}E{episode_num:02d}"
                         existing_mp4 = any(episode_pattern in mp4.name for mp4 in dest_dir.glob("*.mp4"))
                     
                     if existing_mkv or existing_mp4:
@@ -2430,6 +2451,12 @@ def main() -> int:
         if safe_title and safe_year and dest_category == "Shows" and force_all_tracks:
             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             
+            # Extract season number from title
+            season_num = 1  # Default fallback
+            season_match = re.search(r'season\s*(\d+)', safe_title.lower())
+            if season_match:
+                season_num = int(season_match.group(1))
+            
             # Find existing episodes to determine next episode number
             existing_episodes = []
             if dest_dir.exists():
@@ -2439,8 +2466,8 @@ def main() -> int:
                     if episode_match:
                         existing_season = int(episode_match.group(1))
                         existing_episode = int(episode_match.group(2))
-                        # Only consider episodes from season 1 for now
-                        if existing_season == 1:
+                        # Only consider episodes from the same season
+                        if existing_season == season_num:
                             existing_episodes.append(existing_episode)
             
             # Determine next episode number
@@ -2451,7 +2478,7 @@ def main() -> int:
                 print(f"  📊 Found existing episodes: {sorted(existing_episodes)}")
                 print(f"  📊 Next episode number: {next_episode_num}")
             else:
-                print(f"  📊 No existing episodes found, starting with S01E01")
+                print(f"  📊 No existing episodes found, starting with S{season_num:02d}E01")
             
             # Calculate episode number for this MKV based on its position
             # Get all MKV files and sort them by disc number then track number
@@ -2470,8 +2497,8 @@ def main() -> int:
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             episode_num = next_episode_num + mkv_index
             
-            # Use episode pattern for filename
-            episode_pattern = f"S01E{episode_num:02d}"
+            # Use episode pattern for filename with correct season number
+            episode_pattern = f"S{season_num:02d}E{episode_num:02d}"
             mp4_path = outdir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
             print(f"  → Episode {episode_pattern}")
         else:
