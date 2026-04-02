@@ -1559,14 +1559,15 @@ def main() -> int:
                     "disc:0",
                     "all",
                     str(outdir),
-                ])
+                ], check=False)  # Don't raise exception on non-zero exit codes
                 
                 # Check MakeMKV exit codes for specific errors
-                if hasattr(result, 'returncode') and result.returncode != 0:
+                if result.returncode != 0:
                     if result.returncode == 11:
                         stop_spinner(spinner, "✗ No disc found")
                         print("\n  ❌ No Blu-ray/DVD disc found in drive")
                         print("  💿 Please insert a disc and try again")
+                        print("  💡 Or use --skip-disc to process existing MKV files")
                         print()
                         return 0  # Exit cleanly to avoid make error message
                     else:
