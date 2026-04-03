@@ -2446,8 +2446,14 @@ def main() -> int:
 
         name = mkv.stem
 
-        # For TV shows, check if this MKV already has a corresponding MP4
-        # If so, skip it entirely before doing any episode numbering
+        # Initialize variables for TV show episode handling
+        episode_pattern = None
+        season_num = None
+        this_episode_num = None
+        all_mkvs = []
+        existing_episodes = []
+        
+        # Calculate episode number for TV shows
         if safe_title and safe_year and dest_category == "Shows" and force_all_tracks:
             dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             
@@ -2458,7 +2464,6 @@ def main() -> int:
                 season_num = int(season_match.group(1))
             
             # Find existing episodes to determine what episode numbers are taken
-            existing_episodes = []
             if dest_dir.exists():
                 for existing_file in dest_dir.glob("*.mp4"):
                     episode_match = re.search(r"S(\d+)E(\d+)", existing_file.name)
@@ -2468,7 +2473,6 @@ def main() -> int:
                         if existing_season == season_num:
                             existing_episodes.append(existing_episode)
             
-            # Calculate what episode number this MKV would get
             # Get all MKV files and sort them by disc number then track number
             def sort_key(mkv_path):
                 name = mkv_path.stem
@@ -2483,64 +2487,21 @@ def main() -> int:
             all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             
-            # Determine next available episode number
-            next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
-            this_episode_num = next_episode_num + mkv_index
+            # Episode number is 1-based position in sorted list (not offset by existing episodes)
+            this_episode_num = mkv_index + 1
             
-            # Check if this episode number already exists
+            # Check if this episode number already exists and skip if so
             if this_episode_num in existing_episodes:
                 print(f"  ✓ Skipping {mkv.name} - Episode S{season_num:02d}E{this_episode_num:02d} already exists")
                 continue
-
-        # Use MP4 for both DVD and Blu-ray (simpler, more compatible)
-        # For TV shows, determine episode number
-        episode_pattern = None
-        if safe_title and safe_year and dest_category == "Shows" and force_all_tracks:
-            dest_dir = library_root / dest_category / f"{safe_title} ({safe_year})"
             
-            # Extract season number from title
-            season_num = 1  # Default fallback
-            season_match = re.search(r'season\s*(\d+)', safe_title.lower())
-            if season_match:
-                season_num = int(season_match.group(1))
-            
-            # Find existing episodes to determine next episode number
-            existing_episodes = []
-            if dest_dir.exists():
-                for existing_file in dest_dir.glob("*.mp4"):
-                    episode_match = re.search(r"S(\d+)E(\d+)", existing_file.name)
-                    if episode_match:
-                        existing_season = int(episode_match.group(1))
-                        existing_episode = int(episode_match.group(2))
-                        if existing_season == season_num:
-                            existing_episodes.append(existing_episode)
-            
-            # Calculate episode number for this MKV based on its position
-            # Get all MKV files and sort them by disc number then track number
-            def sort_key(mkv_path):
-                name = mkv_path.stem
-                disc_match = re.search(r'Disc (\d+)', name, re.IGNORECASE)
-                track_match = re.search(r'_t(\d+)', name)
-                
-                disc_num = int(disc_match.group(1)) if disc_match else 0
-                track_num = int(track_match.group(1)) if track_match else 0
-                
-                return (disc_num, track_num)
-            
-            all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
-            mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
-            
-            # Determine next episode number
-            next_episode_num = max(existing_episodes) + 1 if existing_episodes else 1
-            episode_num = next_episode_num + mkv_index
-            
-            # Debug: Show what episodes were found
-            if existing_episodes and mkv_index == 0:  # Only show once for first MKV
+            # Show debug info for first MKV only
+            if mkv_index == 0 and existing_episodes:
                 print(f"  📊 Found existing episodes: {sorted(existing_episodes)}")
-                print(f"  📊 Next episode number: {next_episode_num}")
+                print(f"  📊 Processing {len(all_mkvs)} MKVs, skipping {len(existing_episodes)} existing episodes")
             
-            # Use episode pattern for filename with correct season number
-            episode_pattern = f"S{season_num:02d}E{episode_num:02d}"
+            # Set episode pattern for filename
+            episode_pattern = f"S{season_num:02d}E{this_episode_num:02d}"
             mp4_path = outdir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
             print(f"  → Episode {episode_pattern}")
         else:
