@@ -2859,6 +2859,7 @@ def main() -> int:
                         print(f"    ⚠️  {mp4_file.name}: {duration_minutes:.1f}min (too short, skipping)")
                 
                 # Move valid episodes with continuous numbering
+                newly_moved_episodes = []
                 for mp4_file, episode_num in valid_episodes:
                     # Create episode name with continuous numbering
                     if season_num:
@@ -2870,6 +2871,7 @@ def main() -> int:
                     if not dest.exists():
                         shutil.move(str(mp4_file), str(dest))
                         print(f"  ✓ Moved episode: {episode_name}")
+                        newly_moved_episodes.append(dest)
                 
                 # Move subtitle files for valid episodes only
                 srt_files = list(outdir.glob("*.en.srt"))
@@ -2948,10 +2950,10 @@ def main() -> int:
 
             # Apply streaming optimization to the final organized file(s)
             if streaming_optimize:
-                if dest_category == "Shows":
-                    # For TV shows: optimize all episode files
-                    print("  → Applying streaming optimization to all episodes...")
-                    for mp4_file in target_dir.glob("*.mp4"):
+                if dest_category == "Shows" and newly_moved_episodes:
+                    # For TV shows: optimize only newly moved episodes
+                    print(f"  → Applying streaming optimization to {len(newly_moved_episodes)} new episodes...")
+                    for mp4_file in newly_moved_episodes:
                         if mp4_file.is_file():
                             try:
                                 temp_path = mp4_file.with_suffix(f".temp{mp4_file.suffix}")
@@ -2980,6 +2982,8 @@ def main() -> int:
                             except Exception as e:
                                 print(f"    ✗ Optimization error for {mp4_file.name}: {e}")
                                 temp_path.unlink(missing_ok=True)
+                elif dest_category == "Shows":
+                    print("  → No new episodes to optimize")
                 else:
                     # For movies: optimize single file (existing behavior)
                     try:
