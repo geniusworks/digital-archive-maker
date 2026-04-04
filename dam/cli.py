@@ -370,6 +370,7 @@ def rip_video(
     burn_subs: bool = typer.Option(False, "--burn-subs", help="Burn subtitles into video."),
     episodes: bool = typer.Option(False, "--episodes", help="Rip TV show episodes (all tracks)."),
     skip_disc: bool = typer.Option(False, "--skip-disc", help="Skip disc detection and process existing MKV files directly."),
+    episode_start: Optional[int] = typer.Option(None, "--episode-start", help="Manually set starting episode number (overrides automatic detection)."),
 ):
     """Rip a DVD or Blu-ray to MP4."""
     banner()
@@ -393,6 +394,8 @@ def rip_video(
         env["BURN_SUBTITLES"] = "true"
     if skip_disc:
         env["SKIP_DISC"] = "true"
+    if episode_start:
+        env["EPISODE_START"] = str(episode_start)
 
     info(f"Running: {' '.join(cmd_parts)}")
     _run_make(cmd_parts[1:], extra_env=env)

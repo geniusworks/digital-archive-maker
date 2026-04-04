@@ -1359,6 +1359,16 @@ def main() -> int:
     if get_env_str("SKIP_DISC", "false").lower() in ("true", "1", "yes"):
         args.skip_disc = True
 
+    # Check for EPISODE_START environment variable
+    if args.episode_start is None:
+        episode_start_env = get_env_str("EPISODE_START")
+        if episode_start_env:
+            try:
+                args.episode_start = int(episode_start_env)
+            except ValueError:
+                print(f"Warning: Invalid EPISODE_START value '{episode_start_env}', must be an integer")
+                args.episode_start = None
+
     repo_root = Path(__file__).resolve().parents[2]
     load_dotenv(repo_root)
 
