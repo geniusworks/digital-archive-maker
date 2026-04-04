@@ -1559,9 +1559,13 @@ def main() -> int:
     else:
         # Normal disc ripping - always rip the disc for multi-disc sets
         if existing_mkvs and not used_handbrake_fallback:
-            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files (from previous discs)")
-            print("  → These will be ignored for multi-disc continuity")
-            print("  → Ripping current disc to get new episodes...")
+            print(f"\n📁 Found {len(existing_mkvs)} existing MKV files in output folder")
+            print("  → Keeping them for multi-disc context only")
+            print(
+                "  → MP4 output E-numbering for this disc process comes from "
+                "--episode-start (if set) or auto-continuation"
+            )
+            print("  → Ripping inserted disc for additional episodes...")
         
         if force_all_tracks:
             print("\n🎬 Ripping all tracks from disc...")
@@ -1584,6 +1588,7 @@ def main() -> int:
 
                 lines = info_result.stdout.split("\n") if info_result.stdout else []
                 title_ids: list[int] = []
+                unparsed_duration_titles: list[int] = []
                 for line in lines:
                     if line.startswith("TINFO:") and ",9," in line:
                         parts = line.split(",")
@@ -1591,7 +1596,18 @@ def main() -> int:
                             continue
                         try:
                             title_id = int(parts[0].split(":")[1])
-                            h, m, s = map(int, parts[3].strip('"').split(":"))
+                            duration_raw = parts[3].strip('"')
+                            duration_match = re.match(
+                                r"^(\d+):(\d+):(\d+)(?:\.\d+)?$", duration_raw
+                            )
+                            if not duration_match:
+                                title_ids.append(title_id)
+                                unparsed_duration_titles.append(title_id)
+                                continue
+
+                            h = int(duration_match.group(1))
+                            m = int(duration_match.group(2))
+                            s = int(duration_match.group(3))
                             total_seconds = h * 3600 + m * 60 + s
                             if total_seconds >= minlength:
                                 title_ids.append(title_id)
@@ -1599,7 +1615,23 @@ def main() -> int:
                             continue
 
                 title_ids = sorted(set(title_ids))
-                stop_spinner(info_spinner, f"✓ Found {len(title_ids)} qualifying titles")
+                stop_spinner(
+                    info_spinner,
+                    f"✓ Found {len(title_ids)} qualifying titles (>= {minlength}s)",
+                )
+
+                current_disc_num: int | None = None
+                for line in lines:
+                    disc_match = re.search(r"(?i)\bdisc[\s._-]*(\d{1,2})\b", line)
+                    if disc_match:
+                        current_disc_num = int(disc_match.group(1))
+                        break
+
+                if unparsed_duration_titles:
+                    print(
+                        "  ℹ️  Titles with non-standard duration format "
+                        f"(included): {sorted(set(unparsed_duration_titles))}"
+                    )
 
                 if not title_ids:
                     print("\n  ❌ No qualifying titles found on disc")
@@ -1612,10 +1644,21 @@ def main() -> int:
                 backup_dir = outdir / "_makemkv_backup"
                 backup_ready = False
 
+                def _matches_current_disc(mkv_path: Path) -> bool:
+                    if current_disc_num is None:
+                        return False
+                    mkv_disc_match = re.search(
+                        r"(?i)\bdisc[\s._-]*(\d{1,2})\b", mkv_path.stem
+                    )
+                    return bool(
+                        mkv_disc_match and int(mkv_disc_match.group(1)) == current_disc_num
+                    )
+
                 for idx, title_id in enumerate(title_ids, start=1):
                     existing_track_pattern = f"_t{title_id + 1:02d}"
                     title_mkv_exists = any(
-                        existing_track_pattern in p.name for p in outdir.glob("*.mkv")
+                        existing_track_pattern in p.name and _matches_current_disc(p)
+                        for p in outdir.glob("*.mkv")
                     )
                     if title_mkv_exists:
                         skipped_titles.append(title_id)
@@ -1684,7 +1727,16 @@ def main() -> int:
 
                 mkvs = sorted(outdir.glob("*.mkv"), key=lambda x: x.stat().st_mtime)
                 if skipped_titles:
-                    print(f"  ℹ️  Existing MKV titles: {skipped_titles}")
+                    if current_disc_num is not None:
+                        print(
+                            f"  ℹ️  Existing MKV titles on disc {current_disc_num}: "
+                            f"{skipped_titles}"
+                        )
+                    else:
+                        print(
+                            "  ℹ️  Existing MKV titles on inserted disc: "
+                            f"{skipped_titles}"
+                        )
                 if failed_titles:
                     print(f"  ⚠️  Unripped titles: {failed_titles}")
                     # Store failed titles for encode phase to handle episode numbering correctly
