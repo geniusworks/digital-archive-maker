@@ -1670,6 +1670,8 @@ def main() -> int:
                     print(f"  ℹ️  Existing MKV titles: {skipped_titles}")
                 if failed_titles:
                     print(f"  ⚠️  Unripped titles: {failed_titles}")
+                    # Store failed titles for encode phase to handle episode numbering correctly
+                    os.environ["FAILED_TITLES"] = ",".join(map(str, failed_titles))
                 if not mkvs:
                     print("\n  ❌ No MKV files were created")
                     print(f"  📁 Output folder: {outdir}")
@@ -2585,21 +2587,38 @@ def main() -> int:
             all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             
-            # Episode number is 1-based position in sorted list (not offset by existing episodes)
-            this_episode_num = mkv_index + 1
+            # Extract track number from MKV filename to get correct episode number
+            # MKV filenames are like "title_t01.mkv" where 01 is track number
+            track_match = re.search(r'_t(\d+)', mkv.name)
+            if track_match:
+                # Track numbers are 0-based, episodes are 1-based
+                track_num = int(track_match.group(1))
+                episode_num = track_num + 1
+            else:
+                # Fallback to position-based numbering if no track pattern found
+                mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
+                episode_num = mkv_index + 1
             
             # Check if this episode number already exists and skip if so
-            if this_episode_num in existing_episodes:
-                print(f"  ✓ Skipping {mkv.name} - Episode S{season_num:02d}E{this_episode_num:02d} already exists")
+            if episode_num in existing_episodes:
+                print(f"  ✓ Skipping {mkv.name} - Episode S{season_num:02d}E{episode_num:02d} already exists")
                 continue
             
             # Show debug info for first MKV only
-            if mkv_index == 0 and existing_episodes:
+            if all_mkvs.index(mkv) == 0 and existing_episodes:
                 print(f"  📊 Found existing episodes: {sorted(existing_episodes)}")
                 print(f"  📊 Processing {len(all_mkvs)} MKVs, skipping {len(existing_episodes)} existing episodes")
             
+            # Show skip messages for failed tracks (only once)
+            failed_titles_str = os.environ.get("FAILED_TITLES", "")
+            if failed_titles_str and all_mkvs.index(mkv) == 0:
+                failed_titles = [int(t) for t in failed_titles_str.split(",") if t.isdigit()]
+                for failed_title in sorted(failed_titles):
+                    episode_num = failed_title + 1  # Track 0 becomes Episode 1
+                    print(f"  ✓ Skipping {safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.mp4 (track {failed_title} rip failed)")
+            
             # Set episode pattern for filename
-            episode_pattern = f"S{season_num:02d}E{this_episode_num:02d}"
+            episode_pattern = f"S{season_num:02d}E{episode_num:02d}"
             mp4_path = outdir / f"{safe_title} ({safe_year}) - {episode_pattern}.mp4"
             print(f"  → Episode {episode_pattern}")
         else:
