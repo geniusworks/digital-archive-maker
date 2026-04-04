@@ -20,6 +20,10 @@ make rip-movie TITLE="Movie Title" YEAR=2023
 dam rip video --title "Show Name" --year 2023 --episodes
 make rip-episodes TITLE="Show Name" YEAR=2023
 
+# TV shows with manual episode start (when previous discs had unreadable episodes)
+dam rip video --title "Show Name" --year 2023 --episodes --episode-start 6
+make rip-episodes TITLE="Show Name" YEAR=2023 EPISODE_START=6
+
 # Process existing MKV files to MP4 (no disc needed)
 dam rip video --title "Show Name" --year 2023 --episodes --skip-disc
 
@@ -64,6 +68,10 @@ make rip-movie TITLE="Movie Name" YEAR=2023
 ```bash
 dam rip video --title "Show Name" --year 2023 --episodes
 make rip-episodes TITLE="Show Name" YEAR=2023
+
+# Manual episode start (when previous discs had unreadable episodes)
+dam rip video --title "Show Name" --year 2023 --episodes --episode-start 6
+make rip-episodes TITLE="Show Name" YEAR=2023 EPISODE_START=6
 ```
 
 ### 📁 Existing Files
@@ -180,37 +188,44 @@ app_DefaultSelectionString="+sel:all,-sel:(core)"
 - **Subtitle backfill**: Add subs to existing files
 
 ### 🎯 **Smart TV Show Ripping**
-For TV shows (`--episodes`), the script intelligently handles partial rips:
+For TV shows (`--episodes`), the script intelligently handles partial rips and failed tracks:
 
 ```bash
 # Always scans disc, but only rips missing episodes
 dam rip video --title "Show Name" --year 2023 --episodes
 
+# Manual episode start when previous discs had unreadable episodes
+dam rip video --title "Show Name" --year 2023 --episodes --episode-start 6
+
 # Behavior:
 # 🔍 Scans disc for all episodes meeting minimum duration
-# 📊 Disc-based episode numbering (Disc 1: 1-5, Disc 2: 6-10, etc.)
+# 📊 Track-based episode numbering (t00→E01, t01→E02, etc.)
+# 🎬 Individual track ripping with backup retry for failed tracks
 # ✓ Skips episodes with existing MP4 files (S01E01.mp4, S01E02.mp4, etc.)
-# 🎬 Only rips missing episodes
 # 📁 Perfect for interrupted rips or adding missing episodes
 # 🔧 File verification prevents MakeMKV silent failures
 # 🎯 Observation-based approach (no filename guessing)
 
-# Disc-based episode numbering:
-# - Disc 1: Episodes 1-5 (first track → Episode 1)
-# - Disc 2: Episodes 6-10 (first track → Episode 6)
-# - Disc 3: Episodes 11-15 (first track → Episode 11)
+# Track-based episode numbering:
+# - t00 → Episode 1, t01 → Episode 2, t02 → Episode 3, etc.
+# - Failed tracks show: "Skipping S01E01.mp4 (track 0 rip failed)"
+# - Multi-disc continuation: Disc 2 starts from highest existing episode + 1
 
-# Per-track detection logic:
-# - Episode 1: First track detected → S01E01.mp4
-# - Episode 2: Second track detected → S01E02.mp4
-# - Episode 3: Third track detected → S01E03.mp4
-# - And so on...
+# Manual episode start override:
+# --episode-start 6 forces Disc 2 to start at Episode 6
+# Useful when Disc 1 had unreadable episodes (e.g., episodes 1 and 5 failed)
+
+# Per-track ripping with retry:
+# - Attempts individual track ripping first
+# - Failed tracks get MakeMKV backup retry
+# - Continues processing even if some tracks fail
+# - Reports exactly which tracks succeeded/failed
 
 # Observation-based file mapping:
 # - Let MakeMKV create whatever filenames it wants
-# - Map files to episodes by creation order (most reliable)
+# - Map files to episodes by track numbers (_t01, _t02, etc.)
 # - Shows episode → file mapping after ripping
-# - Prevents overwrites by observing actual behavior
+# - Prevents overwrites by using actual track positions
 
 # Pragmatic approach:
 # - If MP4 exists → Skip ripping entirely (final product already available)
@@ -229,6 +244,9 @@ TITLE_INDEX=0 make rip-movie TITLE="Movie" YEAR=2023
 
 # Force all tracks (bypass filtering)
 FORCE_ALL_TRACKS=true make rip-episodes TITLE="Show" YEAR=2023
+
+# Manual episode start (override automatic detection)
+EPISODE_START=6 make rip-episodes TITLE="Show" YEAR=2023
 ```
 
 ### **MakeMKV Silent Failure Detection**
@@ -379,6 +397,9 @@ make rip-episodes TITLE="Drama Series Season 1" YEAR=2008
 # Multi-disc series
 make rip-episodes TITLE="Fantasy Series Season 1" YEAR=2011
 # (run again for disc 2, numbering continues automatically)
+
+# Manual episode start when previous discs had unreadable episodes
+make rip-episodes TITLE="Fantasy Series Season 1" YEAR=2011 EPISODE_START=6
 
 # Process existing MKV files to MP4 (no disc needed)
 dam rip video --title "Fantasy Series Season 1" --year 2011 --episodes --skip-disc

@@ -134,6 +134,11 @@ dam rip video
 dam rip video --title "Show Name" --year 2024 --episodes
 ```
 
+**Manual episode start** (when previous discs had unreadable episodes):
+```bash
+dam rip video --title "Show Name" --year 2024 --episodes --episode-start 6
+```
+
 **Step 6: Sync to your media server**
 ```bash
 dam sync
@@ -159,11 +164,11 @@ dam sync
 | Feature | How it works |
 |:---------|:------------|
 | **Movie discs** | Extracts high-quality video |
-| **TV show episodes** | Detects and rips all episodes from TV show discs |
+| **TV show episodes** | Detects and rips all episodes with track-based numbering and failed track recovery |
 | **Subtitles** | Includes your preferred language |
 | **Subtitle burning** | Embeds subtitles when needed |
 | **Movie organization** | Names files and adds descriptions |
-| **TV show organization** | Groups episodes by season with continuous numbering |
+| **TV show organization** | Groups episodes by season with continuous numbering across discs |
 
 ### **Library Management**
 | Feature | How it works |
@@ -184,16 +189,18 @@ dam config               # Interactive first-run wizard (library path, API keys)
 dam version              # Show current version
 
 # Rip media
-dam rip cd                                              # Rip audio CD to FLAC
-dam rip video                                           # Rip movie disc to MP4
-dam rip video --title "Movie" --year 2024               # With metadata
-dam rip video --title "Show" --year 2024 --episodes     # TV show disc
-dam rip video --title "Show" --year 2024 --episodes --skip-disc  # Process existing MKV files
+dam rip cd                                                            # Rip audio CD to FLAC
+dam rip video                                                         # Rip movie disc to MP4
+dam rip video --title "Movie" --year 2024                             # With metadata
+dam rip video --title "Show" --year 2024 --episodes                   # TV show disc
+dam rip video --title "Show" --year 2024 --episodes --episode-start 6 # Manual episode start
+dam rip video --title "Show" --year 2024 --episodes --skip-disc       # Process existing MKV files
 
 # TV show episodes (Makefile targets)
-make rip-episodes TITLE="Show Name" YEAR=2024           # Rip TV show disc
-make rip-movie TITLE="Movie Name" YEAR=2024             # Rip movie disc
-make rip-movie-all TITLE="Movie Name" YEAR=2024         # Rip all tracks
+make rip-episodes TITLE="Show Name" YEAR=2024                  # Rip TV show disc
+make rip-episodes TITLE="Show Name" YEAR=2024 EPISODE_START=6  # Manual episode start
+make rip-movie TITLE="Movie Name" YEAR=2024                    # Rip movie disc
+make rip-movie-all TITLE="Movie Name" YEAR=2024                # Rip all tracks
 
 # Tag and organize
 dam tag explicit /path/to/music                 # Tag explicit content

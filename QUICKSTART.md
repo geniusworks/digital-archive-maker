@@ -101,6 +101,14 @@ make rip-episodes TITLE="Show Name" YEAR=2024
 
 This automatically detects and rips all episode tracks from TV show discs.
 
+### Manual Episode Start
+When previous discs had unreadable episodes, you can force the starting episode number:
+
+```bash
+dam rip video --title "Show Name" --year 2024 --episodes --episode-start 6
+make rip-episodes TITLE="Show Name" YEAR=2024 EPISODE_START=6
+```
+
 ### Process Existing MKV Files
 If you already have MKV files ripped and want to process them to MP4:
 
