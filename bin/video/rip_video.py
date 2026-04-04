@@ -2587,17 +2587,20 @@ def main() -> int:
             all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             
-            # Extract track number from MKV filename to get correct episode number
+            # Extract track number from MKV filename to get position within this disc
             # MKV filenames are like "title_t01.mkv" where 01 is track number
             track_match = re.search(r'_t(\d+)', mkv.name)
             if track_match:
                 # Track numbers are 0-based, episodes are 1-based
                 track_num = int(track_match.group(1))
-                episode_num = track_num + 1
+                # Calculate episode number: base from existing episodes + track position
+                max_existing = max(existing_episodes) if existing_episodes else 0
+                episode_num = max_existing + track_num + 1
             else:
                 # Fallback to position-based numbering if no track pattern found
                 mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
-                episode_num = mkv_index + 1
+                max_existing = max(existing_episodes) if existing_episodes else 0
+                episode_num = max_existing + mkv_index + 1
             
             # Check if this episode number already exists and skip if so
             if episode_num in existing_episodes:
@@ -2613,8 +2616,9 @@ def main() -> int:
             failed_titles_str = os.environ.get("FAILED_TITLES", "")
             if failed_titles_str and all_mkvs.index(mkv) == 0:
                 failed_titles = [int(t) for t in failed_titles_str.split(",") if t.isdigit()]
+                max_existing = max(existing_episodes) if existing_episodes else 0
                 for failed_title in sorted(failed_titles):
-                    episode_num = failed_title + 1  # Track 0 becomes Episode 1
+                    episode_num = max_existing + failed_title + 1  # Continue from existing episodes
                     print(f"  ✓ Skipping {safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.mp4 (track {failed_title} rip failed)")
             
             # Set episode pattern for filename
