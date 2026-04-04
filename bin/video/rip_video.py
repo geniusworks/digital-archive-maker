@@ -2656,21 +2656,28 @@ def main() -> int:
             all_mkvs = sorted(outdir.glob("*.mkv"), key=sort_key)
             mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
             
-            # Extract track number from MKV filename to get position within this disc
-            # MKV filenames are like "title_t01.mkv" where 01 is track number
+            # Map MKV files to their positions in the disc's intended track sequence
+            # Build mapping from MakeMKV title ID to position in title_ids
+            title_to_position = {}
+            for i, title_id in enumerate(sorted(set(title_ids))):
+                title_to_position[title_id] = i
+            
+            # Extract title ID from MKV filename to find its position in the disc sequence
+            # MKV filenames are like "title_t01.mkv" where 01 is MakeMKV title ID
             track_match = re.search(r'_t(\d+)', mkv.name)
             if track_match:
-                # Track numbers are 0-based, episodes are 1-based
-                track_num = int(track_match.group(1))
+                # Get MakeMKV title ID and map to 0-based position in disc sequence
+                title_id = int(track_match.group(1))
+                track_position = title_to_position.get(title_id, 0)
                 
                 # Use manual episode start if provided, otherwise auto-detect
                 if args.episode_start:
                     # Manual start: episode_start + track_position (0-based)
-                    episode_num = args.episode_start + track_num
+                    episode_num = args.episode_start + track_position
                 else:
                     # Auto-detect: max_existing_episode + track_position + 1
                     max_existing = max(existing_episodes) if existing_episodes else 0
-                    episode_num = max_existing + track_num + 1
+                    episode_num = max_existing + track_position + 1
             else:
                 # Fallback to position-based numbering if no track pattern found
                 mkv_index = all_mkvs.index(mkv) if mkv in all_mkvs else 0
@@ -2697,14 +2704,21 @@ def main() -> int:
             failed_titles_str = os.environ.get("FAILED_TITLES", "")
             if failed_titles_str and all_mkvs.index(mkv) == 0:
                 failed_titles = [int(t) for t in failed_titles_str.split(",") if t.isdigit()]
+                # Build mapping of MakeMKV title IDs to 0-based track positions for current disc
+                title_to_position = {}
+                for i, title_id in enumerate(sorted(set(title_ids))):
+                    title_to_position[title_id] = i
+                
                 for failed_title in sorted(failed_titles):
                     if args.episode_start:
-                        # Manual start: episode_start + track_position (0-based)
-                        episode_num = args.episode_start + failed_title
+                        # Manual start: episode_start + track_position (0-based in current disc)
+                        track_position = title_to_position.get(failed_title, 0)
+                        episode_num = args.episode_start + track_position
                     else:
                         # Auto-detect: max_existing_episode + track_position + 1
                         max_existing = max(existing_episodes) if existing_episodes else 0
-                        episode_num = max_existing + failed_title + 1
+                        track_position = title_to_position.get(failed_title, 0)
+                        episode_num = max_existing + track_position + 1
                     print(f"  ✓ Skipping {safe_title} ({safe_year}) - S{season_num:02d}E{episode_num:02d}.mp4 (track {failed_title} rip failed)")
             
             # Set episode pattern for filename
