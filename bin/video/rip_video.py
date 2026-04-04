@@ -1547,46 +1547,144 @@ def main() -> int:
             print("  → Ripping current disc to get new episodes...")
         
         if force_all_tracks:
-            # For TV shows with --episodes: just rip all tracks (no detection)
-            print(f"\n🎬 Ripping all tracks from disc...")
-            
+            print("\n🎬 Ripping all tracks from disc...")
+
             try:
-                spinner = show_spinner("Ripping all tracks with MakeMKV...")
-                result = _run([
-                    "makemkvcon",
-                    f"--minlength={minlength}",
-                    "mkv",
-                    "disc:0",
-                    "all",
-                    str(outdir),
-                ], check=False)  # Don't raise exception on non-zero exit codes
-                
-                # Check MakeMKV exit codes for specific errors
-                if result.returncode != 0:
-                    if result.returncode == 11:
-                        stop_spinner(spinner, "✗ No disc found")
-                        print("\n  ❌ No Blu-ray/DVD disc found in drive")
-                        print("  💿 Please insert a disc and try again")
-                        print("  💡 Or use --skip-disc to process existing MKV files")
-                        print()
-                        return 0  # Exit cleanly to avoid make error message
-                    else:
-                        stop_spinner(spinner, f"✗ Rip failed (exit code {result.returncode})")
-                        print(f"  ❌ Failed to rip tracks from disc (exit code {result.returncode})")
-                        return 1
-                
-                stop_spinner(spinner, "✓ Successfully ripped all tracks")
-                
-                # Get the MKV files
+                info_spinner = show_spinner("Scanning titles with MakeMKV...")
+                info_result = _run(
+                    ["makemkvcon", "-r", "--cache=1", "info", "disc:0"],
+                    check=False,
+                    capture=True,
+                )
+
+                if info_result.returncode == 11:
+                    stop_spinner(info_spinner, "✗ No disc found")
+                    print("\n  ❌ No Blu-ray/DVD disc found in drive")
+                    print("  💿 Please insert a disc and try again")
+                    print("  💡 Or use --skip-disc to process existing MKV files")
+                    print()
+                    return 0
+
+                lines = info_result.stdout.split("\n") if info_result.stdout else []
+                title_ids: list[int] = []
+                for line in lines:
+                    if line.startswith("TINFO:") and ",9," in line:
+                        parts = line.split(",")
+                        if len(parts) < 4:
+                            continue
+                        try:
+                            title_id = int(parts[0].split(":")[1])
+                            h, m, s = map(int, parts[3].strip('"').split(":"))
+                            total_seconds = h * 3600 + m * 60 + s
+                            if total_seconds >= minlength:
+                                title_ids.append(title_id)
+                        except (ValueError, IndexError):
+                            continue
+
+                title_ids = sorted(set(title_ids))
+                stop_spinner(info_spinner, f"✓ Found {len(title_ids)} qualifying titles")
+
+                if not title_ids:
+                    print("\n  ❌ No qualifying titles found on disc")
+                    print(f"  💡 Try lowering MINLENGTH (current: {minlength}s)")
+                    return 1
+
+                successful_titles: list[int] = []
+                failed_titles: list[int] = []
+                skipped_titles: list[int] = []
+                backup_dir = outdir / "_makemkv_backup"
+                backup_ready = False
+
+                for idx, title_id in enumerate(title_ids, start=1):
+                    existing_track_pattern = f"_t{title_id + 1:02d}"
+                    title_mkv_exists = any(
+                        existing_track_pattern in p.name for p in outdir.glob("*.mkv")
+                    )
+                    if title_mkv_exists:
+                        skipped_titles.append(title_id)
+                        print(
+                            f"  ✓ Title {title_id} MKV already exists "
+                            f"({existing_track_pattern})"
+                        )
+                        continue
+
+                    print(f"  🎬 Ripping title {title_id} ({idx}/{len(title_ids)})...")
+                    before_count = len(list(outdir.glob("*.mkv")))
+                    rip_result = _run(
+                        [
+                            "makemkvcon",
+                            f"--minlength={minlength}",
+                            "mkv",
+                            "disc:0",
+                            str(title_id),
+                            str(outdir),
+                        ],
+                        check=False,
+                        capture=True,
+                    )
+                    after_count = len(list(outdir.glob("*.mkv")))
+
+                    if rip_result.returncode == 0 and after_count > before_count:
+                        successful_titles.append(title_id)
+                        print(f"    ✓ Title {title_id} ripped")
+                        continue
+
+                    print(f"    ⚠️  Title {title_id} failed via direct rip")
+
+                    if not backup_ready:
+                        print("    → Creating decrypted backup for retry...")
+                        backup_result = _run(
+                            ["makemkvcon", "backup", "disc:0", str(backup_dir)],
+                            check=False,
+                            capture=True,
+                        )
+                        backup_ready = backup_result.returncode == 0
+                        if not backup_ready:
+                            print("    ✗ Backup creation failed")
+
+                    if backup_ready:
+                        retry_before = len(list(outdir.glob("*.mkv")))
+                        retry_result = _run(
+                            [
+                                "makemkvcon",
+                                f"--minlength={minlength}",
+                                "mkv",
+                                f"file:{backup_dir}",
+                                str(title_id),
+                                str(outdir),
+                            ],
+                            check=False,
+                            capture=True,
+                        )
+                        retry_after = len(list(outdir.glob("*.mkv")))
+                        if retry_result.returncode == 0 and retry_after > retry_before:
+                            successful_titles.append(title_id)
+                            print(f"    ✓ Title {title_id} recovered from backup")
+                            continue
+
+                    failed_titles.append(title_id)
+                    print(f"    ✗ Title {title_id} could not be ripped")
+
                 mkvs = sorted(outdir.glob("*.mkv"), key=lambda x: x.stat().st_mtime)
-                
+                if skipped_titles:
+                    print(f"  ℹ️  Existing MKV titles: {skipped_titles}")
+                if failed_titles:
+                    print(f"  ⚠️  Unripped titles: {failed_titles}")
+                if not mkvs:
+                    print("\n  ❌ No MKV files were created")
+                    print(f"  📁 Output folder: {outdir}")
+                    print(
+                        "  💡 Try cleaning the disc, retrying, or lowering MINLENGTH"
+                    )
+                    return 1
+
             except KeyboardInterrupt:
-                stop_spinner(spinner, "✗ Rip cancelled by user")
+                stop_spinner(info_spinner, "✗ Rip cancelled by user")
                 print("\n⚠️  Rip cancelled")
                 return 1
             except Exception as e:
-                stop_spinner(spinner, f"✗ Rip failed: {e}")
-                print(f"  ❌ Failed to rip tracks from disc")
+                stop_spinner(info_spinner, f"✗ Rip failed: {e}")
+                print("  ❌ Failed to rip tracks from disc")
                 return 1
         else:
             # Regular movie logic - will be handled below
