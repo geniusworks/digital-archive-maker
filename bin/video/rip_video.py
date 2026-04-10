@@ -1691,36 +1691,37 @@ def main() -> int:
 
                     print(f"    ⚠️  Title {title_id} failed via direct rip")
 
-                    if not backup_ready:
-                        print("    → Creating decrypted backup for retry...")
-                        backup_result = _run(
-                            ["makemkvcon", "backup", "disc:0", str(backup_dir)],
-                            check=False,
-                            capture=True,
-                        )
-                        backup_ready = backup_result.returncode == 0
-                        if not backup_ready:
-                            print("    ✗ Backup creation failed")
+                    # Backup retry logic disabled as requested
+                    # if not backup_ready:
+                    #     print("    → Creating decrypted backup for retry...")
+                    #     backup_result = _run(
+                    #         ["makemkvcon", "backup", "disc:0", str(backup_dir)],
+                    #         check=False,
+                    #         capture=True,
+                    #     )
+                    #     backup_ready = backup_result.returncode == 0
+                    #     if not backup_ready:
+                    #         print("    ✗ Backup creation failed")
 
-                    if backup_ready:
-                        retry_before = len(list(outdir.glob("*.mkv")))
-                        retry_result = _run(
-                            [
-                                "makemkvcon",
-                                f"--minlength={minlength}",
-                                "mkv",
-                                f"file:{backup_dir}",
-                                str(title_id),
-                                str(outdir),
-                            ],
-                            check=False,
-                            capture=True,
-                        )
-                        retry_after = len(list(outdir.glob("*.mkv")))
-                        if retry_result.returncode == 0 and retry_after > retry_before:
-                            successful_titles.append(title_id)
-                            print(f"    ✓ Title {title_id} recovered from backup")
-                            continue
+                    # if backup_ready:
+                    #     retry_before = len(list(outdir.glob("*.mkv")))
+                    #     retry_result = _run(
+                    #         [
+                    #             "makemkvcon",
+                    #             f"--minlength={minlength}",
+                    #             "mkv",
+                    #             f"file:{backup_dir}",
+                    #             str(title_id),
+                    #             str(outdir),
+                    #         ],
+                    #         check=False,
+                    #         capture=True,
+                    #     )
+                    #     retry_after = len(list(outdir.glob("*.mkv")))
+                    #     if retry_result.returncode == 0 and retry_after > retry_before:
+                    #         successful_titles.append(title_id)
+                    #         print(f"    ✓ Title {title_id} recovered from backup")
+                    #         continue
 
                     failed_titles.append(title_id)
                     print(f"    ✗ Title {title_id} could not be ripped")
