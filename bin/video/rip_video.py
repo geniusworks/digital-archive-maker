@@ -505,7 +505,7 @@ def interactive_subtitle_prompt(
         for s in main_subs
     )
     preferred_vob_subs = any(
-        s.get("codec") == "dvd_subtitle" and matches_language(s.get("language", ""), LANG_SUBTITLES)
+        s.get("codec") in ["dvd_subtitle", "s_vobsub"] and matches_language(s.get("language", ""), LANG_SUBTITLES)
         for s in main_subs
     )
 
