@@ -1646,7 +1646,9 @@ def main() -> int:
 
                 def _matches_current_disc(mkv_path: Path) -> bool:
                     if current_disc_num is None:
-                        return False
+                        # If disc number can't be detected, match any MKV with the same track pattern
+                        # This prevents overwriting when disc metadata lacks disc numbering
+                        return True
                     mkv_disc_match = re.search(
                         r"(?i)\bdisc[\s._-]*(\d{1,2})\b", mkv_path.stem
                     )
