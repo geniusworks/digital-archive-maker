@@ -3069,13 +3069,13 @@ def main() -> int:
                         pass
                     return 0
                 
-                print(f"  🕐 Checking file durations (min 10 minutes for episodes)...")
+                print(f"  🕐 Checking file durations (min {minlength//60} minutes for episodes)...")
                 valid_episodes = []
                 for mp4_file in mp4_files:
                     duration_seconds = get_duration_seconds(mp4_file)
                     duration_minutes = duration_seconds / 60
-                    
-                    if duration_minutes >= 10:
+
+                    if duration_seconds >= minlength:
                         valid_episodes.append((mp4_file, next_episode_num))
                         print(f"    ✓ {mp4_file.name}: {duration_minutes:.1f}min → Episode {next_episode_num}")
                         next_episode_num += 1
