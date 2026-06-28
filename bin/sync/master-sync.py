@@ -1082,7 +1082,7 @@ def run_sync_job(
         return job_stats
 
 
-def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
+def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False, verbose=False):
     """Run global cleanup to remove folders that no longer exist in any source."""
     if not global_opts.get("delete", False):
         return True
@@ -1233,6 +1233,10 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
                 rsync_bin,
                 "-a",
                 "--delete",
+                # Report actual deletions (so we can summarize/list them) instead of
+                # running silently. The noisy "cannot delete non-empty directory"
+                # notices are filtered out while streaming below.
+                "--info=del",
                 "--filter",
                 f"merge {filter_file}",
                 src_arg,
@@ -1252,23 +1256,55 @@ def run_global_cleanup(jobs, sync_script_path, global_opts, dry_run=False):
             process = None
             try:
                 print("Running cleanup...")
-                # Stream output in real-time
+                # Merge stderr into stdout so we can filter/count a single stream.
                 process = subprocess.Popen(
                     rsync_cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
                     text=True,
                     encoding="utf-8",
                     errors="replace",
                     bufsize=1,
                 )
+
+                removed_files = 0
+                removed_dirs = 0
                 for line in process.stdout:
+                    stripped = line.rstrip("\r\n")
+                    text = stripped.strip()
+                    if not text:
+                        continue
+                    # Harmless: rsync left a directory in place because it still holds
+                    # protected (kept) files. Not an error — just noise, so drop it.
+                    if text.startswith("cannot delete non-empty directory"):
+                        continue
+                    # Real deletions reported by --info=del. Tally them; only list each
+                    # one in verbose mode to avoid a wall of output.
+                    if stripped.startswith("deleting "):
+                        target = stripped[len("deleting "):]
+                        if target.endswith("/"):
+                            removed_dirs += 1
+                        else:
+                            removed_files += 1
+                        if verbose:
+                            print("  " + stripped)
+                        continue
+                    # Anything else (e.g. genuine errors) is surfaced verbatim.
                     print(line, end="", flush=True)
-                _, stderr = process.communicate()
-                if stderr:
-                    print("STDERR:", stderr)
+                process.wait()
                 if process.returncode != 0:
-                    raise subprocess.CalledProcessError(process.returncode, rsync_cmd, "", stderr)
+                    raise subprocess.CalledProcessError(process.returncode, rsync_cmd, "", "")
+
+                verb = "Would remove" if dry_run else "Removed"
+                if removed_files or removed_dirs:
+                    print(
+                        f"  {verb} {removed_files} file(s) and {removed_dirs} folder(s) "
+                        "not present in local sources."
+                    )
+                    if not verbose:
+                        print("  (re-run with --verbose to list them)")
+                else:
+                    print("  Nothing to remove; destination already matches local sources.")
             except KeyboardInterrupt:
                 print("\n\nCleanup interrupted by user. Cleaning up...")
                 if process:
@@ -1423,7 +1459,9 @@ def main():
             success_count += 1
 
     # Run global cleanup if enabled
-    cleanup_success = run_global_cleanup(jobs, str(sync_script_path), global_opts, args.dry_run)
+    cleanup_success = run_global_cleanup(
+        jobs, str(sync_script_path), global_opts, args.dry_run, verbose=args.verbose
+    )
 
     # Summary
     print("\n" + "=" * 60)
