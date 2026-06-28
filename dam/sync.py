@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 
-def main(dry_run: bool = False, quiet: bool = False):
+def main(dry_run: bool = False, quiet: bool = False, delete: bool = False):
     """Sync media library to configured destinations."""
     # Get the path to master-sync.py
     repo_root = Path(__file__).parent.parent
@@ -31,6 +31,8 @@ def main(dry_run: bool = False, quiet: bool = False):
         cmd.append('--dry-run')
     if quiet:
         cmd.append('--quiet')
+    if delete:
+        cmd.append('--delete')
     
     # Run the master sync script
     try:

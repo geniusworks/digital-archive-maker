@@ -1324,6 +1324,19 @@ def main():
     parser.add_argument("--list-jobs", action="store_true", help="List available jobs and exit")
 
     parser.add_argument(
+        "--delete",
+        action="store_true",
+        help="Remove folders/files on the target that no longer exist in any local source "
+        "(overrides 'delete' in the config's global section).",
+    )
+
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Minimal output (this is the default; flag accepted for compatibility).",
+    )
+
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose console output (disables quiet mode)",
@@ -1364,6 +1377,8 @@ def main():
     # Override with command line args
     if args.dry_run:
         global_opts["dry_run"] = True
+    if args.delete:
+        global_opts["delete"] = True
 
     # Filter jobs if specific job requested
     jobs = config.get("sync_jobs", [])

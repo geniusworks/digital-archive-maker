@@ -483,11 +483,16 @@ def tag():
 def sync(
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Preview sync without executing."),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Minimal output."),
+    delete: bool = typer.Option(
+        False,
+        "--delete",
+        help="Remove folders/files on the target that no longer exist in any local source.",
+    ),
 ):
     """Sync media library to configured destinations."""
     banner()
     from dam.sync import main as sync_main
-    sync_main(dry_run=dry_run, quiet=quiet)
+    sync_main(dry_run=dry_run, quiet=quiet, delete=delete)
 
 
 # ── dam version ────────────────────────────────────────────────────────────
