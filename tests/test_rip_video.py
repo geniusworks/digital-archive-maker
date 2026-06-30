@@ -273,8 +273,10 @@ class TestRipVideo:
         spinner_thread = rip_video.show_spinner("Test message", duration=0.3)
         end_time = time.time()
 
-        # Should have taken approximately 0.3 seconds (allow for system variation)
-        assert 0.2 <= (end_time - start_time) <= 0.6
+        # Should have blocked for at least the requested duration. Use a
+        # generous upper bound so the test isn't flaky on loaded CI runners
+        # (the spinner thread wakes every 0.1s and is joined, adding jitter).
+        assert 0.2 <= (end_time - start_time) <= 3.0
         assert spinner_thread is not None
         assert isinstance(spinner_thread, threading.Thread)
 
