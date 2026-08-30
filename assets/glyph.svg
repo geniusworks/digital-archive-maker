@@ -1,0 +1,10 @@
+<svg width="68" height="64" viewBox="0 0 68 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Digital Archive Maker glyph">
+  <!-- the archive: ordered files coming off the disc -->
+  <rect x="42" y="17" width="24" height="8" rx="2.6" fill="#ED7B00" fill-opacity="0.45"/>
+  <rect x="42" y="28" width="24" height="8" rx="2.6" fill="#ED7B00" fill-opacity="0.72"/>
+  <rect x="42" y="39" width="24" height="8" rx="2.6" fill="#ED7B00"/>
+  <!-- the disc, drawn over the stack so the files read as passing behind it -->
+  <circle cx="25" cy="32" r="19" fill="none" stroke="#ED7B00" stroke-width="3.4"/>
+  <circle cx="25" cy="32" r="9" fill="none" stroke="#94a3b8" stroke-width="2.4"/>
+  <circle cx="25" cy="32" r="3.2" fill="#ED7B00"/>
+</svg>
