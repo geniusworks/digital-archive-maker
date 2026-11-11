@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1-beta] - 2026-11-11
+
+### Added
+- **Smart selective TV show ripping** (`make rip-episodes` / `dam rip video --episodes`) — Scans episodic discs and rips only missing tracks, with a 10-minute minimum length threshold and MKV/MP4 skip detection across local and destination folders
+- **Multi-disc episode numbering** — Episodes are numbered by disc sequence position so numbering continues correctly across discs of the same season
+- **`--episode-start` flag** — Manual episode numbering override on the CLI and Makefile (`dam rip video --episode-start N`)
+- **`--skip-disc` option** — Process existing MKV files without re-ripping the disc
+- **`dam sync --delete`** — Prunes remote-only files with a concise deletion summary instead of noisy per-file output
+
+### Changed
+- **TV show ripping pipeline** — Redesigned to observe MakeMKV behaviour rather than predict it: per-title ripping with verification, per-track auto-detection, and HandBrake fallback
+- **Documentation reorganization** — Consistent naming and structure across `docs/`, streamlined README (moved Project Structure to CONTRIBUTING, removed "Professional" wording), and a new tools guide
+- **Makefile** — Fixed variable passing, shell quoting, and `env` assignment issues in CLI-driven targets
+- Episode organization now respects the `MINLENGTH` environment variable
+- `makemkvcon` backup retry logic disabled for failed rips
+- Streaming optimization now only processes newly created episodes
+
+### Fixed
+- Episode numbering across multi-disc TV shows (uses 1-based disc positions instead of filename numbers, rip order, or track IDs)
+- Cross-disc MKV filename collisions during verification
+- MakeMKV silent failure detection, incorrect CLI syntax, and file overwrites during verification
+- VOB subtitle codec detection now accepts both `dvd_subtitle` and `s_vobsub`
+- Duplicate track detection when disc number cannot be detected from metadata
+- Graceful CTRL+C handling and MakeMKV exit code capture during TV ripping
+- Multiple `UnboundLocalError` / `re` scope errors in the TV ripping path
+- `dam sync` link in documentation
+- README version/license badges (explicit values, link to GitHub releases)
+- Flaky timing assertion in spinner test
+
 ## [0.9.0-beta] - 2026-03-18
 
 ### Added
@@ -58,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library sync with explicit content filtering
 - TV show renaming and metadata tagging
 
-[Unreleased]: https://github.com/geniusworks/digital-archive-maker/compare/v0.9.0-beta...HEAD
+[Unreleased]: https://github.com/geniusworks/digital-archive-maker/compare/v0.9.1-beta...HEAD
+[0.9.1-beta]: https://github.com/geniusworks/digital-archive-maker/compare/v0.9.0-beta...v0.9.1-beta
 [0.9.0-beta]: https://github.com/geniusworks/digital-archive-maker/compare/v0.1.0...v0.9.0-beta
 [0.1.0]: https://github.com/geniusworks/digital-archive-maker/releases/tag/v0.1.0
