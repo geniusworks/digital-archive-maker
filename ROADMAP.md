@@ -2,7 +2,7 @@
 
 > **Project Vision:** Create the definitive open-source tool for converting physical media collections into organized digital archives.
 
-## Current Status: v0.9.0-beta
+## Current Status: v0.9.1-beta
 
 **Digital Archive Maker** is feature-complete for core use cases and has undergone extensive testing and validation. This roadmap outlines the path to a stable 1.0.0 release and beyond.
 
@@ -43,7 +43,8 @@
 - **Workflow Integration - "Process Once, Done Forever"**
   - Verify one-shot enhanced CD ripping with automatic quality checks and metadata repair
   - Verify one-shot video ripping with automatic TMDb metadata and ratings fetching
-  - 🔄 TV show processing workflow with CLI integration (`make rip-episodes`) - **ripping complete, organization verification needed**
+  - ✅ TV show processing workflow with CLI integration (`make rip-episodes`) — **smart selective ripping, multi-disc episode numbering, `--episode-start`, and `--skip-disc` now complete**
+  - ✅ Sync pruning (`dam sync --delete`) — removes remote-only files with a concise deletion summary
   - Lyrics fetching and explicit content tagging integrated into main workflows
 - **User Experience Features**
   - Disc ripping counter with stats and milestone tracking
@@ -95,6 +96,7 @@
 | Milestone | Status |
 |-----------|---------|
 | v0.9.0-beta | ✅ Complete |
+| v0.9.1-beta | ✅ Complete |
 | v1.0.0 | 🎯 Next major release |
 | v1.1.0 | 📋 Planned enhancements |
 | Future versions | 💭 Ideas and possibilities |
